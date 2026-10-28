@@ -2,3 +2,5 @@ node_modules/
 .wrangler/
 .dev.vars
 cle-admin.txt
+music-test/
+public/music/*.mp3
