@@ -3,7 +3,7 @@ const SHELL = [
   "/", "/style.css", "/manifest.webmanifest", "/icons/icon-192.png",
   "/js/version.js", "/js/shared/store.js", "/js/shared/format.js",
   "/js/game/field.js", "/js/game/projectiles.js", "/js/game/attacks.js", "/js/game/solver.js", "/js/game/sim.js",
-  "/js/app/api.js", "/js/app/audio.js", "/js/app/input.js", "/js/app/sprites.js", "/js/app/scene.js", "/js/app/screens.js", "/js/app/main.js"
+  "/js/app/api.js", "/js/app/audio.js", "/js/app/sfx.js", "/js/app/input.js", "/js/app/sprites.js", "/js/app/scene.js", "/js/app/screens.js", "/js/app/main.js"
 ];
 const FONTS = ["https://fonts.googleapis.com", "https://fonts.gstatic.com"];
 

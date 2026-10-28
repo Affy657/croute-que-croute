@@ -1,14 +1,16 @@
 import { store, KEYS } from "../shared/store.js";
+import { SYNTHS } from "./sfx.js";
 
 const MUSIC_FILES = ["/music/theme.m4a", "/music/theme.mp3"];
-const SOUNDS = {};
-const VOLUME = 0.6, FADE_MS = 500, DRIFT = 0.35;
+const SOUNDS = { ...SYNTHS };
+const SFX_GAP = { near: 0.08 };
+const VOLUME = 0.6, FADE_MS = 500, DRIFT = 0.35, SFX_VOLUME = 1;
 
 export const prefs = { music: store.get(KEYS.musicOff) !== "1", sfx: store.get(KEYS.sfxOff) !== "1" };
 const listeners = [];
 let el = null, live = false, primed = false, running = false, runTime = 0, fadeTimer = null;
-let ctx = null;
-const buffers = {};
+let ctx = null, master = null;
+const buffers = {}, lastPlayed = {};
 
 export const musicAvailable = () => !!el;
 export const onAudioChange = (fn) => listeners.push(fn);
@@ -60,11 +62,21 @@ function fadeOut() {
   }, 30);
 }
 
-function loadSounds() {
+function ensureContext() {
   const Ctx = window.AudioContext || window.webkitAudioContext;
-  if (ctx || !Ctx || !Object.keys(SOUNDS).length) return;
+  if (ctx || !Ctx) return;
   ctx = new Ctx();
+  const limiter = ctx.createDynamicsCompressor();
+  limiter.threshold.value = -3;
+  limiter.knee.value = 0;
+  limiter.ratio.value = 20;
+  limiter.attack.value = 0.002;
+  limiter.release.value = 0.1;
+  master = ctx.createGain();
+  master.gain.value = SFX_VOLUME;
+  master.connect(limiter).connect(ctx.destination);
   for (const [name, url] of Object.entries(SOUNDS)) {
+    if (typeof url !== "string") continue;
     fetch(url)
       .then((res) => res.arrayBuffer())
       .then((data) => new Promise((ok, ko) => ctx.decodeAudioData(data, ok, ko)))
@@ -74,7 +86,7 @@ function loadSounds() {
 }
 
 export function unlockAudio() {
-  loadSounds();
+  ensureContext();
   if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
   if (!el) return;
   if (running) {
@@ -141,11 +153,38 @@ export function toggleSfx() {
   changed();
 }
 
-export function playSfx(name) {
-  const buffer = buffers[name];
-  if (!prefs.sfx || !ctx || ctx.state !== "running" || !buffer) return;
+function fire(name) {
+  const sound = SOUNDS[name], t = ctx.currentTime;
+  if (t - (lastPlayed[name] ?? -Infinity) < (SFX_GAP[name] || 0)) return;
+  lastPlayed[name] = t;
+  if (typeof sound === "function") {
+    sound(ctx, master, t);
+    return;
+  }
+  if (!buffers[name]) return;
   const src = ctx.createBufferSource();
-  src.buffer = buffer;
-  src.connect(ctx.destination);
-  src.start();
+  src.buffer = buffers[name];
+  src.connect(master);
+  src.start(t);
+}
+
+function trigger(name, wait) {
+  if (!ctx || !SOUNDS[name]) return;
+  if (ctx.state === "running") {
+    fire(name);
+    return;
+  }
+  const resumed = ctx.resume();
+  if (wait) resumed.then(() => fire(name), () => {});
+}
+
+export const SFX_NAMES = Object.keys(SOUNDS);
+
+export function playSfx(name) {
+  if (prefs.sfx) trigger(name, false);
+}
+
+export function previewSfx(name) {
+  ensureContext();
+  trigger(name, true);
 }
