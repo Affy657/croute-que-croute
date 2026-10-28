@@ -5,8 +5,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 ## Liens
 
 - Jeu : https://croute-que-croute.croute-que-croute.workers.dev
-- Admin : https://croute-que-croute.croute-que-croute.workers.dev/admin (appli « Croûte Admin », connexion par invitation)
-- Adresse de test, séparée de la prod : https://test-croute-que-croute.croute-que-croute.workers.dev
+- Admin : https://croute-que-croute.croute-que-croute.workers.dev/admin, dans la même appli que le jeu
 - QR code : `qr/croute-que-croute.png` pour imprimer, `qr/croute-que-croute.svg` pour une affiche
 - Code : `C:\dev\couverts-volants`, git local sur `master`, pas encore de dépôt GitHub
 - POC d'origine (artefact Claude, plus mis à jour) : https://claude.ai/artifact/V2KMTGkcktubs8VguX8AxE
@@ -140,9 +139,9 @@ Repères mesurés avec des robots :
 ## Musique
 
 - Le jeu lit `public/music/theme.m4a` ou `public/music/theme.mp3` (le premier trouvé).
-- En test : « Roundabout » de Blacklolita (M4A, 3 min 57), seulement sur l'adresse de test. Le fichier est dans `music-test/`, hors de git, et `npm run preview` l'envoie sur l'adresse de test sans toucher à la prod.
-- `npm run music:test` génère à la place une boucle libre de droits (200 BPM, 19 s).
-- En prod : pas de musique tant que les droits ne sont pas réglés.
+- En prod : « Roundabout » de Blacklolita (M4A, 3 min 57, 3,8 Mo), choisi par Adrien en attendant les morceaux des collègues.
+- Le fichier n'est pas dans git (droits et poids) : il est seulement dans `public/music/` sur le PC. À remettre là avant un déploiement depuis un autre ordinateur.
+- Changer de musique : remplacer `public/music/theme.m4a`, puis `npm run deploy`.
 - Elle démarre au premier appui sur l'écran (règle des navigateurs), tourne en boucle et se met en pause quand l'appli passe en arrière-plan.
 - Le choix « musique coupée » est mémorisé sur le téléphone.
 - Droits : diffuser un morceau dans une appli publique demande l'accord de l'artiste ou du label. Le plus simple : demander à Blacklolita, ou prendre un morceau d'un DJ du collectif.
@@ -160,8 +159,10 @@ Repères mesurés avec des robots :
 
 ## Admin
 
-- Appli à part, « Croûte Admin », installable sur le téléphone depuis `/admin` (icône jaune).
+- Même appli que le jeu : une seule installation. Un téléphone connecté en admin voit une couronne en haut à gauche de l'accueil, qui ouvre le tableau de bord. « Retour au jeu » ramène au jeu.
+- Accès caché : 5 appuis rapides sur « Collectif Tartine Sauvage » ouvrent l'écran admin.
 - Connexion sans mot de passe, le téléphone reste connecté.
+- Dans l'appli installée (surtout sur iPhone, où les liens s'ouvrent dans Safari), on peut coller le lien d'invitation dans « Lien d'invitation reçu ».
 - Premier accès : la clé admin (`cle-admin.txt`) crée un compte propriétaire. Elle reste la clé de secours.
 - Le propriétaire invite les collègues : prénom + rôle, puis un lien à usage unique, valable 48 h, à envoyer. La personne l'ouvre et elle est connectée.
 - Rôles : propriétaire (soirées, joueurs et équipe) et admin (soirées et joueurs).
@@ -207,15 +208,13 @@ Après :
 | `public/sw.js`, `public/manifest.webmanifest` | PWA : service worker et manifeste |
 | `public/version.js` | Version du jeu, réécrite à chaque déploiement |
 | `public/icons/` | Icônes de l'appli, générées par `npm run icons` |
-| `public/music/` | Musique (`theme.mp3`, à fournir) |
+| `public/music/` | Musique (`theme.m4a`, hors git) |
 | `scripts/deploy.mjs` | Déploiement avec numéro de version |
 | `public/sim.js` | Simulation : attaques, collisions, solveur. Sans affichage, partagée par le jeu et le test |
 | `public/app.js` | Affichage, écrans, appels à l'API |
 | `public/index.html`, `public/style.css` | Écrans et style |
-| `public/admin.html`, `admin.js`, `admin.css`, `admin.webmanifest` | Appli admin |
+| `public/admin.html`, `admin.js`, `admin.css` | Tableau de bord admin |
 | `test/admin.mjs` | Test de l'API admin (invitations, rôles, retrait) |
-| `scripts/preview.mjs` | Mise en ligne sur l'adresse de test, avec la musique de `music-test/` |
-| `scripts/test-music.mjs` | Boucle de musique libre de droits pour les tests |
 | `src/worker.ts` | API : pseudo, parties, classement, admin |
 | `migrations/` | Schéma de la base |
 | `test/fairness.mjs` | Test du solveur avec le robot |
@@ -229,16 +228,14 @@ Après :
 | `npm test` | Robot du solveur, 0 mort attendu (environ 4 min) |
 | `npm run check` | Vérifier les types de l'API |
 | `npm run deploy` | Mettre en ligne avec une nouvelle version (les téléphones se mettent à jour seuls) |
-| `npm run icons` | Regénérer les icônes du jeu et de l'admin |
-| `npm run preview` | Mettre en ligne sur l'adresse de test seulement |
-| `npm run music:test` | Générer la boucle de test libre de droits |
+| `npm run icons` | Regénérer les icônes de l'appli |
 | `node test/admin.mjs` | Tester l'API admin (avec `npm run dev` lancé) |
 | `npm run db:remote` | Appliquer une nouvelle migration sur la base en ligne |
 
 ## À faire
 
 - Reprendre les couleurs et la tartine de l'affiche numérique (Adrien envoie le fichier).
-- Obtenir l'accord de l'artiste avant de mettre la musique en prod.
+- Remplacer ou compléter la musique avec des morceaux des collègues DJ.
 - Inviter les collègues admins depuis Croûte Admin.
 - Créer la vraie soirée du samedi 07/11 sur `/admin`.
 - Tester sur de vrais téléphones : fluidité, son, réseau du lieu.
@@ -259,7 +256,6 @@ Après :
 
 - La soirée de test ouverte en ligne ferme le 29/10/2026 à 23h30.
 - `cle-admin.txt` et `.dev.vars` ne sont pas dans git : à garder de côté. Les liens d'invitation non utilisés (`invitation-*.txt`) non plus.
-- L'adresse de test partage la base de la prod : un score fait en test compte dans la soirée en cours.
 - wrangler est connecté au compte Cloudflare sur le PC d'Adrien (`npx wrangler whoami` pour vérifier).
 - Une fois la page chargée, le jeu tourne sans réseau. Le score ne compte que si le réseau passe au début et à la fin de la partie (3 essais d'envoi).
 - Le record perso hors classement reste sur le téléphone.
