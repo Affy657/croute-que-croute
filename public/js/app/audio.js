@@ -1,6 +1,8 @@
 import { store, KEYS } from "../shared/store.js";
 
 const MUSIC_FILES = ["/music/theme.m4a", "/music/theme.mp3"];
+export const MUSIC_CREDIT = { title: "Roundabout", artist: "Blacklolita", url: "https://open.spotify.com/track/1GbuLhdSobTcKzQfOGliQX" };
+export const SFX_CREDIT = { name: "Mixkit", url: "https://mixkit.co/free-sound-effects/game/" };
 const SOUNDS = {
   start: [{ url: "/sfx/start.mp3", gain: 0.85 }],
   near: [{ url: "/sfx/near.mp3", gain: 0.8 }],

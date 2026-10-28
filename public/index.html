@@ -91,24 +91,71 @@
     <div id="infoTabs" class="board-tabs" role="tablist">
       <button type="button" role="tab" data-tab="attacks" aria-selected="true">Attaques</button>
       <button type="button" role="tab" data-tab="weapons" aria-selected="false">Armes</button>
+      <button type="button" role="tab" data-tab="credits" aria-selected="false">Crédits</button>
     </div>
   </div>
   <div id="infoBody" class="catalog info-body"></div>
   <button id="infoBack" class="cta" type="button">Retour</button>
 </section>
 
-<button id="infoClose" class="corner" type="button" aria-label="Fermer les infos" hidden>
+<section id="settings" class="screen info-screen" hidden>
+  <h2>Paramètres</h2>
+  <div id="settingsBar" class="info-bar" hidden>
+    <div id="settingsTabs" class="board-tabs" role="tablist">
+      <button type="button" role="tab" data-tab="app" aria-selected="true">Appli</button>
+      <button type="button" role="tab" data-tab="admin" aria-selected="false">Admin</button>
+    </div>
+  </div>
+  <div id="settingsApp" class="catalog info-body">
+    <section class="card">
+      <h2>Installer le jeu</h2>
+      <p id="installHint" class="sub"></p>
+      <div class="card-actions">
+        <button id="installBtn" class="ghost" type="button" hidden>Installer</button>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Partager le jeu</h2>
+      <p class="sub">Envoie le lien, ou montre le QR code à quelqu'un à côté de toi.</p>
+      <div class="card-actions">
+        <button id="shareBtn" class="ghost" type="button">Partager le lien</button>
+        <button id="qrBtn" class="ghost" type="button">QR code</button>
+      </div>
+    </section>
+  </div>
+  <div id="settingsAdmin" class="catalog info-body" hidden>
+    <section class="card">
+      <h2>Admin</h2>
+      <p class="sub">Soirées, joueurs, équipe et bruitages.</p>
+      <div class="card-actions">
+        <a class="ghost" href="/admin">Tableau de bord</a>
+      </div>
+    </section>
+  </div>
+  <button id="settingsBack" class="cta" type="button">Retour</button>
+</section>
+
+<section id="qr" class="screen veil" hidden>
+  <div class="block">
+    <h2>Scanne pour jouer</h2>
+    <img class="qr-img" src="/qr.svg" alt="QR code du jeu" width="280" height="280">
+    <p id="qrHost" class="eyebrow"></p>
+  </div>
+  <button id="qrBack" class="cta" type="button">Retour</button>
+</section>
+
+<button id="closeBtn" class="corner" type="button" aria-label="Fermer" hidden>
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
   </svg>
 </button>
 
-<a id="adminLink" class="corner left bottom" href="/admin" aria-label="Admin" hidden>
+<button id="settingsBtn" class="corner left bottom" type="button" aria-label="Paramètres" hidden>
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <circle cx="12" cy="12" r="5.4" fill="none" stroke="currentColor" stroke-width="2.6"/>
     <path d="M12 6.4V2.8M12 17.6v3.6M6.4 12H2.8M17.6 12h3.6M8 8L5.5 5.5M16 16l2.5 2.5M8 16l-2.5 2.5M16 8l2.5-2.5" fill="none" stroke="currentColor" stroke-width="3"/>
   </svg>
-</a>
+</button>
 
 <button id="infoBtn" class="corner bottom" type="button" aria-label="Infos du jeu" hidden>
   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -134,6 +181,15 @@
     <path class="off" d="M16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
   </svg>
 </button>
+
+<div id="installPop" class="pop" role="dialog" aria-modal="true" aria-labelledby="installTitle" hidden>
+  <div class="pop-card">
+    <h2 id="installTitle">Installe le jeu</h2>
+    <p id="installPopText" class="note"></p>
+    <button id="installYes" class="cta" type="button">Installer</button>
+    <button id="installLater" class="ghost" type="button">Plus tard</button>
+  </div>
+</div>
 
 <script type="module" src="/js/app/main.js"></script>
 </body>
