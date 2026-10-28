@@ -257,13 +257,13 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 | Moment | Son Mixkit (n°) | Fichier | Volume |
 |---|---|---|---|
 | Départ | Player select notification (2037) | `start.mp3` | 0,85 |
-| Frôlé | Dagger woosh (1487) | `near.mp3` | 1,6 |
+| Frôlé | Dagger woosh (1487) | `near.mp3` | 0,8 |
 | Mort | Retro arcade lose (2027) | `death.mp3` | 0,4 |
 | Nouveau record | Quick win video game notification (269) | `record.mp3` | 1 |
 | Passer 1er | Successful horns fanfare (722) | `first.mp3` | 1 |
 
 - Volumes égalisés à la mesure : « Retro arcade lose » était près de 3 fois plus fort que les autres. Un seul frôlé part toutes les 0,08 s au plus.
-- 29/10/2026 : « Arrow whoosh » retiré (moins satisfaisant), et frôlé doublé en volume. Il était devenu inaudible sous la musique (0,28 s, trop discret). Mesuré : les frôlements sont aussi fréquents qu'avant, 5 à 6 par minute de jeu.
+- 29/10/2026 : « Arrow whoosh » retiré (moins satisfaisant), « Dagger woosh » gardé seul à son volume d'origine, qu'Adrien trouve très bon. Mesuré : les frôlements sont aussi fréquents qu'avant, 5 à 6 par minute de jeu.
 - Le jeu attend la réponse du serveur (1,2 s au plus) pour savoir s'il joue le record ou la 1re place.
 - Pas de son sur les flèches d'avertissement : trop fréquent, et ça avantagerait ceux qui jouent avec le son.
 - Les sons sont préparés dès l'ouverture du jeu. Un son qui ne peut pas partir à temps (téléphone qui bloque encore le son) est abandonné plutôt que joué en retard.
