@@ -30,6 +30,10 @@ const json = (data: unknown, status = 200) =>
 
 const fail = (status: number, error: string) => json({ error }, status);
 
+const outdated = (req: Request, env: Env) => req.headers.get("x-app-version") !== env.APP_VERSION;
+
+const updateRequired = () => fail(426, "Nouvelle version du jeu : recharge la page.");
+
 async function readJson(req: Request): Promise<Record<string, unknown>> {
   try {
     const data = await req.json();
@@ -98,7 +102,7 @@ async function countOf(env: Env, eventId: number) {
 async function board(req: Request, env: Env) {
   const now = Date.now();
   const event = await currentEvent(env);
-  if (!event) return json({ event: null, now, top: [], me: null, count: 0 });
+  if (!event) return json({ event: null, now, version: env.APP_VERSION, top: [], me: null, count: 0 });
   const me = await findPlayer(req, env, event.id);
   const { results } = await env.DB.prepare(
     "SELECT id, pseudo, best FROM players WHERE event_id = ? AND banned = 0 AND best > 0 ORDER BY best DESC, best_at ASC LIMIT ?",
@@ -109,6 +113,7 @@ async function board(req: Request, env: Env) {
   return json({
     event: { name: event.name, closesAt: event.closes_at },
     now,
+    version: env.APP_VERSION,
     top,
     count: await countOf(env, event.id),
     me: me ? { pseudo: me.pseudo, best: me.best, rank: await rankOf(env, event.id, me) } : null,
@@ -116,6 +121,7 @@ async function board(req: Request, env: Env) {
 }
 
 async function join(req: Request, env: Env) {
+  if (outdated(req, env)) return updateRequired();
   const now = Date.now();
   const event = await currentEvent(env);
   if (!event) return fail(404, "Pas de soirée en cours.");
@@ -137,6 +143,7 @@ async function join(req: Request, env: Env) {
 }
 
 async function startRun(req: Request, env: Env) {
+  if (outdated(req, env)) return updateRequired();
   const now = Date.now();
   const event = await currentEvent(env);
   if (!event) return fail(404, "Pas de soirée en cours.");
