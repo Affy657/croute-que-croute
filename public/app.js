@@ -1,4 +1,6 @@
-const FW = 360, FH = 640, STEP = 1 / 120, M = 50, HIT_R = 13, NEAR = 11, SENS = 1.15;
+import { createSim, speedMul, FW, FH, STEP } from "./sim.js";
+
+const SENS = 1.15;
 const cv = document.getElementById("cv");
 const ctx = cv.getContext("2d");
 const $ = (id) => document.getElementById(id);
@@ -18,7 +20,6 @@ for (const k of ["void", "field", "frame", "planet", "planet-shade", "mustard", 
 }
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const rnd = (a, b) => a + Math.random() * (b - a);
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const fmtCs = (cs) => (cs / 100).toFixed(2).replace(".", ",");
 const ord = (n) => (n === 1 ? "1er" : n + "e");
@@ -34,11 +35,12 @@ let W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0, stars = [], planetY = 0;
 let drag = null, mouse = null, lastShown = "", runPromise = null;
 let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null;
 const pend = { x: 0, y: 0 };
+let sim = createSim();
 const S = {
-  mode: "menu", t: 0, clock: 0, next: 0.9, near: 0, shake: 0, dieT: 0, freeze: 0, splat: null,
+  mode: "menu", clock: 0, shake: 0, dieT: 0, freeze: 0, splat: null,
   newBest: false, score: 0, submit: null,
-  toast: { x: FW / 2, y: FH * 0.55, vx: 0, vy: 0, tilt: 0, thrust: 0.35 },
-  obs: [], warns: [], parts: [], pops: []
+  toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35 },
+  parts: [], pops: []
 };
 
 async function call(method, path, body) {
@@ -226,124 +228,10 @@ function resize() {
 }
 
 const planetR = () => Math.min(W, H) * 0.13;
-const speedMul = () => Math.min(2.6, 1 + S.t / 50);
 
 function rr(x, y, w, h, r) {
   if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
   else ctx.rect(x, y, w, h);
-}
-
-function edgePoint() {
-  const side = pick(["top", "top", "left", "right"]);
-  if (side === "top") return { x: rnd(20, FW - 20), y: -M };
-  if (side === "left") return { x: -M, y: rnd(20, FH * 0.6) };
-  return { x: FW + M, y: rnd(20, FH * 0.6) };
-}
-
-const inside = (p) => ({ x: clamp(p.x, 10, FW - 10), y: clamp(p.y, 10, FH - 10) });
-
-function blade(kind, x, y, vx, vy, spin) {
-  const knife = kind === "knife";
-  return { kind, x, y, vx, vy, a: Math.atan2(vy, vx), spin: spin || 0, len: knife ? 66 : 58, rad: knife ? 5 : 6, near: false };
-}
-
-function warn(x, y, a, dur, fire) {
-  S.warns.push({ x, y, a, life: dur, fire });
-}
-
-function pAimed(spinning) {
-  const p = edgePoint();
-  const v = 230 * speedMul() * rnd(0.95, 1.1);
-  const a = Math.atan2(S.toast.y + rnd(-18, 18) - p.y, S.toast.x + rnd(-18, 18) - p.x);
-  const w = inside(p);
-  const spin = spinning ? rnd(7, 10) * (Math.random() < 0.5 ? -1 : 1) : 0;
-  warn(w.x, w.y, a, 0.5, () => S.obs.push(blade("knife", p.x, p.y, Math.cos(a) * v, Math.sin(a) * v, spin)));
-  return 1;
-}
-
-function pRain() {
-  const n = 4 + Math.min(4, Math.floor(S.t / 15));
-  const v = 190 * speedMul();
-  for (let i = 0; i < n; i++) {
-    const x = rnd(16, FW - 16), dx = rnd(-25, 25);
-    warn(x, 10, Math.PI / 2, 0.45 + i * 0.14, () => S.obs.push(blade("fork", x, -M, dx, v)));
-  }
-  return 1.5;
-}
-
-function pWall() {
-  const side = pick(["left", "right", "top"]);
-  const v = 150 * speedMul();
-  const gap = 50;
-  if (side === "top") {
-    const gc = rnd(70, FW - 70);
-    for (let x = 18; x < FW; x += 36) {
-      if (Math.abs(x - gc) < gap) continue;
-      warn(x, 10, Math.PI / 2, 0.7, () => S.obs.push(blade("fork", x, -M, 0, v)));
-    }
-  } else {
-    const gc = rnd(100, FH * 0.62);
-    const dir = side === "left" ? 1 : -1;
-    const x0 = side === "left" ? -M : FW + M;
-    for (let y = 18; y < FH; y += 34) {
-      if (Math.abs(y - gc) < gap) continue;
-      warn(side === "left" ? 10 : FW - 10, y, dir > 0 ? 0 : Math.PI, 0.7, () => S.obs.push(blade("knife", x0, y, dir * v, 0)));
-    }
-  }
-  return 1.7;
-}
-
-function pFan() {
-  const p = pick([{ x: -M, y: -M }, { x: FW + M, y: -M }, { x: FW / 2, y: -M }, { x: -M, y: FH * 0.4 }, { x: FW + M, y: FH * 0.4 }]);
-  const n = 5 + Math.min(2, Math.floor((S.t - 24) / 20));
-  const spread = 0.9;
-  const v = 200 * speedMul();
-  const base = Math.atan2(S.toast.y - p.y, S.toast.x - p.x);
-  const w = inside(p);
-  warn(w.x, w.y, base, 0.6, () => {
-    for (let i = 0; i < n; i++) {
-      const a = base - spread / 2 + (spread * i) / (n - 1);
-      S.obs.push(blade("knife", p.x, p.y, Math.cos(a) * v, Math.sin(a) * v));
-    }
-  });
-  return 1.5;
-}
-
-function spawn() {
-  const t = S.t;
-  const pool = [["aimed", 3]];
-  if (t > 6) pool.push(["rain", 1.4]);
-  if (t > 14) pool.push(["wall", 1.1]);
-  if (t > 24) pool.push(["fan", 1.1]);
-  let r = Math.random() * pool.reduce((s, p) => s + p[1], 0);
-  let kind = "aimed";
-  for (const [name, weight] of pool) {
-    r -= weight;
-    if (r < 0) { kind = name; break; }
-  }
-  let cost;
-  if (kind === "rain") cost = pRain();
-  else if (kind === "wall") cost = pWall();
-  else if (kind === "fan") cost = pFan();
-  else cost = pAimed(t > 35 && Math.random() < 0.35);
-  S.next = Math.max(0.42, 1.25 - t * 0.016) * cost * rnd(0.85, 1.15);
-}
-
-function segDist2(px, py, ax, ay, bx, by) {
-  const dx = bx - ax, dy = by - ay;
-  const l2 = dx * dx + dy * dy;
-  const u = l2 ? clamp(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1) : 0;
-  const cx = ax + u * dx - px, cy = ay + u * dy - py;
-  return cx * cx + cy * cy;
-}
-
-function moveObs(dt) {
-  for (const o of S.obs) {
-    o.x += o.vx * dt;
-    o.y += o.vy * dt;
-    if (o.spin) o.a += o.spin * dt;
-  }
-  S.obs = S.obs.filter((o) => o.x > -130 && o.x < FW + 130 && o.y > -130 && o.y < FH + 130);
 }
 
 function die() {
@@ -359,7 +247,7 @@ function die() {
     S.parts.push({ x: tt.x, y: tt.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 80, r: rnd(2.5, 7), life: rnd(0.6, 1.1), c: Math.random() < 0.7 ? C.jam : C.crumb });
   }
   S.splat = Array.from({ length: 7 }, () => ({ dx: rnd(-13, 13), dy: rnd(-11, 13), r: rnd(4.5, 10) }));
-  S.score = Math.floor(S.t * 100);
+  S.score = Math.floor(sim.state.t * 100);
   S.newBest = S.score > knownBest();
   if (!registered() && S.newBest) {
     localBest = S.score;
@@ -372,7 +260,7 @@ function die() {
 
 function update(dt) {
   S.clock += dt;
-  const warp = S.mode === "play" ? 1 + (speedMul() - 1) * 1.6 : 0.5;
+  const warp = S.mode === "play" ? 1 + (speedMul(sim.state.t) - 1) * 1.6 : 0.5;
   for (const s of stars) {
     s.y += (18 + 150 * s.z) * warp * dt;
     if (s.y > H + 2) { s.y = -2; s.x = Math.random() * W; }
@@ -403,7 +291,7 @@ function update(dt) {
   }
   if (S.mode !== "play") {
     if (S.freeze > 0) { S.freeze -= dt; return; }
-    moveObs(dt);
+    sim.drift(dt);
     if (S.mode === "dying") {
       S.dieT += dt;
       if (S.dieT > 0.75) showOver();
@@ -411,38 +299,19 @@ function update(dt) {
     return;
   }
 
-  S.t += dt;
-  const nx = clamp(tt.x + pend.x, 18, FW - 18);
-  const ny = clamp(tt.y + pend.y, 22, FH - 22);
+  const px = sim.state.toast.x, py = sim.state.toast.y;
+  const events = sim.step(dt, pend.x, pend.y);
   pend.x = 0;
   pend.y = 0;
-  tt.vx = (nx - tt.x) / dt;
-  tt.vy = (ny - tt.y) / dt;
-  tt.x = nx;
-  tt.y = ny;
-  tt.tilt += (clamp(tt.vx / 900, -0.45, 0.45) - tt.tilt) * Math.min(1, dt * 14);
-  tt.thrust += (clamp(Math.hypot(tt.vx, tt.vy) / 600, 0, 1) - tt.thrust) * Math.min(1, dt * 10);
-
-  S.next -= dt;
-  if (S.next <= 0) spawn();
-  for (const w of S.warns) {
-    w.life -= dt;
-    if (w.life <= 0) w.fire();
-  }
-  S.warns = S.warns.filter((w) => w.life > 0);
-  moveObs(dt);
-
-  for (const o of S.obs) {
-    const h = o.len / 2 - o.rad;
-    const cx = Math.cos(o.a) * h, cy = Math.sin(o.a) * h;
-    const d2 = segDist2(tt.x, tt.y, o.x - cx, o.y - cy, o.x + cx, o.y + cy);
-    const hr = HIT_R + o.rad;
-    if (d2 < hr * hr) { die(); return; }
-    if (!o.near && d2 < (hr + NEAR) * (hr + NEAR)) {
-      o.near = true;
-      S.near++;
-      S.pops.push({ x: tt.x, y: tt.y - 32, text: "Frôlé !", life: 0.7 });
-    }
+  const st = sim.state.toast;
+  const vx = (st.x - px) / dt, vy = (st.y - py) / dt;
+  tt.x = st.x;
+  tt.y = st.y;
+  tt.tilt += (clamp(vx / 900, -0.45, 0.45) - tt.tilt) * Math.min(1, dt * 14);
+  tt.thrust += (clamp(Math.hypot(vx, vy) / 600, 0, 1) - tt.thrust) * Math.min(1, dt * 10);
+  for (const e of events) {
+    if (e.type === "near") S.pops.push({ x: tt.x, y: tt.y - 32, text: "Frôlé !", life: 0.7 });
+    if (e.type === "death") die();
   }
 }
 
@@ -672,8 +541,8 @@ function render() {
   ctx.beginPath();
   ctx.rect(0, 0, FW, FH);
   ctx.clip();
-  for (const w of S.warns) drawWarn(w);
-  for (const o of S.obs) {
+  for (const w of sim.state.warns) drawWarn(w);
+  for (const o of sim.state.obs) {
     if (o.kind === "knife") drawKnife(o);
     else drawFork(o);
   }
@@ -714,11 +583,9 @@ function start() {
   if (boardOpen || !ui.joinForm.hidden) return false;
   if (S.mode !== "menu" && S.mode !== "over") return false;
   if (S.mode === "over" && ui.again.disabled) return false;
-  Object.assign(S, {
-    mode: "play", t: 0, next: 0.9, near: 0, shake: 0, dieT: 0, freeze: 0, splat: null,
-    newBest: false, score: 0, submit: null, obs: [], warns: [], parts: [], pops: []
-  });
-  Object.assign(S.toast, { x: FW / 2, y: FH * 0.7, vx: 0, vy: 0, tilt: 0, thrust: 0 });
+  sim = createSim();
+  Object.assign(S, { mode: "play", shake: 0, dieT: 0, freeze: 0, splat: null, newBest: false, score: 0, submit: null, parts: [], pops: [] });
+  Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0 });
   runPromise = canCompete()
     ? call("POST", "/api/runs").catch((e) => ({ error: e.status ? e.message : "Score non compté : pas de réseau au début de la partie." }))
     : null;
@@ -862,13 +729,18 @@ function frame(now) {
   }
   render();
   if (S.mode === "play" || S.mode === "dying") {
-    const s = fmtCs(Math.floor(S.t * 100));
+    const s = fmtCs(Math.floor(sim.state.t * 100));
     if (s !== lastShown) {
       ui.time.textContent = s;
       lastShown = s;
     }
   }
   requestAnimationFrame(frame);
+}
+
+{
+  const warm = createSim();
+  for (let i = 0; i < 720; i++) warm.step(STEP, 0, 0);
 }
 
 resize();

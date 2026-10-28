@@ -2,7 +2,9 @@
 
 Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couverts, le meilleur temps de la soirée gagne une conso (bière ou soft).
 
-- `public/` : le jeu (`index.html`, `app.js`, `style.css`) et la page admin (`admin.html`)
+- `public/sim.js` : la simulation du jeu (attaques, collisions, solveur), sans affichage
+- `public/` : l'affichage du jeu (`index.html`, `app.js`, `style.css`) et la page admin (`admin.html`)
+- `test/fairness.mjs` : le robot qui vérifie qu'aucune situation n'est impossible
 - `src/worker.ts` : l'API (pseudo, parties, classement, admin)
 - `migrations/` : la base D1 (SQLite)
 
@@ -36,6 +38,12 @@ Sur `/admin` : créer la soirée avec l'heure de fin du classement. Le classemen
 - À égalité, le premier à avoir fait le temps passe devant.
 - Le serveur refuse un score plus long que le temps réellement écoulé depuis le début de la partie.
 - L'admin peut retirer un joueur du classement.
+
+## Aucune situation impossible
+
+Avant de lancer une attaque, le jeu vérifie qu'il reste au moins un chemin pour s'en sortir, en tenant compte de tous les couverts déjà en vol et annoncés. Le calcul découpe l'écran en cases de 12 px et avance par pas de 1/30 s, avec un doigt qui se déplace à environ 360 px/s au plus et une marge autour de chaque couvert. Si aucun chemin n'existe, l'attaque est remplacée par une autre.
+
+`npm test` fait jouer un robot qui suit ces chemins pendant 100 parties de 150 s. Il ne doit jamais mourir. Le test lance aussi les mêmes parties sans la vérification, pour comparer.
 
 ## Plus tard
 
