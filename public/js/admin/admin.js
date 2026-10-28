@@ -1,6 +1,6 @@
 import { store as storage, KEYS } from "../shared/store.js";
 import { fmtCs, clock } from "../shared/format.js";
-import { previewSfx } from "../app/audio.js";
+import { prepareSfx, previewSfx } from "../app/audio.js";
 
 const $ = (id) => document.getElementById(id);
 const REFRESH_MS = 10000;
@@ -316,6 +316,7 @@ setInterval(() => {
   if (me) tick();
 }, 1000);
 
+prepareSfx();
 $("sfxList").replaceChildren(...Object.entries(SFX_LABELS).map(([name, label]) => {
   const btn = cell("button", "btn ghost small", label);
   btn.type = "button";
