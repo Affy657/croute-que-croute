@@ -3,7 +3,6 @@ import { Resvg } from "@resvg/resvg-js";
 
 const toast = "M-14 21 Q-20 21 -20 15 L-20 -5.04 C-26.4 -26.04 -2.4 -29.4 0 -19.32 C2.4 -29.4 26.4 -26.04 20 -5.04 L20 15 Q20 21 14 21 Z";
 const GAME = { bg: "#0d0b24", star: "#fff6e0" };
-const ADMIN = { bg: "#ffcf33", star: "#0d0b24" };
 
 function svg(pad, theme) {
   const size = 80 + pad * 2;
@@ -13,7 +12,7 @@ function svg(pad, theme) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-40 - pad} ${-32 - pad} ${size} ${size}">
   <defs>
     <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="${theme === ADMIN ? "#e0244a" : "#ffcf33"}"/>
+      <stop offset="0" stop-color="#ffcf33"/>
       <stop offset="1" stop-color="#ff7a1a"/>
     </linearGradient>
   </defs>
@@ -40,8 +39,4 @@ render("public/icons/icon-maskable-512.png", 512, 22, GAME);
 render("public/icons/apple-touch-icon.png", 180, 10, GAME);
 writeFileSync("public/icons/icon.svg", svg(4, GAME));
 
-render("public/icons/admin-192.png", 192, 4, ADMIN);
-render("public/icons/admin-512.png", 512, 4, ADMIN);
-render("public/icons/admin-maskable-512.png", 512, 22, ADMIN);
-render("public/icons/admin-apple-touch-icon.png", 180, 10, ADMIN);
 console.log("icônes générées");

@@ -295,7 +295,7 @@ h2 {
   text-align: center;
 }
 
-.sound {
+.corner {
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 10px);
   right: max(12px, env(safe-area-inset-right, 0px));
@@ -313,7 +313,13 @@ h2 {
   touch-action: manipulation;
 }
 
-.sound svg {
+.corner.left {
+  right: auto;
+  left: max(12px, env(safe-area-inset-left, 0px));
+  color: var(--mustard);
+}
+
+.corner svg {
   width: 24px;
   height: 24px;
 }
@@ -331,7 +337,7 @@ h2 {
   color: var(--ink-dim);
 }
 
-.sound:focus-visible {
+.corner:focus-visible {
   outline: 3px solid var(--ink);
   outline-offset: 3px;
 }

@@ -16,7 +16,7 @@ const ui = {
   overStats: $("overStats"), overBestBox: $("overBestBox"), overBest: $("overBest"), overRankBox: $("overRankBox"), overRank: $("overRank"),
   again: $("again"), overBoard: $("overBoard"),
   boardEvent: $("boardEvent"), boardCountdown: $("boardCountdown"), boardList: $("boardList"),
-  boardEmpty: $("boardEmpty"), boardBack: $("boardBack"), sound: $("sound")
+  boardEmpty: $("boardEmpty"), boardBack: $("boardBack"), sound: $("sound"), adminLink: $("adminLink"), brand: $("brand")
 };
 const css = getComputedStyle(document.documentElement);
 const C = {};
@@ -147,8 +147,14 @@ function syncMusic() {
   else music.el.play().catch(() => {});
 }
 
+function isAdmin() {
+  try { return !!localStorage.getItem("cqc-admin-token"); } catch (e) { return false; }
+}
+
 function renderSound() {
-  ui.sound.hidden = !music.available || S.mode === "play" || S.mode === "dying";
+  const playing = S.mode === "play" || S.mode === "dying";
+  ui.adminLink.hidden = !isAdmin() || playing;
+  ui.sound.hidden = !music.available || playing;
   ui.sound.classList.toggle("muted", music.muted);
   ui.sound.setAttribute("aria-pressed", String(music.muted));
   ui.sound.setAttribute("aria-label", music.muted ? "Remettre la musique" : "Couper la musique");
@@ -782,6 +788,12 @@ ui.sound.addEventListener("click", () => {
   store.set("cv-muted", music.muted ? "1" : null);
   syncMusic();
   renderSound();
+});
+let brandTaps = [];
+ui.brand.addEventListener("click", () => {
+  const now = Date.now();
+  brandTaps = brandTaps.filter((t) => now - t < 3000).concat(now);
+  if (brandTaps.length >= 5) location.href = "/admin";
 });
 document.addEventListener("click", syncMusic);
 document.addEventListener("touchend", syncMusic);
