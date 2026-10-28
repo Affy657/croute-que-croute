@@ -14,19 +14,10 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 ## Le jeu en bref
 
 - On scanne le QR code, on choisit un pseudo, on joue autant qu'on veut.
-- Le doigt glisse n'importe où et la tartine suit le mouvement. Elle ne se place pas sous le doigt, donc le doigt ne la cache pas.
-- Deux autres commandes à l'essai, au choix dans Paramètres, carte « Commandes » (réglage gardé sur le téléphone, « Glisser » par défaut) :
-  - Joystick : on pose le pouce où on veut, un rond apparaît dessous, on incline et la tartine avance dans cette direction tant qu'on tient. Au repos, un rond discret en bas au centre montre où poser le pouce. Rayon 52 px, zone morte 10 %, vitesse jusqu'à 400 px/s à fond (plus que les 360 px/s du solveur, donc la garantie « toujours une issue » tient). Si le pouce sort du rond, le rond le suit, pour repartir dans l'autre sens sans délai.
-  - Pavé : le même glissement qu'aujourd'hui, avec une zone visible en bas de l'écran (24 % de la hauteur) pour y poser le doigt, et une sensibilité plus forte (1,8 au lieu de 1,15) pour traverser le terrain sans relever le doigt trop souvent. Le doigt marche aussi en dehors de la zone.
-- Score : le temps de survie, au centième.
-- Seul le meilleur temps de chaque joueur compte.
-- Le classement ferme à l'heure réglée dans l'admin, avec un compte à rebours dans le jeu.
-- « Frôlé ! » s'affiche quand un couvert passe très près. C'est un effet visuel, sans points.
-
-## Zone de jeu
-
-- Terrain fixe de 360 × 640, le même pour tout le monde, agrandi pour remplir l'écran. Aucun téléphone n'a d'avantage.
-- Zone de touche de la tartine : un cercle de 13 px de rayon, plus petit que le dessin.
+- Le doigt glisse n'importe où et la tartine suit le mouvement, 1,8 fois plus loin que le doigt. Elle ne se place pas sous le doigt, donc le doigt ne la cache pas.
+- Sous le doigt, un rond avec quatre petites flèches montre que c'est le doigt qui pilote, comme un joystick. Une onde jaune part du doigt quand on le pose.
+- Si on lève le doigt en pleine partie, un rond qui glisse de gauche à droite et « Pose ton doigt où tu veux » apparaissent en bas de l'écran. Rien de tout ça à la souris sur ordinateur.
+- Commandes testées par Adrien le 29/10/2026 : un vrai joystick (on incline, la tartine avance tant qu'on tient) était plus dur et pas agréable ; un pavé dans une zone en bas, avec le glissement plus rapide, était mieux que l'ancien glissement (1,15) mais la zone gênait. Gardé : le glissement du pavé, partout sur l'écran, avec le rond sous le doigt.
 - Rien n'arrive par le bas, car le doigt cacherait les attaques.
 - Les attaques par les côtés partent seulement des 60 % du haut.
 - Chaque attaque est annoncée 0,45 à 0,9 s avant par une pastille au bord de l'écran (depuis le 28/10/2026, à la place d'une petite flèche orange peu visible) :
@@ -241,7 +232,7 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - Police : Bungee partout, chargée depuis Google Fonts.
 - Deux boutons ronds, cachés pendant la partie et dans la page d'info : la note de musique en haut à gauche coupe ou remet la musique, le haut-parleur en haut à droite coupe ou remet les bruitages. Chaque choix est mémorisé sur le téléphone.
 - Bouton rond Paramètres (roue crantée) en bas à gauche de l'accueil et de la fin de partie, pour tout le monde. Les boutons du bas sont posés dans les coins, hors de la mise en page : ils ne décalent rien.
-- Paramètres : « Commandes » (Glisser, Joystick ou Pavé, voir plus haut), « Installer le jeu » (bouton Installer quand le navigateur le permet, sinon la marche à suivre ; la carte disparaît quand le jeu est ouvert depuis l'appli installée) et « Partager le jeu » (« Partager le lien » ouvre le partage du téléphone, ou copie le lien sur ordinateur ; « QR code » l'affiche en grand pour le faire scanner à un voisin). Les téléphones connectés en admin ont en plus un onglet Admin avec le lien vers le tableau de bord.
+- Paramètres : « Installer le jeu » (bouton Installer quand le navigateur le permet, sinon la marche à suivre ; la carte disparaît quand le jeu est ouvert depuis l'appli installée) et « Partager le jeu » (« Partager le lien » ouvre le partage du téléphone, ou copie le lien sur ordinateur ; « QR code » l'affiche en grand pour le faire scanner à un voisin). Les téléphones connectés en admin ont en plus un onglet Admin avec le lien vers le tableau de bord.
 - Pop-up « Installe le jeu » : une seule fois par téléphone, sur l'accueil, une fois le pseudo choisi. Sur Android, bouton Installer ; sur iPhone, la marche à suivre (pas de bouton possible). Jamais si le jeu est déjà installé.
 
 ## Musique
@@ -379,7 +370,7 @@ Après :
 | `public/js/app/api.js` | Appels au serveur, classement, mise à jour de version |
 | `public/js/app/audio.js` | Musique, bruitages et leurs volumes |
 | `public/sfx/` | Bruitages Mixkit |
-| `public/js/app/input.js` | Commandes : glisser, joystick, pavé, souris |
+| `public/js/app/input.js` | Glisser du doigt et souris (le rond sous le doigt est dessiné par `scene.js`) |
 | `public/js/shared/` | Stockage du téléphone, formats et couleurs (`palette.js`, avec les tartinades), partagés avec l'admin |
 | `public/js/admin/admin.js`, `public/admin.html`, `admin.css` | Tableau de bord admin |
 | `public/js/app/catalog.js`, `public/catalog.css` | Pages Attaques, Armes et Crédits de la bulle d'info |
@@ -435,12 +426,6 @@ Après :
 
 ## À brainstormer
 
-- Joystick transparent (idée d'Adrien, POC en test depuis le 29/10/2026 : Paramètres, carte « Commandes », voir « Le jeu ») : un joystick discret en bas de l'écran pour piloter la tartine, pour ne plus avoir le doigt posé dessus au milieu de l'écran.
-  - Aujourd'hui, le doigt peut déjà glisser n'importe où (la tartine suit le mouvement sans se mettre sous le doigt), mais rien ne le montre, donc on pose naturellement le doigt sur la tartine.
-  - Deux variantes à essayer : un vrai joystick (on incline, la tartine avance dans cette direction tant qu'on tient) ou un pavé tactile visible (même glissement qu'aujourd'hui, mais dans une zone en bas).
-  - Équité : le solveur suppose que la tartine peut aller à 360 px/s. Un joystick à fond doit aller au moins aussi vite, sinon la garantie « toujours une issue » tombe.
-  - À comparer en jouant : précision dans les passages serrés, réaction aux annonces, confort pour les gauchers (joystick à gauche ou à droite).
-  - Ensuite : garder une seule commande, ou laisser le choix aux joueurs. Réglages à ajuster selon le ressenti : vitesse et taille du joystick, hauteur et sensibilité du pavé.
 - Deuxième phase après 80 s (idée d'Adrien, pas prioritaire : atteindre 80 s est déjà très dur pour un humain) :
   - « Roundabout » commence à se calmer entre 75 et 80 s, pile quand la complexification s'arrête.
   - Si on veut prolonger la montée : passer en « mode sérieux » à 80 s, avec une deuxième musique qui pousse encore plus, une DA qui change un peu, et des attaques qui varient ou se durcissent.
