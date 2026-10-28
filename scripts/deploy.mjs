@@ -10,5 +10,5 @@ try {
   execSync(`npx wrangler deploy --var APP_VERSION:${version}`, { stdio: "inherit" });
   console.log(`Version en ligne : ${version}`);
 } finally {
-  writeFileSync(file, 'export const VERSION = "dev";\n');
+  execSync(`git checkout -- ${file}`);
 }
