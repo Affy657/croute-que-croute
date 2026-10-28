@@ -1,15 +1,16 @@
 import { FW, FH, HIT_R, NEAR, OUT, X_MIN, X_MAX, Y_MIN, Y_MAX, clamp, segDist2 } from "./field.js";
 import { pickAttack } from "./attacks.js";
+import { moveProjectile } from "./projectiles.js";
 import { solve } from "./solver.js";
 
-const TRIES = 5;
+const TRIES = 5, REACT = 0.1;
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
-export function createSim(rng = Math.random, { fair = true } = {}) {
+export function createSim(rng = Math.random, { fair = true, react = REACT } = {}) {
   const rnd = (a, b) => a + rng() * (b - a);
   const pick = (arr) => arr[Math.floor(rng() * arr.length)];
   const state = {
-    t: 0, next: 0.9, tries: 0, near: 0, dead: false,
+    t: 0, next: 0.9, tries: 0, near: 0, dead: false, last: null, streak: 0,
     toast: { x: FW / 2, y: FH * 0.7 },
     obs: [], warns: [],
     stats: { spawned: 0, rejected: 0, impossible: 0, solves: 0, solveMs: 0, solveMax: 0 }
@@ -17,7 +18,7 @@ export function createSim(rng = Math.random, { fair = true } = {}) {
 
   function solveTimed(extra) {
     const t0 = now();
-    const ok = solve(state, extra, false);
+    const ok = solve(state, extra, false, react);
     const ms = now() - t0;
     state.stats.solves++;
     state.stats.solveMs += ms;
@@ -27,7 +28,7 @@ export function createSim(rng = Math.random, { fair = true } = {}) {
 
   function spawn() {
     const t = state.t;
-    const attack = pickAttack(t, rng);
+    const attack = pickAttack(t, rng, state.last, state.streak);
     const items = attack.make({ t, toast: state.toast, rng, rnd, pick });
     const ok = solveTimed(items);
     if (ok || !fair) {
@@ -35,6 +36,8 @@ export function createSim(rng = Math.random, { fair = true } = {}) {
       state.warns.push(...items);
       state.stats.spawned++;
       state.tries = 0;
+      state.streak = attack.id === state.last ? state.streak + 1 : 1;
+      state.last = attack.id;
       state.next = Math.max(0.42, 1.25 - t * 0.016) * attack.cost * rnd(0.85, 1.15);
       return;
     }
@@ -45,11 +48,7 @@ export function createSim(rng = Math.random, { fair = true } = {}) {
   }
 
   function moveObs(dt) {
-    for (const o of state.obs) {
-      o.x += o.vx * dt;
-      o.y += o.vy * dt;
-      if (o.spin) o.a += o.spin * dt;
-    }
+    for (const o of state.obs) moveProjectile(o, dt);
     state.obs = state.obs.filter((o) => o.x > -OUT && o.x < FW + OUT && o.y > -OUT && o.y < FH + OUT);
   }
 

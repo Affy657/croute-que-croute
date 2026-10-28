@@ -1,11 +1,4 @@
-const COLOR_NAMES = ["void", "field", "frame", "planet", "planet-shade", "mustard", "flame", "jam", "crust", "crumb", "butter", "steel", "steel-dark", "handle", "ink"];
-
-export function readColors() {
-  const css = getComputedStyle(document.documentElement);
-  const C = {};
-  for (const k of COLOR_NAMES) C[k] = css.getPropertyValue("--" + k).trim();
-  return C;
-}
+import { PALETTE, SPREADS } from "../shared/palette.js";
 
 export function rr(ctx, x, y, w, h, r) {
   if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
@@ -31,14 +24,37 @@ function knife(ctx, o, C) {
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
-  ctx.fillStyle = C.butter;
-  ctx.beginPath();
-  ctx.ellipse(L / 2 - 15, 1.5, 7, 2.6, 0.05, 0, Math.PI * 2);
-  ctx.fill();
+  spreadOn(ctx, L / 2 - 15, 1.5, o.spread);
   ctx.fillStyle = C["steel-dark"];
   for (const rx of [hx + 7, hx + 15]) {
     ctx.beginPath();
     ctx.arc(rx, 0, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function spreadOn(ctx, x, y, kind) {
+  const spread = SPREADS[kind || "butter"];
+  ctx.fillStyle = spread.color;
+  ctx.beginPath();
+  ctx.ellipse(x, y, 7, 2.6, 0.05, 0, Math.PI * 2);
+  ctx.fill();
+  if (!kind) return;
+  ctx.fillStyle = spread.shine;
+  ctx.beginPath();
+  ctx.ellipse(x - 2, y - 0.8, 3, 0.9, 0.05, 0, Math.PI * 2);
+  ctx.fill();
+  if (spread.bits) {
+    for (const [dx, dy] of [[-4, 1], [1.5, 1.2], [4.5, 0.2]]) {
+      ctx.beginPath();
+      ctx.arc(x + dx, y + dy, 0.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  if (spread.drip) {
+    ctx.fillStyle = spread.color;
+    ctx.beginPath();
+    ctx.ellipse(x + 2, y + 4, 1.5, 2.4, 0, 0, Math.PI * 2);
     ctx.fill();
   }
 }
@@ -75,9 +91,116 @@ function fork(ctx, o, C) {
   ctx.stroke();
 }
 
-const PROJECTILE_SPRITES = { knife, fork };
+function rolling(ctx, o, C) {
+  const L = o.len, r = o.rad, body = L - 26;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = C.void;
+  ctx.fillStyle = C["wood-dark"];
+  for (const hx of [-L / 2, L / 2 - 14]) {
+    ctx.beginPath();
+    rr(ctx, hx, -4, 14, 8, 4);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.fillStyle = C.wood;
+  ctx.beginPath();
+  rr(ctx, -body / 2, -r, body, 2 * r, 6);
+  ctx.fill();
+  ctx.stroke();
+  const roll = (((o.x + o.y) * 0.3) % 7 + 7) % 7;
+  ctx.strokeStyle = C["wood-dark"];
+  ctx.lineWidth = 1.2;
+  for (let y = -r + roll; y < r - 1; y += 7) {
+    ctx.beginPath();
+    ctx.moveTo(-body / 2 + 5, y);
+    ctx.lineTo(body / 2 - 5, y);
+    ctx.stroke();
+  }
+}
 
-export function drawProjectile(ctx, o, C) {
+function whisk(ctx, o, C) {
+  const L = o.len, hx = -L / 2, head = L - 26, cx = hx + 26 + head / 2;
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = C.void;
+  ctx.lineWidth = 2;
+  ctx.fillStyle = C.handle;
+  ctx.beginPath();
+  rr(ctx, hx, -4, 22, 8, 4);
+  ctx.fill();
+  ctx.stroke();
+  for (const [width, color] of [[3.4, C.void], [1.6, C.steel]]) {
+    ctx.lineWidth = width;
+    ctx.strokeStyle = color;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.ellipse(cx, 0, head / 2, 2 + i * 2.3, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+  ctx.fillStyle = C.steel;
+  ctx.strokeStyle = C.void;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  rr(ctx, hx + 20, -3.5, 7, 7, 2);
+  ctx.fill();
+  ctx.stroke();
+}
+
+function cleaver(ctx, o, C) {
+  const L = o.len, hx = -L / 2, bx = hx + 18;
+  ctx.lineJoin = "round";
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = C.void;
+  ctx.fillStyle = C.handle;
+  ctx.beginPath();
+  rr(ctx, hx, -3.5, 21, 7, 3.5);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = C.steel;
+  ctx.beginPath();
+  rr(ctx, bx, -12, L / 2 - bx, 24, 3);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#f4f6fb";
+  ctx.fillRect(L / 2 - 5, -10.5, 3.5, 21);
+  ctx.fillStyle = C.void;
+  ctx.beginPath();
+  ctx.arc(bx + 7, -6, 2.6, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function bread(ctx, o, C) {
+  const L = o.len, hx = -L / 2, bx = hx + 24, tip = L / 2;
+  ctx.lineJoin = "round";
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = C.void;
+  ctx.fillStyle = C.handle;
+  ctx.beginPath();
+  rr(ctx, hx, -4.5, 25, 9, 4);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = C.steel;
+  ctx.beginPath();
+  ctx.moveTo(bx, -4.5);
+  ctx.lineTo(tip - 5, -4.5);
+  ctx.quadraticCurveTo(tip + 1, -4, tip, 2);
+  let x = tip - 3;
+  ctx.lineTo(x, 4.5);
+  while (x - 4 > bx) {
+    ctx.lineTo(x - 2, 2.6);
+    ctx.lineTo(x - 4, 4.5);
+    x -= 4;
+  }
+  ctx.lineTo(bx, 4.5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+const PROJECTILE_SPRITES = { knife, fork, rolling, whisk, cleaver, bread };
+
+export function drawProjectile(ctx, o, C = PALETTE) {
   ctx.save();
   ctx.translate(o.x, o.y);
   ctx.rotate(o.a);
@@ -85,7 +208,7 @@ export function drawProjectile(ctx, o, C) {
   ctx.restore();
 }
 
-export function drawWarn(ctx, w, clock, C) {
+export function drawWarn(ctx, w, clock, C = PALETTE) {
   ctx.save();
   ctx.translate(w.x, w.y);
   ctx.rotate(w.a);
@@ -137,7 +260,7 @@ function thrusters(ctx, t, w, h, C) {
   }
 }
 
-export function drawToast(ctx, t, splat, C) {
+export function drawToast(ctx, t, splat, C = PALETTE) {
   const w = 40, h = 42;
   ctx.save();
   ctx.translate(t.x, t.y);

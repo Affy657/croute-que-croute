@@ -55,72 +55,83 @@
   </section>
 
   <div id="app" class="stack" hidden>
-    <section class="card">
-      <p class="eyebrow">Soirée en cours</p>
-      <h2 id="eventName">Aucune soirée</h2>
-      <p id="eventEnd" class="sub"></p>
-      <div class="stats">
-        <p class="stat"><span class="label">Joueurs</span><span id="statPlayers" class="value">0</span></p>
-        <p class="stat"><span class="label">Parties</span><span id="statRuns" class="value">0</span></p>
-        <p class="stat"><span class="label">Record</span><span id="statBest" class="value">-</span></p>
-      </div>
-      <div class="row">
-        <button id="editEndBtn" class="btn ghost" type="button">Heure de fin</button>
-        <button id="newEventBtn" class="btn ghost" type="button">Nouvelle soirée</button>
-      </div>
-      <form id="endForm" class="form" hidden>
-        <label for="endAt">Fin du classement</label>
-        <input id="endAt" type="datetime-local" required>
-        <button class="btn" type="submit">Enregistrer</button>
-      </form>
-      <form id="eventForm" class="form" hidden>
-        <label for="eventNameInput">Nom de la soirée</label>
-        <input id="eventNameInput" maxlength="60" placeholder="Space Tartinade #3" required>
-        <label for="eventEndInput">Fin du classement</label>
-        <input id="eventEndInput" type="datetime-local" required>
-        <button class="btn danger" type="submit">Créer, le classement repart de zéro</button>
-      </form>
-      <p id="eventMsg" class="msg" hidden></p>
-    </section>
+    <nav class="tabs" role="tablist">
+      <button class="tab" type="button" role="tab" data-tab="party" aria-selected="true">Soirée</button>
+      <button class="tab" type="button" role="tab" data-tab="weapons" aria-selected="false">Armes</button>
+      <button class="tab" type="button" role="tab" data-tab="attacks" aria-selected="false">Attaques</button>
+    </nav>
 
-    <section class="card">
-      <h2>Classement</h2>
-      <ol id="players" class="list"></ol>
-      <p id="playersEmpty" class="hint" hidden>Aucun joueur pour l'instant.</p>
-      <p id="playersMsg" class="msg" hidden></p>
-    </section>
-
-    <section id="teamCard" class="card" hidden>
-      <h2>Équipe</h2>
-      <ul id="team" class="list"></ul>
-      <form id="inviteForm" class="form">
-        <label for="inviteName">Prénom</label>
-        <input id="inviteName" maxlength="30" required>
-        <label for="inviteRole">Rôle</label>
-        <select id="inviteRole">
-          <option value="admin">Admin : soirées et joueurs</option>
-          <option value="owner">Propriétaire : gère aussi l'équipe</option>
-        </select>
-        <button class="btn" type="submit">Créer un lien d'invitation</button>
-      </form>
-      <div id="inviteResult" class="form" hidden>
-        <p class="sub">Lien à usage unique, valable 48 h. Envoie-le à la personne.</p>
-        <input id="inviteUrl" readonly aria-label="Lien d'invitation">
-        <div class="row">
-          <button id="copyBtn" class="btn ghost" type="button">Copier</button>
-          <button id="shareBtn" class="btn ghost" type="button" hidden>Partager</button>
+    <div id="tab-party" class="stack" role="tabpanel">
+      <section class="card">
+        <p class="eyebrow">Soirée en cours</p>
+        <h2 id="eventName">Aucune soirée</h2>
+        <p id="eventEnd" class="sub"></p>
+        <div class="stats">
+          <p class="stat"><span class="label">Joueurs</span><span id="statPlayers" class="value">0</span></p>
+          <p class="stat"><span class="label">Parties</span><span id="statRuns" class="value">0</span></p>
+          <p class="stat"><span class="label">Record</span><span id="statBest" class="value">-</span></p>
         </div>
-      </div>
-      <p id="teamMsg" class="msg" hidden></p>
-    </section>
+        <div class="row">
+          <button id="editEndBtn" class="btn ghost" type="button">Heure de fin</button>
+          <button id="newEventBtn" class="btn ghost" type="button">Nouvelle soirée</button>
+        </div>
+        <form id="endForm" class="form" hidden>
+          <label for="endAt">Fin du classement</label>
+          <input id="endAt" type="datetime-local" required>
+          <button class="btn" type="submit">Enregistrer</button>
+        </form>
+        <form id="eventForm" class="form" hidden>
+          <label for="eventNameInput">Nom de la soirée</label>
+          <input id="eventNameInput" maxlength="60" placeholder="Space Tartinade #3" required>
+          <label for="eventEndInput">Fin du classement</label>
+          <input id="eventEndInput" type="datetime-local" required>
+          <button class="btn danger" type="submit">Créer, le classement repart de zéro</button>
+        </form>
+        <p id="eventMsg" class="msg" hidden></p>
+      </section>
 
-    <section class="card">
-      <h2>Bruitages</h2>
-      <p class="sub">Pour écouter les sons du jeu.</p>
-      <div id="sfxList" class="row"></div>
-    </section>
+      <section class="card">
+        <h2>Classement</h2>
+        <ol id="players" class="list"></ol>
+        <p id="playersEmpty" class="hint" hidden>Aucun joueur pour l'instant.</p>
+        <p id="playersMsg" class="msg" hidden></p>
+      </section>
 
-    <button id="logoutBtn" class="btn ghost" type="button">Se déconnecter</button>
+      <section id="teamCard" class="card" hidden>
+        <h2>Équipe</h2>
+        <ul id="team" class="list"></ul>
+        <form id="inviteForm" class="form">
+          <label for="inviteName">Prénom</label>
+          <input id="inviteName" maxlength="30" required>
+          <label for="inviteRole">Rôle</label>
+          <select id="inviteRole">
+            <option value="admin">Admin : soirées et joueurs</option>
+            <option value="owner">Propriétaire : gère aussi l'équipe</option>
+          </select>
+          <button class="btn" type="submit">Créer un lien d'invitation</button>
+        </form>
+        <div id="inviteResult" class="form" hidden>
+          <p class="sub">Lien à usage unique, valable 48 h. Envoie-le à la personne.</p>
+          <input id="inviteUrl" readonly aria-label="Lien d'invitation">
+          <div class="row">
+            <button id="copyBtn" class="btn ghost" type="button">Copier</button>
+            <button id="shareBtn" class="btn ghost" type="button" hidden>Partager</button>
+          </div>
+        </div>
+        <p id="teamMsg" class="msg" hidden></p>
+      </section>
+
+      <section class="card">
+        <h2>Bruitages</h2>
+        <p class="sub">Pour écouter les sons du jeu.</p>
+        <div id="sfxList" class="row"></div>
+      </section>
+
+      <button id="logoutBtn" class="btn ghost" type="button">Se déconnecter</button>
+    </div>
+
+    <div id="tab-weapons" class="stack" role="tabpanel" hidden></div>
+    <div id="tab-attacks" class="stack" role="tabpanel" hidden></div>
   </div>
 </main>
 <script type="module" src="/js/admin/admin.js"></script>

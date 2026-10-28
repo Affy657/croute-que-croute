@@ -1,12 +1,13 @@
 import { FW, FH, clamp } from "../game/field.js";
-import { readColors, drawProjectile, drawWarn, drawToast } from "./sprites.js";
+import { PALETTE } from "../shared/palette.js";
+import { drawProjectile, drawWarn, drawToast } from "./sprites.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const POP_LIFE = 0.7;
 
 export function createScene(canvas) {
   const ctx = canvas.getContext("2d");
-  const C = readColors();
+  const C = PALETTE;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const view = { W: 0, H: 0, dpr: 1, scale: 1, ox: 0, oy: 0 };
   let stars = [], planetY = 0, shake = 0, parts = [], pops = [];
