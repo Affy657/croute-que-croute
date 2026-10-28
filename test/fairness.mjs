@@ -1,4 +1,5 @@
-import { createSim, STEP, FW, FH } from "../public/sim.js";
+import { createSim } from "../public/js/game/sim.js";
+import { STEP, FW, FH } from "../public/js/game/field.js";
 
 const GAMES = Number(process.argv[2]) || 100;
 const LIMIT = Number(process.argv[3]) || 120;

@@ -264,6 +264,22 @@ h2 {
   color: var(--ink);
 }
 
+.admin-link {
+  padding: 0.5em 1.1em;
+  border: 2px solid var(--row);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  color: var(--ink-dim);
+  text-decoration: none;
+  touch-action: manipulation;
+}
+
+.admin-link:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
 .score {
   font-size: clamp(3.4rem, 17vw, 5.4rem);
   line-height: 1;
@@ -316,7 +332,6 @@ h2 {
 .corner.left {
   right: auto;
   left: max(12px, env(safe-area-inset-left, 0px));
-  color: var(--mustard);
 }
 
 .corner svg {
@@ -324,17 +339,22 @@ h2 {
   height: 24px;
 }
 
-.sound .off,
-.sound.muted .on {
+.toggle .off,
+.toggle.muted .on {
   display: none;
 }
 
-.sound.muted .off {
+.toggle.muted .off {
   display: inline;
 }
 
-.sound.muted {
+.toggle .halo {
+  stroke: var(--void);
+}
+
+.toggle.muted {
   color: var(--ink-dim);
+  border-style: dashed;
 }
 
 .corner:focus-visible {

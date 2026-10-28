@@ -10,7 +10,8 @@
     "icons": "node scripts/icons.mjs",
     "types": "wrangler types",
     "check": "tsc --noEmit",
-    "test": "node test/fairness.mjs 100 150"
+    "test": "node test/fairness.mjs 100 150",
+    "test:api": "node test/player.mjs && node test/admin.mjs"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",

@@ -134,7 +134,8 @@ Repères mesurés avec des robots :
 - Classement : top 50, ta ligne en jaune, mis à jour toutes les 10 s.
 - Après la fermeture : on peut encore jouer pour s'entraîner, et l'accueil félicite le premier.
 - Police : Bungee partout, chargée depuis Google Fonts.
-- Bouton haut-parleur en haut à droite (accueil, fin de partie, classement) pour couper ou remettre la musique. Caché pendant la partie et tant qu'il n'y a pas de musique.
+- Deux boutons ronds, cachés pendant la partie : la note de musique en haut à gauche coupe ou remet la musique, le haut-parleur en haut à droite coupe ou remet les bruitages. Chaque choix est mémorisé sur le téléphone.
+- Bouton « Admin » discret en bas de l'accueil, seulement sur les téléphones connectés en admin.
 
 ## Musique
 
@@ -142,16 +143,26 @@ Repères mesurés avec des robots :
 - En prod : « Roundabout » de Blacklolita (M4A, 3 min 57, 3,8 Mo), choisi par Adrien en attendant les morceaux des collègues.
 - Le fichier n'est pas dans git (droits et poids) : il est seulement dans `public/music/` sur le PC. À remettre là avant un déploiement depuis un autre ordinateur.
 - Changer de musique : remplacer `public/music/theme.m4a`, puis `npm run deploy`.
-- Elle démarre au premier appui sur l'écran (règle des navigateurs), tourne en boucle et se met en pause quand l'appli passe en arrière-plan.
-- Le choix « musique coupée » est mémorisé sur le téléphone.
+- Elle ne joue que pendant une partie : elle repart du début à chaque partie, pour que la montée du morceau suive la montée de la difficulté, et s'arrête en fondu à la mort. Silence sur l'accueil et l'écran de fin.
+- Le bouton musique ne lance rien : il mémorise seulement le choix pour les prochaines parties.
+- Si le morceau prend du retard sur la partie (réseau lent, téléphone qui rame), le jeu le recale dès que l'écart dépasse 0,35 s.
+- Les navigateurs bloquent le son tant qu'on n'a pas touché l'écran. Le premier appui prépare la musique en silence. Si le téléphone bloque quand même au lancement, la musique démarre au premier lever de doigt, calée sur le temps de la partie.
+- Elle se met en pause quand l'appli passe en arrière-plan.
 - Droits : diffuser un morceau dans une appli publique demande l'accord de l'artiste ou du label. Le plus simple : demander à Blacklolita, ou prendre un morceau d'un DJ du collectif.
 - Poids : viser moins de 5 Mo (MP3 à 128 kb/s) pour le réseau du lieu.
+
+## Bruitages
+
+- Le moteur est prêt (`public/js/app/audio.js`) mais aucun son n'est encore branché : la liste `SOUNDS` est vide.
+- Moments déjà prévus dans le code : `start` (départ), `near` (frôlé), `death` (mort), `record` (nouveau record en fin de partie).
+- Ajouter un son : déposer le fichier dans `public/sfx/` et l'ajouter à `SOUNDS`, par exemple `record: "/sfx/record.mp3"`.
+- Coupés par le bouton haut-parleur, indépendamment de la musique.
 
 ## PWA et mises à jour
 
 - Le jeu s'installe comme une appli : sur Android, bannière ou menu « Installer » ; sur iPhone, Partager puis « Sur l'écran d'accueil ».
 - Service worker : il passe toujours par le réseau d'abord et garde une copie en secours, donc le jeu s'ouvre même sans réseau s'il a déjà été ouvert une fois.
-- Chaque `npm run deploy` crée une version (date + commit), écrite dans `public/version.js` et donnée au serveur.
+- Chaque `npm run deploy` crée une version (date + commit), écrite dans `public/js/version.js` et donnée au serveur.
 - Le jeu compare sa version à celle du serveur à l'ouverture, au retour dans l'appli et toutes les 30 s sur l'accueil. Si elle a changé, il se recharge tout seul, jamais en pleine partie.
 - Le serveur refuse l'inscription et le début de partie d'une ancienne version (erreur 426), et le jeu se recharge aussitôt.
 - Garde-fou : un seul rechargement automatique toutes les 15 s au plus.
@@ -159,7 +170,7 @@ Repères mesurés avec des robots :
 
 ## Admin
 
-- Même appli que le jeu : une seule installation. Un téléphone connecté en admin voit une couronne en haut à gauche de l'accueil, qui ouvre le tableau de bord. « Retour au jeu » ramène au jeu.
+- Même appli que le jeu : une seule installation. Un téléphone connecté en admin voit un bouton « Admin » en bas de l'accueil, qui ouvre le tableau de bord. « Retour au jeu » ramène au jeu.
 - Accès caché : 5 appuis rapides sur « Collectif Tartine Sauvage » ouvrent l'écran admin.
 - Connexion sans mot de passe, le téléphone reste connecté.
 - Dans l'appli installée (surtout sur iPhone, où les liens s'ouvrent dans Safari), on peut coller le lien d'invitation dans « Lien d'invitation reçu ».
@@ -169,21 +180,26 @@ Repères mesurés avec des robots :
 - Chaque téléphone connecté apparaît dans « Équipe » et peut être retiré : il est déconnecté aussitôt.
 - On ne peut pas retirer le dernier propriétaire.
 - Tableau de bord : soirée en cours, fin du classement avec compte à rebours, joueurs, parties, record, classement mis à jour toutes les 10 s, bouton pour retirer un tricheur.
+- « Record à vérifier » (trait rouge) : le record a pris nettement plus de temps réel que le score (plus de 15 % et 15 s d'écart). Signe d'un jeu ralenti exprès, ou d'une appli mise en arrière-plan en pleine partie.
+- Une nouvelle soirée ne peut être créée qu'une fois la précédente fermée : avancer d'abord son heure de fin à maintenant. Ça évite d'effacer le classement en pleine soirée par erreur.
 - Les liens et les connexions sont stockés chiffrés (empreinte SHA-256) en base.
 
 ## Classement et triche
 
 - Pseudo de 2 à 16 caractères, unique par soirée (majuscules, accents et espaces ignorés).
 - À égalité, le premier à avoir fait le temps passe devant.
-- Le serveur refuse un score plus long que le temps réellement écoulé depuis le début de la partie (avec 0,5 s de marge).
-- Pas de compte : le téléphone garde un jeton. Changer de navigateur oblige à prendre un nouveau pseudo.
-- Faille connue : quelqu'un d'habile peut lancer une partie, attendre, puis envoyer un faux score plausible. Parade : repérer les temps louches dans l'admin et retirer le joueur.
+- Pseudo en lettres latines (accents permis), chiffres, espaces, tirets : les sosies avec des lettres cyrilliques ou grecques sont refusés.
+- Le serveur refuse un score plus long que le temps réellement écoulé depuis le début de la partie (5 s de marge pour les réseaux lents), et tout score au-delà de 15 min.
+- Un score renvoyé deux fois (réseau qui coupe) est compté une seule fois, sans message d'erreur.
+- Pas de compte : le téléphone garde un jeton. Le même téléphone qui reprend son pseudo retrouve son compte. Un autre navigateur (Safari puis appli installée sur iPhone) oblige à prendre un nouveau pseudo.
+- Limites contre les abus : 30 inscriptions par minute et par adresse IP (tout le lieu partage souvent la même), 10 débuts de partie par 10 s et par joueur.
+- Faille connue : quelqu'un d'habile peut lancer une partie, attendre, puis envoyer un faux score plausible. Parade actuelle : repérer les temps louches dans l'admin et retirer le joueur. Parade complète possible : rejouer la partie à partir des gestes enregistrés (voir « À faire »).
 
 ## Check-list d'une soirée
 
 Avant :
 
-- Dans Croûte Admin, « Nouvelle soirée » : nom et heure de fin. Le classement repart de zéro.
+- Dans le tableau de bord, fermer la soirée précédente (heure de fin à maintenant), puis « Nouvelle soirée » : nom et heure de fin. Le classement repart de zéro.
 - Imprimer le QR code pour les tables, le bar et l'écran si le lieu en a un.
 - Faire une partie depuis le QR code pour vérifier.
 
@@ -200,24 +216,43 @@ Après :
 
 - Hébergement : Cloudflare, offre gratuite, compte d'Adrien. Coût : 0 €.
 - Workers pour le site et l'API, base D1 (SQLite) en Europe de l'Ouest.
-- Limite gratuite : 100 000 requêtes par jour. Une soirée de 150 joueurs en fait environ 20 000.
+- Limites gratuites par jour : 100 000 requêtes, 5 millions de lignes lues et 100 000 lignes écrites en base. Au-delà, l'API répond en erreur jusqu'à 1 h du matin (minuit UTC).
+- Pour tenir ces limites : le classement est gardé 5 s en mémoire par le serveur, chaque joueur garde son nombre de parties (pas de comptage sur toutes les parties), et chaque requête passe par un index. Une partie coûte environ 5 lignes écrites, une consultation du classement 2 lignes lues.
+- En-têtes de sécurité sur toutes les pages (`public/_headers`) : pas de script externe, pas d'affichage dans un cadre d'un autre site.
 - Jeu en JavaScript sans compilation, API en TypeScript (compilée par wrangler).
 
 | Fichier | Rôle |
 |---|---|
-| `public/sw.js`, `public/manifest.webmanifest` | PWA : service worker et manifeste |
-| `public/version.js` | Version du jeu, réécrite à chaque déploiement |
+| `public/index.html`, `style.css` | Écrans et style du jeu |
+| `public/js/game/` | Le jeu sans affichage, partagé par le navigateur et les tests |
+| `public/js/game/field.js` | Taille du terrain, hitbox, vitesse selon le temps |
+| `public/js/game/projectiles.js` | Catalogue des projectiles (taille de chaque ustensile) |
+| `public/js/game/attacks.js` | Catalogue des attaques : apparition, poids, durée, trajectoires |
+| `public/js/game/solver.js` | Solveur d'équité |
+| `public/js/game/sim.js` | Boucle de jeu : lancement des attaques, collisions, frôlements |
+| `public/js/app/main.js` | Chef d'orchestre : états (accueil, partie, fin, classement), boucle d'affichage |
+| `public/js/app/scene.js` | Dessin du fond, du terrain et des effets |
+| `public/js/app/sprites.js` | Dessin de la tartine et de chaque projectile |
+| `public/js/app/screens.js` | Écrans HTML : accueil, fin, classement, boutons |
+| `public/js/app/api.js` | Appels au serveur, classement, mise à jour de version |
+| `public/js/app/audio.js` | Musique et bruitages |
+| `public/js/app/input.js` | Glisser du doigt et souris |
+| `public/js/shared/` | Stockage du téléphone et formats, partagés avec l'admin |
+| `public/js/admin/admin.js`, `public/admin.html`, `admin.css` | Tableau de bord admin |
+| `public/js/version.js` | Version du jeu, réécrite à chaque déploiement |
+| `public/sw.js`, `manifest.webmanifest` | PWA : service worker et manifeste |
+| `public/_headers` | En-têtes de sécurité des pages |
 | `public/icons/` | Icônes de l'appli, générées par `npm run icons` |
 | `public/music/` | Musique (`theme.m4a`, hors git) |
-| `scripts/deploy.mjs` | Déploiement avec numéro de version |
-| `public/sim.js` | Simulation : attaques, collisions, solveur. Sans affichage, partagée par le jeu et le test |
-| `public/app.js` | Affichage, écrans, appels à l'API |
-| `public/index.html`, `public/style.css` | Écrans et style |
-| `public/admin.html`, `admin.js`, `admin.css` | Tableau de bord admin |
-| `test/admin.mjs` | Test de l'API admin (invitations, rôles, retrait) |
-| `src/worker.ts` | API : pseudo, parties, classement, admin |
+| `src/worker.ts` | Entrée de l'API et liste des routes |
+| `src/routes/player.ts`, `src/routes/admin.ts` | Routes joueurs et admin |
+| `src/router.ts` | Aiguillage des routes et contrôle admin / propriétaire |
+| `src/db.ts` | Lectures communes et classement gardé 5 s en mémoire |
+| `src/http.ts`, `security.ts`, `validate.ts` | Réponses, limites de requêtes, jetons, contrôle des pseudos |
 | `migrations/` | Schéma de la base |
+| `scripts/deploy.mjs` | Déploiement avec numéro de version |
 | `test/fairness.mjs` | Test du solveur avec le robot |
+| `test/player.mjs`, `test/admin.mjs` | Tests de l'API joueurs et admin |
 | `qr/` | QR codes |
 
 | Commande | À quoi ça sert |
@@ -229,8 +264,17 @@ Après :
 | `npm run check` | Vérifier les types de l'API |
 | `npm run deploy` | Mettre en ligne avec une nouvelle version (les téléphones se mettent à jour seuls) |
 | `npm run icons` | Regénérer les icônes de l'appli |
-| `node test/admin.mjs` | Tester l'API admin (avec `npm run dev` lancé) |
+| `npm run test:api` | Tester l'API joueurs et admin (avec `npm run dev` lancé) |
 | `npm run db:remote` | Appliquer une nouvelle migration sur la base en ligne |
+
+## Ajouter du contenu
+
+- Nouvelle attaque : une fonction dans `attacks.js` qui renvoie ses avertissements et projectiles, puis une ligne dans `ATTACKS` (à partir de quand, poids, durée). Le solveur la vérifie tout seul.
+- Nouveau projectile : sa taille dans `projectiles.js` et son dessin dans `sprites.js` (même nom).
+- Nouveau bruitage : voir « Bruitages ».
+- Nouvel événement de partie (objet ramassé, etc.) : `sim.js` le renvoie dans la liste d'événements de `step`, et `main.js` y réagit dans `ON_SIM`.
+- Nouvelle route d'API : une fonction dans `src/routes/` et une ligne dans la liste de `src/worker.ts`, avec le niveau d'accès (public, admin, propriétaire).
+- Toujours relancer `npm test` après avoir touché au jeu : 0 mort attendu.
 
 ## À faire
 
@@ -239,6 +283,7 @@ Après :
 - Inviter les collègues admins depuis Croûte Admin.
 - Créer la vraie soirée du samedi 07/11 sur `/admin`.
 - Tester sur de vrais téléphones : fluidité, son, réseau du lieu.
+- À décider : vérifier les meilleurs scores en rejouant la partie. Le serveur donne une graine, le jeu enregistre les gestes, et le tableau de bord rejoue les 3 premiers pour confirmer leur temps. Bloquerait la triche par faux score.
 
 ## À brainstormer
 
@@ -248,6 +293,11 @@ Après :
 - Phases structurées : séquences scriptées, moments calmes, pics soudains.
 - Caler les attaques sur les drops de la musique (idée, pas sûr).
 - Images rigolotes qui défilent dans le fond : références aux anciennes soirées et aux délires du collectif (par exemple un maximator qui tourne).
+- Mini wiki dans le jeu : une page qui présente chaque type d'attaque (dessin, nom, à partir de quand elle arrive, comment l'esquiver).
+- Collection : des objets à attraper en passant la tartine dessus (par exemple le maximator qui tourne). Chaque objet trouvé rejoint la collection du joueur dans le jeu.
+  - Un nombre fixe d'objets, ceux pas encore trouvés sont affichés en ombre.
+  - En fin de partie, l'écran montre les objets attrapés pendant la partie.
+  - À trancher : est-ce que ça donne un avantage au classement (non, pour rester juste ?), la collection est-elle liée à la soirée ou au téléphone.
 - Partage du score en story Insta.
 - Écran géant : classement en plein écran si le lieu en a un.
 - Adresse plus courte : sous-domaine `tartine-sauvage` à changer dans Cloudflare, puis régénérer le QR code.
