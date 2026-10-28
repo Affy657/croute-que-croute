@@ -1,4 +1,4 @@
-# Couverts Volants
+# Croûte que Croûte
 
 Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couverts, le meilleur temps de la soirée gagne une conso (bière ou soft).
 
@@ -21,7 +21,7 @@ npm run dev
 
 1. Créer un compte Cloudflare.
 2. `npx wrangler login`
-3. `npx wrangler d1 create couverts-volants`, puis coller le `database_id` affiché dans `wrangler.jsonc`.
+3. `npx wrangler d1 create croute-que-croute`, puis coller le `database_id` affiché dans `wrangler.jsonc`.
 4. `npm run db:remote`
 5. `npx wrangler secret put ADMIN_KEY` et choisir une clé.
 6. `npm run deploy` : l'adresse du jeu (en `.workers.dev`) s'affiche à la fin.

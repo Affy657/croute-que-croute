@@ -1,11 +1,11 @@
 {
-  "name": "couverts-volants",
+  "name": "croute-que-croute",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "db:local": "wrangler d1 migrations apply couverts-volants --local",
-    "db:remote": "wrangler d1 migrations apply couverts-volants --remote",
+    "db:local": "wrangler d1 migrations apply croute-que-croute --local",
+    "db:remote": "wrangler d1 migrations apply croute-que-croute --remote",
     "deploy": "wrangler deploy",
     "types": "wrangler types",
     "check": "tsc --noEmit"
