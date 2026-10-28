@@ -5,7 +5,8 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 ## Liens
 
 - Jeu : https://croute-que-croute.croute-que-croute.workers.dev
-- Admin : https://croute-que-croute.croute-que-croute.workers.dev/admin (clé dans `cle-admin.txt`)
+- Admin : https://croute-que-croute.croute-que-croute.workers.dev/admin (appli « Croûte Admin », connexion par invitation)
+- Adresse de test, séparée de la prod : https://test-croute-que-croute.croute-que-croute.workers.dev
 - QR code : `qr/croute-que-croute.png` pour imprimer, `qr/croute-que-croute.svg` pour une affiche
 - Code : `C:\dev\couverts-volants`, git local sur `master`, pas encore de dépôt GitHub
 - POC d'origine (artefact Claude, plus mis à jour) : https://claude.ai/artifact/V2KMTGkcktubs8VguX8AxE
@@ -138,10 +139,12 @@ Repères mesurés avec des robots :
 
 ## Musique
 
-- Le lecteur est prêt : déposer le fichier `public/music/theme.mp3`, puis `npm run deploy`.
+- Le jeu lit `public/music/theme.m4a` ou `public/music/theme.mp3` (le premier trouvé).
+- En test : « Roundabout » de Blacklolita (M4A, 3 min 57), seulement sur l'adresse de test. Le fichier est dans `music-test/`, hors de git, et `npm run preview` l'envoie sur l'adresse de test sans toucher à la prod.
+- `npm run music:test` génère à la place une boucle libre de droits (200 BPM, 19 s).
+- En prod : pas de musique tant que les droits ne sont pas réglés.
 - Elle démarre au premier appui sur l'écran (règle des navigateurs), tourne en boucle et se met en pause quand l'appli passe en arrière-plan.
 - Le choix « musique coupée » est mémorisé sur le téléphone.
-- Morceau choisi : « Roundabout » de Blacklolita. Impossible de le récupérer depuis Spotify (audio protégé) : il faut le fichier MP3.
 - Droits : diffuser un morceau dans une appli publique demande l'accord de l'artiste ou du label. Le plus simple : demander à Blacklolita, ou prendre un morceau d'un DJ du collectif.
 - Poids : viser moins de 5 Mo (MP3 à 128 kb/s) pour le réseau du lieu.
 
@@ -155,6 +158,18 @@ Repères mesurés avec des robots :
 - Garde-fou : un seul rechargement automatique toutes les 15 s au plus.
 - Testé en ligne le 28/10/2026 : rechargement automatique après un déploiement, et partie refusée puis rechargement pour une ancienne version.
 
+## Admin
+
+- Appli à part, « Croûte Admin », installable sur le téléphone depuis `/admin` (icône jaune).
+- Connexion sans mot de passe, le téléphone reste connecté.
+- Premier accès : la clé admin (`cle-admin.txt`) crée un compte propriétaire. Elle reste la clé de secours.
+- Le propriétaire invite les collègues : prénom + rôle, puis un lien à usage unique, valable 48 h, à envoyer. La personne l'ouvre et elle est connectée.
+- Rôles : propriétaire (soirées, joueurs et équipe) et admin (soirées et joueurs).
+- Chaque téléphone connecté apparaît dans « Équipe » et peut être retiré : il est déconnecté aussitôt.
+- On ne peut pas retirer le dernier propriétaire.
+- Tableau de bord : soirée en cours, fin du classement avec compte à rebours, joueurs, parties, record, classement mis à jour toutes les 10 s, bouton pour retirer un tricheur.
+- Les liens et les connexions sont stockés chiffrés (empreinte SHA-256) en base.
+
 ## Classement et triche
 
 - Pseudo de 2 à 16 caractères, unique par soirée (majuscules, accents et espaces ignorés).
@@ -167,13 +182,13 @@ Repères mesurés avec des robots :
 
 Avant :
 
-- Sur `/admin`, entrer la clé et créer la soirée (nom et heure de fin). Le classement repart de zéro.
+- Dans Croûte Admin, « Nouvelle soirée » : nom et heure de fin. Le classement repart de zéro.
 - Imprimer le QR code pour les tables, le bar et l'écran si le lieu en a un.
 - Faire une partie depuis le QR code pour vérifier.
 
 Pendant :
 
-- Surveiller les temps louches sur `/admin` et retirer le joueur si besoin.
+- Surveiller les temps louches dans Croûte Admin et retirer le joueur si besoin.
 - Repousser l'heure de fin si la soirée glisse.
 
 Après :
@@ -197,7 +212,10 @@ Après :
 | `public/sim.js` | Simulation : attaques, collisions, solveur. Sans affichage, partagée par le jeu et le test |
 | `public/app.js` | Affichage, écrans, appels à l'API |
 | `public/index.html`, `public/style.css` | Écrans et style |
-| `public/admin.html` | Page admin |
+| `public/admin.html`, `admin.js`, `admin.css`, `admin.webmanifest` | Appli admin |
+| `test/admin.mjs` | Test de l'API admin (invitations, rôles, retrait) |
+| `scripts/preview.mjs` | Mise en ligne sur l'adresse de test, avec la musique de `music-test/` |
+| `scripts/test-music.mjs` | Boucle de musique libre de droits pour les tests |
 | `src/worker.ts` | API : pseudo, parties, classement, admin |
 | `migrations/` | Schéma de la base |
 | `test/fairness.mjs` | Test du solveur avec le robot |
@@ -211,14 +229,17 @@ Après :
 | `npm test` | Robot du solveur, 0 mort attendu (environ 4 min) |
 | `npm run check` | Vérifier les types de l'API |
 | `npm run deploy` | Mettre en ligne avec une nouvelle version (les téléphones se mettent à jour seuls) |
-| `npm run icons` | Regénérer les icônes de l'appli |
+| `npm run icons` | Regénérer les icônes du jeu et de l'admin |
+| `npm run preview` | Mettre en ligne sur l'adresse de test seulement |
+| `npm run music:test` | Générer la boucle de test libre de droits |
+| `node test/admin.mjs` | Tester l'API admin (avec `npm run dev` lancé) |
 | `npm run db:remote` | Appliquer une nouvelle migration sur la base en ligne |
 
 ## À faire
 
 - Reprendre les couleurs et la tartine de l'affiche numérique (Adrien envoie le fichier).
-- Fournir le fichier MP3 de la musique, avec l'accord de l'artiste.
-- Admin en appli (PWA) avec des comptes pour les collègues : proposition en cours de validation.
+- Obtenir l'accord de l'artiste avant de mettre la musique en prod.
+- Inviter les collègues admins depuis Croûte Admin.
 - Créer la vraie soirée du samedi 07/11 sur `/admin`.
 - Tester sur de vrais téléphones : fluidité, son, réseau du lieu.
 
@@ -237,7 +258,8 @@ Après :
 ## Bon à savoir
 
 - La soirée de test ouverte en ligne ferme le 29/10/2026 à 23h30.
-- `cle-admin.txt` et `.dev.vars` ne sont pas dans git : à garder de côté.
+- `cle-admin.txt` et `.dev.vars` ne sont pas dans git : à garder de côté. Les liens d'invitation non utilisés (`invitation-*.txt`) non plus.
+- L'adresse de test partage la base de la prod : un score fait en test compte dans la soirée en cours.
 - wrangler est connecté au compte Cloudflare sur le PC d'Adrien (`npx wrangler whoami` pour vérifier).
 - Une fois la page chargée, le jeu tourne sans réseau. Le score ne compte que si le réseau passe au début et à la fin de la partie (3 essais d'envoi).
 - Le record perso hors classement reste sur le téléphone.
