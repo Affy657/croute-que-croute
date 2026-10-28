@@ -223,7 +223,7 @@ function update(dt) {
     return;
   }
   const px = sim.state.toast.x, py = sim.state.toast.y;
-  const move = input.take();
+  const move = input.take(dt);
   const events = sim.step(dt, move.x, move.y);
   const st = sim.state.toast;
   const vx = (st.x - px) / dt, vy = (st.y - py) / dt;
@@ -243,7 +243,7 @@ function frame(now) {
     update(STEP);
     acc -= STEP;
   }
-  scene.render({ clock: S.clock, world: sim.state, toast: S.toast, splat: S.splat });
+  scene.render({ clock: S.clock, world: sim.state, toast: S.toast, splat: S.splat, controls: S.mode === "play" ? input.controls : null });
   if (playing()) {
     const s = fmtCs(Math.floor(sim.state.t * 100));
     if (s !== lastShown) {

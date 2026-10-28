@@ -6,6 +6,7 @@ export const KEYS = {
   sfxOff: "cv-sfx-off",
   adminToken: "cqc-admin-token",
   installAsked: "cv-install-asked",
+  controls: "cv-controls",
   lastReload: "cv-reload"
 };
 

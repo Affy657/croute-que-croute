@@ -1,5 +1,6 @@
 import { store, KEYS } from "../shared/store.js";
 import { installMode, promptInstall, shouldSuggest, markSuggested, onInstallChange } from "./install.js";
+import { controlsMode } from "./input.js";
 import { ui } from "./screens.js";
 
 const FLASH_MS = 2000;
@@ -7,6 +8,11 @@ const HINTS = {
   prompt: "Lance-le depuis ton écran d'accueil, en plein écran.",
   ios: "Touche Partager, puis « Sur l'écran d'accueil ».",
   menu: "Ouvre le menu du navigateur, puis « Installer l'appli » ou « Ajouter à l'écran d'accueil »."
+};
+const CONTROL_HINTS = {
+  drag: "Glisse le doigt n'importe où : la tartine suit le mouvement.",
+  stick: "Pose le pouce où tu veux et incline : la tartine avance tant que tu tiens.",
+  pad: "Glisse le doigt dans la zone en bas de l'écran."
 };
 let tab = "app";
 
@@ -21,6 +27,9 @@ export function renderSettings() {
   ui.installCard.hidden = mode === "installed";
   ui.installHint.textContent = HINTS[mode] || "";
   ui.installBtn.hidden = mode !== "prompt";
+  const ctl = controlsMode();
+  for (const b of ui.controlTabs.children) b.setAttribute("aria-selected", String(b.dataset.mode === ctl));
+  ui.controlHint.textContent = CONTROL_HINTS[ctl];
 }
 
 function flash(button, text) {
@@ -61,6 +70,12 @@ const closePop = () => { ui.installPop.hidden = true; };
 for (const b of ui.settingsTabs.children) {
   b.addEventListener("click", () => {
     tab = b.dataset.tab;
+    renderSettings();
+  });
+}
+for (const b of ui.controlTabs.children) {
+  b.addEventListener("click", () => {
+    store.set(KEYS.controls, b.dataset.mode);
     renderSettings();
   });
 }

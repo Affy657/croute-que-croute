@@ -1,6 +1,7 @@
 import { FW, FH, clamp } from "../game/field.js";
 import { PALETTE } from "../shared/palette.js";
 import { drawProjectile, drawWarn, drawToast } from "./sprites.js";
+import { STICK_R } from "./input.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const POP_LIFE = 0.7;
@@ -135,10 +136,49 @@ export function createScene(canvas, overlay) {
     ctx.globalAlpha = 1;
   }
 
+  function drawControls(ctl) {
+    if (!ctl || ctl.mode === "drag") return;
+    const { W, H, dpr } = view;
+    fx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    fx.lineWidth = 2;
+    fx.strokeStyle = C.ink;
+    if (ctl.mode === "pad") {
+      const h = clamp(H * 0.24, 130, 220), m = 14;
+      fx.beginPath();
+      fx.roundRect(m, H - h - m, W - 2 * m, h, 22);
+      fx.fillStyle = C.ink;
+      fx.globalAlpha = 0.05;
+      fx.fill();
+      fx.globalAlpha = 0.28;
+      fx.stroke();
+      if (ctl.held) {
+        fx.globalAlpha = 0.55;
+        fx.fillStyle = C.mustard;
+        fx.beginPath();
+        fx.arc(ctl.kx, ctl.ky, 16, 0, Math.PI * 2);
+        fx.fill();
+      }
+    } else {
+      const bx = ctl.held ? ctl.bx : W / 2, by = ctl.held ? ctl.by : H - STICK_R - 64;
+      const kx = ctl.held ? ctl.kx : bx, ky = ctl.held ? ctl.ky : by;
+      fx.beginPath();
+      fx.arc(bx, by, STICK_R, 0, Math.PI * 2);
+      fx.fillStyle = C.ink;
+      fx.globalAlpha = 0.05;
+      fx.fill();
+      fx.globalAlpha = ctl.held ? 0.45 : 0.25;
+      fx.stroke();
+      fx.globalAlpha = ctl.held ? 0.6 : 0.25;
+      fx.fillStyle = ctl.held ? C.mustard : C.ink;
+      fx.beginPath();
+      fx.arc(kx, ky, 22, 0, Math.PI * 2);
+      fx.fill();
+    }
+    fx.globalAlpha = 1;
+  }
+
   function drawWarns(world, clock, sx, sy) {
     const { dpr, scale, ox, oy } = view;
-    fx.setTransform(1, 0, 0, 1, 0, 0);
-    fx.clearRect(0, 0, overlay.width, overlay.height);
     if (!world.warns.length) return;
     fx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * (oy + sy));
     fx.save();
@@ -149,11 +189,14 @@ export function createScene(canvas, overlay) {
     fx.restore();
   }
 
-  function render({ clock, world, toast, splat }) {
+  function render({ clock, world, toast, splat, controls }) {
     const { dpr, scale, ox, oy } = view;
     drawBackground(clock);
     const sx = shake ? rnd(-shake, shake) : 0;
     const sy = shake ? rnd(-shake, shake) : 0;
+    fx.setTransform(1, 0, 0, 1, 0, 0);
+    fx.clearRect(0, 0, overlay.width, overlay.height);
+    drawControls(controls);
     drawWarns(world, clock, sx, sy);
     ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * (oy + sy));
     ctx.fillStyle = C.field;
