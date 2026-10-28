@@ -153,23 +153,27 @@ Repères mesurés avec des robots :
 
 ## Bruitages
 
-- Style arcade, fabriqués dans le code (`public/js/app/sfx.js`) : aucun fichier, aucun droit, 0 €. Choix d'Adrien du 28/10/2026.
+- Sons de la banque [Mixkit](https://mixkit.co/free-sound-effects/game/), choisis par Adrien à l'écoute le 28/10/2026, dans `public/sfx/`.
+- Licence Mixkit, d'après sa FAQ : gratuite, usage commercial et jeux permis, pas de mention obligatoire, pas de compte. Le texte officiel de la licence n'a pas pu être relu (page chargée en JavaScript) : à vérifier sur https://mixkit.co/license/ avant toute diffusion hors soirée.
+- Une première version fabriquée dans le code a été abandonnée : les sons ne collaient pas assez à leur rôle.
 
-| Moment | Son |
-|---|---|
-| Départ | Allumage des fusées : souffle qui monte et grondement |
-| Frôlé | « Fshh » de lame très court, discret, un seul toutes les 0,08 s au plus |
-| Mort | Croc de tartine croquée (rappel du logo TTS) et choc sourd |
-| Nouveau record | Jingle de 4 notes qui monte (do, mi, sol, do), joué sur l'écran de fin |
-| Passer 1er | Version plus grosse : 5 notes puis un accord tenu qui brille |
+| Moment | Son Mixkit (n°) | Fichier | Volume |
+|---|---|---|---|
+| Départ | Player select notification (2037) | `start.mp3` | 0,85 |
+| Frôlé | Dagger woosh (1487) ou Arrow whoosh (1491), au hasard | `near-dagger.mp3`, `near-arrow.mp3` | 0,8 et 0,6 |
+| Mort | Retro arcade lose (2027) | `death.mp3` | 0,4 |
+| Nouveau record | Quick win video game notification (269) | `record.mp3` | 1 |
+| Passer 1er | Successful horns fanfare (722) | `first.mp3` | 1 |
 
+- Volumes égalisés à la mesure : « Retro arcade lose » était près de 3 fois plus fort que les autres. Le frôlé est un peu en retrait car il revient souvent, et un seul part toutes les 0,08 s au plus.
 - Le jeu attend la réponse du serveur (1,2 s au plus) pour savoir s'il joue le record ou la 1re place.
 - Pas de son sur les flèches d'avertissement : trop fréquent, et ça avantagerait ceux qui jouent avec le son.
-- Niveaux réglés et vérifiés sans saturation : mort, record et 1re place forts, départ moyen, frôlé discret. Un limiteur protège les haut-parleurs.
+- Les sons sont préparés dès l'ouverture du jeu. Un son qui ne peut pas partir à temps (téléphone qui bloque encore le son) est abandonné plutôt que joué en retard.
 - Écouter les sons : carte « Bruitages » en bas du tableau de bord admin.
 - Coupés par le bouton haut-parleur, indépendamment de la musique.
 - Sur iPhone, le bouton silencieux du téléphone coupe les bruitages mais pas la musique (règle d'Apple).
-- Remplacer un son par un enregistrement : déposer le fichier dans `public/sfx/` et mettre son chemin dans `SOUNDS` (`audio.js`), par exemple `record: "/sfx/record.mp3"`.
+- Changer un son : remplacer le fichier dans `public/sfx/`, ou ajouter une variante dans `SOUNDS` (`public/js/app/audio.js`) avec son volume.
+- Page d'écoute des candidats (hors git) : `ecoute-sons/`, lancée avec `node ecoute-sons/serve.mjs` puis http://127.0.0.1:8790.
 
 ## PWA et mises à jour
 
@@ -248,8 +252,8 @@ Après :
 | `public/js/app/sprites.js` | Dessin de la tartine et de chaque projectile |
 | `public/js/app/screens.js` | Écrans HTML : accueil, fin, classement, boutons |
 | `public/js/app/api.js` | Appels au serveur, classement, mise à jour de version |
-| `public/js/app/audio.js` | Musique et lecture des bruitages |
-| `public/js/app/sfx.js` | Fabrication des bruitages |
+| `public/js/app/audio.js` | Musique, bruitages et leurs volumes |
+| `public/sfx/` | Bruitages Mixkit |
 | `public/js/app/input.js` | Glisser du doigt et souris |
 | `public/js/shared/` | Stockage du téléphone et formats, partagés avec l'admin |
 | `public/js/admin/admin.js`, `public/admin.html`, `admin.css` | Tableau de bord admin |

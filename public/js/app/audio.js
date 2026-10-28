@@ -1,10 +1,15 @@
 import { store, KEYS } from "../shared/store.js";
-import { SYNTHS } from "./sfx.js";
 
 const MUSIC_FILES = ["/music/theme.m4a", "/music/theme.mp3"];
-const SOUNDS = { ...SYNTHS };
+const SOUNDS = {
+  start: [{ url: "/sfx/start.mp3", gain: 0.85 }],
+  near: [{ url: "/sfx/near-dagger.mp3", gain: 0.8 }, { url: "/sfx/near-arrow.mp3", gain: 0.6 }],
+  death: [{ url: "/sfx/death.mp3", gain: 0.4 }],
+  record: [{ url: "/sfx/record.mp3", gain: 1 }],
+  first: [{ url: "/sfx/first.mp3", gain: 1 }]
+};
 const SFX_GAP = { near: 0.08 };
-const VOLUME = 0.6, FADE_MS = 500, DRIFT = 0.35, SFX_VOLUME = 1;
+const VOLUME = 0.6, FADE_MS = 500, DRIFT = 0.35, SFX_VOLUME = 1, SFX_LATE_MS = 300;
 
 export const prefs = { music: store.get(KEYS.musicOff) !== "1", sfx: store.get(KEYS.sfxOff) !== "1" };
 const listeners = [];
@@ -17,6 +22,7 @@ export const onAudioChange = (fn) => listeners.push(fn);
 const changed = () => listeners.forEach((fn) => fn());
 
 export async function initAudio() {
+  ensureContext();
   for (const url of MUSIC_FILES) {
     try {
       if ((await fetch(url, { method: "HEAD", cache: "no-store" })).ok) {
@@ -75,12 +81,11 @@ function ensureContext() {
   master = ctx.createGain();
   master.gain.value = SFX_VOLUME;
   master.connect(limiter).connect(ctx.destination);
-  for (const [name, url] of Object.entries(SOUNDS)) {
-    if (typeof url !== "string") continue;
+  for (const { url } of Object.values(SOUNDS).flat()) {
     fetch(url)
       .then((res) => res.arrayBuffer())
       .then((data) => new Promise((ok, ko) => ctx.decodeAudioData(data, ok, ko)))
-      .then((buffer) => { buffers[name] = buffer; })
+      .then((buffer) => { buffers[url] = buffer; })
       .catch(() => {});
   }
 }
@@ -154,37 +159,40 @@ export function toggleSfx() {
 }
 
 function fire(name) {
-  const sound = SOUNDS[name], t = ctx.currentTime;
+  const variants = SOUNDS[name], t = ctx.currentTime;
   if (t - (lastPlayed[name] ?? -Infinity) < (SFX_GAP[name] || 0)) return;
+  const pick = variants[Math.floor(Math.random() * variants.length)];
+  if (!buffers[pick.url]) return;
   lastPlayed[name] = t;
-  if (typeof sound === "function") {
-    sound(ctx, master, t);
-    return;
-  }
-  if (!buffers[name]) return;
   const src = ctx.createBufferSource();
-  src.buffer = buffers[name];
-  src.connect(master);
+  const gain = ctx.createGain();
+  src.buffer = buffers[pick.url];
+  gain.gain.value = pick.gain;
+  src.connect(gain).connect(master);
   src.start(t);
 }
 
-function trigger(name, wait) {
+function trigger(name, patience) {
   if (!ctx || !SOUNDS[name]) return;
   if (ctx.state === "running") {
     fire(name);
     return;
   }
-  const resumed = ctx.resume();
-  if (wait) resumed.then(() => fire(name), () => {});
+  const asked = performance.now();
+  ctx.resume().then(() => {
+    if (performance.now() - asked <= patience) fire(name);
+  }, () => {});
 }
 
 export const SFX_NAMES = Object.keys(SOUNDS);
 
 export function playSfx(name) {
-  if (prefs.sfx) trigger(name, false);
+  if (prefs.sfx) trigger(name, SFX_LATE_MS);
 }
+
+export const prepareSfx = ensureContext;
 
 export function previewSfx(name) {
   ensureContext();
-  trigger(name, true);
+  trigger(name, Infinity);
 }
