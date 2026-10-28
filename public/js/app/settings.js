@@ -4,7 +4,6 @@ import { ui } from "./screens.js";
 
 const FLASH_MS = 2000;
 const HINTS = {
-  installed: "C'est fait : le jeu est sur ton écran d'accueil.",
   prompt: "Lance-le depuis ton écran d'accueil, en plein écran.",
   ios: "Touche Partager, puis « Sur l'écran d'accueil ».",
   menu: "Ouvre le menu du navigateur, puis « Installer l'appli » ou « Ajouter à l'écran d'accueil »."
@@ -19,7 +18,8 @@ export function renderSettings() {
   ui.settingsApp.hidden = tab !== "app";
   ui.settingsAdmin.hidden = tab !== "admin";
   const mode = installMode();
-  ui.installHint.textContent = HINTS[mode];
+  ui.installCard.hidden = mode === "installed";
+  ui.installHint.textContent = HINTS[mode] || "";
   ui.installBtn.hidden = mode !== "prompt";
 }
 

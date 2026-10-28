@@ -1,4 +1,4 @@
-const CACHE = "croute-v8";
+const CACHE = "croute-v9";
 const SHELL = [
   "/", "/style.css", "/catalog.css", "/manifest.webmanifest", "/icons/icon-192.png", "/qr.svg",
   "/js/version.js", "/js/shared/store.js", "/js/shared/format.js", "/js/shared/palette.js",
