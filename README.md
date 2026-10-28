@@ -449,6 +449,7 @@ Après :
   - À trancher : est-ce que ça donne un avantage au classement (non, pour rester juste ?), la collection est-elle liée à la soirée ou au téléphone.
 - Succès à débloquer (achievements, idée d'Adrien) : à définir.
   - À trancher : quels succès, où les voir dans le jeu, liés au téléphone ou à la soirée, et le lien avec la collection.
+- Effet visuel quand on bat son record ou qu'on passe premier (idée d'Adrien) : par exemple des paillettes ou un mouvement sur le score. À définir : sur l'écran de fin seulement, ou aussi en pleine partie au moment où on dépasse.
 - Partage du score en story Insta.
 - Écran géant : classement en plein écran si le lieu en a un.
 - QR code aux couleurs du jeu ou du collectif (question d'Adrien) : possible, avec des points arrondis, les couleurs de l'appli et une petite tartine au centre. À tester au scan sur plusieurs téléphones avant d'imprimer : il faut garder un fort contraste (points foncés sur fond clair) et une marge autour.
