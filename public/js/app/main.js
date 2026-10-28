@@ -19,7 +19,7 @@ const ADMIN_TAPS = 5, ADMIN_TAP_MS = 3000;
 
 document.documentElement.dataset.version = VERSION;
 const canvas = document.getElementById("cv");
-const scene = createScene(canvas);
+const scene = createScene(canvas, document.getElementById("fx"));
 let sim = createSim();
 const S = {
   mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null,

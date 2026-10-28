@@ -1,4 +1,5 @@
 import { PALETTE, SPREADS } from "../shared/palette.js";
+import { FW, FH, clamp } from "../game/field.js";
 
 export function rr(ctx, x, y, w, h, r) {
   if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
@@ -208,19 +209,65 @@ export function drawProjectile(ctx, o, C = PALETTE) {
   ctx.restore();
 }
 
-export function drawWarn(ctx, w, clock, C = PALETTE) {
+const BADGE_R = 15, ICON = 2 * BADGE_R - 6;
+
+function badgeIcon(ctx, o, a, C) {
+  const s = ICON / o.len;
   ctx.save();
-  ctx.translate(w.x, w.y);
+  ctx.rotate(a);
+  ctx.scale(s, s);
+  PROJECTILE_SPRITES[o.kind](ctx, o, C);
+  ctx.restore();
+}
+
+function fanIcon(ctx, w, C) {
+  const picks = [w.obs[0], w.obs[w.obs.length >> 1], w.obs[w.obs.length - 1]];
+  const back = -ICON / 2;
+  for (const o of picks) {
+    const d = o.a - w.a, half = ICON / 2;
+    ctx.save();
+    ctx.rotate(w.a);
+    ctx.translate(back + Math.cos(d) * half, Math.sin(d) * half);
+    badgeIcon(ctx, o, d, C);
+    ctx.restore();
+  }
+}
+
+export function drawWarn(ctx, w, clock, now, C = PALETTE) {
+  const r = BADGE_R;
+  const x = clamp(w.x, r + 3, FW - r - 3), y = clamp(w.y, r + 3, FH - r - 3);
+  const done = clamp((now - w.born) / (w.at - w.born), 0, 1);
+  const o = w.obs[0];
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.globalAlpha = 0.82 + 0.18 * Math.sin(clock * 18);
+  ctx.lineJoin = "round";
+  ctx.save();
   ctx.rotate(w.a);
-  ctx.globalAlpha = 0.45 + 0.55 * Math.abs(Math.sin(clock * 18));
   ctx.fillStyle = C.flame;
+  ctx.strokeStyle = C.void;
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(9, 0);
-  ctx.lineTo(-6, -7);
-  ctx.lineTo(-2, 0);
-  ctx.lineTo(-6, 7);
+  ctx.moveTo(r + 9, 0);
+  ctx.lineTo(r - 1, -7);
+  ctx.lineTo(r - 1, 7);
   ctx.closePath();
   ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = C.void;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "rgba(255, 122, 26, 0.35)";
+  ctx.stroke();
+  ctx.strokeStyle = C.flame;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, -Math.PI / 2, -Math.PI / 2 + done * Math.PI * 2);
+  ctx.stroke();
+  if (w.obs.length > 2) fanIcon(ctx, w, C);
+  else badgeIcon(ctx, o, o.spin ? o.a + clock * o.spin : o.a, C);
   ctx.restore();
 }
 
