@@ -66,10 +66,12 @@
           <p class="stat"><span class="label">Record</span><span id="statBest" class="value">-</span></p>
         </div>
         <div class="row">
-          <button id="editEndBtn" class="btn ghost" type="button">Horaires</button>
+          <button id="editEndBtn" class="btn ghost" type="button">Modifier</button>
           <button id="newEventBtn" class="btn ghost" type="button">Nouvelle soirée</button>
         </div>
         <form id="endForm" class="form" hidden>
+          <label for="editName">Nom de la soirée</label>
+          <input id="editName" maxlength="60" required>
           <label for="startAt">Début du classement</label>
           <input id="startAt" type="datetime-local" required>
           <label for="endAt">Fin du classement</label>

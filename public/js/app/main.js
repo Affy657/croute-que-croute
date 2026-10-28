@@ -152,13 +152,14 @@ function renderInfo() {
   if (infoTab === "attacks") renderAttacks(ui.infoBody, { showLab });
   else renderWeapons(ui.infoBody, { showLab });
   animateAttacks(infoTab === "attacks");
-  ui.infoBody.scrollTop = 0;
+  ui.info.scrollTop = 0;
 }
 
 function openInfo() {
   infoOpen = true;
   infoFrom = S.mode === "over" ? "over" : "menu";
   show("info");
+  renderControls(false);
   renderInfo();
 }
 
@@ -243,6 +244,7 @@ ui.boardBack.addEventListener("click", closeBoard);
 for (const tab of ui.boardTabs.children) tab.addEventListener("click", () => setBoardScope(tab.dataset.scope));
 ui.infoBtn.addEventListener("click", openInfo);
 ui.infoBack.addEventListener("click", closeInfo);
+ui.infoClose.addEventListener("click", closeInfo);
 for (const tab of ui.infoTabs.children) {
   tab.addEventListener("click", () => {
     infoTab = tab.dataset.tab;

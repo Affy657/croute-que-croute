@@ -16,7 +16,7 @@ export const ui = {
   again: $("again"), overBoard: $("overBoard"),
   boardTabs: $("boardTabs"), boardEvent: $("boardEvent"), boardCountdown: $("boardCountdown"), boardList: $("boardList"), boardEmpty: $("boardEmpty"), boardBack: $("boardBack"),
   music: $("music"), sfx: $("sfx"),
-  info: $("info"), infoBtn: $("infoBtn"), infoTabs: $("infoTabs"), infoBody: $("infoBody"), infoBack: $("infoBack")
+  info: $("info"), infoBtn: $("infoBtn"), infoClose: $("infoClose"), infoTabs: $("infoTabs"), infoBody: $("infoBody"), infoBack: $("infoBack")
 };
 
 const SCREENS = { menu: ["menu"], play: ["hud"], over: ["over"], board: ["board"], info: ["info"] };
@@ -24,6 +24,8 @@ const SCREENS = { menu: ["menu"], play: ["hud"], over: ["over"], board: ["board"
 export function show(name) {
   for (const id of ["menu", "over", "board", "hud", "info"]) ui[id].hidden = !SCREENS[name].includes(id);
   ui.infoBtn.hidden = name !== "menu" && name !== "over";
+  ui.adminLink.hidden = ui.infoBtn.hidden || !store.get(KEYS.adminToken);
+  ui.infoClose.hidden = name !== "info";
 }
 
 export function setText(el, text) {
@@ -90,7 +92,6 @@ export function renderMenu() {
   ui.joinForm.hidden = !needJoin();
   ui.menuActions.hidden = needJoin();
   ui.menuBoard.hidden = !b;
-  ui.adminLink.hidden = !store.get(KEYS.adminToken);
   const mine = standing();
   fillStats(ui.menuStats, ui.menuBestBox, ui.menuBest, ui.menuRankBox, ui.menuRank, needJoin() ? 0 : mine.best, mine.rank, mine.count);
   let info = "";
@@ -167,8 +168,10 @@ function renderToggle(button, on, available) {
 
 export function renderControls(playing) {
   ui.infoBtn.hidden = playing || !ui.board.hidden || !ui.info.hidden;
-  renderToggle(ui.music, prefs.music, !playing && musicAvailable());
-  renderToggle(ui.sfx, prefs.sfx, !playing);
+  ui.adminLink.hidden = ui.infoBtn.hidden || !store.get(KEYS.adminToken);
+  const quiet = playing || !ui.info.hidden;
+  renderToggle(ui.music, prefs.music, !quiet && musicAvailable());
+  renderToggle(ui.sfx, prefs.sfx, !quiet);
 }
 
 export function renderAll() {

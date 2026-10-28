@@ -129,13 +129,20 @@ export async function players({ req, env }: Ctx) {
   });
 }
 
+const NAME_ERROR = "Nom de soirée de 1 à 60 caractères.";
+
+function eventName(value: unknown) {
+  const name = typeof value === "string" ? value.trim() : "";
+  return name && name.length <= 60 ? name : null;
+}
+
 export async function createEvent({ req, env }: Ctx) {
   const now = Date.now();
   const body = await readJson(req);
-  const name = typeof body.name === "string" ? body.name.trim() : "";
+  const name = eventName(body.name);
   const opensAt = time(body.opensAt) ?? now;
   const closesAt = time(body.closesAt);
-  if (!name || name.length > 60) return fail(400, "Nom de soirée de 1 à 60 caractères.");
+  if (!name) return fail(400, NAME_ERROR);
   if (closesAt === null || closesAt <= now) return fail(400, "L'heure de fin doit être dans le futur.");
   if (closesAt <= opensAt) return fail(400, "La fin doit être après le début.");
   if (await pendingEvent(env, now)) {
@@ -152,10 +159,14 @@ export async function updateEvent({ req, env }: Ctx) {
   const event = await pendingEvent(env);
   if (!event) return fail(404, "Aucune soirée en cours ou prévue.");
   const body = await readJson(req);
+  const name = body.name === undefined ? event.name : eventName(body.name);
+  if (!name) return fail(400, NAME_ERROR);
   const opensAt = time(body.opensAt) ?? event.opens_at;
   const closesAt = time(body.closesAt) ?? event.closes_at;
   if (closesAt <= opensAt) return fail(400, "La fin doit être après le début.");
-  await env.DB.prepare("UPDATE events SET opens_at = ?, closes_at = ? WHERE id = ?").bind(opensAt, closesAt, event.id).run();
+  await env.DB.prepare("UPDATE events SET name = ?, opens_at = ?, closes_at = ? WHERE id = ?")
+    .bind(name, opensAt, closesAt, event.id)
+    .run();
   forgetCaches();
   return json({ ok: true });
 }

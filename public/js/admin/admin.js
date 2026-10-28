@@ -247,6 +247,7 @@ $("editEndBtn").addEventListener("click", () => {
   $("eventForm").hidden = true;
   $("endForm").hidden = !$("endForm").hidden;
   if (data && data.event) {
+    $("editName").value = data.event.name;
     $("startAt").value = toInput(data.event.opensAt);
     $("endAt").value = toInput(data.event.closesAt);
   }
@@ -268,9 +269,13 @@ for (const b of document.querySelectorAll(".scope")) {
 $("endForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   try {
-    await call("PATCH", "/api/admin/events/current", { opensAt: fromInput($("startAt").value), closesAt: fromInput($("endAt").value) });
+    await call("PATCH", "/api/admin/events/current", {
+      name: $("editName").value,
+      opensAt: fromInput($("startAt").value),
+      closesAt: fromInput($("endAt").value)
+    });
     $("endForm").hidden = true;
-    say($("eventMsg"), "Horaires enregistrés.");
+    say($("eventMsg"), "Soirée modifiée.");
     await load();
   } catch (err) {
     say($("eventMsg"), err.message, true);
