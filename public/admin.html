@@ -17,7 +17,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&display=swap">
 <link rel="stylesheet" href="/admin.css">
-<link rel="stylesheet" href="/catalog.css">
 </head>
 <body>
 <main>
@@ -56,13 +55,7 @@
   </section>
 
   <div id="app" class="stack" hidden>
-    <nav class="tabs" role="tablist">
-      <button class="tab" type="button" role="tab" data-tab="party" aria-selected="true">Soirée</button>
-      <button class="tab" type="button" role="tab" data-tab="weapons" aria-selected="false">Armes</button>
-      <button class="tab" type="button" role="tab" data-tab="attacks" aria-selected="false">Attaques</button>
-    </nav>
-
-    <div id="tab-party" class="stack" role="tabpanel">
+    <div class="stack">
       <section class="card">
         <p id="eventStatus" class="eyebrow">Soirée</p>
         <h2 id="eventName">Aucune soirée</h2>
@@ -138,9 +131,6 @@
 
       <button id="logoutBtn" class="btn ghost" type="button">Se déconnecter</button>
     </div>
-
-    <div id="tab-weapons" class="catalog" role="tabpanel" hidden></div>
-    <div id="tab-attacks" class="catalog" role="tabpanel" hidden></div>
   </div>
 </main>
 <script type="module" src="/js/admin/admin.js"></script>

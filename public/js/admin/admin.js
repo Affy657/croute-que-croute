@@ -1,7 +1,6 @@
 import { store as storage, KEYS } from "../shared/store.js";
 import { fmtCs, clock } from "../shared/format.js";
 import { prepareSfx, previewSfx } from "../app/audio.js";
-import { renderWeapons, renderAttacks, animateAttacks } from "../app/catalog.js";
 
 const $ = (id) => document.getElementById(id);
 const REFRESH_MS = 10000;
@@ -338,29 +337,6 @@ document.addEventListener("visibilitychange", () => {
 setInterval(() => {
   if (me) tick();
 }, 1000);
-
-const TABS = ["party", "weapons", "attacks"];
-const built = {};
-
-function openTab(name) {
-  for (const tab of TABS) {
-    $("tab-" + tab).hidden = tab !== name;
-    document.querySelector(`[data-tab="${tab}"]`).setAttribute("aria-selected", String(tab === name));
-  }
-  if (name === "weapons" && !built.weapons) renderWeapons($("tab-weapons"));
-  if (name === "attacks" && !built.attacks) renderAttacks($("tab-attacks"));
-  built[name] = true;
-  animateAttacks(name === "attacks" && !document.hidden);
-  window.scrollTo(0, 0);
-}
-
-for (const button of document.querySelectorAll("[data-tab]")) {
-  button.addEventListener("click", () => openTab(button.dataset.tab));
-}
-
-document.addEventListener("visibilitychange", () => {
-  animateAttacks(!$("tab-attacks").hidden && !document.hidden);
-});
 
 prepareSfx();
 $("sfxList").replaceChildren(...Object.entries(SFX_LABELS).map(([name, label]) => {

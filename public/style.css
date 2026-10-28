@@ -34,7 +34,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-canvas {
+#cv {
   position: fixed;
   inset: 0;
   width: 100%;
@@ -254,6 +254,10 @@ h2 {
 }
 
 .admin-link {
+  position: fixed;
+  left: max(12px, env(safe-area-inset-left, 0px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+  z-index: 10;
   padding: 0.5em 1.1em;
   border: 2px solid var(--row);
   border-radius: 999px;
@@ -319,7 +323,8 @@ h2 {
 }
 
 .corner.info-btn {
-  right: calc(max(12px, env(safe-area-inset-right, 0px)) + 54px);
+  top: auto;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
 }
 
 .screen.info-screen {
