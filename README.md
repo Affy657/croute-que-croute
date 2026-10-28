@@ -19,14 +19,14 @@ npm run dev
 - Jeu : http://localhost:8787
 - Admin : http://localhost:8787/admin, avec la clé du fichier `.dev.vars` (à créer : `ADMIN_KEY=une-cle`)
 
-## Mettre en ligne (offre gratuite Cloudflare)
+## En ligne
 
-1. Créer un compte Cloudflare.
-2. `npx wrangler login`
-3. `npx wrangler d1 create croute-que-croute`, puis coller le `database_id` affiché dans `wrangler.jsonc`.
-4. `npm run db:remote`
-5. `npx wrangler secret put ADMIN_KEY` et choisir une clé.
-6. `npm run deploy` : l'adresse du jeu (en `.workers.dev`) s'affiche à la fin.
+- Jeu : https://croute-que-croute.croute-que-croute.workers.dev
+- Admin : https://croute-que-croute.croute-que-croute.workers.dev/admin, avec la clé du fichier `cle-admin.txt` (non commité)
+- QR code à imprimer : `qr/croute-que-croute.png` (ou `.svg` pour une affiche)
+- Hébergement : offre gratuite Cloudflare (Workers + base D1 en Europe de l'Ouest), compte d'Adrien
+
+Mettre à jour le jeu en ligne : `npm run deploy`. Nouvelle migration de base : `npm run db:remote`.
 
 ## Avant chaque soirée
 
