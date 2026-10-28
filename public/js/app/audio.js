@@ -3,7 +3,7 @@ import { store, KEYS } from "../shared/store.js";
 const MUSIC_FILES = ["/music/theme.m4a", "/music/theme.mp3"];
 const SOUNDS = {
   start: [{ url: "/sfx/start.mp3", gain: 0.85 }],
-  near: [{ url: "/sfx/near-dagger.mp3", gain: 0.8 }, { url: "/sfx/near-arrow.mp3", gain: 0.6 }],
+  near: [{ url: "/sfx/near.mp3", gain: 1.6 }],
   death: [{ url: "/sfx/death.mp3", gain: 0.4 }],
   record: [{ url: "/sfx/record.mp3", gain: 1 }],
   first: [{ url: "/sfx/first.mp3", gain: 1 }]

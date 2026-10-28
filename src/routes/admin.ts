@@ -1,7 +1,7 @@
 import { json, fail, readJson, bearer, clientIp, tooFast, allowed } from "../http";
 import { randomToken, sha256, safeEqual } from "../security";
 import { cleanName, cleanRole } from "../validate";
-import { currentEvent, forgetRanking } from "../db";
+import { pendingEvent, lastEvent, forgetCaches, type EventRow } from "../db";
 import type { Ctx } from "../router";
 
 const INVITE_MS = 48 * 3600 * 1000;
@@ -95,56 +95,76 @@ export async function logout({ env, auth }: Ctx) {
 const suspect = (p: PlayerAdminRow) =>
   !!p.best && p.best_elapsed !== null && p.best_elapsed > p.best * 10 * SUSPECT_RATIO + SUSPECT_MS;
 
-export async function players({ env }: Ctx) {
-  const event = await currentEvent(env);
-  if (!event) return json({ event: null, players: [], stats: { players: 0, runs: 0 } });
-  const { results } = await env.DB.prepare(
-    `SELECT id, pseudo, best, banned, run_count, best_elapsed FROM players
-     WHERE event_id = ?
-     ORDER BY banned ASC, best DESC, best_at ASC`,
-  )
-    .bind(event.id)
-    .all<PlayerAdminRow>();
+const statusOf = (e: EventRow, now: number) => (now < e.opens_at ? "upcoming" : now < e.closes_at ? "open" : "closed");
+
+const eventJson = (e: EventRow, now: number) => ({ name: e.name, opensAt: e.opens_at, closesAt: e.closes_at, status: statusOf(e, now) });
+
+const time = (raw: unknown) => (typeof raw === "number" && Number.isFinite(raw) ? Math.round(raw) : null);
+
+export async function players({ req, env }: Ctx) {
+  const now = Date.now();
+  const general = new URL(req.url).searchParams.get("scope") === "general";
+  const event = (await pendingEvent(env, now)) ?? (await lastEvent(env));
+  let rows: PlayerAdminRow[] = [];
+  if (general) {
+    rows = (await env.DB.prepare(
+      `SELECT id, pseudo, best, banned, run_count, best_elapsed FROM profiles
+       WHERE best > 0 OR banned = 1
+       ORDER BY banned ASC, best DESC, best_at ASC LIMIT 300`,
+    ).all<PlayerAdminRow>()).results;
+  } else if (event) {
+    rows = (await env.DB.prepare(
+      `SELECT p.id, p.pseudo, e.best, p.banned, e.run_count, e.best_elapsed FROM entries e JOIN profiles p ON p.id = e.player_id
+       WHERE e.event_id = ?
+       ORDER BY p.banned ASC, e.best DESC, e.best_at ASC`,
+    )
+      .bind(event.id)
+      .all<PlayerAdminRow>()).results;
+  }
   return json({
-    event: { name: event.name, closesAt: event.closes_at },
-    players: results.map((p) => ({ id: p.id, pseudo: p.pseudo, best: p.best, banned: p.banned, runs: p.run_count, suspect: suspect(p) })),
-    stats: { players: results.length, runs: results.reduce((n, p) => n + p.run_count, 0) },
+    scope: general ? "general" : "event",
+    event: event ? eventJson(event, now) : null,
+    players: rows.map((p) => ({ id: p.id, pseudo: p.pseudo, best: p.best, banned: p.banned, runs: p.run_count, suspect: suspect(p) })),
+    stats: { players: rows.length, runs: rows.reduce((n, p) => n + p.run_count, 0) },
   });
 }
 
 export async function createEvent({ req, env }: Ctx) {
+  const now = Date.now();
   const body = await readJson(req);
   const name = typeof body.name === "string" ? body.name.trim() : "";
-  const closesAt = body.closesAt;
+  const opensAt = time(body.opensAt) ?? now;
+  const closesAt = time(body.closesAt);
   if (!name || name.length > 60) return fail(400, "Nom de soirée de 1 à 60 caractères.");
-  if (typeof closesAt !== "number" || !Number.isFinite(closesAt) || closesAt <= Date.now()) {
-    return fail(400, "L'heure de fin doit être dans le futur.");
+  if (closesAt === null || closesAt <= now) return fail(400, "L'heure de fin doit être dans le futur.");
+  if (closesAt <= opensAt) return fail(400, "La fin doit être après le début.");
+  if (await pendingEvent(env, now)) {
+    return fail(409, "Une soirée est déjà en cours ou prévue. Modifie-la, ou avance sa fin à maintenant.");
   }
-  const current = await currentEvent(env);
-  if (current && Date.now() < current.closes_at) {
-    return fail(409, "Une soirée est encore ouverte. Avance d'abord son heure de fin à maintenant.");
-  }
-  await env.DB.prepare("INSERT INTO events (name, closes_at, created_at) VALUES (?, ?, ?)")
-    .bind(name, Math.round(closesAt), Date.now())
+  await env.DB.prepare("INSERT INTO events (name, opens_at, closes_at, created_at) VALUES (?, ?, ?, ?)")
+    .bind(name, opensAt, closesAt, now)
     .run();
-  forgetRanking();
+  forgetCaches();
   return json({ ok: true }, 201);
 }
 
 export async function updateEvent({ req, env }: Ctx) {
-  const event = await currentEvent(env);
-  if (!event) return fail(404, "Pas de soirée en cours.");
-  const closesAt = (await readJson(req)).closesAt;
-  if (typeof closesAt !== "number" || !Number.isFinite(closesAt)) return fail(400, "Heure de fin invalide.");
-  await env.DB.prepare("UPDATE events SET closes_at = ? WHERE id = ?").bind(Math.round(closesAt), event.id).run();
+  const event = await pendingEvent(env);
+  if (!event) return fail(404, "Aucune soirée en cours ou prévue.");
+  const body = await readJson(req);
+  const opensAt = time(body.opensAt) ?? event.opens_at;
+  const closesAt = time(body.closesAt) ?? event.closes_at;
+  if (closesAt <= opensAt) return fail(400, "La fin doit être après le début.");
+  await env.DB.prepare("UPDATE events SET opens_at = ?, closes_at = ? WHERE id = ?").bind(opensAt, closesAt, event.id).run();
+  forgetCaches();
   return json({ ok: true });
 }
 
 export async function ban({ req, env, params }: Ctx) {
   const banned = (await readJson(req)).banned === true ? 1 : 0;
-  const res = await env.DB.prepare("UPDATE players SET banned = ? WHERE id = ?").bind(banned, params[0]).run();
+  const res = await env.DB.prepare("UPDATE profiles SET banned = ? WHERE id = ?").bind(banned, params[0]).run();
   if (!res.meta.changes) return fail(404, "Joueur inconnu.");
-  forgetRanking();
+  forgetCaches();
   return json({ ok: true });
 }
 

@@ -1,6 +1,6 @@
 import { fmtCs, ord, clock } from "../shared/format.js";
 import { store, KEYS } from "../shared/store.js";
-import { net, serverNow, hasEvent, registered, isOpen, knownBest } from "./api.js";
+import { net, serverNow, registered, isOpen, openEvent, recentEvent, upcomingEvent, standing, knownBest } from "./api.js";
 import { prefs, musicAvailable } from "./audio.js";
 
 const $ = (id) => document.getElementById(id);
@@ -14,14 +14,16 @@ export const ui = {
   final: $("final"), newBest: $("newBest"), overNote: $("overNote"),
   overStats: $("overStats"), overBestBox: $("overBestBox"), overBest: $("overBest"), overRankBox: $("overRankBox"), overRank: $("overRank"),
   again: $("again"), overBoard: $("overBoard"),
-  boardEvent: $("boardEvent"), boardCountdown: $("boardCountdown"), boardList: $("boardList"), boardEmpty: $("boardEmpty"), boardBack: $("boardBack"),
-  music: $("music"), sfx: $("sfx")
+  boardTabs: $("boardTabs"), boardEvent: $("boardEvent"), boardCountdown: $("boardCountdown"), boardList: $("boardList"), boardEmpty: $("boardEmpty"), boardBack: $("boardBack"),
+  music: $("music"), sfx: $("sfx"),
+  info: $("info"), infoBtn: $("infoBtn"), infoTabs: $("infoTabs"), infoBody: $("infoBody"), infoBack: $("infoBack")
 };
 
-const SCREENS = { menu: ["menu"], play: ["hud"], over: ["over"], board: ["board"] };
+const SCREENS = { menu: ["menu"], play: ["hud"], over: ["over"], board: ["board"], info: ["info"] };
 
 export function show(name) {
-  for (const id of ["menu", "over", "board", "hud"]) ui[id].hidden = !SCREENS[name].includes(id);
+  for (const id of ["menu", "over", "board", "hud", "info"]) ui[id].hidden = !SCREENS[name].includes(id);
+  ui.infoBtn.hidden = name !== "menu" && name !== "over";
 }
 
 export function setText(el, text) {
@@ -40,28 +42,36 @@ export function setDigits(el, text) {
   });
 }
 
+const SOON_MS = 24 * 3600 * 1000;
+let boardScope = null, shownScope = "general";
+
+function when(ms) {
+  const d = new Date(ms);
+  const day = d.toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "2-digit" });
+  return day + " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
+}
+
 function setCountdown(el) {
-  if (!hasEvent()) {
-    el.hidden = true;
-    return;
-  }
-  const left = net.board.event.closesAt - serverNow();
-  el.hidden = false;
-  if (left <= 0) {
-    el.replaceChildren("Classement fermé");
-    return;
-  }
+  const open = openEvent(), next = upcomingEvent(), now = serverNow();
+  const [label, target] = open ? ["Fin dans ", open.closesAt] : next && next.opensAt - now < SOON_MS ? ["Début dans ", next.opensAt] : [null, 0];
+  el.hidden = !label;
+  if (!label) return;
   if (!el.timer) {
     el.timer = document.createElement("span");
     el.timer.className = "digits";
   }
-  if (el.lastChild !== el.timer) el.replaceChildren("Fin dans ", el.timer);
-  setDigits(el.timer, clock(left));
+  if (el.firstChild?.textContent !== label || el.lastChild !== el.timer) el.replaceChildren(label, el.timer);
+  setDigits(el.timer, clock(Math.max(0, target - now)));
 }
 
 export function tickCountdowns() {
   if (!ui.menu.hidden) setCountdown(ui.menuCountdown);
-  if (!ui.board.hidden) setCountdown(ui.boardCountdown);
+  if (!ui.board.hidden) boardCountdown();
+}
+
+function boardCountdown() {
+  if (shownScope === "event") setCountdown(ui.boardCountdown);
+  else ui.boardCountdown.hidden = true;
 }
 
 function fillStats(box, bestBox, bestEl, rankBox, rankEl, best, rank, count) {
@@ -72,21 +82,23 @@ function fillStats(box, bestBox, bestEl, rankBox, rankEl, best, rank, count) {
   box.hidden = !best && !rank;
 }
 
-export const needJoin = () => isOpen() && !registered();
+export const needJoin = () => !!net.board && !registered();
 
 export function renderMenu() {
   const b = net.board;
   const me = b && b.me;
   ui.joinForm.hidden = !needJoin();
   ui.menuActions.hidden = needJoin();
-  ui.menuBoard.hidden = !hasEvent();
+  ui.menuBoard.hidden = !b;
   ui.adminLink.hidden = !store.get(KEYS.adminToken);
-  fillStats(ui.menuStats, ui.menuBestBox, ui.menuBest, ui.menuRankBox, ui.menuRank,
-    needJoin() ? 0 : knownBest(), me && isOpen() ? me.rank : null, b ? b.count : 0);
+  const mine = standing();
+  fillStats(ui.menuStats, ui.menuBestBox, ui.menuBest, ui.menuRankBox, ui.menuRank, needJoin() ? 0 : mine.best, mine.rank, mine.count);
   let info = "";
+  const recent = recentEvent(), next = upcomingEvent();
   if (!b && !net.online) info = "Hors ligne";
-  else if (b && !b.event) info = "Entraînement";
-  else if (b && !isOpen()) info = b.top[0] ? "Bravo " + b.top[0].pseudo + " !" : "";
+  else if (me && me.banned) info = "Retiré du classement";
+  else if (b && !isOpen() && recent && b.eventTop[0]) info = "Bravo " + b.eventTop[0].pseudo + " !";
+  else if (b && !isOpen() && next) info = "Prochaine soirée " + when(next.opensAt);
   setText(ui.menuInfo, info);
   setCountdown(ui.menuCountdown);
 }
@@ -103,17 +115,28 @@ function boardRow(rank, pseudo, best, me) {
   return li;
 }
 
+export function setBoardScope(scope) {
+  boardScope = scope;
+  renderBoard();
+}
+
 export function renderBoard() {
   const b = net.board;
-  ui.boardEvent.textContent = b && b.event ? b.event.name : "";
-  setCountdown(ui.boardCountdown);
-  const top = b ? b.top : [];
+  const eventBoard = !!(b && b.event && (isOpen() || recentEvent()));
+  const scope = eventBoard ? boardScope || (isOpen() ? "event" : "general") : "general";
+  ui.boardTabs.hidden = !eventBoard;
+  for (const tab of ui.boardTabs.children) tab.setAttribute("aria-selected", String(tab.dataset.scope === scope));
+  shownScope = scope;
+  ui.boardEvent.textContent = scope === "event" ? b.event.name : "Tous les temps";
+  boardCountdown();
+  const top = b ? (scope === "event" ? b.eventTop : b.top) : [];
   const rows = top.map((r) => boardRow(r.rank, r.pseudo, r.best, r.me));
-  if (b && b.me && b.me.rank && !top.some((r) => r.me)) {
+  const mine = standing(scope);
+  if (b && b.me && mine.rank && !top.some((r) => r.me)) {
     const gap = document.createElement("li");
     gap.className = "gap";
     gap.textContent = "…";
-    rows.push(gap, boardRow(b.me.rank, b.me.pseudo, b.me.best, true));
+    rows.push(gap, boardRow(mine.rank, b.me.pseudo, mine.best, true));
   }
   ui.boardList.replaceChildren(...rows);
   ui.boardList.hidden = rows.length === 0;
@@ -123,7 +146,7 @@ export function renderBoard() {
 export function renderOver(score, newBest) {
   setDigits(ui.final, fmtCs(score));
   ui.newBest.hidden = !newBest;
-  ui.overBoard.hidden = !hasEvent();
+  ui.overBoard.hidden = !net.board;
   renderOverStats(newBest ? 0 : knownBest(), null, 0);
 }
 
@@ -143,6 +166,7 @@ function renderToggle(button, on, available) {
 }
 
 export function renderControls(playing) {
+  ui.infoBtn.hidden = playing || !ui.board.hidden || !ui.info.hidden;
   renderToggle(ui.music, prefs.music, !playing && musicAvailable());
   renderToggle(ui.sfx, prefs.sfx, !playing);
 }
@@ -150,5 +174,5 @@ export function renderControls(playing) {
 export function renderAll() {
   if (!ui.menu.hidden) renderMenu();
   if (!ui.board.hidden) renderBoard();
-  if (!ui.over.hidden) ui.overBoard.hidden = !hasEvent();
+  if (!ui.over.hidden) ui.overBoard.hidden = !net.board;
 }

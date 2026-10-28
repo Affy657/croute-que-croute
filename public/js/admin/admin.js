@@ -1,7 +1,7 @@
 import { store as storage, KEYS } from "../shared/store.js";
 import { fmtCs, clock } from "../shared/format.js";
 import { prepareSfx, previewSfx } from "../app/audio.js";
-import { renderWeapons, renderAttacks, animateAttacks } from "./catalog.js";
+import { renderWeapons, renderAttacks, animateAttacks } from "../app/catalog.js";
 
 const $ = (id) => document.getElementById(id);
 const REFRESH_MS = 10000;
@@ -15,7 +15,10 @@ let token = store.get();
 let me = null;
 let data = null;
 let timer = null;
+let scope = "event";
+const STATUS = { open: "Soirée en cours", upcoming: "Prochaine soirée", closed: "Dernière soirée" };
 
+const day = (ms) => new Date(ms).toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "2-digit" }) + " à " + hour(ms);
 const hour = (ms) => new Date(ms).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
 const toInput = (ms) => new Date(ms - new Date(ms).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 const fromInput = (value) => (value ? new Date(value).getTime() : NaN);
@@ -68,8 +71,9 @@ function cell(tag, cls, text) {
 
 function renderEvent() {
   const ev = data && data.event;
+  $("eventStatus").textContent = ev ? STATUS[ev.status] : "Soirée";
   $("eventName").textContent = ev ? ev.name : "Aucune soirée";
-  $("editEndBtn").hidden = !ev;
+  $("editEndBtn").hidden = !ev || ev.status === "closed";
   const best = data ? Math.max(0, ...data.players.filter((p) => !p.banned).map((p) => p.best)) : 0;
   $("statPlayers").textContent = data ? data.stats.players : 0;
   $("statRuns").textContent = data ? data.stats.runs : 0;
@@ -80,11 +84,13 @@ function renderEvent() {
 function tick() {
   const ev = data && data.event;
   if (!ev) {
-    $("eventEnd").textContent = "Crée une soirée pour ouvrir le classement.";
+    $("eventEnd").textContent = "Crée une soirée pour ouvrir son classement. En dehors, le classement général tourne tout le temps.";
     return;
   }
-  const left = ev.closesAt - Date.now();
-  $("eventEnd").textContent = left > 0 ? "Fin à " + hour(ev.closesAt) + ", dans " + clock(left) : "Classement fermé depuis " + hour(ev.closesAt);
+  const now = Date.now();
+  if (now < ev.opensAt) $("eventEnd").textContent = "Début " + day(ev.opensAt) + ", dans " + clock(ev.opensAt - now) + ". Fin à " + hour(ev.closesAt) + ".";
+  else if (now < ev.closesAt) $("eventEnd").textContent = "Fin à " + hour(ev.closesAt) + ", dans " + clock(ev.closesAt - now);
+  else $("eventEnd").textContent = "Classement fermé depuis " + day(ev.closesAt) + ".";
 }
 
 function renderPlayers() {
@@ -122,7 +128,8 @@ function renderPlayers() {
 
 async function load() {
   try {
-    data = await call("GET", "/api/admin/players");
+    data = await call("GET", "/api/admin/players" + (scope === "general" ? "?scope=general" : ""));
+    for (const b of document.querySelectorAll(".scope")) b.setAttribute("aria-selected", String(b.dataset.scope === scope));
     say($("playersMsg"), "");
     renderEvent();
     renderPlayers();
@@ -240,20 +247,31 @@ $("pasteForm").addEventListener("submit", async (e) => {
 $("editEndBtn").addEventListener("click", () => {
   $("eventForm").hidden = true;
   $("endForm").hidden = !$("endForm").hidden;
-  if (data && data.event) $("endAt").value = toInput(data.event.closesAt);
+  if (data && data.event) {
+    $("startAt").value = toInput(data.event.opensAt);
+    $("endAt").value = toInput(data.event.closesAt);
+  }
 });
 
 $("newEventBtn").addEventListener("click", () => {
   $("endForm").hidden = true;
   $("eventForm").hidden = !$("eventForm").hidden;
+  if (!$("eventStartInput").value) $("eventStartInput").value = toInput(Date.now());
 });
+
+for (const b of document.querySelectorAll(".scope")) {
+  b.addEventListener("click", () => {
+    scope = b.dataset.scope;
+    load();
+  });
+}
 
 $("endForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   try {
-    await call("PATCH", "/api/admin/events/current", { closesAt: fromInput($("endAt").value) });
+    await call("PATCH", "/api/admin/events/current", { opensAt: fromInput($("startAt").value), closesAt: fromInput($("endAt").value) });
     $("endForm").hidden = true;
-    say($("eventMsg"), "Heure de fin enregistrée.");
+    say($("eventMsg"), "Horaires enregistrés.");
     await load();
   } catch (err) {
     say($("eventMsg"), err.message, true);
@@ -262,11 +280,15 @@ $("endForm").addEventListener("submit", async (e) => {
 
 $("eventForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!confirm("Créer une nouvelle soirée ? Le classement repart de zéro.")) return;
   try {
-    await call("POST", "/api/admin/events", { name: $("eventNameInput").value, closesAt: fromInput($("eventEndInput").value) });
+    await call("POST", "/api/admin/events", {
+      name: $("eventNameInput").value,
+      opensAt: fromInput($("eventStartInput").value),
+      closesAt: fromInput($("eventEndInput").value)
+    });
     $("eventForm").hidden = true;
     $("eventNameInput").value = "";
+    $("eventStartInput").value = "";
     $("eventEndInput").value = "";
     say($("eventMsg"), "Soirée créée.");
     await load();

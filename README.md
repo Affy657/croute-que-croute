@@ -224,11 +224,12 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 
 ## Écrans
 
-- Première visite : champ pseudo et bouton « C'est parti ».
-- Accueil : titre, record et place si on a déjà joué, Jouer, Classement, compte à rebours.
-- Fin de partie : temps, badge « Nouveau record », record et place, Rejouer, Classement. « Rejouer » est bloqué 0,45 s pour éviter de relancer par erreur.
-- Classement : top 50, ta ligne en jaune, mis à jour toutes les 10 s.
-- Après la fermeture : on peut encore jouer pour s'entraîner, et l'accueil félicite le premier.
+- Première visite : champ pseudo et bouton « C'est parti », à tout moment (le classement général tourne en permanence).
+- Accueil pendant une soirée : record et place de la soirée, Jouer, Classement, « Fin dans ».
+- Accueil hors soirée : record et place au classement général. Message « Bravo X ! » pendant 12 h après une soirée, sinon « Prochaine soirée samedi 07/11 à 19h30 » si elle est créée, avec « Début dans » le dernier jour.
+- Fin de partie : temps, badge « Nouveau record » (record de la soirée pendant une soirée, record perso sinon), record et place, Rejouer, Classement. « Rejouer » est bloqué 0,45 s pour éviter de relancer par erreur.
+- Classement : deux onglets, Soirée et Général (Tous les temps). Top 50, ta ligne en jaune, mis à jour toutes les 10 s. L'onglet Soirée n'existe que pendant une soirée et les 12 h qui suivent.
+- Bulle d'info (bouton rond « i » en haut à droite) : les onglets Attaques et Armes de l'admin, pour les joueurs qui veulent tout savoir (progression, chances, vitesses, aperçus animés, tailles réelles et zones de touche).
 - Police : Bungee partout, chargée depuis Google Fonts.
 - Deux boutons ronds, cachés pendant la partie : la note de musique en haut à gauche coupe ou remet la musique, le haut-parleur en haut à droite coupe ou remet les bruitages. Chaque choix est mémorisé sur le téléphone.
 - Bouton « Admin » discret en bas de l'accueil, seulement sur les téléphones connectés en admin.
@@ -256,12 +257,13 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 | Moment | Son Mixkit (n°) | Fichier | Volume |
 |---|---|---|---|
 | Départ | Player select notification (2037) | `start.mp3` | 0,85 |
-| Frôlé | Dagger woosh (1487) ou Arrow whoosh (1491), au hasard | `near-dagger.mp3`, `near-arrow.mp3` | 0,8 et 0,6 |
+| Frôlé | Dagger woosh (1487) | `near.mp3` | 1,6 |
 | Mort | Retro arcade lose (2027) | `death.mp3` | 0,4 |
 | Nouveau record | Quick win video game notification (269) | `record.mp3` | 1 |
 | Passer 1er | Successful horns fanfare (722) | `first.mp3` | 1 |
 
-- Volumes égalisés à la mesure : « Retro arcade lose » était près de 3 fois plus fort que les autres. Le frôlé est un peu en retrait car il revient souvent, et un seul part toutes les 0,08 s au plus.
+- Volumes égalisés à la mesure : « Retro arcade lose » était près de 3 fois plus fort que les autres. Un seul frôlé part toutes les 0,08 s au plus.
+- 29/10/2026 : « Arrow whoosh » retiré (moins satisfaisant), et frôlé doublé en volume. Il était devenu inaudible sous la musique (0,28 s, trop discret). Mesuré : les frôlements sont aussi fréquents qu'avant, 5 à 6 par minute de jeu.
 - Le jeu attend la réponse du serveur (1,2 s au plus) pour savoir s'il joue le record ou la 1re place.
 - Pas de son sur les flèches d'avertissement : trop fréquent, et ça avantagerait ceux qui jouent avec le son.
 - Les sons sont préparés dès l'ouverture du jeu. Un son qui ne peut pas partir à temps (téléphone qui bloque encore le son) est abandonné plutôt que joué en retard.
@@ -295,12 +297,26 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - Trois onglets : Soirée (tableau de bord), Armes (tous les ustensiles et la tartine à leur taille réelle dans le jeu sur cet écran, avec leur zone de touche, et les variantes rares) et Attaques (progression jusqu'à la fin de la complexification, règles, chaque attaque avec ses infos et un aperçu animé en boucle).
 - Tableau de bord : soirée en cours, fin du classement avec compte à rebours, joueurs, parties, record, classement mis à jour toutes les 10 s, bouton pour retirer un tricheur.
 - « Record à vérifier » (trait rouge) : le record a pris nettement plus de temps réel que le score (plus de 15 % et 15 s d'écart). Signe d'un jeu ralenti exprès, ou d'une appli mise en arrière-plan en pleine partie.
-- Une nouvelle soirée ne peut être créée qu'une fois la précédente fermée : avancer d'abord son heure de fin à maintenant. Ça évite d'effacer le classement en pleine soirée par erreur.
+- Une soirée a un début et une fin : on peut la créer à l'avance pour l'annoncer dans le jeu. Une seule soirée à la fois, en cours ou prévue : pour en créer une autre, avancer d'abord la fin de la précédente à maintenant.
+- La carte de la soirée dit si elle est en cours, prévue (avec le compte à rebours du début) ou terminée. « Horaires » change le début et la fin.
+- Le classement du tableau de bord a deux boutons : Soirée (les joueurs de la soirée) et Général (tous les joueurs).
+- « Retirer » retire le joueur de tous les classements (soirée et général).
 - Les liens et les connexions sont stockés chiffrés (empreinte SHA-256) en base.
+
+## Soirées et classements
+
+Décidé par Adrien le 29/10/2026 :
+
+- Profil gardé : un téléphone garde son pseudo pour toujours, unique sur tout le jeu.
+- Deux classements : celui de la soirée (pour le lot) et le général, qui tourne en permanence. Un score fait pendant une soirée compte dans les deux.
+- Une seule soirée à la fois.
+- Entre deux soirées, l'accueil montre le classement général et la prochaine soirée annoncée.
+- En base : `profiles` (joueurs et record général), `entries` (record de chaque joueur à chaque soirée), `runs` (chaque partie, avec sa soirée s'il y en avait une), `events` (début et fin).
+- Les joueurs et records de la soirée test du 28/10 ont été repris tels quels (migration `0004_profiles.sql`).
 
 ## Classement et triche
 
-- Pseudo de 2 à 16 caractères, unique par soirée (majuscules, accents et espaces ignorés).
+- Pseudo de 2 à 16 caractères, unique sur tout le jeu (majuscules, accents et espaces ignorés).
 - À égalité, le premier à avoir fait le temps passe devant.
 - Pseudo en lettres latines (accents permis), chiffres, espaces, tirets : les sosies avec des lettres cyrilliques ou grecques sont refusés.
 - Le serveur refuse un score plus long que le temps réellement écoulé depuis le début de la partie (5 s de marge pour les réseaux lents), et tout score au-delà de 15 min.
@@ -313,7 +329,7 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 
 Avant :
 
-- Dans le tableau de bord, fermer la soirée précédente (heure de fin à maintenant), puis « Nouvelle soirée » : nom et heure de fin. Le classement repart de zéro.
+- Dans le tableau de bord, « Nouvelle soirée » : nom, début et fin. On peut le faire plusieurs jours avant : le jeu l'annonce. Le classement de la soirée part de zéro, le général continue.
 - Imprimer le QR code pour les tables, le bar et l'écran si le lieu en a un.
 - Faire une partie depuis le QR code pour vérifier.
 
@@ -354,7 +370,7 @@ Après :
 | `public/js/app/input.js` | Glisser du doigt et souris |
 | `public/js/shared/` | Stockage du téléphone, formats et couleurs (`palette.js`, avec les tartinades), partagés avec l'admin |
 | `public/js/admin/admin.js`, `public/admin.html`, `admin.css` | Tableau de bord admin |
-| `public/js/admin/catalog.js` | Onglets Armes et Attaques de l'admin, avec les aperçus animés |
+| `public/js/app/catalog.js`, `public/catalog.css` | Pages Attaques et Armes, partagées par l'admin et la bulle d'info des joueurs |
 | `public/js/version.js` | Version du jeu, réécrite à chaque déploiement |
 | `public/sw.js`, `manifest.webmanifest` | PWA : service worker et manifeste |
 | `public/_headers` | En-têtes de sécurité des pages |
@@ -407,17 +423,13 @@ Après :
 
 ## À brainstormer
 
-- Gestion des soirées, à revoir :
-  - Peut-on avoir deux soirées en même temps (deux lieux, deux QR codes) ?
-  - Faut-il un classement général, même en dehors des soirées (tous les temps, par mois) ?
-  - Comment les soirées et le hors-soirée existent dans le jeu et dans le classement : ce que voit un joueur qui ouvre l'appli un mardi, ce que devient son record de la soirée, ce qui reste visible après la fermeture.
+- Annonces des attaques : les flèches orange ne sont pas assez visibles, et avec autant de types d'attaques il faudrait reconnaître lequel arrive (forme, couleur ou petite icône par type).
 - Deuxième phase après 80 s (idée d'Adrien, pas prioritaire : atteindre 80 s est déjà très dur pour un humain) :
   - « Roundabout » commence à se calmer entre 75 et 80 s, pile quand la complexification s'arrête.
   - Si on veut prolonger la montée : passer en « mode sérieux » à 80 s, avec une deuxième musique qui pousse encore plus, une DA qui change un peu, et des attaques qui varient ou se durcissent.
   - Il faudra que le joueur sente clairement le changement de mode.
 - Phases structurées, remises à plus tard par Adrien : moments calmes et pics. Piste : caler les pics sur les drops du morceau, possible car la musique repart du début à chaque partie. Je peux repérer les drops en analysant le fichier.
 - Images rigolotes qui défilent dans le fond : références aux anciennes soirées et aux délires du collectif (par exemple un maximator qui tourne).
-- Mini wiki dans le jeu : une page qui présente chaque type d'attaque (dessin, nom, à partir de quand elle arrive, comment l'esquiver). L'onglet Attaques de l'admin en est déjà la base.
 - Collection : des objets à attraper en passant la tartine dessus (par exemple le maximator qui tourne). Chaque objet trouvé rejoint la collection du joueur dans le jeu.
   - Un nombre fixe d'objets, ceux pas encore trouvés sont affichés en ombre.
   - En fin de partie, l'écran montre les objets attrapés pendant la partie.

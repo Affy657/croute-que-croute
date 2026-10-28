@@ -17,6 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&display=swap">
 <link rel="stylesheet" href="/admin.css">
+<link rel="stylesheet" href="/catalog.css">
 </head>
 <body>
 <main>
@@ -63,7 +64,7 @@
 
     <div id="tab-party" class="stack" role="tabpanel">
       <section class="card">
-        <p class="eyebrow">Soirée en cours</p>
+        <p id="eventStatus" class="eyebrow">Soirée</p>
         <h2 id="eventName">Aucune soirée</h2>
         <p id="eventEnd" class="sub"></p>
         <div class="stats">
@@ -72,10 +73,12 @@
           <p class="stat"><span class="label">Record</span><span id="statBest" class="value">-</span></p>
         </div>
         <div class="row">
-          <button id="editEndBtn" class="btn ghost" type="button">Heure de fin</button>
+          <button id="editEndBtn" class="btn ghost" type="button">Horaires</button>
           <button id="newEventBtn" class="btn ghost" type="button">Nouvelle soirée</button>
         </div>
         <form id="endForm" class="form" hidden>
+          <label for="startAt">Début du classement</label>
+          <input id="startAt" type="datetime-local" required>
           <label for="endAt">Fin du classement</label>
           <input id="endAt" type="datetime-local" required>
           <button class="btn" type="submit">Enregistrer</button>
@@ -83,15 +86,21 @@
         <form id="eventForm" class="form" hidden>
           <label for="eventNameInput">Nom de la soirée</label>
           <input id="eventNameInput" maxlength="60" placeholder="Space Tartinade #3" required>
+          <label for="eventStartInput">Début du classement</label>
+          <input id="eventStartInput" type="datetime-local" required>
           <label for="eventEndInput">Fin du classement</label>
           <input id="eventEndInput" type="datetime-local" required>
-          <button class="btn danger" type="submit">Créer, le classement repart de zéro</button>
+          <button class="btn" type="submit">Créer la soirée</button>
         </form>
         <p id="eventMsg" class="msg" hidden></p>
       </section>
 
       <section class="card">
         <h2>Classement</h2>
+        <div class="row" role="tablist">
+          <button class="btn ghost small scope" type="button" data-scope="event" aria-selected="true">Soirée</button>
+          <button class="btn ghost small scope" type="button" data-scope="general" aria-selected="false">Général</button>
+        </div>
         <ol id="players" class="list"></ol>
         <p id="playersEmpty" class="hint" hidden>Aucun joueur pour l'instant.</p>
         <p id="playersMsg" class="msg" hidden></p>
@@ -130,8 +139,8 @@
       <button id="logoutBtn" class="btn ghost" type="button">Se déconnecter</button>
     </div>
 
-    <div id="tab-weapons" class="stack" role="tabpanel" hidden></div>
-    <div id="tab-attacks" class="stack" role="tabpanel" hidden></div>
+    <div id="tab-weapons" class="catalog" role="tabpanel" hidden></div>
+    <div id="tab-attacks" class="catalog" role="tabpanel" hidden></div>
   </div>
 </main>
 <script type="module" src="/js/admin/admin.js"></script>
