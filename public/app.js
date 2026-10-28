@@ -2,7 +2,7 @@ import { createSim, speedMul, FW, FH, STEP } from "./sim.js";
 import { VERSION } from "./version.js";
 
 const SENS = 1.15;
-const MUSIC_URL = "/music/theme.mp3";
+const MUSIC_FILES = ["/music/theme.m4a", "/music/theme.mp3"];
 document.documentElement.dataset.version = VERSION;
 const cv = document.getElementById("cv");
 const ctx = cv.getContext("2d");
@@ -39,7 +39,7 @@ let localBest = parseInt(store.get("cv-best-cs") || "0", 10) || 0;
 let W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0, stars = [], planetY = 0;
 let drag = null, mouse = null, lastShown = "", runPromise = null;
 let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, updatePending = false;
-const music = { el: null, available: false, muted: store.get("cv-muted") === "1" };
+const music = { el: null, url: null, available: false, muted: store.get("cv-muted") === "1" };
 const pend = { x: 0, y: 0 };
 let sim = createSim();
 const S = {
@@ -124,18 +124,22 @@ function applyUpdate() {
 }
 
 async function probeMusic() {
-  try {
-    music.available = (await fetch(MUSIC_URL, { method: "HEAD", cache: "no-store" })).ok;
-  } catch (e) {
-    music.available = false;
+  for (const url of MUSIC_FILES) {
+    try {
+      if ((await fetch(url, { method: "HEAD", cache: "no-store" })).ok) {
+        music.url = url;
+        break;
+      }
+    } catch (e) {}
   }
+  music.available = !!music.url;
   renderSound();
 }
 
 function syncMusic() {
   if (!music.available) return;
   if (!music.el) {
-    music.el = new Audio(MUSIC_URL);
+    music.el = new Audio(music.url);
     music.el.loop = true;
     music.el.volume = 0.6;
   }
