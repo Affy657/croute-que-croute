@@ -424,6 +424,11 @@ Après :
 ## À brainstormer
 
 - Annonces des attaques : les flèches orange ne sont pas assez visibles, et avec autant de types d'attaques il faudrait reconnaître lequel arrive (forme, couleur ou petite icône par type).
+- Joystick transparent (idée d'Adrien, POC à faire pour comparer) : un joystick discret en bas de l'écran pour piloter la tartine, pour ne plus avoir le doigt posé dessus au milieu de l'écran.
+  - Aujourd'hui, le doigt peut déjà glisser n'importe où (la tartine suit le mouvement sans se mettre sous le doigt), mais rien ne le montre, donc on pose naturellement le doigt sur la tartine.
+  - Deux variantes à essayer : un vrai joystick (on incline, la tartine avance dans cette direction tant qu'on tient) ou un pavé tactile visible (même glissement qu'aujourd'hui, mais dans une zone en bas).
+  - Équité : le solveur suppose que la tartine peut aller à 360 px/s. Un joystick à fond doit aller au moins aussi vite, sinon la garantie « toujours une issue » tombe.
+  - À comparer en jouant : précision dans les passages serrés, réaction aux annonces, confort pour les gauchers (joystick à gauche ou à droite).
 - Deuxième phase après 80 s (idée d'Adrien, pas prioritaire : atteindre 80 s est déjà très dur pour un humain) :
   - « Roundabout » commence à se calmer entre 75 et 80 s, pile quand la complexification s'arrête.
   - Si on veut prolonger la montée : passer en « mode sérieux » à 80 s, avec une deuxième musique qui pousse encore plus, une DA qui change un peu, et des attaques qui varient ou se durcissent.
