@@ -1,0 +1,180 @@
+.catalog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-align: left;
+}
+
+.catalog .card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #1a1640;
+}
+
+.catalog h2 {
+  margin: 0;
+  font-family: "Bungee", "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: 1.1rem;
+  line-height: 1.1;
+  color: var(--mustard);
+  text-shadow: none;
+}
+
+.catalog p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.catalog .sub {
+  font-size: 0.9rem;
+  color: var(--ink-dim);
+}
+
+.catalog .gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.catalog .weapon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: 12px;
+  background: var(--row);
+  text-align: center;
+}
+
+.catalog .weapon .name {
+  font-weight: 600;
+}
+
+.catalog .weapon .meta {
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+
+.catalog .rules {
+  margin: 0;
+  padding-left: 1.1em;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--ink-dim);
+}
+
+.catalog .attack-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.catalog .badge {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--mustard);
+  color: var(--void);
+  white-space: nowrap;
+}
+
+.catalog .badge.lab {
+  background: transparent;
+  border: 2px dashed var(--ink-dim);
+  color: var(--ink-dim);
+}
+
+.catalog .attack-body {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.catalog .attack-body canvas {
+  flex: none;
+  border-radius: 10px;
+}
+
+.catalog .attack-text {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.catalog .facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.catalog .fact {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: var(--row);
+}
+
+.catalog .fact .label {
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+}
+
+.catalog .fact .value {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  color: var(--mustard);
+}
+
+@media (max-width: 480px) {
+  .catalog .attack-body {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .catalog .attack-text {
+    width: 100%;
+  }
+}
+
+.catalog .verdict {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--row);
+  border-left: 4px solid var(--mustard);
+  font-weight: 600;
+}
+
+.catalog .timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.catalog .timeline li {
+  display: grid;
+  grid-template-columns: 3.4rem 1fr;
+  gap: 8px;
+}
+
+.catalog .timeline .when {
+  font-family: var(--font-display);
+  color: var(--mustard);
+  text-align: right;
+}

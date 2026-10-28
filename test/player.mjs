@@ -23,9 +23,12 @@ for (let i = 0; i < 60; i++) {
 }
 
 let r = await call("GET", "/api/admin/players", { key: KEY });
-if (!r.data.event || r.data.event.closesAt <= Date.now()) {
-  await call("POST", "/api/admin/events", { key: KEY, body: { name: "Soirée de test", closesAt: Date.now() + 2 * 3600 * 1000 } });
+if (!r.data.event || r.data.event.status !== "open") {
+  await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: Date.now() - 1000 } });
+  await call("POST", "/api/admin/events", { key: KEY, body: { name: "Soirée de test", opensAt: Date.now() - 1000, closesAt: Date.now() + 2 * 3600 * 1000 } });
 }
+r = await call("GET", "/api/admin/players", { key: KEY });
+check("une soirée est ouverte pour le test", r.data.event && r.data.event.status === "open", r.data.event);
 
 r = await call("POST", "/api/admin/events", { key: KEY, body: { name: "Écrasement", closesAt: Date.now() + 3600 * 1000 } });
 check("nouvelle soirée refusée tant que la soirée en cours est ouverte", r.status === 409, r);
@@ -50,7 +53,7 @@ r = await call("POST", "/api/join", { body: { pseudo: pseudo.toLowerCase(), clie
 check("même pseudo depuis un autre téléphone refusé", r.status === 409, r);
 
 r = await call("POST", "/api/runs", { token });
-check("début de partie", r.status === 201 && r.data.runId, r);
+check("début de partie, comptée pour la soirée", r.status === 201 && r.data.runId && r.data.event === true, r);
 const tooHigh = r.data.runId;
 r = await call("POST", `/api/runs/${tooHigh}`, { token, body: { score: 9000 } });
 check("score plus long que la partie refusé", r.status === 422, r);
@@ -61,14 +64,14 @@ await wait(1200);
 r = await call("POST", `/api/runs/${runId}`, { token, body: { score: 99999999 } });
 check("score absurde refusé", r.status === 400, r);
 r = await call("POST", `/api/runs/${runId}`, { token, body: { score: 100 } });
-check("score enregistré avec rang", r.status === 200 && r.data.best === 100 && r.data.improved && r.data.rank >= 1, r);
+check("score enregistré au général et à la soirée", r.status === 200 && r.data.best === 100 && r.data.improved && r.data.rank >= 1 && r.data.eventBest === 100 && r.data.eventImproved && r.data.eventRank >= 1, r);
 r = await call("POST", `/api/runs/${runId}`, { token, body: { score: 100 } });
 check("renvoi du même score = succès sans doublon", r.status === 200 && !r.data.improved && r.data.best === 100, r);
 r = await call("POST", `/api/runs/${runId}`, { token, body: { score: 120 } });
 check("autre score sur la même partie refusé", r.status === 409, r);
 
 r = await call("GET", "/api/board", { token });
-check("classement : le joueur y est avec son record", r.status === 200 && r.data.me.best === 100 && r.data.me.rank >= 1 && r.data.top.some((x) => x.me), r);
+check("classements général et soirée : le joueur y est", r.status === 200 && r.data.me.best === 100 && r.data.me.eventBest === 100 && r.data.me.rank >= 1 && r.data.me.eventRank >= 1 && r.data.top.some((x) => x.me) && r.data.eventTop.some((x) => x.me), r.data.me);
 
 r = await call("GET", "/api/admin/players", { key: KEY });
 const row = r.data.players.find((p) => p.pseudo === pseudo);
@@ -80,7 +83,10 @@ check("trop de parties d'affilée freinées (429)", limited > 0, { limited });
 
 r = await call("POST", `/api/admin/players/${row.id}/ban`, { key: KEY, body: { banned: true } });
 r = await call("GET", "/api/board", { token });
-check("joueur retiré absent du classement", r.data.me.rank === null && !r.data.top.some((x) => x.me), r.data.me);
+check("joueur retiré absent des deux classements", r.data.me.rank === null && r.data.me.eventRank === null && r.data.me.banned && !r.data.top.some((x) => x.me) && !r.data.eventTop.some((x) => x.me), r.data.me);
+
+r = await call("GET", "/api/admin/players?scope=general", { key: KEY });
+check("admin : classement général disponible", r.status === 200 && r.data.scope === "general" && r.data.players.some((p) => p.pseudo === pseudo), r.data.scope);
 
 console.log(results.join("\n"));
 console.log(results.filter((l) => l.startsWith("FAIL")).length + " échec(s) sur " + results.length);

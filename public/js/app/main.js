@@ -6,9 +6,10 @@ import * as api from "./api.js";
 import * as audio from "./audio.js";
 import { createScene } from "./scene.js";
 import { createInput } from "./input.js";
+import { renderWeapons, renderAttacks, animateAttacks } from "./catalog.js";
 import {
   ui, show, setText, setDigits, tickCountdowns, renderMenu, renderBoard, renderOver, renderOverStats,
-  renderHud, renderControls, renderAll
+  renderHud, renderControls, renderAll, setBoardScope
 } from "./screens.js";
 
 const DIE_S = 0.75, FREEZE_S = 0.12, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
@@ -21,10 +22,11 @@ const scene = createScene(canvas);
 let sim = createSim();
 const S = {
   mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null,
-  newBest: false, score: 0, submit: null, run: null, prevRank: null,
+  newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general",
   toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35 }
 };
 let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, lastShown = "";
+let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
 
 const playing = () => S.mode === "play" || S.mode === "dying";
 const input = createInput(canvas, { active: () => S.mode === "play", scale: () => scene.view.scale });
@@ -47,8 +49,9 @@ function die() {
   input.reset();
   S.splat = scene.splash(S.toast.x, S.toast.y);
   S.score = Math.floor(sim.state.t * 100);
-  S.newBest = S.score > api.knownBest();
-  S.prevRank = api.registered() ? api.net.board.me.rank : null;
+  const before = api.standing(S.scope);
+  S.newBest = S.score > before.best;
+  S.prevRank = before.rank;
   api.saveLocalBest(S.score);
   S.submit = S.run ? api.submitScore(S.score, S.run) : null;
   S.run = null;
@@ -66,12 +69,12 @@ function showMenu() {
 }
 
 function start() {
-  if (boardOpen || !ui.joinForm.hidden) return false;
+  if (boardOpen || infoOpen || !ui.joinForm.hidden) return false;
   if (S.mode !== "menu" && S.mode !== "over") return false;
   if (S.mode === "over" && ui.again.disabled) return false;
   if (api.net.updatePending && api.applyUpdate()) return false;
   sim = createSim();
-  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, newBest: false, score: 0, submit: null });
+  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, newBest: false, score: 0, submit: null, scope: api.isOpen() ? "event" : "general" });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0 });
   scene.clear();
   S.run = api.startRun();
@@ -92,7 +95,8 @@ function cheer() {
   const timeout = new Promise((ok) => setTimeout(() => ok(null), CHEER_WAIT_MS));
   Promise.race([mine || Promise.resolve(null), timeout]).then((r) => {
     if (S.submit !== mine || S.mode !== "over") return;
-    const first = r && !r.error && r.improved && r.rank === 1 && prev !== 1;
+    const event = S.scope === "event";
+    const first = r && !r.error && (event ? r.eventImproved && r.eventRank === 1 : r.improved && r.rank === 1) && prev !== 1;
     audio.playSfx(first ? "first" : "record");
   });
 }
@@ -109,10 +113,11 @@ function showOver() {
     mine.then((r) => {
       if (S.submit !== mine || S.mode !== "over") return;
       setText(ui.overNote, r.error || "");
-      if (!r.error) renderOverStats(S.newBest ? 0 : r.best, r.rank, r.count);
+      const now = api.standing(S.scope);
+      if (!r.error) renderOverStats(S.newBest ? 0 : now.best, now.rank, now.count);
     });
   } else {
-    setText(ui.overNote, api.hasEvent() && !api.isOpen() ? "Entraînement" : "");
+    setText(ui.overNote, api.registered() ? "" : "Entraînement");
   }
   ui.again.disabled = true;
   setTimeout(() => { ui.again.disabled = false; }, AGAIN_LOCK_MS);
@@ -121,6 +126,7 @@ function showOver() {
 function openBoard(from) {
   boardOpen = true;
   boardFrom = from;
+  setBoardScope(null);
   show("board");
   renderBoard();
   api.refreshBoard();
@@ -133,6 +139,33 @@ function closeBoard() {
   boardOpen = false;
   if (boardFrom === "over") {
     show("over");
+    renderAll();
+  } else {
+    showMenu();
+  }
+}
+
+function renderInfo() {
+  for (const tab of ui.infoTabs.children) tab.setAttribute("aria-selected", String(tab.dataset.tab === infoTab));
+  if (infoTab === "attacks") renderAttacks(ui.infoBody, { showLab: false });
+  else renderWeapons(ui.infoBody, { showLab: false });
+  animateAttacks(infoTab === "attacks");
+  ui.infoBody.scrollTop = 0;
+}
+
+function openInfo() {
+  infoOpen = true;
+  infoFrom = S.mode === "over" ? "over" : "menu";
+  show("info");
+  renderInfo();
+}
+
+function closeInfo() {
+  infoOpen = false;
+  animateAttacks(false);
+  if (infoFrom === "over") {
+    show("over");
+    renderControls(false);
     renderAll();
   } else {
     showMenu();
@@ -205,6 +238,15 @@ ui.again.addEventListener("click", () => start());
 ui.menuBoard.addEventListener("click", () => openBoard("menu"));
 ui.overBoard.addEventListener("click", () => openBoard("over"));
 ui.boardBack.addEventListener("click", closeBoard);
+for (const tab of ui.boardTabs.children) tab.addEventListener("click", () => setBoardScope(tab.dataset.scope));
+ui.infoBtn.addEventListener("click", openInfo);
+ui.infoBack.addEventListener("click", closeInfo);
+for (const tab of ui.infoTabs.children) {
+  tab.addEventListener("click", () => {
+    infoTab = tab.dataset.tab;
+    renderInfo();
+  });
+}
 ui.music.addEventListener("click", audio.toggleMusic);
 ui.sfx.addEventListener("click", audio.toggleSfx);
 
@@ -249,7 +291,7 @@ document.addEventListener("visibilitychange", () => {
 
 api.on("board", renderAll);
 api.on("update", () => {
-  if (S.mode === "menu" && !boardOpen) api.applyUpdate();
+  if (S.mode === "menu" && !boardOpen && !infoOpen) api.applyUpdate();
 });
 audio.onAudioChange(() => renderControls(playing()));
 
@@ -257,7 +299,10 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").cat
 
 setInterval(() => {
   const open = api.isOpen();
-  if (wasOpen !== null && open !== wasOpen) renderAll();
+  if (wasOpen !== null && open !== wasOpen) {
+    renderAll();
+    api.refreshBoard();
+  }
   wasOpen = open;
   tickCountdowns();
 }, 1000);

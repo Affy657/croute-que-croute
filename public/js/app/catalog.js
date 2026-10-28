@@ -3,7 +3,7 @@ import { PROJECTILES, moveProjectile } from "../game/projectiles.js";
 import { ATTACKS } from "../game/attacks.js";
 import { GAP_START, GAP_SLOPE, GAP_MIN } from "../game/sim.js";
 import { PALETTE, SPREADS } from "../shared/palette.js";
-import { drawProjectile, drawWarn, drawToast } from "../app/sprites.js";
+import { drawProjectile, drawWarn, drawToast } from "./sprites.js";
 
 const SAMPLE_T = 60, PREVIEW_SCALE = 0.5, PREVIEW_MAX_S = 6, PREVIEW_PAUSE_S = 0.6;
 const TOAST = { x: FW / 2, y: FH * 0.62, tilt: 0, thrust: 0.35 };
@@ -88,7 +88,7 @@ function weaponGroup(title, note, cards) {
   return section;
 }
 
-export function renderWeapons(root) {
+export function renderWeapons(root, { showLab = true } = {}) {
   const scale = gameScale();
   const kinds = Object.keys(PROJECTILES);
   const lab = kinds.filter((k) => PROJECTILES[k].lab);
@@ -98,7 +98,7 @@ export function renderWeapons(root) {
     weaponGroup("Variantes rares", "Environ 1 attaque sur 40 : un seul de ses couteaux change de tartinade. Pur visuel, la zone de touche ne change pas.",
       Object.keys(SPREADS).filter((sp) => sp !== "butter").map((sp) => weaponCard("knife", sp, "rare", scale)))
   ];
-  if (lab.length) {
+  if (showLab && lab.length) {
     groups.push(weaponGroup("Prototypes", "Pas encore dans le jeu : à voir en mouvement dans l'onglet Attaques.",
       lab.map((k) => weaponCard(k, null, "prototype", scale))));
   }
@@ -178,7 +178,7 @@ function stat(label, value) {
   return row;
 }
 
-export function renderAttacks(root) {
+export function renderAttacks(root, { showLab = true } = {}) {
   const live = ATTACKS.filter((a) => !a.lab && SAMPLE_T > a.from);
   const total = live.reduce((s, a) => s + a.weight, 0);
   previews.length = 0;
@@ -191,7 +191,7 @@ export function renderAttacks(root) {
     "Dans les aperçus, la tartine reste immobile."
   ]) list.append(el("li", null, text));
   rules.append(el("h2", null, "Règles"), list);
-  const cards = ATTACKS.map((attack) => {
+  const cards = ATTACKS.filter((a) => showLab || !a.lab).map((attack) => {
     const card = el("section", "card attack");
     const head = el("div", "attack-head");
     head.append(el("h2", null, attack.name), el("span", attack.lab ? "badge lab" : "badge", attack.lab ? "Prototype" : "En jeu"));

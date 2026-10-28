@@ -26,11 +26,38 @@ export async function call(method, path, body) {
 }
 
 export const serverNow = () => Date.now() + net.offset;
-export const hasEvent = () => !!(net.board && net.board.event);
 export const registered = () => !!(net.board && net.board.me);
-export const isOpen = () => hasEvent() && serverNow() < net.board.event.closesAt;
-export const canCompete = () => registered() && isOpen();
-export const knownBest = () => (registered() ? net.board.me.best : localBest);
+
+export function openEvent() {
+  const b = net.board;
+  if (!b) return null;
+  const now = serverNow();
+  return [b.event, b.next].find((e) => e && now >= e.opensAt && now < e.closesAt) || null;
+}
+
+export const isOpen = () => !!openEvent();
+
+export function recentEvent() {
+  const e = net.board && net.board.event;
+  return e && !isOpen() && serverNow() >= e.closesAt ? e : null;
+}
+
+export function upcomingEvent() {
+  const e = net.board && net.board.next;
+  return e && serverNow() < e.opensAt ? e : null;
+}
+
+export const canCompete = () => registered() && !net.board.me.banned;
+
+export function standing(scope = isOpen() ? "event" : "general") {
+  if (!registered()) return { best: localBest, rank: null, count: 0 };
+  const { me } = net.board;
+  return scope === "event"
+    ? { best: me.eventBest || 0, rank: me.eventRank, count: net.board.eventCount }
+    : { best: me.best, rank: me.rank, count: net.board.count };
+}
+
+export const knownBest = () => standing().best;
 
 export function saveLocalBest(score) {
   if (registered() || score <= localBest) return;
@@ -43,7 +70,7 @@ export async function refreshBoard() {
     const b = await call("GET", "/api/board");
     net.offset = b.now - Date.now();
     net.online = true;
-    if (net.token && b.event && !b.me) setToken(null);
+    if (net.token && !b.me) setToken(null);
     net.board = b;
     if (b.version && b.version !== VERSION) requestUpdate();
   } catch (e) {
@@ -87,10 +114,14 @@ export async function submitScore(score, pending) {
   for (let i = 0; i < 3; i++) {
     try {
       const r = await call("POST", "/api/runs/" + run.runId, { score });
-      if (net.board && net.board.me) {
-        net.board.me.best = r.best;
-        net.board.me.rank = r.rank;
+      const me = net.board && net.board.me;
+      if (me) {
+        Object.assign(me, { best: r.best, rank: r.rank });
         net.board.count = r.count;
+        if (r.eventBest !== null) {
+          Object.assign(me, { eventBest: r.eventBest, eventRank: r.eventRank });
+          net.board.eventCount = r.eventCount;
+        }
       }
       refreshBoard();
       return r;

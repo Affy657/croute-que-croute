@@ -40,7 +40,7 @@ export function createInput(canvas, { active, scale }) {
   window.addEventListener("pointerup", end);
   window.addEventListener("pointercancel", end);
   document.addEventListener("touchmove", (e) => {
-    if (!(e.target instanceof Element && e.target.closest(".board-list"))) e.preventDefault();
+    if (!(e.target instanceof Element && e.target.closest(".board-list, .info-scroll"))) e.preventDefault();
   }, { passive: false });
 
   return {
