@@ -7,14 +7,14 @@
 <title>Croûte que Croûte</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Bungee&family=Chivo+Mono:wght@800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&display=swap">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <canvas id="cv" aria-label="Zone de jeu"></canvas>
 
 <div id="hud" hidden>
-  <div id="time">0,00</div>
+  <div id="time" class="digits">0,00</div>
   <div id="hudBest"></div>
 </div>
 
@@ -22,14 +22,17 @@
   <div class="block">
     <p class="eyebrow">Collectif Tartine Sauvage</p>
     <h1>Croûte que Croûte</h1>
-    <p class="how">Glisse ton doigt n'importe où, la tartine suit. Esquive les couverts le plus longtemps possible.</p>
   </div>
   <div class="block">
+    <div id="menuStats" class="stats" hidden>
+      <p id="menuBestBox" class="stat"><span class="stat-label">Record</span><span id="menuBest" class="stat-value digits"></span></p>
+      <p id="menuRankBox" class="stat"><span class="stat-label">Place</span><span id="menuRank" class="stat-value hot"></span></p>
+    </div>
     <p id="menuInfo" class="info" hidden></p>
     <form id="joinForm" class="join" hidden>
-      <label for="pseudo">Ton pseudo pour le classement</label>
-      <input id="pseudo" name="pseudo" maxlength="16" autocomplete="nickname" autocapitalize="off" spellcheck="false" required>
-      <p id="joinError" class="error" hidden></p>
+      <label for="pseudo" class="sr-only">Ton pseudo</label>
+      <input id="pseudo" name="pseudo" maxlength="16" placeholder="Ton pseudo" autocomplete="nickname" autocapitalize="off" spellcheck="false" required>
+      <p id="joinError" class="note error" hidden></p>
       <button class="cta" type="submit">C'est parti</button>
     </form>
     <div id="menuActions" class="actions">
@@ -43,17 +46,17 @@
 <section id="over" class="screen veil" hidden>
   <div class="block">
     <h2>Tartinée&nbsp;!</h2>
-    <p class="score"><span id="final">0,00</span><small>&nbsp;s</small></p>
+    <p class="score"><span id="final" class="digits">0,00</span><small>s</small></p>
     <p id="newBest" class="badge" hidden>Nouveau record</p>
-    <p id="overBest" class="record" hidden></p>
-    <p id="overRank" class="rank" hidden></p>
-  </div>
-  <div class="block">
-    <div class="actions">
-      <button id="again" class="cta" type="button">Rejouer</button>
-      <button id="overBoard" class="ghost" type="button" hidden>Classement</button>
+    <div id="overStats" class="stats" hidden>
+      <p id="overBestBox" class="stat"><span class="stat-label">Record</span><span id="overBest" class="stat-value digits"></span></p>
+      <p id="overRankBox" class="stat"><span class="stat-label">Place</span><span id="overRank" class="stat-value hot"></span></p>
     </div>
-    <p id="overCountdown" class="countdown" hidden></p>
+    <p id="overNote" class="note" hidden></p>
+  </div>
+  <div class="actions">
+    <button id="again" class="cta" type="button">Rejouer</button>
+    <button id="overBoard" class="ghost" type="button" hidden>Classement</button>
   </div>
 </section>
 
@@ -64,7 +67,7 @@
     <p id="boardCountdown" class="countdown" hidden></p>
   </div>
   <ol id="boardList" class="board-list"></ol>
-  <p id="boardEmpty" class="info" hidden></p>
+  <p id="boardEmpty" class="note" hidden></p>
   <button id="boardBack" class="cta" type="button">Retour</button>
 </section>
 

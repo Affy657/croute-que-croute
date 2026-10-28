@@ -6,10 +6,12 @@ const ctx = cv.getContext("2d");
 const $ = (id) => document.getElementById(id);
 const ui = {
   menu: $("menu"), over: $("over"), board: $("board"), hud: $("hud"), time: $("time"), hudBest: $("hudBest"),
+  menuStats: $("menuStats"), menuBestBox: $("menuBestBox"), menuBest: $("menuBest"), menuRankBox: $("menuRankBox"), menuRank: $("menuRank"),
   menuInfo: $("menuInfo"), joinForm: $("joinForm"), pseudo: $("pseudo"), joinError: $("joinError"),
   menuActions: $("menuActions"), play: $("play"), menuBoard: $("menuBoard"), menuCountdown: $("menuCountdown"),
-  final: $("final"), newBest: $("newBest"), overBest: $("overBest"), overRank: $("overRank"),
-  again: $("again"), overBoard: $("overBoard"), overCountdown: $("overCountdown"),
+  final: $("final"), newBest: $("newBest"), overNote: $("overNote"),
+  overStats: $("overStats"), overBestBox: $("overBestBox"), overBest: $("overBest"), overRankBox: $("overRankBox"), overRank: $("overRank"),
+  again: $("again"), overBoard: $("overBoard"),
   boardEvent: $("boardEvent"), boardCountdown: $("boardCountdown"), boardList: $("boardList"),
   boardEmpty: $("boardEmpty"), boardBack: $("boardBack")
 };
@@ -98,7 +100,7 @@ async function submitScore(score, pending) {
       await new Promise((ok) => setTimeout(ok, 1500));
     }
   }
-  return { error: "Score non envoyé : pas de réseau." };
+  return { error: "Hors ligne : score non envoyé" };
 }
 
 function setText(el, text) {
@@ -106,11 +108,21 @@ function setText(el, text) {
   el.hidden = !text;
 }
 
-function duration(ms) {
-  const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
-  if (h > 0) return h + " h " + String(m).padStart(2, "0") + " min";
-  if (m > 0) return m + " min " + String(sec).padStart(2, "0") + " s";
-  return sec + " s";
+function setDigits(el, text) {
+  const chars = [...text];
+  if (el.children.length !== chars.length) el.replaceChildren(...chars.map(() => document.createElement("span")));
+  chars.forEach((ch, i) => {
+    const span = el.children[i];
+    const cls = ch >= "0" && ch <= "9" ? "d" : "p";
+    if (span.className !== cls) span.className = cls;
+    if (span.textContent !== ch) span.textContent = ch;
+  });
+}
+
+function clock(ms) {
+  const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  const ss = String(sec).padStart(2, "0");
+  return h > 0 ? h + ":" + String(m).padStart(2, "0") + ":" + ss : m + ":" + ss;
 }
 
 function setCountdown(el) {
@@ -118,17 +130,26 @@ function setCountdown(el) {
     el.hidden = true;
     return;
   }
-  const closesAt = net.board.event.closesAt;
-  const hour = new Date(closesAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
-  const left = closesAt - serverNow();
+  const left = net.board.event.closesAt - serverNow();
   el.hidden = false;
   if (left <= 0) {
-    el.replaceChildren("Classement fermé à " + hour);
+    el.replaceChildren("Classement fermé");
     return;
   }
-  const strong = document.createElement("b");
-  strong.textContent = duration(left);
-  el.replaceChildren("Fin du classement dans ", strong, " (" + hour + ")");
+  if (!el.timer) {
+    el.timer = document.createElement("span");
+    el.timer.className = "digits";
+  }
+  if (el.lastChild !== el.timer) el.replaceChildren("Fin dans ", el.timer);
+  setDigits(el.timer, clock(left));
+}
+
+function fillStats(box, bestBox, bestEl, rankBox, rankEl, best, rank, count) {
+  bestBox.hidden = !best;
+  if (best) setDigits(bestEl, fmtCs(best));
+  rankBox.hidden = !rank;
+  if (rank) rankEl.textContent = ord(rank) + " / " + count;
+  box.hidden = !best && !rank;
 }
 
 function renderMenu() {
@@ -137,17 +158,12 @@ function renderMenu() {
   ui.joinForm.hidden = !needJoin;
   ui.menuActions.hidden = needJoin;
   ui.menuBoard.hidden = !hasEvent();
+  const me = b && b.me;
+  fillStats(ui.menuStats, ui.menuBestBox, ui.menuBest, ui.menuRankBox, ui.menuRank, needJoin ? 0 : knownBest(), me && isOpen() ? me.rank : null, b ? b.count : 0);
   let info = "";
-  if (!b) info = net.online ? "" : "Pas de réseau : tu peux jouer, mais ton score ne sera pas compté.";
-  else if (!b.event) info = "Pas de classement en cours. Tu peux t'entraîner.";
-  else if (!isOpen()) {
-    const w = b.top[0];
-    info = w ? "Classement fermé. Bravo " + w.pseudo + " avec " + fmtCs(w.best) + " s !" : "Classement fermé.";
-  } else if (b.me) {
-    info = b.me.best
-      ? "Salut " + b.me.pseudo + ", ton meilleur : " + fmtCs(b.me.best) + " s" + (b.me.rank ? ", " + ord(b.me.rank) + " sur " + b.count : "")
-      : "Salut " + b.me.pseudo + ", à toi de jouer.";
-  }
+  if (!b && !net.online) info = "Hors ligne";
+  else if (b && !b.event) info = "Entraînement";
+  else if (b && !isOpen()) info = b.top[0] ? "Bravo " + b.top[0].pseudo + " !" : "";
   setText(ui.menuInfo, info);
   setCountdown(ui.menuCountdown);
 }
@@ -155,7 +171,7 @@ function renderMenu() {
 function boardRow(rank, pseudo, best, me) {
   const li = document.createElement("li");
   if (me) li.className = "me";
-  for (const [cls, text] of [["pos", String(rank)], ["name", pseudo], ["val", fmtCs(best) + " s"]]) {
+  for (const [cls, text] of [["pos", String(rank)], ["name", pseudo], ["val", fmtCs(best)]]) {
     const span = document.createElement("span");
     span.className = cls;
     span.textContent = text;
@@ -178,16 +194,13 @@ function renderBoard() {
   }
   ui.boardList.replaceChildren(...rows);
   ui.boardList.hidden = rows.length === 0;
-  setText(ui.boardEmpty, rows.length ? "" : b ? "Personne n'a encore de score. À toi l'honneur." : "Pas de réseau pour l'instant.");
+  setText(ui.boardEmpty, rows.length ? "" : b ? "Aucun score pour l'instant" : "Hors ligne");
 }
 
 function renderAll() {
   if (!ui.menu.hidden) renderMenu();
   if (!ui.board.hidden) renderBoard();
-  if (!ui.over.hidden) {
-    ui.overBoard.hidden = !hasEvent();
-    setCountdown(ui.overCountdown);
-  }
+  if (!ui.over.hidden) ui.overBoard.hidden = !hasEvent();
 }
 
 function openBoard(from) {
@@ -555,7 +568,7 @@ function render() {
     ctx.fill();
   }
   ctx.globalAlpha = 1;
-  ctx.font = '800 15px "Baloo 2", "Trebuchet MS", sans-serif';
+  ctx.font = '14px Bungee, "Arial Black", sans-serif';
   ctx.textAlign = "center";
   ctx.lineJoin = "round";
   ctx.lineWidth = 3.5;
@@ -587,7 +600,7 @@ function start() {
   Object.assign(S, { mode: "play", shake: 0, dieT: 0, freeze: 0, splat: null, newBest: false, score: 0, submit: null, parts: [], pops: [] });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0 });
   runPromise = canCompete()
-    ? call("POST", "/api/runs").catch((e) => ({ error: e.status ? e.message : "Score non compté : pas de réseau au début de la partie." }))
+    ? call("POST", "/api/runs").catch((e) => ({ error: e.status ? e.message : "Hors ligne : score non compté" }))
     : null;
   pend.x = 0;
   pend.y = 0;
@@ -596,8 +609,8 @@ function start() {
   ui.menu.hidden = true;
   ui.over.hidden = true;
   ui.hud.hidden = false;
-  ui.time.textContent = "0,00";
-  ui.hudBest.textContent = knownBest() ? "Record " + fmtCs(knownBest()) + " s" : "";
+  setDigits(ui.time, "0,00");
+  ui.hudBest.textContent = knownBest() ? "Record " + fmtCs(knownBest()) : "";
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   return true;
 }
@@ -606,20 +619,21 @@ function showOver() {
   S.mode = "over";
   ui.hud.hidden = true;
   ui.over.hidden = false;
-  ui.final.textContent = fmtCs(S.score);
+  setDigits(ui.final, fmtCs(S.score));
   ui.newBest.hidden = !S.newBest;
-  setText(ui.overBest, !S.newBest && knownBest() ? "Ton meilleur : " + fmtCs(knownBest()) + " s" : "");
   ui.overBoard.hidden = !hasEvent();
-  setCountdown(ui.overCountdown);
+  const stats = (best, rank, count) => fillStats(ui.overStats, ui.overBestBox, ui.overBest, ui.overRankBox, ui.overRank, best, rank, count);
+  stats(S.newBest ? 0 : knownBest(), null, 0);
   const mine = S.submit;
   if (mine) {
-    setText(ui.overRank, "Envoi du score…");
+    setText(ui.overNote, "Envoi…");
     mine.then((r) => {
       if (S.submit !== mine || S.mode !== "over") return;
-      setText(ui.overRank, r.error ? r.error : r.rank ? "Tu es " + ord(r.rank) + " sur " + r.count : "");
+      setText(ui.overNote, r.error || "");
+      if (!r.error) stats(S.newBest ? 0 : r.best, r.rank, r.count);
     });
   } else {
-    setText(ui.overRank, hasEvent() && !isOpen() ? "Classement fermé : partie d'entraînement." : "");
+    setText(ui.overNote, hasEvent() && !isOpen() ? "Entraînement" : "");
   }
   ui.again.disabled = true;
   setTimeout(() => { ui.again.disabled = false; }, 450);
@@ -710,7 +724,6 @@ setInterval(() => {
   if (wasOpen !== null && open !== wasOpen) renderAll();
   wasOpen = open;
   if (!ui.menu.hidden) setCountdown(ui.menuCountdown);
-  if (!ui.over.hidden) setCountdown(ui.overCountdown);
   if (!ui.board.hidden) setCountdown(ui.boardCountdown);
 }, 1000);
 
@@ -731,7 +744,7 @@ function frame(now) {
   if (S.mode === "play" || S.mode === "dying") {
     const s = fmtCs(Math.floor(sim.state.t * 100));
     if (s !== lastShown) {
-      ui.time.textContent = s;
+      setDigits(ui.time, s);
       lastShown = s;
     }
   }
