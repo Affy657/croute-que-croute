@@ -59,6 +59,11 @@ export function standing(scope = isOpen() ? "event" : "general") {
 
 export const knownBest = () => standing().best;
 
+export function leader(scope = isOpen() ? "event" : "general") {
+  const b = net.board;
+  return (b && (scope === "event" ? b.eventTop || [] : b.top)[0]) || null;
+}
+
 export function saveLocalBest(score) {
   if (registered() || score <= localBest) return;
   localBest = score;

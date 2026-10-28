@@ -7,6 +7,7 @@ import * as api from "./api.js";
 import * as audio from "./audio.js";
 import { createScene } from "./scene.js";
 import { createInput } from "./input.js";
+import { burst, rain, bounce } from "./party.js";
 import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./catalog.js";
 import { renderSettings, suggestInstall } from "./settings.js";
 import { onInstallChange } from "./install.js";
@@ -98,6 +99,8 @@ function start() {
   scene.clear();
   S.run = api.startRun();
   if (S.run) S.run.then((r) => { if (r.status === 426 && S.mode === "play") api.applyUpdate(); });
+  const lead = api.leader(S.scope);
+  S.goal = { best: api.standing(S.scope).best, lead: S.run && lead && !lead.me ? lead.best : 0, reached: 0 };
   input.reset();
   lastShown = "";
   show("play");
@@ -117,7 +120,32 @@ function cheer() {
     const event = S.scope === "event";
     const first = r && !r.error && (event ? r.eventImproved && r.eventRank === 1 : r.improved && r.rank === 1) && prev !== 1;
     audio.playSfx(first ? "first" : "record");
+    if (!first) return;
+    ui.newBest.textContent = "N°1 !";
+    ui.newBest.classList.add("gold");
+    bounce(ui.newBest);
+    burst(ui.final, { count: 70, power: 1.2, gold: true });
+    rain();
   });
+}
+
+function cheerRun(cs) {
+  const g = S.goal;
+  if (g.reached < 2 && g.lead && cs > g.lead) {
+    g.reached = 2;
+    cheerHud("N°1 !", 30, true);
+  } else if (g.reached < 1 && g.best && cs > g.best) {
+    g.reached = 1;
+    cheerHud("Nouveau record", 18, false);
+  }
+}
+
+function cheerHud(text, count, gold) {
+  ui.hudBest.textContent = text;
+  ui.hudBest.classList.add("hot");
+  ui.time.classList.add("hot");
+  bounce(ui.time);
+  burst(ui.time, { count, power: 0.55, gold });
 }
 
 function showOver() {
@@ -125,7 +153,11 @@ function showOver() {
   show("over");
   renderControls(false);
   renderOver(S.score, S.newBest);
-  if (S.newBest) cheer();
+  if (S.newBest) {
+    bounce(ui.final.parentElement);
+    burst(ui.final, { count: 44 });
+    cheer();
+  }
   const mine = S.submit;
   if (mine) {
     setText(ui.overNote, "Envoi…");
@@ -249,6 +281,7 @@ function frame(now) {
     if (s !== lastShown) {
       setDigits(ui.time, s);
       lastShown = s;
+      if (S.mode === "play") cheerRun(Math.floor(sim.state.t * 100));
     }
   }
   if (S.mode === "play") audio.musicRunSync(sim.state.t);

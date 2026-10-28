@@ -150,6 +150,8 @@ export function renderBoard() {
 
 export function renderOver(score, newBest) {
   setDigits(ui.final, fmtCs(score));
+  ui.newBest.textContent = "Nouveau record";
+  ui.newBest.classList.remove("gold");
   ui.newBest.hidden = !newBest;
   ui.overBoard.hidden = !net.board;
   renderOverStats(newBest ? 0 : knownBest(), null, 0);
@@ -161,6 +163,8 @@ export function renderOverStats(best, rank, count) {
 
 export function renderHud() {
   setDigits(ui.time, "0,00");
+  ui.time.classList.remove("hot", "cheer");
+  ui.hudBest.classList.remove("hot");
   ui.hudBest.textContent = knownBest() ? "Record " + fmtCs(knownBest()) : "";
 }
 
