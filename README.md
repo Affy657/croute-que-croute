@@ -134,6 +134,26 @@ Repères mesurés avec des robots :
 - Classement : top 50, ta ligne en jaune, mis à jour toutes les 10 s.
 - Après la fermeture : on peut encore jouer pour s'entraîner, et l'accueil félicite le premier.
 - Police : Bungee partout, chargée depuis Google Fonts.
+- Bouton haut-parleur en haut à droite (accueil, fin de partie, classement) pour couper ou remettre la musique. Caché pendant la partie et tant qu'il n'y a pas de musique.
+
+## Musique
+
+- Le lecteur est prêt : déposer le fichier `public/music/theme.mp3`, puis `npm run deploy`.
+- Elle démarre au premier appui sur l'écran (règle des navigateurs), tourne en boucle et se met en pause quand l'appli passe en arrière-plan.
+- Le choix « musique coupée » est mémorisé sur le téléphone.
+- Morceau choisi : « Roundabout » de Blacklolita. Impossible de le récupérer depuis Spotify (audio protégé) : il faut le fichier MP3.
+- Droits : diffuser un morceau dans une appli publique demande l'accord de l'artiste ou du label. Le plus simple : demander à Blacklolita, ou prendre un morceau d'un DJ du collectif.
+- Poids : viser moins de 5 Mo (MP3 à 128 kb/s) pour le réseau du lieu.
+
+## PWA et mises à jour
+
+- Le jeu s'installe comme une appli : sur Android, bannière ou menu « Installer » ; sur iPhone, Partager puis « Sur l'écran d'accueil ».
+- Service worker : il passe toujours par le réseau d'abord et garde une copie en secours, donc le jeu s'ouvre même sans réseau s'il a déjà été ouvert une fois.
+- Chaque `npm run deploy` crée une version (date + commit), écrite dans `public/version.js` et donnée au serveur.
+- Le jeu compare sa version à celle du serveur à l'ouverture, au retour dans l'appli et toutes les 30 s sur l'accueil. Si elle a changé, il se recharge tout seul, jamais en pleine partie.
+- Le serveur refuse l'inscription et le début de partie d'une ancienne version (erreur 426), et le jeu se recharge aussitôt.
+- Garde-fou : un seul rechargement automatique toutes les 15 s au plus.
+- Testé en ligne le 28/10/2026 : rechargement automatique après un déploiement, et partie refusée puis rechargement pour une ancienne version.
 
 ## Classement et triche
 
@@ -169,6 +189,11 @@ Après :
 
 | Fichier | Rôle |
 |---|---|
+| `public/sw.js`, `public/manifest.webmanifest` | PWA : service worker et manifeste |
+| `public/version.js` | Version du jeu, réécrite à chaque déploiement |
+| `public/icons/` | Icônes de l'appli, générées par `npm run icons` |
+| `public/music/` | Musique (`theme.mp3`, à fournir) |
+| `scripts/deploy.mjs` | Déploiement avec numéro de version |
 | `public/sim.js` | Simulation : attaques, collisions, solveur. Sans affichage, partagée par le jeu et le test |
 | `public/app.js` | Affichage, écrans, appels à l'API |
 | `public/index.html`, `public/style.css` | Écrans et style |
@@ -185,14 +210,15 @@ Après :
 | `npm run dev` | Jeu en local sur http://localhost:8787, admin avec la clé de `.dev.vars` |
 | `npm test` | Robot du solveur, 0 mort attendu (environ 4 min) |
 | `npm run check` | Vérifier les types de l'API |
-| `npm run deploy` | Mettre en ligne |
+| `npm run deploy` | Mettre en ligne avec une nouvelle version (les téléphones se mettent à jour seuls) |
+| `npm run icons` | Regénérer les icônes de l'appli |
 | `npm run db:remote` | Appliquer une nouvelle migration sur la base en ligne |
 
 ## À faire
 
 - Reprendre les couleurs et la tartine de l'affiche numérique (Adrien envoie le fichier).
-- Musique de fond, avec les morceaux fournis par le collectif.
-- Icône pour couper ou remettre la musique.
+- Fournir le fichier MP3 de la musique, avec l'accord de l'artiste.
+- Admin en appli (PWA) avec des comptes pour les collègues : proposition en cours de validation.
 - Créer la vraie soirée du samedi 07/11 sur `/admin`.
 - Tester sur de vrais téléphones : fluidité, son, réseau du lieu.
 
@@ -203,6 +229,7 @@ Après :
 - Variantes rares et drôles : des couteaux avec autre chose que du beurre, pour des clins d'œil. Purement visuel, l'équité ne change pas.
 - Phases structurées : séquences scriptées, moments calmes, pics soudains.
 - Caler les attaques sur les drops de la musique (idée, pas sûr).
+- Images rigolotes qui défilent dans le fond : références aux anciennes soirées et aux délires du collectif (par exemple un maximator qui tourne).
 - Partage du score en story Insta.
 - Écran géant : classement en plein écran si le lieu en a un.
 - Adresse plus courte : sous-domaine `tartine-sauvage` à changer dans Cloudflare, puis régénérer le QR code.
