@@ -24,6 +24,16 @@ function mover(o, t0) {
 
 const FULL = { i0: I0, i1: I1, j0: J0, j1: J1 };
 
+function addMovers(list, o, t0) {
+  const m = mover(o, t0);
+  list.push(m);
+  if (!(o.bounces > 0) || !o.vx) return;
+  const tb = o.vx > 0 ? (FW - o.x) / o.vx : -o.x / o.vx;
+  if (tb <= 0 || t0 + tb >= m.t1) return;
+  m.t1 = t0 + tb;
+  addMovers(list, { ...o, x: o.x + o.vx * tb, y: o.y + o.vy * tb, vx: -o.vx, a: Math.atan2(o.vy, -o.vx), bounces: o.bounces - 1 }, t0 + tb);
+}
+
 function mark(m, tau, blocked, area = FULL) {
   if (tau < m.t0 || tau > m.t1) return;
   const d = tau - m.t0;
@@ -83,9 +93,9 @@ export function solve(state, extra, wantPath, react = 0) {
   const still = Math.round(react / SDT);
   const t = state.t;
   const movers = [];
-  for (const o of state.obs) movers.push(mover(o, t));
-  for (const w of state.warns) for (const o of w.obs) movers.push(mover(o, w.at));
-  if (extra) for (const w of extra) for (const o of w.obs) movers.push(mover(o, w.at));
+  for (const o of state.obs) addMovers(movers, o, t);
+  for (const w of state.warns) for (const o of w.obs) addMovers(movers, o, w.at);
+  if (extra) for (const w of extra) for (const o of w.obs) addMovers(movers, o, w.at);
   let end = t;
   for (const m of movers) end = Math.max(end, m.t1);
   const steps = Math.ceil((Math.min(end, t + HORIZON) - t) / SDT);

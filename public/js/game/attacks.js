@@ -43,7 +43,17 @@ const rainSize = (t) => 4 + Math.min(4, Math.floor(t / 15));
 
 const rain = (g) => rainOf(g, rainSize(g.t), 0.14);
 
-const downpour = (g) => rainOf(g, rainSize(g.t) * 2, 0.09);
+function downpour({ t, rng, rnd }) {
+  const n = rainSize(t) + 1, v = 190 * speedMul(t);
+  let left = rng() < 0.5;
+  const items = [];
+  for (let i = 0; i < n; i++) {
+    const x = left ? rnd(16, FW / 2 - 10) : rnd(FW / 2 + 10, FW - 16);
+    items.push({ x, y: 10, a: Math.PI / 2, at: t + 0.45 + i * 0.13, obs: [projectile("fork", x, -M, 0, v)] });
+    left = !left;
+  }
+  return items;
+}
 
 function topWall({ rnd }, at, v) {
   const gap = 50, gc = rnd(70, FW - 70);
@@ -54,8 +64,8 @@ function topWall({ rnd }, at, v) {
   return items;
 }
 
-function sideWall({ rnd }, side, at, v) {
-  const gap = 50, gc = rnd(100, FH * 0.62);
+function sideWall({ rnd }, side, at, v, gap = 50) {
+  const gc = rnd(100, FH * 0.62);
   const dir = side === "left" ? 1 : -1;
   const x0 = side === "left" ? -M : FW + M;
   const items = [];
@@ -74,7 +84,7 @@ function wall(g) {
 function corridor(g) {
   const first = g.pick(["left", "right"]);
   const v = 150 * speedMul(g.t), at = g.t + 0.7;
-  return [...sideWall(g, first, at, v), ...sideWall(g, first === "left" ? "right" : "left", at + 0.55, v)];
+  return [...sideWall(g, first, at, v, 60), ...sideWall(g, first === "left" ? "right" : "left", at + 0.7, v, 60)];
 }
 
 function fan({ t, toast, pick }) {
@@ -93,7 +103,7 @@ function fan({ t, toast, pick }) {
 }
 
 function cross({ t, toast, rnd }) {
-  const v = 210 * speedMul(t), at = t + 0.6;
+  const v = 190 * speedMul(t), at = t + 0.7;
   const starts = [{ x: -M, y: -M }, { x: FW + M, y: -M }, { x: -M, y: rnd(20, FH * 0.6) }, { x: FW + M, y: rnd(20, FH * 0.6) }];
   return starts.map((p) => aimedFrom(p, toast, at, v));
 }
@@ -107,49 +117,49 @@ function rolling({ t, rnd, pick }) {
 
 function whisk({ t, toast, rng, rnd }) {
   const p = { x: rnd(40, FW - 40), y: -M };
-  return [aimedFrom(p, toast, t + 0.6, 120 * speedMul(t), "whisk", 6 * (rng() < 0.5 ? -1 : 1))];
+  return [aimedFrom(p, toast, t + 0.7, 100 * speedMul(t), "whisk", 5 * (rng() < 0.5 ? -1 : 1))];
 }
 
 function cleaver({ t, toast, rnd }) {
   const x = clamp(toast.x + rnd(-10, 10), 30, FW - 30);
-  return [{ x, y: 10, a: Math.PI / 2, at: t + 0.9, obs: [projectile("cleaver", x, -M, 0, 380 * speedMul(t))] }];
+  return [{ x, y: 10, a: Math.PI / 2, at: t + 0.9, obs: [projectile("cleaver", x, -M, 0, 300 * speedMul(t))] }];
 }
 
 function bread({ t, toast, pick }) {
   const fromLeft = pick([true, false]);
   const p = { x: fromLeft ? -M : FW + M, y: -M };
   const target = { x: fromLeft ? 2 * FW - toast.x : -toast.x, y: toast.y };
-  return [aimedFrom(p, target, t + 0.6, 260 * speedMul(t), "bread", 0, { bounces: 1 })];
+  return [aimedFrom(p, target, t + 0.6, 240 * speedMul(t), "bread", 0, { bounces: 1 })];
 }
 
 export const ATTACKS = [
-  { id: "aimed", name: "Couteau visé", from: 0, weight: 3, cost: 1, speed: 230, make: aimed,
+  { id: "aimed", name: "Couteau visé", from: 0, weight: 3, cost: 1, speed: 230, make: aimed, growsUntil: 35, growth: "le couteau visé peut tourner sur lui-même",
     info: "Un couteau lancé du haut ou d'un côté vers la tartine. Bouger pendant l'annonce suffit. Dès 35 s, une fois sur trois il tourne sur lui-même." },
-  { id: "rain", name: "Pluie de fourchettes", from: 6, weight: 1.4, cost: 1.5, speed: 190, make: rain,
+  { id: "rain", name: "Pluie de fourchettes", from: 6, weight: 1.4, cost: 1.5, speed: 190, make: rain, growsUntil: 60, growth: "pluies au maximum (8 fourchettes)",
     info: "4 fourchettes (jusqu'à 8) tombent du haut l'une après l'autre, un peu en biais." },
+  { id: "cleaver", name: "Hachoir", from: 10, weight: 0.9, cost: 1.1, speed: 300, make: cleaver,
+    info: "Un hachoir tombe tout droit et très vite au-dessus de la tartine, annoncé 0,9 s avant. Quitter sa colonne." },
   { id: "wall", name: "Mur", from: 14, weight: 1.1, cost: 1.7, speed: 150, make: wall,
     info: "Une rangée serrée avec un seul trou, par le haut ou par un côté. Les flèches montrent déjà le trou." },
-  { id: "fan", name: "Éventail", from: 24, weight: 1.1, cost: 1.5, speed: 200, make: fan,
+  { id: "rolling", name: "Rouleau à pâtisserie", from: 18, weight: 0.8, cost: 1.3, speed: 110, make: rolling,
+    info: "Un gros rouleau debout traverse lentement l'écran par un côté : passer au-dessus ou en dessous." },
+  { id: "fan", name: "Éventail", from: 24, weight: 1.1, cost: 1.5, speed: 200, make: fan, growsUntil: 64, growth: "éventails au maximum (7 couteaux)",
     info: "5 à 7 couteaux ouverts en cône depuis un même point, centrés sur la tartine. Il faut sortir du cône par le côté." },
-  { id: "cross", name: "Croix", from: 30, weight: 0.7, cost: 1.6, speed: 210, make: cross,
+  { id: "whisk", name: "Fouet", from: 28, weight: 0.7, cost: 1.3, speed: 100, make: whisk,
+    info: "Un fouet qui tourne sur lui-même descend lentement vers la tartine et occupe une grosse zone." },
+  { id: "cross", name: "Croix", solo: true, from: 32, weight: 0.7, cost: 1.6, speed: 190, make: cross,
     info: "4 couteaux en même temps depuis les deux coins du haut et les deux côtés, tous vers la tartine. S'écarter du point visé." },
-  { id: "corridor", name: "Couloir", from: 40, weight: 0.6, cost: 2.2, speed: 150, make: corridor,
-    info: "Un mur par un côté, puis un mur par l'autre côté 0,55 s plus tard, chacun avec son trou. Passer d'un trou à l'autre." },
-  { id: "downpour", name: "Double pluie", from: 45, weight: 0.6, cost: 2, speed: 190, make: downpour,
-    info: "Deux fois plus de fourchettes que la pluie, et plus serrées (une toutes les 0,09 s)." },
-  { id: "rolling", name: "Rouleau à pâtisserie", lab: true, from: 0, weight: 1, cost: 1.3, speed: 110, make: rolling,
-    info: "Prototype. Un gros rouleau debout traverse lentement l'écran par un côté : passer au-dessus ou en dessous." },
-  { id: "whisk", name: "Fouet", lab: true, from: 0, weight: 1, cost: 1.2, speed: 120, make: whisk,
-    info: "Prototype. Un fouet qui tourne sur lui-même descend lentement vers la tartine et occupe une grosse zone." },
-  { id: "cleaver", name: "Hachoir", lab: true, from: 0, weight: 1, cost: 1.1, speed: 380, make: cleaver,
-    info: "Prototype. Un hachoir tombe tout droit et très vite au-dessus de la tartine, annoncé 0,9 s avant." },
-  { id: "bread", name: "Couteau à pain", lab: true, from: 0, weight: 1, cost: 1.2, speed: 260, make: bread,
-    info: "Prototype. Lancé d'un coin du haut, il rebondit sur le bord opposé puis file vers la tartine." }
+  { id: "bread", name: "Couteau à pain", from: 38, weight: 0.7, cost: 1.2, speed: 240, make: bread,
+    info: "Lancé d'un coin du haut, il rebondit sur le bord opposé puis file vers la tartine. Suivre la flèche et anticiper le rebond." },
+  { id: "corridor", name: "Couloir", solo: true, from: 46, weight: 0.6, cost: 2.2, speed: 150, make: corridor,
+    info: "Un mur par un côté, puis un mur par l'autre côté 0,7 s plus tard, chacun avec son trou (plus grand que pour un mur seul). Passer d'un trou à l'autre." },
+  { id: "downpour", name: "Double pluie", solo: true, from: 54, weight: 0.6, cost: 1.8, speed: 190, make: downpour,
+    info: "5 à 9 fourchettes qui tombent tout droit, une toutes les 0,13 s, en alternant moitié gauche et moitié droite." }
 ];
 
 export function pickAttack(t, rng, last = null, streak = 0) {
   const open = ATTACKS.filter((a) => !a.lab && t > a.from);
-  const allowed = open.filter((a) => !(a.id === last && streak >= MAX_STREAK));
+  const allowed = open.filter((a) => a.id !== last || (!a.solo && streak < MAX_STREAK));
   const pool = allowed.length ? allowed : open;
   const weight = (a) => a.weight * (a.id === last ? REPEAT_FACTOR ** streak : 1);
   let r = rng() * pool.reduce((s, a) => s + weight(a), 0);

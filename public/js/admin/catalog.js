@@ -1,11 +1,14 @@
-import { FW, FH, OUT } from "../game/field.js";
+import { FW, FH, OUT, HIT_R, SPEED_MAX, SPEED_RAMP } from "../game/field.js";
 import { PROJECTILES, moveProjectile } from "../game/projectiles.js";
 import { ATTACKS } from "../game/attacks.js";
+import { GAP_START, GAP_SLOPE, GAP_MIN } from "../game/sim.js";
 import { PALETTE, SPREADS } from "../shared/palette.js";
 import { drawProjectile, drawWarn, drawToast } from "../app/sprites.js";
 
 const SAMPLE_T = 60, PREVIEW_SCALE = 0.5, PREVIEW_MAX_S = 6, PREVIEW_PAUSE_S = 0.6;
 const TOAST = { x: FW / 2, y: FH * 0.62, tilt: 0, thrust: 0.35 };
+const TOAST_W = 52, CARD_H = 72;
+const gameScale = () => Math.min(window.innerWidth / FW, window.innerHeight / FH);
 const num = (n) => String(Math.round(n * 10) / 10).replace(".", ",");
 const rnd = (a, b) => a + Math.random() * (b - a);
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -38,21 +41,42 @@ function capsule(ctx, half, r) {
   ctx.closePath();
 }
 
-function weaponCard(kind, spread, status) {
-  const { name, len, rad } = PROJECTILES[kind];
-  const card = el("div", "weapon");
-  const cv = canvas(150, 76);
+function realCanvas(width, scale) {
+  const w = Math.max(120, Math.ceil(width * scale) + 24);
+  const cv = canvas(w, CARD_H);
   const ctx = cv.getContext("2d");
-  const scale = Math.min(1.8, 128 / len);
-  ctx.setTransform(cv.dpr * scale, 0, 0, cv.dpr * scale, (cv.dpr * 150) / 2, (cv.dpr * 76) / 2);
-  drawProjectile(ctx, { kind, len, rad, x: 0, y: 0, a: 0, spread });
+  ctx.setTransform(cv.dpr * scale, 0, 0, cv.dpr * scale, (cv.dpr * w) / 2, (cv.dpr * CARD_H) / 2);
+  return { cv, ctx };
+}
+
+function dashed(ctx, scale) {
   ctx.setLineDash([3 / scale, 3 / scale]);
   ctx.lineWidth = 1.2 / scale;
   ctx.strokeStyle = PALETTE.mustard;
+}
+
+function weaponCard(kind, spread, status, scale) {
+  const { name, len, rad } = PROJECTILES[kind];
+  const card = el("div", "weapon");
+  const { cv, ctx } = realCanvas(len, scale);
+  drawProjectile(ctx, { kind, len, rad, x: 0, y: 0, a: 0, spread });
+  dashed(ctx, scale);
   capsule(ctx, len / 2 - rad, rad);
   ctx.stroke();
   const title = spread ? SPREADS[spread].name : name;
   card.append(cv, el("span", "name", title), el("span", "meta", `${len} × ${rad * 2} px, ${status}`));
+  return card;
+}
+
+function toastCard(scale) {
+  const card = el("div", "weapon");
+  const { cv, ctx } = realCanvas(TOAST_W, scale);
+  drawToast(ctx, { x: 0, y: 0, tilt: 0, thrust: 0.35 }, null);
+  dashed(ctx, scale);
+  ctx.beginPath();
+  ctx.arc(0, 0, HIT_R, 0, Math.PI * 2);
+  ctx.stroke();
+  card.append(cv, el("span", "name", "Tartine"), el("span", "meta", `touchée dans un cercle de ${HIT_R * 2} px`));
   return card;
 }
 
@@ -65,15 +89,43 @@ function weaponGroup(title, note, cards) {
 }
 
 export function renderWeapons(root) {
+  const scale = gameScale();
   const kinds = Object.keys(PROJECTILES);
-  root.replaceChildren(
-    weaponGroup("En jeu", "En pointillés jaunes : la zone de touche réelle.",
-      kinds.filter((k) => !PROJECTILES[k].lab).map((k) => weaponCard(k, null, "en jeu"))),
-    weaponGroup("Variantes rares", "Environ 1 couteau sur 25 change de tartinade. Pur visuel, la zone de touche ne change pas.",
-      Object.keys(SPREADS).filter((s) => s !== "butter").map((s) => weaponCard("knife", s, "rare"))),
-    weaponGroup("Prototypes", "Pas encore dans le jeu : à voir en mouvement dans l'onglet Attaques.",
-      kinds.filter((k) => PROJECTILES[k].lab).map((k) => weaponCard(k, null, "prototype")))
-  );
+  const lab = kinds.filter((k) => PROJECTILES[k].lab);
+  const groups = [
+    weaponGroup("En jeu", `Taille réelle, comme dans le jeu sur cet écran (échelle × ${scale.toFixed(2).replace(".", ",")}). En pointillés jaunes : la zone de touche.`,
+      [toastCard(scale), ...kinds.filter((k) => !PROJECTILES[k].lab).map((k) => weaponCard(k, null, "en jeu", scale))]),
+    weaponGroup("Variantes rares", "Environ 1 attaque sur 40 : un seul de ses couteaux change de tartinade. Pur visuel, la zone de touche ne change pas.",
+      Object.keys(SPREADS).filter((sp) => sp !== "butter").map((sp) => weaponCard("knife", sp, "rare", scale)))
+  ];
+  if (lab.length) {
+    groups.push(weaponGroup("Prototypes", "Pas encore dans le jeu : à voir en mouvement dans l'onglet Attaques.",
+      lab.map((k) => weaponCard(k, null, "prototype", scale))));
+  }
+  root.replaceChildren(...groups);
+}
+
+function progressionCard() {
+  const speedEnd = (SPEED_MAX - 1) * SPEED_RAMP;
+  const gapEnd = (GAP_START - GAP_MIN) / GAP_SLOPE;
+  const steps = [];
+  for (const a of ATTACKS.filter((x) => !x.lab)) steps.push([a.from, a.from ? "arrivée : " + a.name : a.name + " dès le début"]);
+  for (const a of ATTACKS.filter((x) => !x.lab && x.growsUntil)) steps.push([a.growsUntil, a.growth]);
+  steps.push([gapEnd, `rythme maximal : une attaque toutes les ${String(GAP_MIN).replace(".", ",")} s au plus vite`]);
+  steps.push([speedEnd, `vitesse maximale : × ${num(SPEED_MAX)}`]);
+  steps.sort((x, y) => x[0] - y[0]);
+  const end = Math.max(...steps.map((x) => x[0]));
+  const lastAttack = Math.max(...ATTACKS.filter((x) => !x.lab).map((x) => x.from));
+  const section = el("section", "card");
+  const list = el("ol", "timeline");
+  for (const [t, text] of steps) {
+    const li = el("li");
+    li.append(el("span", "when", `${Math.round(t)} s`), el("span", null, text));
+    list.append(li);
+  }
+  const verdict = el("p", "verdict", `Fin de la complexification : ${Math.round(end)} s. Dernière nouvelle attaque à ${lastAttack} s. Au-delà de ${Math.round(end)} s, plus rien ne change : même vitesse, même rythme, mêmes attaques.`);
+  section.append(el("h2", null, "Progression"), verdict, list);
+  return section;
 }
 
 function restart(p) {
@@ -135,7 +187,7 @@ export function renderAttacks(root) {
   for (const text of [
     "Chaque attaque est vérifiée par le solveur avant d'être lancée : on peut toujours s'en sortir, même en ne bougeant que 0,1 s après l'annonce.",
     "Vitesse de tous les couverts : × (1 + temps / 50), au maximum × 2,6 à partir de 80 s.",
-    "Jamais plus de 3 fois la même attaque d'affilée, et une attaque qui vient de sortir a deux fois moins de chances de ressortir.",
+    "Jamais plus de 3 fois la même attaque d'affilée, et une attaque qui vient de sortir a deux fois moins de chances de ressortir. Les grosses figures (croix, couloir, double pluie) ne sortent jamais deux fois de suite.",
     "Dans les aperçus, la tartine reste immobile."
   ]) list.append(el("li", null, text));
   rules.append(el("h2", null, "Règles"), list);
@@ -161,7 +213,7 @@ export function renderAttacks(root) {
     previews.push(p);
     return card;
   });
-  root.replaceChildren(rules, ...cards);
+  root.replaceChildren(progressionCard(), rules, ...cards);
 }
 
 export function animateAttacks(on) {
