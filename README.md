@@ -84,10 +84,51 @@ Par le côté            Par le haut
        [T]
 ```
 
+### Croix (dès 30 s)
+
+- 4 couteaux en même temps : un de chaque coin du haut et un de chaque côté (dans les 60 % du haut), tous vers la tartine.
+- Annonce 0,6 s avant. Il faut s'écarter du point visé, par exemple vers le bas.
+
+```
+  >           <
+    \       /
+  >--- [T] ---<
+```
+
+### Couloir (dès 40 s)
+
+- Un mur par un côté, puis un mur par l'autre côté 0,55 s plus tard, chacun avec son propre trou.
+- Il faut passer le premier trou puis rejoindre le second.
+
+```
+>=====          =====<
+         trou 1  =====<
+>=====          <- trou 2
+>=====          =====<
+```
+
+### Double pluie (dès 45 s)
+
+- Deux fois plus de fourchettes que la pluie (8 à 16), une toutes les 0,09 s.
+
+### Variantes rares
+
+- Environ 1 couteau sur 25 porte autre chose que du beurre : confiture, pâte à tartiner, miel ou ketchup.
+- Pur visuel : même taille, même zone de touche, aucun effet sur le score ni sur l'équité.
+
+### Prototypes (pas encore en jeu)
+
+- Rouleau à pâtisserie : gros, debout, traverse lentement par un côté.
+- Fouet : tourne sur lui-même en descendant vers la tartine.
+- Hachoir : tombe tout droit et très vite, annoncé 0,9 s avant.
+- Couteau à pain : rebondit une fois sur le bord opposé puis file vers la tartine. Pour le mettre en jeu, il faudra apprendre le rebond au solveur.
+- À voir dessinés et en mouvement dans l'admin (onglets Armes et Attaques). Adrien choisit ceux qui entrent dans le jeu.
+
 ## Progression de la difficulté
 
-- Aujourd'hui, tout est aléatoire. La difficulté monte en continu et de nouvelles attaques se débloquent par paliers.
-- Il n'y a pas encore de séquence scriptée ni de pic soudain : voir « À brainstormer ».
+- Tout est aléatoire. La difficulté monte en continu et de nouvelles attaques se débloquent par paliers.
+- Jamais plus de 3 fois la même attaque d'affilée. Une attaque qui vient de sortir a deux fois moins de chances de ressortir (quatre fois moins au deuxième coup), pour éviter les longues séries.
+- Pas encore de phases (moments calmes, pics) : remis à plus tard, voir « À brainstormer ».
 
 ```
 temps     0s      6s      14s     24s     35s     52s          80s
@@ -96,6 +137,7 @@ visé      ################################################################
 pluie             ########################################################
 mur                       ################################################
 éventail                          ########################################
+croix (30s), couloir (40s), double pluie (45s)        ##########################
 tournant                                  ################################
 vitesse   x1,0 ................................................ x2,6 (max)
 rythme    1 attaque / 1,25 s ...................... 1 / 0,42 s (max)
@@ -105,10 +147,10 @@ rythme    1 attaque / 1,25 s ...................... 1 / 0,42 s (max)
 |---|---|
 | Vitesse des couverts | × (1 + t / 50), plafond × 2,6 atteint à 80 s |
 | Délai entre deux attaques | 1,25 s - 0,016 × t, jamais moins de 0,42 s (atteint à 52 s) |
-| Après une attaque à plusieurs couverts | délai × 1,5 (pluie, éventail) ou × 1,7 (mur) |
+| Après une attaque à plusieurs couverts | délai × 1,5 (pluie, éventail), × 1,6 (croix), × 1,7 (mur), × 2 (double pluie), × 2,2 (couloir) |
 | Hasard sur le délai | ± 15 % |
-| Chances de tirage | visé 3, pluie 1,4, mur 1,1, éventail 1,1 (parmi les attaques débloquées) |
-| Vitesse de base | visé 230 px/s, éventail 200, pluie 190, mur 150 |
+| Chances de tirage | visé 3, pluie 1,4, mur 1,1, éventail 1,1, croix 0,7, couloir 0,6, double pluie 0,6 (parmi les attaques débloquées, divisé par 2 si elle vient de sortir) |
+| Vitesse de base | visé 230 px/s, croix 210, éventail 200, pluie et double pluie 190, mur et couloir 150 |
 
 Repères mesurés avec des robots :
 
@@ -119,12 +161,14 @@ Repères mesurés avec des robots :
 ## Équité : jamais de situation impossible
 
 - Avant chaque attaque, le jeu simule les 3,5 s suivantes avec tous les couverts en vol et annoncés, plus l'attaque candidate.
+- Temps de réaction : le solveur suppose que la tartine ne bouge pas pendant les 0,1 s qui suivent. Une attaque qui ne laisse une issue qu'en réagissant à l'instant est refusée.
+- Ajouté le 28/10/2026 : sans cette marge, le couloir pouvait créer des pièges où il fallait partir dans la bonne direction à l'instant même (le robot y mourait 2 fois sur 100). Comparé sur 100 parties : 0,07 s refuse 9 % des attaques, 0,1 s en refuse 12 %, 0,17 s en refuse 20 % et double le temps de calcul. Retenu : 0,1 s.
 - Il cherche un chemin pour la tartine : grille de cases de 12 px, pas de 1/30 s, doigt à 360 px/s au plus, marge de 11 px autour de chaque couvert.
 - Sans chemin, l'attaque est remplacée par une autre (jusqu'à 5 essais, un par image).
 - Le modèle est prudent : si le robot passe, un humain peut passer.
 - La garantie vaut au moment où l'attaque est lancée. Un joueur peut toujours se coincer tout seul ensuite.
 - `npm test` fait jouer le robot pendant 100 parties de 150 s, avec puis sans le solveur.
-- Dernier résultat : 0 mort avec le solveur, 4 sans (pièges entre 110 et 135 s). 0,1 % des attaques sont remplacées, et une vérification prend 2,3 ms en moyenne sur PC.
+- Dernier résultat (28/10/2026, avec croix, couloir et double pluie) : 0 mort et 0 blocage sur 100 parties de 150 s avec le solveur ; 39 morts sans. 12 % des attaques sont refusées puis remplacées. Calcul : environ 50 % plus lourd qu'avant les nouvelles figures (de l'ordre de 3 à 4 ms par vérification sur PC, jusqu'à 25 ms dans les cas chargés) : à surveiller sur téléphone.
 
 ## Écrans
 
@@ -196,6 +240,7 @@ Repères mesurés avec des robots :
 - Rôles : propriétaire (soirées, joueurs et équipe) et admin (soirées et joueurs).
 - Chaque téléphone connecté apparaît dans « Équipe » et peut être retiré : il est déconnecté aussitôt.
 - On ne peut pas retirer le dernier propriétaire.
+- Trois onglets : Soirée (tableau de bord), Armes (tous les ustensiles dessinés avec leur zone de touche, variantes rares, prototypes) et Attaques (chaque attaque avec ses infos et un aperçu animé en boucle).
 - Tableau de bord : soirée en cours, fin du classement avec compte à rebours, joueurs, parties, record, classement mis à jour toutes les 10 s, bouton pour retirer un tricheur.
 - « Record à vérifier » (trait rouge) : le record a pris nettement plus de temps réel que le score (plus de 15 % et 15 s d'écart). Signe d'un jeu ralenti exprès, ou d'une appli mise en arrière-plan en pleine partie.
 - Une nouvelle soirée ne peut être créée qu'une fois la précédente fermée : avancer d'abord son heure de fin à maintenant. Ça évite d'effacer le classement en pleine soirée par erreur.
@@ -255,8 +300,9 @@ Après :
 | `public/js/app/audio.js` | Musique, bruitages et leurs volumes |
 | `public/sfx/` | Bruitages Mixkit |
 | `public/js/app/input.js` | Glisser du doigt et souris |
-| `public/js/shared/` | Stockage du téléphone et formats, partagés avec l'admin |
+| `public/js/shared/` | Stockage du téléphone, formats et couleurs (`palette.js`, avec les tartinades), partagés avec l'admin |
 | `public/js/admin/admin.js`, `public/admin.html`, `admin.css` | Tableau de bord admin |
+| `public/js/admin/catalog.js` | Onglets Armes et Attaques de l'admin, avec les aperçus animés |
 | `public/js/version.js` | Version du jeu, réécrite à chaque déploiement |
 | `public/sw.js`, `manifest.webmanifest` | PWA : service worker et manifeste |
 | `public/_headers` | En-têtes de sécurité des pages |
@@ -289,6 +335,8 @@ Après :
 
 - Nouvelle attaque : une fonction dans `attacks.js` qui renvoie ses avertissements et projectiles, puis une ligne dans `ATTACKS` (à partir de quand, poids, durée). Le solveur la vérifie tout seul.
 - Nouveau projectile : sa taille dans `projectiles.js` et son dessin dans `sprites.js` (même nom).
+- Prototype : `lab: true` dans `ATTACKS` ou `PROJECTILES`. Il apparaît dans l'admin mais n'est jamais tiré en jeu. Pour le mettre en jeu : retirer `lab`, régler `from` et `weight`, puis `npm test`.
+- Nouvelle tartinade rare : une ligne dans `SPREADS` (`palette.js`) et son nom dans `RARE_SPREADS` (`projectiles.js`).
 - Nouveau bruitage : voir « Bruitages ».
 - Nouvel événement de partie (objet ramassé, etc.) : `sim.js` le renvoie dans la liste d'événements de `step`, et `main.js` y réagit dans `ON_SIM`.
 - Nouvelle route d'API : une fonction dans `src/routes/` et une ligne dans la liste de `src/worker.ts`, avec le niveau d'accès (public, admin, propriétaire).
@@ -305,12 +353,14 @@ Après :
 
 ## À brainstormer
 
-- Nouveaux projectiles : d'autres ustensiles, d'autres trajectoires.
-- Variantes rares et drôles : des couteaux avec autre chose que du beurre, pour des clins d'œil. Purement visuel, l'équité ne change pas.
-- Phases structurées : séquences scriptées, moments calmes, pics soudains.
-- Caler les attaques sur les drops de la musique (idée, pas sûr).
+- Gestion des soirées, à revoir :
+  - Peut-on avoir deux soirées en même temps (deux lieux, deux QR codes) ?
+  - Faut-il un classement général, même en dehors des soirées (tous les temps, par mois) ?
+  - Comment les soirées et le hors-soirée existent dans le jeu et dans le classement : ce que voit un joueur qui ouvre l'appli un mardi, ce que devient son record de la soirée, ce qui reste visible après la fermeture.
+- Prototypes à valider : rouleau, fouet, hachoir, couteau à pain (voir l'admin, onglets Armes et Attaques).
+- Phases structurées, remises à plus tard par Adrien : moments calmes et pics. Piste : caler les pics sur les drops du morceau, possible car la musique repart du début à chaque partie. Je peux repérer les drops en analysant le fichier.
 - Images rigolotes qui défilent dans le fond : références aux anciennes soirées et aux délires du collectif (par exemple un maximator qui tourne).
-- Mini wiki dans le jeu : une page qui présente chaque type d'attaque (dessin, nom, à partir de quand elle arrive, comment l'esquiver).
+- Mini wiki dans le jeu : une page qui présente chaque type d'attaque (dessin, nom, à partir de quand elle arrive, comment l'esquiver). L'onglet Attaques de l'admin en est déjà la base.
 - Collection : des objets à attraper en passant la tartine dessus (par exemple le maximator qui tourne). Chaque objet trouvé rejoint la collection du joueur dans le jeu.
   - Un nombre fixe d'objets, ceux pas encore trouvés sont affichés en ombre.
   - En fin de partie, l'écran montre les objets attrapés pendant la partie.

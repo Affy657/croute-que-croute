@@ -22,14 +22,19 @@ function mover(o, t0) {
   };
 }
 
-function mark(m, tau, blocked) {
+const FULL = { i0: I0, i1: I1, j0: J0, j1: J1 };
+
+function mark(m, tau, blocked, area = FULL) {
   if (tau < m.t0 || tau > m.t1) return;
   const d = tau - m.t0;
   const cx = m.x + m.vx * d, cy = m.y + m.vy * d;
+  const reachOut = m.h + m.r;
+  if (cx + reachOut < (area.i0 - 0.5) * CELL || cx - reachOut > (area.i1 + 1.5) * CELL) return;
+  if (cy + reachOut < (area.j0 - 0.5) * CELL || cy - reachOut > (area.j1 + 1.5) * CELL) return;
   const tx = Math.cos(m.a), ty = Math.sin(m.a), r = m.r, r2 = r * r, len = 2 * m.h;
   const ax = cx - tx * m.h, ay = cy - ty * m.h, bx = cx + tx * m.h, by = cy + ty * m.h;
-  const j0 = Math.max(J0, Math.floor((Math.min(ay, by) - r) / CELL));
-  const j1 = Math.min(J1, Math.floor((Math.max(ay, by) + r) / CELL));
+  const j0 = Math.max(area.j0, Math.floor((Math.min(ay, by) - r) / CELL));
+  const j1 = Math.min(area.j1, Math.floor((Math.max(ay, by) + r) / CELL));
   for (let j = j0; j <= j1; j++) {
     const py = (j + 0.5) * CELL;
     let xl = Infinity, xr = -Infinity;
@@ -68,13 +73,14 @@ function mark(m, tau, blocked) {
       }
     }
     if (xl >= xr) continue;
-    const i0 = Math.max(I0, Math.ceil(xl / CELL - 0.5));
-    const i1 = Math.min(I1, Math.floor(xr / CELL - 0.5));
+    const i0 = Math.max(area.i0, Math.ceil(xl / CELL - 0.5));
+    const i1 = Math.min(area.i1, Math.floor(xr / CELL - 0.5));
     if (i0 <= i1) blocked.fill(1, j * COLS + i0, j * COLS + i1 + 1);
   }
 }
 
-export function solve(state, extra, wantPath) {
+export function solve(state, extra, wantPath, react = 0) {
+  const still = Math.round(react / SDT);
   const t = state.t;
   const movers = [];
   for (const o of state.obs) movers.push(mover(o, t));
@@ -89,12 +95,19 @@ export function solve(state, extra, wantPath) {
   const prev = wantPath ? [] : null;
   reach[start] = 1;
   const wide = new Uint8Array(CELLS);
+  const box = { i0: start % COLS, i1: start % COLS, j0: Math.floor(start / COLS), j1: Math.floor(start / COLS) };
   for (let k = 1; k <= steps; k++) {
     blocked.fill(0);
     const tA = t + (k - 1) * SDT;
+    const frozen = k <= still;
+    const grow = prev || frozen ? 0 : 1;
+    const area = prev ? FULL : {
+      i0: Math.max(I0, box.i0 - grow), i1: Math.min(I1, box.i1 + grow),
+      j0: Math.max(J0, box.j0 - grow), j1: Math.min(J1, box.j1 + grow)
+    };
     for (let s = 0; s <= SUB; s++) {
       const tau = tA + (s * SDT) / SUB;
-      for (const m of movers) mark(m, tau, blocked);
+      for (const m of movers) mark(m, tau, blocked, area);
     }
     next.fill(0);
     let any = false;
@@ -105,7 +118,7 @@ export function solve(state, extra, wantPath) {
           const c = j * COLS + i;
           if (blocked[c]) continue;
           let src = reach[c] ? c : -1;
-          for (let dj = -1; dj <= 1 && src < 0; dj++) {
+          for (let dj = -1; dj <= 1 && src < 0 && !frozen; dj++) {
             const jj = j + dj;
             if (jj < J0 || jj > J1) continue;
             for (let di = -1; di <= 1; di++) {
@@ -123,24 +136,34 @@ export function solve(state, extra, wantPath) {
       }
       prev.push(from);
     } else {
-      for (let j = J0; j <= J1; j++) {
+      const { i0, i1, j0, j1 } = area;
+      const at = (c, j) => (j >= box.j0 && j <= box.j1 ? wide[c] : 0);
+      for (let j = box.j0; j <= box.j1; j++) {
         const row = j * COLS;
-        for (let i = I0; i <= I1; i++) {
+        for (let i = i0; i <= i1; i++) {
           const c = row + i;
-          wide[c] = (reach[c] & ~blocked[c]) | (i > I0 ? reach[c - 1] & ~blocked[c - 1] : 0) | (i < I1 ? reach[c + 1] & ~blocked[c + 1] : 0);
+          wide[c] = frozen
+            ? reach[c] & ~blocked[c]
+            : (reach[c] & ~blocked[c]) | (i > I0 ? reach[c - 1] & ~blocked[c - 1] : 0) | (i < I1 ? reach[c + 1] & ~blocked[c + 1] : 0);
         }
       }
-      for (let j = J0; j <= J1; j++) {
+      const nb = { i0: I1, i1: I0, j0: J1, j1: J0 };
+      for (let j = j0; j <= j1; j++) {
         const row = j * COLS;
-        for (let i = I0; i <= I1; i++) {
+        for (let i = i0; i <= i1; i++) {
           const c = row + i;
           if (blocked[c]) continue;
-          if (wide[c] | (j > J0 ? wide[c - COLS] : 0) | (j < J1 ? wide[c + COLS] : 0)) {
+          if (frozen ? at(c, j) : at(c, j) | at(c - COLS, j - 1) | at(c + COLS, j + 1)) {
             next[c] = 1;
             any = true;
+            if (i < nb.i0) nb.i0 = i;
+            if (i > nb.i1) nb.i1 = i;
+            if (j < nb.j0) nb.j0 = j;
+            if (j > nb.j1) nb.j1 = j;
           }
         }
       }
+      Object.assign(box, nb);
     }
     if (!any) return null;
     [reach, next] = [next, reach];
