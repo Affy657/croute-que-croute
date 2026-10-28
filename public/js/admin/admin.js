@@ -1,8 +1,10 @@
 import { store as storage, KEYS } from "../shared/store.js";
 import { fmtCs, clock } from "../shared/format.js";
+import { previewSfx } from "../app/audio.js";
 
 const $ = (id) => document.getElementById(id);
 const REFRESH_MS = 10000;
+const SFX_LABELS = { start: "Départ", near: "Frôlé", death: "Mort", record: "Record", first: "1re place" };
 const store = {
   get: () => storage.get(KEYS.adminToken),
   set: (v) => storage.set(KEYS.adminToken, v || null)
@@ -313,6 +315,13 @@ document.addEventListener("visibilitychange", () => {
 setInterval(() => {
   if (me) tick();
 }, 1000);
+
+$("sfxList").replaceChildren(...Object.entries(SFX_LABELS).map(([name, label]) => {
+  const btn = cell("button", "btn ghost small", label);
+  btn.type = "button";
+  btn.addEventListener("click", () => previewSfx(name));
+  return btn;
+}));
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 

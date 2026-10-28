@@ -153,10 +153,23 @@ Repères mesurés avec des robots :
 
 ## Bruitages
 
-- Le moteur est prêt (`public/js/app/audio.js`) mais aucun son n'est encore branché : la liste `SOUNDS` est vide.
-- Moments déjà prévus dans le code : `start` (départ), `near` (frôlé), `death` (mort), `record` (nouveau record en fin de partie).
-- Ajouter un son : déposer le fichier dans `public/sfx/` et l'ajouter à `SOUNDS`, par exemple `record: "/sfx/record.mp3"`.
+- Style arcade, fabriqués dans le code (`public/js/app/sfx.js`) : aucun fichier, aucun droit, 0 €. Choix d'Adrien du 28/10/2026.
+
+| Moment | Son |
+|---|---|
+| Départ | Allumage des fusées : souffle qui monte et grondement |
+| Frôlé | « Fshh » de lame très court, discret, un seul toutes les 0,08 s au plus |
+| Mort | Croc de tartine croquée (rappel du logo TTS) et choc sourd |
+| Nouveau record | Jingle de 4 notes qui monte (do, mi, sol, do), joué sur l'écran de fin |
+| Passer 1er | Version plus grosse : 5 notes puis un accord tenu qui brille |
+
+- Le jeu attend la réponse du serveur (1,2 s au plus) pour savoir s'il joue le record ou la 1re place.
+- Pas de son sur les flèches d'avertissement : trop fréquent, et ça avantagerait ceux qui jouent avec le son.
+- Niveaux réglés et vérifiés sans saturation : mort, record et 1re place forts, départ moyen, frôlé discret. Un limiteur protège les haut-parleurs.
+- Écouter les sons : carte « Bruitages » en bas du tableau de bord admin.
 - Coupés par le bouton haut-parleur, indépendamment de la musique.
+- Sur iPhone, le bouton silencieux du téléphone coupe les bruitages mais pas la musique (règle d'Apple).
+- Remplacer un son par un enregistrement : déposer le fichier dans `public/sfx/` et mettre son chemin dans `SOUNDS` (`audio.js`), par exemple `record: "/sfx/record.mp3"`.
 
 ## PWA et mises à jour
 
@@ -235,7 +248,8 @@ Après :
 | `public/js/app/sprites.js` | Dessin de la tartine et de chaque projectile |
 | `public/js/app/screens.js` | Écrans HTML : accueil, fin, classement, boutons |
 | `public/js/app/api.js` | Appels au serveur, classement, mise à jour de version |
-| `public/js/app/audio.js` | Musique et bruitages |
+| `public/js/app/audio.js` | Musique et lecture des bruitages |
+| `public/js/app/sfx.js` | Fabrication des bruitages |
 | `public/js/app/input.js` | Glisser du doigt et souris |
 | `public/js/shared/` | Stockage du téléphone et formats, partagés avec l'admin |
 | `public/js/admin/admin.js`, `public/admin.html`, `admin.css` | Tableau de bord admin |
@@ -287,7 +301,6 @@ Après :
 
 ## À brainstormer
 
-- Bruitages : en priorité le nouveau record en fin de partie, puis le frôlement, la mort et le départ.
 - Nouveaux projectiles : d'autres ustensiles, d'autres trajectoires.
 - Variantes rares et drôles : des couteaux avec autre chose que du beurre, pour des clins d'œil. Purement visuel, l'équité ne change pas.
 - Phases structurées : séquences scriptées, moments calmes, pics soudains.

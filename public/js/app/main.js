@@ -11,7 +11,7 @@ import {
   renderHud, renderControls, renderAll
 } from "./screens.js";
 
-const DIE_S = 0.75, FREEZE_S = 0.12, AGAIN_LOCK_MS = 450;
+const DIE_S = 0.75, FREEZE_S = 0.12, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
 const BOARD_POLL_MS = 10000, MENU_POLL_MS = 30000;
 const ADMIN_TAPS = 5, ADMIN_TAP_MS = 3000;
 
@@ -21,7 +21,7 @@ const scene = createScene(canvas);
 let sim = createSim();
 const S = {
   mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null,
-  newBest: false, score: 0, submit: null, run: null,
+  newBest: false, score: 0, submit: null, run: null, prevRank: null,
   toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35 }
 };
 let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, lastShown = "";
@@ -48,6 +48,7 @@ function die() {
   S.splat = scene.splash(S.toast.x, S.toast.y);
   S.score = Math.floor(sim.state.t * 100);
   S.newBest = S.score > api.knownBest();
+  S.prevRank = api.registered() ? api.net.board.me.rank : null;
   api.saveLocalBest(S.score);
   S.submit = S.run ? api.submitScore(S.score, S.run) : null;
   S.run = null;
@@ -86,12 +87,22 @@ function start() {
   return true;
 }
 
+function cheer() {
+  const mine = S.submit, prev = S.prevRank;
+  const timeout = new Promise((ok) => setTimeout(() => ok(null), CHEER_WAIT_MS));
+  Promise.race([mine || Promise.resolve(null), timeout]).then((r) => {
+    if (S.submit !== mine || S.mode !== "over") return;
+    const first = r && !r.error && r.improved && r.rank === 1 && prev !== 1;
+    audio.playSfx(first ? "first" : "record");
+  });
+}
+
 function showOver() {
   S.mode = "over";
   show("over");
   renderControls(false);
   renderOver(S.score, S.newBest);
-  if (S.newBest) audio.playSfx("record");
+  if (S.newBest) cheer();
   const mine = S.submit;
   if (mine) {
     setText(ui.overNote, "Envoi…");
