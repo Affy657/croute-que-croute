@@ -1,6 +1,7 @@
 import { createSim } from "../game/sim.js";
 import { FW, FH, STEP, clamp, speedMul } from "../game/field.js";
 import { fmtCs } from "../shared/format.js";
+import { store, KEYS } from "../shared/store.js";
 import { VERSION } from "../version.js";
 import * as api from "./api.js";
 import * as audio from "./audio.js";
@@ -147,8 +148,9 @@ function closeBoard() {
 
 function renderInfo() {
   for (const tab of ui.infoTabs.children) tab.setAttribute("aria-selected", String(tab.dataset.tab === infoTab));
-  if (infoTab === "attacks") renderAttacks(ui.infoBody, { showLab: false });
-  else renderWeapons(ui.infoBody, { showLab: false });
+  const showLab = !!store.get(KEYS.adminToken);
+  if (infoTab === "attacks") renderAttacks(ui.infoBody, { showLab });
+  else renderWeapons(ui.infoBody, { showLab });
   animateAttacks(infoTab === "attacks");
   ui.infoBody.scrollTop = 0;
 }

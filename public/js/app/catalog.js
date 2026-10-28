@@ -88,7 +88,7 @@ function weaponGroup(title, note, cards) {
   return section;
 }
 
-export function renderWeapons(root, { showLab = true } = {}) {
+export function renderWeapons(root, { showLab = false } = {}) {
   const scale = gameScale();
   const kinds = Object.keys(PROJECTILES);
   const lab = kinds.filter((k) => PROJECTILES[k].lab);
@@ -99,7 +99,7 @@ export function renderWeapons(root, { showLab = true } = {}) {
       Object.keys(SPREADS).filter((sp) => sp !== "butter").map((sp) => weaponCard("knife", sp, "rare", scale)))
   ];
   if (showLab && lab.length) {
-    groups.push(weaponGroup("Prototypes", "Pas encore dans le jeu : à voir en mouvement dans l'onglet Attaques.",
+    groups.push(weaponGroup("Prototypes", "Pas encore dans le jeu, visibles seulement sur les téléphones admin : à voir en mouvement dans l'onglet Attaques.",
       lab.map((k) => weaponCard(k, null, "prototype", scale))));
   }
   root.replaceChildren(...groups);
@@ -178,7 +178,7 @@ function stat(label, value) {
   return row;
 }
 
-export function renderAttacks(root, { showLab = true } = {}) {
+export function renderAttacks(root, { showLab = false } = {}) {
   const live = ATTACKS.filter((a) => !a.lab && SAMPLE_T > a.from);
   const total = live.reduce((s, a) => s + a.weight, 0);
   previews.length = 0;

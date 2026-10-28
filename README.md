@@ -166,7 +166,7 @@ Par le côté            Par le haut
 - Jamais plus de 3 fois la même attaque d'affilée. Une attaque qui vient de sortir a deux fois moins de chances de ressortir (quatre fois moins au deuxième coup).
 - Les grosses figures (croix, couloir, double pluie) ne sortent jamais deux fois de suite.
 - Pas encore de phases (moments calmes, pics) : remis à plus tard, voir « À brainstormer ».
-- Le calendrier complet, généré depuis le code, est dans l'admin, onglet Attaques, carte « Progression ».
+- Le calendrier complet, généré depuis le code, est dans la bulle d'info du jeu, onglet Attaques, carte « Progression ».
 
 ```
 temps     0   6   10  14  18  24  28  32  38  46  52  54  60  64      80 s
@@ -229,10 +229,10 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - Accueil hors soirée : record et place au classement général. Message « Bravo X ! » pendant 12 h après une soirée, sinon « Prochaine soirée samedi 07/11 à 19h30 » si elle est créée, avec « Début dans » le dernier jour.
 - Fin de partie : temps, badge « Nouveau record » (record de la soirée pendant une soirée, record perso sinon), record et place, Rejouer, Classement. « Rejouer » est bloqué 0,45 s pour éviter de relancer par erreur.
 - Classement : deux onglets, Soirée et Général (Tous les temps). Top 50, ta ligne en jaune, mis à jour toutes les 10 s. L'onglet Soirée n'existe que pendant une soirée et les 12 h qui suivent.
-- Bulle d'info (bouton rond « i » en haut à droite) : les onglets Attaques et Armes de l'admin, pour les joueurs qui veulent tout savoir (progression, chances, vitesses, aperçus animés, tailles réelles et zones de touche).
+- Bulle d'info (bouton rond « i » en bas à droite, sur l'accueil et la fin de partie) : onglets Attaques (progression jusqu'à la fin de la complexification, règles, chaque attaque avec ses infos et un aperçu animé en boucle) et Armes (tous les ustensiles et la tartine à leur taille réelle sur cet écran, avec leur zone de touche, et les variantes rares).
 - Police : Bungee partout, chargée depuis Google Fonts.
 - Deux boutons ronds, cachés pendant la partie : la note de musique en haut à gauche coupe ou remet la musique, le haut-parleur en haut à droite coupe ou remet les bruitages. Chaque choix est mémorisé sur le téléphone.
-- Bouton « Admin » discret en bas de l'accueil, seulement sur les téléphones connectés en admin.
+- Bouton « Admin » discret en bas à gauche de l'accueil, seulement sur les téléphones connectés en admin. Les boutons du bas sont posés dans les coins, hors de la mise en page : ils ne décalent rien.
 
 ## Musique
 
@@ -285,7 +285,7 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 
 ## Admin
 
-- Même appli que le jeu : une seule installation. Un téléphone connecté en admin voit un bouton « Admin » en bas de l'accueil, qui ouvre le tableau de bord. « Retour au jeu » ramène au jeu.
+- Même appli que le jeu : une seule installation. Un téléphone connecté en admin voit un bouton « Admin » en bas à gauche de l'accueil, qui ouvre le tableau de bord. « Retour au jeu » ramène au jeu.
 - Accès caché : 5 appuis rapides sur « Collectif Tartine Sauvage » ouvrent l'écran admin.
 - Connexion sans mot de passe, le téléphone reste connecté.
 - Dans l'appli installée (surtout sur iPhone, où les liens s'ouvrent dans Safari), on peut coller le lien d'invitation dans « Lien d'invitation reçu ».
@@ -294,7 +294,7 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - Rôles : propriétaire (soirées, joueurs et équipe) et admin (soirées et joueurs).
 - Chaque téléphone connecté apparaît dans « Équipe » et peut être retiré : il est déconnecté aussitôt.
 - On ne peut pas retirer le dernier propriétaire.
-- Trois onglets : Soirée (tableau de bord), Armes (tous les ustensiles et la tartine à leur taille réelle dans le jeu sur cet écran, avec leur zone de touche, et les variantes rares) et Attaques (progression jusqu'à la fin de la complexification, règles, chaque attaque avec ses infos et un aperçu animé en boucle).
+- Une seule page : la soirée, les classements, l'équipe et les bruitages. Les armes et les attaques sont dans la bulle d'info du jeu, pour tout le monde (29/10/2026 : retirées de l'admin pour éviter le doublon).
 - Tableau de bord : soirée en cours, fin du classement avec compte à rebours, joueurs, parties, record, classement mis à jour toutes les 10 s, bouton pour retirer un tricheur.
 - « Record à vérifier » (trait rouge) : le record a pris nettement plus de temps réel que le score (plus de 15 % et 15 s d'écart). Signe d'un jeu ralenti exprès, ou d'une appli mise en arrière-plan en pleine partie.
 - Une soirée a un début et une fin : on peut la créer à l'avance pour l'annoncer dans le jeu. Une seule soirée à la fois, en cours ou prévue : pour en créer une autre, avancer d'abord la fin de la précédente à maintenant.
@@ -370,7 +370,7 @@ Après :
 | `public/js/app/input.js` | Glisser du doigt et souris |
 | `public/js/shared/` | Stockage du téléphone, formats et couleurs (`palette.js`, avec les tartinades), partagés avec l'admin |
 | `public/js/admin/admin.js`, `public/admin.html`, `admin.css` | Tableau de bord admin |
-| `public/js/app/catalog.js`, `public/catalog.css` | Pages Attaques et Armes, partagées par l'admin et la bulle d'info des joueurs |
+| `public/js/app/catalog.js`, `public/catalog.css` | Pages Attaques et Armes de la bulle d'info |
 | `public/js/version.js` | Version du jeu, réécrite à chaque déploiement |
 | `public/sw.js`, `manifest.webmanifest` | PWA : service worker et manifeste |
 | `public/_headers` | En-têtes de sécurité des pages |
@@ -403,7 +403,7 @@ Après :
 
 - Nouvelle attaque : une fonction dans `attacks.js` qui renvoie ses avertissements et projectiles, puis une ligne dans `ATTACKS` (à partir de quand, poids, durée). Le solveur la vérifie tout seul.
 - Nouveau projectile : sa taille dans `projectiles.js` et son dessin dans `sprites.js` (même nom).
-- Prototype : `lab: true` dans `ATTACKS` ou `PROJECTILES`. Il apparaît dans l'admin mais n'est jamais tiré en jeu. Pour le mettre en jeu : retirer `lab`, régler `from` et `weight`, puis `npm test`.
+- Prototype : `lab: true` dans `ATTACKS` ou `PROJECTILES`. Il apparaît dans la bulle d'info des seuls téléphones connectés en admin, mais n'est jamais tiré en jeu. Pour le mettre en jeu : retirer `lab`, régler `from` et `weight`, puis `npm test`.
 - Grosse figure qui ne doit jamais sortir deux fois de suite : `solo: true` dans `ATTACKS`.
 - Ce qui grossit avec le temps à l'intérieur d'une attaque : `growsUntil` et `growth` dans `ATTACKS`, pour que l'admin l'affiche dans la progression.
 - Nouvelle tartinade rare : une ligne dans `SPREADS` (`palette.js`) et son nom dans `RARE_SPREADS` (`projectiles.js`).
