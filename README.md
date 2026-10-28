@@ -1,54 +1,216 @@
 # Croûte que Croûte
 
-Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couverts, le meilleur temps de la soirée gagne une conso (bière ou soft).
+Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couverts, et le meilleur temps de la soirée gagne une conso (bière ou soft).
 
-- `public/sim.js` : la simulation du jeu (attaques, collisions, solveur), sans affichage
-- `public/` : l'affichage du jeu (`index.html`, `app.js`, `style.css`) et la page admin (`admin.html`)
-- `test/fairness.mjs` : le robot qui vérifie qu'aucune situation n'est impossible
-- `src/worker.ts` : l'API (pseudo, parties, classement, admin)
-- `migrations/` : la base D1 (SQLite)
-
-## Lancer en local
-
-```bash
-npm install
-npm run db:local
-npm run dev
-```
-
-- Jeu : http://localhost:8787
-- Admin : http://localhost:8787/admin, avec la clé du fichier `.dev.vars` (à créer : `ADMIN_KEY=une-cle`)
-
-## En ligne
+## Liens
 
 - Jeu : https://croute-que-croute.croute-que-croute.workers.dev
-- Admin : https://croute-que-croute.croute-que-croute.workers.dev/admin, avec la clé du fichier `cle-admin.txt` (non commité)
-- QR code à imprimer : `qr/croute-que-croute.png` (ou `.svg` pour une affiche)
-- Hébergement : offre gratuite Cloudflare (Workers + base D1 en Europe de l'Ouest), compte d'Adrien
+- Admin : https://croute-que-croute.croute-que-croute.workers.dev/admin (clé dans `cle-admin.txt`)
+- QR code : `qr/croute-que-croute.png` pour imprimer, `qr/croute-que-croute.svg` pour une affiche
+- Code : `C:\dev\couverts-volants`, git local sur `master`, pas encore de dépôt GitHub
+- POC d'origine (artefact Claude, plus mis à jour) : https://claude.ai/artifact/V2KMTGkcktubs8VguX8AxE
 
-Mettre à jour le jeu en ligne : `npm run deploy`. Nouvelle migration de base : `npm run db:remote`.
+## Le jeu en bref
 
-## Avant chaque soirée
+- On scanne le QR code, on choisit un pseudo, on joue autant qu'on veut.
+- Le doigt glisse n'importe où et la tartine suit le mouvement. Elle ne se place pas sous le doigt, donc le doigt ne la cache pas.
+- Score : le temps de survie, au centième.
+- Seul le meilleur temps de chaque joueur compte.
+- Le classement ferme à l'heure réglée dans l'admin, avec un compte à rebours dans le jeu.
+- « Frôlé ! » s'affiche quand un couvert passe très près. C'est un effet visuel, sans points.
 
-Sur `/admin` : créer la soirée avec l'heure de fin du classement. Le classement repart de zéro. Le QR code pointe simplement vers l'adresse du jeu.
+## Zone de jeu
 
-## Règles du classement
+- Terrain fixe de 360 × 640, le même pour tout le monde, agrandi pour remplir l'écran. Aucun téléphone n'a d'avantage.
+- Zone de touche de la tartine : un cercle de 13 px de rayon, plus petit que le dessin.
+- Rien n'arrive par le bas, car le doigt cacherait les attaques.
+- Les attaques par les côtés partent seulement des 60 % du haut.
+- Chaque attaque est annoncée par une flèche orange au bord, 0,45 à 0,7 s avant.
 
-- Parties illimitées, seul le meilleur temps de chaque joueur compte.
+## Les attaques
+
+### Couteau visé (dès 0 s)
+
+- 1 couteau, lancé du haut ou d'un côté vers l'endroit où est la tartine au moment de l'annonce.
+- Annonce 0,5 s avant : bouger pendant l'annonce suffit pour l'esquiver.
+- Dès 35 s, 1 fois sur 3, le couteau tourne sur lui-même et occupe plus de place.
+
+```
+  >            flèche orange au bord
+   \
+    \          le couteau file en ligne droite
+     \
+     [T]       la tartine au moment de l'annonce
+```
+
+### Pluie de fourchettes (dès 6 s)
+
+- 4 fourchettes, plus 1 toutes les 15 s (8 au maximum).
+- Elles tombent du haut l'une après l'autre (une toutes les 0,14 s), un peu en biais.
+
+```
+  v     v  v      v    v      flèches en haut
+  |     |  |      |    |
+  |     |  |      |    |      chute presque droite
+```
+
+### Mur (dès 14 s)
+
+- Une rangée de couverts serrés avec un seul trou d'environ 100 px.
+- Par le côté : un couteau tous les 34 px, trou toujours dans les 62 % du haut.
+- Par le haut : une fourchette tous les 36 px.
+- Annonce 0,7 s avant : les flèches montrent déjà où est le trou.
+
+```
+Par le côté            Par le haut
+
+>=====                 v v v v         v v v
+>=====                 | | | |   trou  | | |
+        <- trou        | | | |         | | |
+>=====
+>=====
+```
+
+### Éventail (dès 24 s)
+
+- 5 couteaux lancés d'un même point, ouverts sur environ 50° et centrés sur la tartine. 6 couteaux à partir de 44 s, 7 à partir de 64 s.
+- Départ d'un coin du haut, du milieu du haut, ou d'un côté à 40 % de la hauteur.
+- Annonce 0,6 s avant. Il faut sortir du cône par le côté.
+
+```
+  >
+   \ \  |  / /
+    \ \ | / /
+       [T]
+```
+
+## Progression de la difficulté
+
+- Aujourd'hui, tout est aléatoire. La difficulté monte en continu et de nouvelles attaques se débloquent par paliers.
+- Il n'y a pas encore de séquence scriptée ni de pic soudain : voir « À brainstormer ».
+
+```
+temps     0s      6s      14s     24s     35s     52s          80s
+          |-------|-------|-------|-------|-------|------------|------>
+visé      ################################################################
+pluie             ########################################################
+mur                       ################################################
+éventail                          ########################################
+tournant                                  ################################
+vitesse   x1,0 ................................................ x2,6 (max)
+rythme    1 attaque / 1,25 s ...................... 1 / 0,42 s (max)
+```
+
+| Réglage | Valeur |
+|---|---|
+| Vitesse des couverts | × (1 + t / 50), plafond × 2,6 atteint à 80 s |
+| Délai entre deux attaques | 1,25 s - 0,016 × t, jamais moins de 0,42 s (atteint à 52 s) |
+| Après une attaque à plusieurs couverts | délai × 1,5 (pluie, éventail) ou × 1,7 (mur) |
+| Hasard sur le délai | ± 15 % |
+| Chances de tirage | visé 3, pluie 1,4, mur 1,1, éventail 1,1 (parmi les attaques débloquées) |
+| Vitesse de base | visé 230 px/s, éventail 200, pluie 190, mur 150 |
+
+Repères mesurés avec des robots :
+
+- Joueur immobile : mort vers 2,9 s.
+- Robot qui esquive bêtement : environ 19 s.
+- Robot parfait (qui suit le solveur) : tient 150 s sans mourir.
+
+## Équité : jamais de situation impossible
+
+- Avant chaque attaque, le jeu simule les 3,5 s suivantes avec tous les couverts en vol et annoncés, plus l'attaque candidate.
+- Il cherche un chemin pour la tartine : grille de cases de 12 px, pas de 1/30 s, doigt à 360 px/s au plus, marge de 11 px autour de chaque couvert.
+- Sans chemin, l'attaque est remplacée par une autre (jusqu'à 5 essais, un par image).
+- Le modèle est prudent : si le robot passe, un humain peut passer.
+- La garantie vaut au moment où l'attaque est lancée. Un joueur peut toujours se coincer tout seul ensuite.
+- `npm test` fait jouer le robot pendant 100 parties de 150 s, avec puis sans le solveur.
+- Dernier résultat : 0 mort avec le solveur, 4 sans (pièges entre 110 et 135 s). 0,1 % des attaques sont remplacées, et une vérification prend 2,3 ms en moyenne sur PC.
+
+## Écrans
+
+- Première visite : champ pseudo et bouton « C'est parti ».
+- Accueil : titre, record et place si on a déjà joué, Jouer, Classement, compte à rebours.
+- Fin de partie : temps, badge « Nouveau record », record et place, Rejouer, Classement. « Rejouer » est bloqué 0,45 s pour éviter de relancer par erreur.
+- Classement : top 50, ta ligne en jaune, mis à jour toutes les 10 s.
+- Après la fermeture : on peut encore jouer pour s'entraîner, et l'accueil félicite le premier.
+- Police : Bungee partout, chargée depuis Google Fonts.
+
+## Classement et triche
+
+- Pseudo de 2 à 16 caractères, unique par soirée (majuscules, accents et espaces ignorés).
 - À égalité, le premier à avoir fait le temps passe devant.
-- Le serveur refuse un score plus long que le temps réellement écoulé depuis le début de la partie.
-- L'admin peut retirer un joueur du classement.
+- Le serveur refuse un score plus long que le temps réellement écoulé depuis le début de la partie (avec 0,5 s de marge).
+- Pas de compte : le téléphone garde un jeton. Changer de navigateur oblige à prendre un nouveau pseudo.
+- Faille connue : quelqu'un d'habile peut lancer une partie, attendre, puis envoyer un faux score plausible. Parade : repérer les temps louches dans l'admin et retirer le joueur.
 
-## Aucune situation impossible
+## Check-list d'une soirée
 
-Avant de lancer une attaque, le jeu vérifie qu'il reste au moins un chemin pour s'en sortir, en tenant compte de tous les couverts déjà en vol et annoncés. Le calcul découpe l'écran en cases de 12 px et avance par pas de 1/30 s, avec un doigt qui se déplace à environ 360 px/s au plus et une marge autour de chaque couvert. Si aucun chemin n'existe, l'attaque est remplacée par une autre.
+Avant :
 
-`npm test` fait jouer un robot qui suit ces chemins pendant 100 parties de 150 s. Il ne doit jamais mourir. Le test lance aussi les mêmes parties sans la vérification, pour comparer.
+- Sur `/admin`, entrer la clé et créer la soirée (nom et heure de fin). Le classement repart de zéro.
+- Imprimer le QR code pour les tables, le bar et l'écran si le lieu en a un.
+- Faire une partie depuis le QR code pour vérifier.
 
-## Plus tard
+Pendant :
 
-- Couleurs et tartine reprises de l'affiche numérique.
-- Musique de fond (morceaux fournis par le collectif).
-- Idée, pas sûr : caler des vagues d'attaques sur les drops des morceaux.
+- Surveiller les temps louches sur `/admin` et retirer le joueur si besoin.
+- Repousser l'heure de fin si la soirée glisse.
+
+Après :
+
+- Le gagnant montre son téléphone au bar : sa ligne est en jaune dans le classement.
+
+## Technique
+
+- Hébergement : Cloudflare, offre gratuite, compte d'Adrien. Coût : 0 €.
+- Workers pour le site et l'API, base D1 (SQLite) en Europe de l'Ouest.
+- Limite gratuite : 100 000 requêtes par jour. Une soirée de 150 joueurs en fait environ 20 000.
+- Jeu en JavaScript sans compilation, API en TypeScript (compilée par wrangler).
+
+| Fichier | Rôle |
+|---|---|
+| `public/sim.js` | Simulation : attaques, collisions, solveur. Sans affichage, partagée par le jeu et le test |
+| `public/app.js` | Affichage, écrans, appels à l'API |
+| `public/index.html`, `public/style.css` | Écrans et style |
+| `public/admin.html` | Page admin |
+| `src/worker.ts` | API : pseudo, parties, classement, admin |
+| `migrations/` | Schéma de la base |
+| `test/fairness.mjs` | Test du solveur avec le robot |
+| `qr/` | QR codes |
+
+| Commande | À quoi ça sert |
+|---|---|
+| `npm install` | Installer les outils |
+| `npm run db:local` | Créer la base locale (à refaire si la base change) |
+| `npm run dev` | Jeu en local sur http://localhost:8787, admin avec la clé de `.dev.vars` |
+| `npm test` | Robot du solveur, 0 mort attendu (environ 4 min) |
+| `npm run check` | Vérifier les types de l'API |
+| `npm run deploy` | Mettre en ligne |
+| `npm run db:remote` | Appliquer une nouvelle migration sur la base en ligne |
+
+## À faire
+
+- Reprendre les couleurs et la tartine de l'affiche numérique (Adrien envoie le fichier).
+- Musique de fond, avec les morceaux fournis par le collectif.
+- Icône pour couper ou remettre la musique.
+- Créer la vraie soirée du samedi 07/11 sur `/admin`.
+- Tester sur de vrais téléphones : fluidité, son, réseau du lieu.
+
+## À brainstormer
+
+- Bruitages : en priorité le nouveau record en fin de partie, puis le frôlement, la mort et le départ.
+- Nouveaux projectiles : d'autres ustensiles, d'autres trajectoires.
+- Variantes rares et drôles : des couteaux avec autre chose que du beurre, pour des clins d'œil. Purement visuel, l'équité ne change pas.
+- Phases structurées : séquences scriptées, moments calmes, pics soudains.
+- Caler les attaques sur les drops de la musique (idée, pas sûr).
 - Partage du score en story Insta.
-- Écran géant : afficher le classement en plein écran si le lieu en a un.
+- Écran géant : classement en plein écran si le lieu en a un.
+- Adresse plus courte : sous-domaine `tartine-sauvage` à changer dans Cloudflare, puis régénérer le QR code.
+
+## Bon à savoir
+
+- La soirée de test ouverte en ligne ferme le 29/10/2026 à 23h30.
+- `cle-admin.txt` et `.dev.vars` ne sont pas dans git : à garder de côté.
+- wrangler est connecté au compte Cloudflare sur le PC d'Adrien (`npx wrangler whoami` pour vérifier).
+- Une fois la page chargée, le jeu tourne sans réseau. Le score ne compte que si le réseau passe au début et à la fin de la partie (3 essais d'envoi).
+- Le record perso hors classement reste sur le téléphone.
