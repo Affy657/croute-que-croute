@@ -411,6 +411,10 @@ Après :
   - Peut-on avoir deux soirées en même temps (deux lieux, deux QR codes) ?
   - Faut-il un classement général, même en dehors des soirées (tous les temps, par mois) ?
   - Comment les soirées et le hors-soirée existent dans le jeu et dans le classement : ce que voit un joueur qui ouvre l'appli un mardi, ce que devient son record de la soirée, ce qui reste visible après la fermeture.
+- Deuxième phase après 80 s (idée d'Adrien, pas prioritaire : atteindre 80 s est déjà très dur pour un humain) :
+  - « Roundabout » commence à se calmer entre 75 et 80 s, pile quand la complexification s'arrête.
+  - Si on veut prolonger la montée : passer en « mode sérieux » à 80 s, avec une deuxième musique qui pousse encore plus, une DA qui change un peu, et des attaques qui varient ou se durcissent.
+  - Il faudra que le joueur sente clairement le changement de mode.
 - Phases structurées, remises à plus tard par Adrien : moments calmes et pics. Piste : caler les pics sur les drops du morceau, possible car la musique repart du début à chaque partie. Je peux repérer les drops en analysant le fichier.
 - Images rigolotes qui défilent dans le fond : références aux anciennes soirées et aux délires du collectif (par exemple un maximator qui tourne).
 - Mini wiki dans le jeu : une page qui présente chaque type d'attaque (dessin, nom, à partir de quand elle arrive, comment l'esquiver). L'onglet Attaques de l'admin en est déjà la base.
