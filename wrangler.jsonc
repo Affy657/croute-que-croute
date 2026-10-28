@@ -10,7 +10,7 @@
     {
       "binding": "DB",
       "database_name": "croute-que-croute",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "af1e8422-b6f9-4d26-a5d2-ebdda75970b1",
       "migrations_dir": "migrations"
     }
   ]
