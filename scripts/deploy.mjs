@@ -3,7 +3,7 @@ import { writeFileSync } from "node:fs";
 
 const hash = execSync("git rev-parse --short HEAD").toString().trim();
 const version = `${Date.now().toString(36)}-${hash}`;
-const file = "public/version.js";
+const file = "public/js/version.js";
 
 writeFileSync(file, `export const VERSION = "${version}";\n`);
 try {

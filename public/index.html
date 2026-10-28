@@ -47,6 +47,7 @@
       <button id="menuBoard" class="ghost" type="button" hidden>Classement</button>
     </div>
     <p id="menuCountdown" class="countdown" hidden></p>
+    <a id="adminLink" class="admin-link" href="/admin" hidden>Admin</a>
   </div>
 </section>
 
@@ -78,13 +79,17 @@
   <button id="boardBack" class="cta" type="button">Retour</button>
 </section>
 
-<a id="adminLink" class="corner left" href="/admin" aria-label="Tableau de bord admin" hidden>
+<button id="music" class="corner left toggle" type="button" aria-label="Musique" aria-pressed="true" hidden>
   <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M3.5 18.5h17l-1.4-10-4.6 4.2L12 5.5l-2.5 7.2-4.6-4.2-1.4 10z" fill="currentColor"/>
+    <path d="M9 17.5V6.3l10-2.3v11.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+    <circle cx="6.6" cy="17.5" r="2.6" fill="currentColor"/>
+    <circle cx="16.6" cy="15.5" r="2.6" fill="currentColor"/>
+    <path class="off halo" d="M4 4l16 16" stroke-width="5.5" stroke-linecap="round"/>
+    <path class="off" d="M4 4l16 16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
   </svg>
-</a>
+</button>
 
-<button id="sound" class="corner sound" type="button" aria-label="Couper la musique" aria-pressed="false" hidden>
+<button id="sfx" class="corner toggle" type="button" aria-label="Sons" aria-pressed="true" hidden>
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
     <path class="on" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -92,6 +97,6 @@
   </svg>
 </button>
 
-<script type="module" src="/app.js"></script>
+<script type="module" src="/js/app/main.js"></script>
 </body>
 </html>

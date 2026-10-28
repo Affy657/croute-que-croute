@@ -232,6 +232,10 @@ select:focus-visible,
   opacity: 0.45;
 }
 
+.list li.suspect {
+  box-shadow: inset 3px 0 0 var(--jam);
+}
+
 .list .pos {
   font-family: var(--font-display);
   color: var(--mustard);

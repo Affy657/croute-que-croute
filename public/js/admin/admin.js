@@ -1,8 +1,11 @@
+import { store as storage, KEYS } from "../shared/store.js";
+import { fmtCs, clock } from "../shared/format.js";
+
 const $ = (id) => document.getElementById(id);
-const TOKEN_KEY = "cqc-admin-token";
+const REFRESH_MS = 10000;
 const store = {
-  get() { try { return localStorage.getItem(TOKEN_KEY); } catch (e) { return null; } },
-  set(v) { try { if (v) localStorage.setItem(TOKEN_KEY, v); else localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+  get: () => storage.get(KEYS.adminToken),
+  set: (v) => storage.set(KEYS.adminToken, v || null)
 };
 
 let token = store.get();
@@ -10,16 +13,9 @@ let me = null;
 let data = null;
 let timer = null;
 
-const fmtCs = (cs) => (cs / 100).toFixed(2).replace(".", ",");
 const hour = (ms) => new Date(ms).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
 const toInput = (ms) => new Date(ms - new Date(ms).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 const fromInput = (value) => (value ? new Date(value).getTime() : NaN);
-
-function clock(ms) {
-  const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
-  const ss = String(sec).padStart(2, "0");
-  return h > 0 ? h + ":" + String(m).padStart(2, "0") + ":" + ss : m + ":" + ss;
-}
 
 function ago(ms) {
   const min = Math.floor((Date.now() - ms) / 60000);
@@ -95,12 +91,12 @@ function renderPlayers() {
     const li = document.createElement("li");
     const ranked = !p.banned && p.best > 0;
     if (ranked) rank++;
-    if (p.banned) li.className = "out";
+    li.className = p.banned ? "out" : p.suspect ? "suspect" : "";
     const main = document.createElement("div");
     main.className = "main";
     main.append(
       cell("span", "name", p.pseudo),
-      cell("span", "meta", (p.best ? fmtCs(p.best) + " s, " : "") + p.runs + (p.runs > 1 ? " parties" : " partie") + (p.banned ? ", retiré" : ""))
+      cell("span", "meta", (p.best ? fmtCs(p.best) + " s, " : "") + p.runs + (p.runs > 1 ? " parties" : " partie") + (p.banned ? ", retiré" : p.suspect ? ", record à vérifier" : ""))
     );
     const btn = cell("button", "btn ghost small", p.banned ? "Réintégrer" : "Retirer");
     btn.type = "button";
@@ -184,7 +180,7 @@ async function boot() {
   clearInterval(timer);
   timer = setInterval(() => {
     if (!document.hidden) load();
-  }, 10000);
+  }, REFRESH_MS);
 }
 
 $("loginForm").addEventListener("submit", async (e) => {
