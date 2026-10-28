@@ -229,10 +229,10 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - Accueil hors soirée : record et place au classement général. Message « Bravo X ! » pendant 12 h après une soirée, sinon « Prochaine soirée samedi 07/11 à 19h30 » si elle est créée, avec « Début dans » le dernier jour.
 - Fin de partie : temps, badge « Nouveau record » (record de la soirée pendant une soirée, record perso sinon), record et place, Rejouer, Classement. « Rejouer » est bloqué 0,45 s pour éviter de relancer par erreur.
 - Classement : deux onglets, Soirée et Général (Tous les temps). Top 50, ta ligne en jaune, mis à jour toutes les 10 s. L'onglet Soirée n'existe que pendant une soirée et les 12 h qui suivent.
-- Bulle d'info (bouton rond « i » en bas à droite, sur l'accueil et la fin de partie) : onglets Attaques (progression jusqu'à la fin de la complexification, règles, chaque attaque avec ses infos et un aperçu animé en boucle) et Armes (tous les ustensiles et la tartine à leur taille réelle sur cet écran, avec leur zone de touche, et les variantes rares).
+- Bulle d'info (bouton rond « i » en bas à droite, sur l'accueil et la fin de partie) : onglets Attaques (progression jusqu'à la fin de la complexification, règles, chaque attaque avec ses infos et un aperçu animé en boucle) et Armes (tous les ustensiles et la tartine à leur taille réelle sur cet écran, avec leur zone de touche, et les variantes rares). Toute la page défile, comme une page web ; les onglets restent en haut, avec une croix pour fermer, et « Retour » est tout en bas.
 - Police : Bungee partout, chargée depuis Google Fonts.
-- Deux boutons ronds, cachés pendant la partie : la note de musique en haut à gauche coupe ou remet la musique, le haut-parleur en haut à droite coupe ou remet les bruitages. Chaque choix est mémorisé sur le téléphone.
-- Bouton « Admin » discret en bas à gauche de l'accueil, seulement sur les téléphones connectés en admin. Les boutons du bas sont posés dans les coins, hors de la mise en page : ils ne décalent rien.
+- Deux boutons ronds, cachés pendant la partie et dans la page d'info : la note de musique en haut à gauche coupe ou remet la musique, le haut-parleur en haut à droite coupe ou remet les bruitages. Chaque choix est mémorisé sur le téléphone.
+- Bouton rond Admin (roue crantée) en bas à gauche de l'accueil et de la fin de partie, seulement sur les téléphones connectés en admin. Les boutons du bas sont posés dans les coins, hors de la mise en page : ils ne décalent rien.
 
 ## Musique
 
@@ -285,7 +285,7 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 
 ## Admin
 
-- Même appli que le jeu : une seule installation. Un téléphone connecté en admin voit un bouton « Admin » en bas à gauche de l'accueil, qui ouvre le tableau de bord. « Retour au jeu » ramène au jeu.
+- Même appli que le jeu : une seule installation. Un téléphone connecté en admin voit un bouton rond Admin (roue crantée) en bas à gauche de l'accueil et de la fin de partie, qui ouvre le tableau de bord. « Retour au jeu » ramène au jeu.
 - Accès caché : 5 appuis rapides sur « Collectif Tartine Sauvage » ouvrent l'écran admin.
 - Connexion sans mot de passe, le téléphone reste connecté.
 - Dans l'appli installée (surtout sur iPhone, où les liens s'ouvrent dans Safari), on peut coller le lien d'invitation dans « Lien d'invitation reçu ».
@@ -298,7 +298,7 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - Tableau de bord : soirée en cours, fin du classement avec compte à rebours, joueurs, parties, record, classement mis à jour toutes les 10 s, bouton pour retirer un tricheur.
 - « Record à vérifier » (trait rouge) : le record a pris nettement plus de temps réel que le score (plus de 15 % et 15 s d'écart). Signe d'un jeu ralenti exprès, ou d'une appli mise en arrière-plan en pleine partie.
 - Une soirée a un début et une fin : on peut la créer à l'avance pour l'annoncer dans le jeu. Une seule soirée à la fois, en cours ou prévue : pour en créer une autre, avancer d'abord la fin de la précédente à maintenant.
-- La carte de la soirée dit si elle est en cours, prévue (avec le compte à rebours du début) ou terminée. « Horaires » change le début et la fin.
+- La carte de la soirée dit si elle est en cours, prévue (avec le compte à rebours du début) ou terminée. « Modifier » change son nom, son début et sa fin.
 - Le classement du tableau de bord a deux boutons : Soirée (les joueurs de la soirée) et Général (tous les joueurs).
 - « Retirer » retire le joueur de tous les classements (soirée et général).
 - Les liens et les connexions sont stockés chiffrés (empreinte SHA-256) en base.

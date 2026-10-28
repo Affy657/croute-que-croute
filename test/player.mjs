@@ -33,6 +33,14 @@ check("une soirée est ouverte pour le test", r.data.event && r.data.event.statu
 r = await call("POST", "/api/admin/events", { key: KEY, body: { name: "Écrasement", closesAt: Date.now() + 3600 * 1000 } });
 check("nouvelle soirée refusée tant que la soirée en cours est ouverte", r.status === 409, r);
 
+const eventName = (await call("GET", "/api/board")).data.event.name;
+r = await call("PATCH", "/api/admin/events/current", { key: KEY, body: { name: "  Soirée renommée  " } });
+const renamed = (await call("GET", "/api/admin/players", { key: KEY })).data.event;
+check("nom de la soirée modifiable, horaires gardés", r.status === 200 && renamed.name === "Soirée renommée" && renamed.status === "open", renamed);
+r = await call("PATCH", "/api/admin/events/current", { key: KEY, body: { name: "   " } });
+check("nom de soirée vide refusé", r.status === 400, r);
+await call("PATCH", "/api/admin/events/current", { key: KEY, body: { name: eventName } });
+
 const pseudo = "Test-" + hex(4);
 const device = hex(32);
 
