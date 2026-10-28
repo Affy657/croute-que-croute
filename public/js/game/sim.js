@@ -34,7 +34,10 @@ export function createSim(rng = Math.random, { fair = true, react = REACT } = {}
     const ok = solveTimed(items);
     if (ok || !fair) {
       if (!ok) state.stats.impossible++;
-      for (const w of items) for (const o of w.obs) o.from = attack.id;
+      for (const w of items) {
+        w.born = t;
+        for (const o of w.obs) o.from = attack.id;
+      }
       sprinkleRare(items);
       state.warns.push(...items);
       state.stats.spawned++;

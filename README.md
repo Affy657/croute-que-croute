@@ -25,7 +25,11 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Zone de touche de la tartine : un cercle de 13 px de rayon, plus petit que le dessin.
 - Rien n'arrive par le bas, car le doigt cacherait les attaques.
 - Les attaques par les côtés partent seulement des 60 % du haut.
-- Chaque attaque est annoncée par une flèche orange au bord, 0,45 à 0,7 s avant.
+- Chaque attaque est annoncée 0,45 à 0,9 s avant par une pastille au bord de l'écran (depuis le 28/10/2026, à la place d'une petite flèche orange peu visible) :
+  - un rond sombre avec la silhouette de l'arme qui arrive (couteau, fourchette, hachoir, rouleau, fouet, couteau à pain) ; l'éventail montre trois couteaux en cône, et un couteau qui tourne tourne aussi dans sa pastille ;
+  - une pointe orange vers où part l'arme ;
+  - un cercle orange qui se remplit jusqu'au lancer.
+- Les pastilles sont dessinées sur un calque au-dessus du score : le chrono ne les cache jamais.
 
 ## Les attaques
 
@@ -36,7 +40,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Dès 35 s, 1 fois sur 3, le couteau tourne sur lui-même et occupe plus de place.
 
 ```
-  >            flèche orange au bord
+  (>)          pastille d'annonce au bord
    \
     \          le couteau file en ligne droite
      \
@@ -49,7 +53,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Elles tombent du haut l'une après l'autre (une toutes les 0,14 s), un peu en biais.
 
 ```
-  v     v  v      v    v      flèches en haut
+  v     v  v      v    v      pastilles en haut
   |     |  |      |    |
   |     |  |      |    |      chute presque droite
 ```
@@ -60,7 +64,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Annonce 0,9 s avant, plus longue que les autres : il suffit de quitter sa colonne.
 
 ```
-     v        flèche au-dessus de la tartine
+     v        pastille au-dessus de la tartine
      #
      #        chute verticale
     [T]
@@ -71,7 +75,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Une rangée de couverts serrés avec un seul trou d'environ 100 px.
 - Par le côté : un couteau tous les 34 px, trou toujours dans les 62 % du haut.
 - Par le haut : une fourchette tous les 36 px.
-- Annonce 0,7 s avant : les flèches montrent déjà où est le trou.
+- Annonce 0,7 s avant : les pastilles montrent déjà où est le trou.
 
 ```
 Par le côté            Par le haut
@@ -265,7 +269,7 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - Volumes égalisés à la mesure : « Retro arcade lose » était près de 3 fois plus fort que les autres. Un seul frôlé part toutes les 0,08 s au plus.
 - 29/10/2026 : « Arrow whoosh » retiré (moins satisfaisant), « Dagger woosh » gardé seul à son volume d'origine, qu'Adrien trouve très bon. Mesuré : les frôlements sont aussi fréquents qu'avant, 5 à 6 par minute de jeu.
 - Le jeu attend la réponse du serveur (1,2 s au plus) pour savoir s'il joue le record ou la 1re place.
-- Pas de son sur les flèches d'avertissement : trop fréquent, et ça avantagerait ceux qui jouent avec le son.
+- Pas de son sur les annonces d'attaque : trop fréquent, et ça avantagerait ceux qui jouent avec le son.
 - Les sons sont préparés dès l'ouverture du jeu. Un son qui ne peut pas partir à temps (téléphone qui bloque encore le son) est abandonné plutôt que joué en retard.
 - Écouter les sons : carte « Bruitages » en bas du tableau de bord admin.
 - Coupés par le bouton haut-parleur, indépendamment de la musique.
@@ -423,7 +427,6 @@ Après :
 
 ## À brainstormer
 
-- Annonces des attaques : les flèches orange ne sont pas assez visibles, et avec autant de types d'attaques il faudrait reconnaître lequel arrive (forme, couleur ou petite icône par type).
 - Joystick transparent (idée d'Adrien, POC à faire pour comparer) : un joystick discret en bas de l'écran pour piloter la tartine, pour ne plus avoir le doigt posé dessus au milieu de l'écran.
   - Aujourd'hui, le doigt peut déjà glisser n'importe où (la tartine suit le mouvement sans se mettre sous le doigt), mais rien ne le montre, donc on pose naturellement le doigt sur la tartine.
   - Deux variantes à essayer : un vrai joystick (on incline, la tartine avance dans cette direction tant qu'on tient) ou un pavé tactile visible (même glissement qu'aujourd'hui, mais dans une zone en bas).
@@ -439,6 +442,8 @@ Après :
   - Un nombre fixe d'objets, ceux pas encore trouvés sont affichés en ombre.
   - En fin de partie, l'écran montre les objets attrapés pendant la partie.
   - À trancher : est-ce que ça donne un avantage au classement (non, pour rester juste ?), la collection est-elle liée à la soirée ou au téléphone.
+- Succès à débloquer (achievements, idée d'Adrien) : à définir.
+  - À trancher : quels succès, où les voir dans le jeu, liés au téléphone ou à la soirée, et le lien avec la collection.
 - Partage du score en story Insta.
 - Écran géant : classement en plein écran si le lieu en a un.
 - Adresse plus courte : sous-domaine `tartine-sauvage` à changer dans Cloudflare, puis régénérer le QR code.

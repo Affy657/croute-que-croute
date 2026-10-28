@@ -5,8 +5,9 @@ import { drawProjectile, drawWarn, drawToast } from "./sprites.js";
 const rnd = (a, b) => a + Math.random() * (b - a);
 const POP_LIFE = 0.7;
 
-export function createScene(canvas) {
+export function createScene(canvas, overlay) {
   const ctx = canvas.getContext("2d");
+  const fx = overlay.getContext("2d");
   const C = PALETTE;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const view = { W: 0, H: 0, dpr: 1, scale: 1, ox: 0, oy: 0 };
@@ -18,8 +19,10 @@ export function createScene(canvas) {
     view.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     view.W = window.innerWidth;
     view.H = window.innerHeight;
-    canvas.width = Math.round(view.W * view.dpr);
-    canvas.height = Math.round(view.H * view.dpr);
+    for (const c of [canvas, overlay]) {
+      c.width = Math.round(view.W * view.dpr);
+      c.height = Math.round(view.H * view.dpr);
+    }
     view.scale = Math.min(view.W / FW, view.H / FH);
     view.ox = (view.W - FW * view.scale) / 2;
     view.oy = (view.H - FH * view.scale) / 2;
@@ -132,11 +135,26 @@ export function createScene(canvas) {
     ctx.globalAlpha = 1;
   }
 
+  function drawWarns(world, clock, sx, sy) {
+    const { dpr, scale, ox, oy } = view;
+    fx.setTransform(1, 0, 0, 1, 0, 0);
+    fx.clearRect(0, 0, overlay.width, overlay.height);
+    if (!world.warns.length) return;
+    fx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * (oy + sy));
+    fx.save();
+    fx.beginPath();
+    fx.rect(0, 0, FW, FH);
+    fx.clip();
+    for (const w of world.warns) drawWarn(fx, w, clock, world.t, C);
+    fx.restore();
+  }
+
   function render({ clock, world, toast, splat }) {
     const { dpr, scale, ox, oy } = view;
     drawBackground(clock);
     const sx = shake ? rnd(-shake, shake) : 0;
     const sy = shake ? rnd(-shake, shake) : 0;
+    drawWarns(world, clock, sx, sy);
     ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * (oy + sy));
     ctx.fillStyle = C.field;
     ctx.fillRect(0, 0, FW, FH);
@@ -147,7 +165,6 @@ export function createScene(canvas) {
     ctx.beginPath();
     ctx.rect(0, 0, FW, FH);
     ctx.clip();
-    for (const w of world.warns) drawWarn(ctx, w, clock, C);
     for (const o of world.obs) drawProjectile(ctx, o, C);
     drawToast(ctx, toast, splat, C);
     drawEffects();

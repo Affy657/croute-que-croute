@@ -131,7 +131,7 @@ function progressionCard() {
 function restart(p) {
   const t = Math.max(p.attack.from + 4, 20);
   const items = p.attack.make({ t, toast: { ...TOAST }, rng: Math.random, rnd, pick });
-  p.pending = items.map((w) => ({ ...w, at: w.at - t }));
+  p.pending = items.map((w) => ({ ...w, at: w.at - t, born: 0 }));
   p.obs = [];
   p.time = 0;
   p.idle = 0;
@@ -166,7 +166,7 @@ function draw(p, clock) {
   ctx.beginPath();
   ctx.rect(0, 0, FW, FH);
   ctx.clip();
-  for (const w of p.pending) drawWarn(ctx, w, clock);
+  for (const w of p.pending) drawWarn(ctx, w, clock, p.time);
   for (const o of p.obs) drawProjectile(ctx, o);
   drawToast(ctx, TOAST, null);
   ctx.restore();

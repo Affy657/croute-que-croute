@@ -34,13 +34,17 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-#cv {
+#cv, #fx {
   position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
   display: block;
   touch-action: none;
+}
+
+#fx {
+  pointer-events: none;
 }
 
 .sr-only {
