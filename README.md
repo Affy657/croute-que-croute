@@ -456,7 +456,7 @@ Après :
 
 ## Bon à savoir
 
-- La soirée de test ouverte en ligne ferme le 29/10/2026 à 23h30.
+- Base de prod vidée le 29/10/2026 après le changement d'adresse (pseudos, parties, Soirée test, connexions admin, invitations). Sauvegarde d'avant : `sauvegardes/prod-2026-10-29-avant-nettoyage.sql` (hors git, contient des jetons : à garder pour soi). Faire une sauvegarde : `npx wrangler d1 export croute-que-croute --remote --output sauvegardes/<nom>.sql`.
 - `cle-admin.txt` et `.dev.vars` ne sont pas dans git : à garder de côté. Les liens d'invitation non utilisés (`invitation-*.txt`) non plus.
 - wrangler est connecté au compte Cloudflare sur le PC d'Adrien (`npx wrangler whoami` pour vérifier).
 - Une fois la page chargée, le jeu tourne sans réseau. Le score ne compte que si le réseau passe au début et à la fin de la partie (3 essais d'envoi).
