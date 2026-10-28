@@ -6,6 +6,9 @@
   "assets": {
     "directory": "./public"
   },
+  "vars": {
+    "APP_VERSION": "dev"
+  },
   "d1_databases": [
     {
       "binding": "DB",

@@ -295,6 +295,47 @@ h2 {
   text-align: center;
 }
 
+.sound {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  right: max(12px, env(safe-area-inset-right, 0px));
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 2px solid var(--ink-dim);
+  border-radius: 50%;
+  background: var(--veil);
+  color: var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.sound svg {
+  width: 24px;
+  height: 24px;
+}
+
+.sound .off,
+.sound.muted .on {
+  display: none;
+}
+
+.sound.muted .off {
+  display: inline;
+}
+
+.sound.muted {
+  color: var(--ink-dim);
+}
+
+.sound:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
 #hud {
   position: fixed;
   top: 0;

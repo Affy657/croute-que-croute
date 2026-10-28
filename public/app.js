@@ -1,6 +1,9 @@
 import { createSim, speedMul, FW, FH, STEP } from "./sim.js";
+import { VERSION } from "./version.js";
 
 const SENS = 1.15;
+const MUSIC_URL = "/music/theme.mp3";
+document.documentElement.dataset.version = VERSION;
 const cv = document.getElementById("cv");
 const ctx = cv.getContext("2d");
 const $ = (id) => document.getElementById(id);
@@ -13,7 +16,7 @@ const ui = {
   overStats: $("overStats"), overBestBox: $("overBestBox"), overBest: $("overBest"), overRankBox: $("overRankBox"), overRank: $("overRank"),
   again: $("again"), overBoard: $("overBoard"),
   boardEvent: $("boardEvent"), boardCountdown: $("boardCountdown"), boardList: $("boardList"),
-  boardEmpty: $("boardEmpty"), boardBack: $("boardBack")
+  boardEmpty: $("boardEmpty"), boardBack: $("boardBack"), sound: $("sound")
 };
 const css = getComputedStyle(document.documentElement);
 const C = {};
@@ -35,7 +38,8 @@ let localBest = parseInt(store.get("cv-best-cs") || "0", 10) || 0;
 
 let W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0, stars = [], planetY = 0;
 let drag = null, mouse = null, lastShown = "", runPromise = null;
-let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null;
+let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, updatePending = false;
+const music = { el: null, available: false, muted: store.get("cv-muted") === "1" };
 const pend = { x: 0, y: 0 };
 let sim = createSim();
 const S = {
@@ -46,7 +50,7 @@ const S = {
 };
 
 async function call(method, path, body) {
-  const headers = { "content-type": "application/json" };
+  const headers = { "content-type": "application/json", "x-app-version": VERSION };
   if (net.token) headers.authorization = "Bearer " + net.token;
   const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   let data = null;
@@ -54,6 +58,7 @@ async function call(method, path, body) {
   if (!res.ok) {
     const err = new Error((data && data.error) || "Erreur réseau.");
     err.status = res.status;
+    if (res.status === 426) requestUpdate();
     throw err;
   }
   return data;
@@ -76,6 +81,7 @@ async function refreshBoard() {
       store.set("cv-token", null);
     }
     net.board = b;
+    if (b.version && b.version !== VERSION) requestUpdate();
   } catch (e) {
     net.online = false;
   }
@@ -101,6 +107,47 @@ async function submitScore(score, pending) {
     }
   }
   return { error: "Hors ligne : score non envoyé" };
+}
+
+function requestUpdate() {
+  updatePending = true;
+  if (S.mode === "menu" && !boardOpen) applyUpdate();
+}
+
+function applyUpdate() {
+  let last = 0;
+  try { last = Number(sessionStorage.getItem("cv-reload")) || 0; } catch (e) {}
+  if (Date.now() - last < 15000) return false;
+  try { sessionStorage.setItem("cv-reload", String(Date.now())); } catch (e) {}
+  location.reload();
+  return true;
+}
+
+async function probeMusic() {
+  try {
+    music.available = (await fetch(MUSIC_URL, { method: "HEAD", cache: "no-store" })).ok;
+  } catch (e) {
+    music.available = false;
+  }
+  renderSound();
+}
+
+function syncMusic() {
+  if (!music.available) return;
+  if (!music.el) {
+    music.el = new Audio(MUSIC_URL);
+    music.el.loop = true;
+    music.el.volume = 0.6;
+  }
+  if (music.muted || document.hidden) music.el.pause();
+  else music.el.play().catch(() => {});
+}
+
+function renderSound() {
+  ui.sound.hidden = !music.available || S.mode === "play" || S.mode === "dying";
+  ui.sound.classList.toggle("muted", music.muted);
+  ui.sound.setAttribute("aria-pressed", String(music.muted));
+  ui.sound.setAttribute("aria-label", music.muted ? "Remettre la musique" : "Couper la musique");
 }
 
 function setText(el, text) {
@@ -259,6 +306,7 @@ function die() {
     const a = rnd(0, Math.PI * 2), s = rnd(60, 280);
     S.parts.push({ x: tt.x, y: tt.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 80, r: rnd(2.5, 7), life: rnd(0.6, 1.1), c: Math.random() < 0.7 ? C.jam : C.crumb });
   }
+  renderSound();
   S.splat = Array.from({ length: 7 }, () => ({ dx: rnd(-13, 13), dy: rnd(-11, 13), r: rnd(4.5, 10) }));
   S.score = Math.floor(sim.state.t * 100);
   S.newBest = S.score > knownBest();
@@ -590,17 +638,23 @@ function showMenu() {
   ui.board.hidden = true;
   ui.hud.hidden = true;
   renderMenu();
+  renderSound();
+  if (updatePending) applyUpdate();
 }
 
 function start() {
   if (boardOpen || !ui.joinForm.hidden) return false;
   if (S.mode !== "menu" && S.mode !== "over") return false;
   if (S.mode === "over" && ui.again.disabled) return false;
+  if (updatePending && applyUpdate()) return false;
   sim = createSim();
   Object.assign(S, { mode: "play", shake: 0, dieT: 0, freeze: 0, splat: null, newBest: false, score: 0, submit: null, parts: [], pops: [] });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0 });
   runPromise = canCompete()
-    ? call("POST", "/api/runs").catch((e) => ({ error: e.status ? e.message : "Hors ligne : score non compté" }))
+    ? call("POST", "/api/runs").catch((e) => {
+        if (e.status === 426 && S.mode === "play") applyUpdate();
+        return { error: e.status ? e.message : "Hors ligne : score non compté" };
+      })
     : null;
   pend.x = 0;
   pend.y = 0;
@@ -609,6 +663,7 @@ function start() {
   ui.menu.hidden = true;
   ui.over.hidden = true;
   ui.hud.hidden = false;
+  renderSound();
   setDigits(ui.time, "0,00");
   ui.hudBest.textContent = knownBest() ? "Record " + fmtCs(knownBest()) : "";
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
@@ -617,6 +672,7 @@ function start() {
 
 function showOver() {
   S.mode = "over";
+  renderSound();
   ui.hud.hidden = true;
   ui.over.hidden = false;
   setDigits(ui.final, fmtCs(S.score));
@@ -717,6 +773,21 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+ui.sound.addEventListener("click", () => {
+  music.muted = !music.muted;
+  store.set("cv-muted", music.muted ? "1" : null);
+  syncMusic();
+  renderSound();
+});
+document.addEventListener("click", syncMusic);
+document.addEventListener("touchend", syncMusic);
+document.addEventListener("visibilitychange", () => {
+  syncMusic();
+  if (!document.hidden && S.mode !== "play") refreshBoard();
+});
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+
 window.addEventListener("resize", resize);
 
 setInterval(() => {
@@ -760,4 +831,5 @@ resize();
 planetY = H * 0.22;
 showMenu();
 refreshBoard();
+probeMusic();
 requestAnimationFrame(frame);
