@@ -238,7 +238,7 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - Police : Bungee partout, chargée depuis Google Fonts.
 - Deux boutons ronds, cachés pendant la partie et dans la page d'info : la note de musique en haut à gauche coupe ou remet la musique, le haut-parleur en haut à droite coupe ou remet les bruitages. Chaque choix est mémorisé sur le téléphone.
 - Bouton rond Paramètres (roue crantée) en bas à gauche de l'accueil et de la fin de partie, pour tout le monde. Les boutons du bas sont posés dans les coins, hors de la mise en page : ils ne décalent rien.
-- Paramètres : « Installer le jeu » (bouton Installer quand le navigateur le permet, sinon la marche à suivre) et « Partager le jeu » (« Partager le lien » ouvre le partage du téléphone, ou copie le lien sur ordinateur ; « QR code » l'affiche en grand pour le faire scanner à un voisin). Les téléphones connectés en admin ont en plus un onglet Admin avec le lien vers le tableau de bord.
+- Paramètres : « Installer le jeu » (bouton Installer quand le navigateur le permet, sinon la marche à suivre ; la carte disparaît quand le jeu est ouvert depuis l'appli installée) et « Partager le jeu » (« Partager le lien » ouvre le partage du téléphone, ou copie le lien sur ordinateur ; « QR code » l'affiche en grand pour le faire scanner à un voisin). Les téléphones connectés en admin ont en plus un onglet Admin avec le lien vers le tableau de bord.
 - Pop-up « Installe le jeu » : une seule fois par téléphone, sur l'accueil, une fois le pseudo choisi. Sur Android, bouton Installer ; sur iPhone, la marche à suivre (pas de bouton possible). Jamais si le jeu est déjà installé.
 
 ## Musique
