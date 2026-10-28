@@ -4,3 +4,4 @@ node_modules/
 cle-admin.txt
 music-test/
 public/music/*.mp3
+public/music/*.m4a

@@ -188,7 +188,7 @@ async function finishRun(req: Request, env: Env, runId: string) {
 
 async function adminPlayers(env: Env) {
   const event = await currentEvent(env);
-  if (!event) return json({ event: null, players: [] });
+  if (!event) return json({ event: null, players: [], stats: { players: 0, runs: 0 } });
   const { results } = await env.DB.prepare(
     `SELECT p.id, p.pseudo, p.best, p.banned, COUNT(r.id) AS runs
      FROM players p LEFT JOIN runs r ON r.player_id = p.id
@@ -198,7 +198,12 @@ async function adminPlayers(env: Env) {
   )
     .bind(event.id)
     .all();
-  return json({ event: { name: event.name, closesAt: event.closes_at }, players: results });
+  const stats = await env.DB.prepare(
+    "SELECT COUNT(DISTINCT p.id) AS players, COUNT(r.id) AS runs FROM players p LEFT JOIN runs r ON r.player_id = p.id WHERE p.event_id = ?",
+  )
+    .bind(event.id)
+    .first<{ players: number; runs: number }>();
+  return json({ event: { name: event.name, closesAt: event.closes_at }, players: results, stats });
 }
 
 async function adminCreateEvent(req: Request, env: Env) {
@@ -231,6 +236,143 @@ async function adminBan(req: Request, env: Env, playerId: string) {
   return json({ ok: true });
 }
 
+interface AdminRow {
+  id: string;
+  name: string;
+  role: string;
+  last_seen: number;
+  revoked: number;
+}
+
+interface AdminAuth {
+  id: string | null;
+  name: string;
+  role: string;
+}
+
+const INVITE_MS = 48 * 3600 * 1000;
+const SEEN_MS = 5 * 60 * 1000;
+
+async function sha256(text: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function cleanName(raw: unknown) {
+  const name = typeof raw === "string" ? raw.replace(/\s+/g, " ").trim() : "";
+  return name && name.length <= 30 ? name : null;
+}
+
+const cleanRole = (raw: unknown) => (raw === "owner" || raw === "admin" ? raw : null);
+
+async function createSession(env: Env, name: string, role: string) {
+  const token = randomToken();
+  const now = Date.now();
+  await env.DB.prepare("INSERT INTO admins (id, name, role, token_hash, created_at, last_seen) VALUES (?, ?, ?, ?, ?, ?)")
+    .bind(crypto.randomUUID(), name, role, await sha256(token), now, now)
+    .run();
+  return json({ token, admin: { name, role } }, 201);
+}
+
+async function adminAuth(req: Request, env: Env): Promise<AdminAuth | null> {
+  if (env.ADMIN_KEY && req.headers.get("x-admin-key") === env.ADMIN_KEY) return { id: null, name: "Clé admin", role: "owner" };
+  const token = bearer(req);
+  if (!token) return null;
+  const row = await env.DB.prepare("SELECT id, name, role, last_seen, revoked FROM admins WHERE token_hash = ?")
+    .bind(await sha256(token))
+    .first<AdminRow>();
+  if (!row || row.revoked) return null;
+  const now = Date.now();
+  if (now - row.last_seen > SEEN_MS) {
+    await env.DB.prepare("UPDATE admins SET last_seen = ? WHERE id = ?").bind(now, row.id).run();
+  }
+  return { id: row.id, name: row.name, role: row.role };
+}
+
+async function adminLogin(req: Request, env: Env) {
+  const body = await readJson(req);
+  if (!env.ADMIN_KEY || body.key !== env.ADMIN_KEY) return fail(401, "Clé admin incorrecte.");
+  const name = cleanName(body.name);
+  if (!name) return fail(400, "Prénom de 1 à 30 caractères.");
+  return createSession(env, name, "owner");
+}
+
+async function adminAccept(req: Request, env: Env) {
+  const invite = (await readJson(req)).invite;
+  if (typeof invite !== "string" || !invite) return fail(400, "Invitation invalide.");
+  const hash = await sha256(invite);
+  const row = await env.DB.prepare("SELECT name, role, expires_at, used_at FROM admin_invites WHERE token_hash = ?")
+    .bind(hash)
+    .first<{ name: string; role: string; expires_at: number; used_at: number | null }>();
+  if (!row) return fail(404, "Invitation inconnue.");
+  if (row.used_at) return fail(410, "Invitation déjà utilisée.");
+  if (Date.now() > row.expires_at) return fail(410, "Invitation expirée, demande un nouveau lien.");
+  const res = await env.DB.prepare("UPDATE admin_invites SET used_at = ? WHERE token_hash = ? AND used_at IS NULL")
+    .bind(Date.now(), hash)
+    .run();
+  if (!res.meta.changes) return fail(410, "Invitation déjà utilisée.");
+  return createSession(env, row.name, row.role);
+}
+
+async function adminInvite(req: Request, env: Env, auth: AdminAuth) {
+  const body = await readJson(req);
+  const name = cleanName(body.name);
+  const role = cleanRole(body.role);
+  if (!name) return fail(400, "Prénom de 1 à 30 caractères.");
+  if (!role) return fail(400, "Rôle inconnu.");
+  const token = randomToken();
+  const now = Date.now();
+  await env.DB.prepare(
+    "INSERT INTO admin_invites (token_hash, name, role, created_by, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)",
+  )
+    .bind(await sha256(token), name, role, auth.id, now, now + INVITE_MS)
+    .run();
+  return json({ url: `${new URL(req.url).origin}/admin#invite=${token}`, expiresAt: now + INVITE_MS }, 201);
+}
+
+async function adminTeam(env: Env, auth: AdminAuth) {
+  const { results } = await env.DB.prepare(
+    "SELECT id, name, role, created_at, last_seen FROM admins WHERE revoked = 0 ORDER BY role DESC, created_at ASC",
+  ).all<{ id: string; name: string; role: string; created_at: number; last_seen: number }>();
+  return json({ team: results.map((a) => ({ ...a, me: a.id === auth.id })) });
+}
+
+async function adminRevoke(env: Env, id: string) {
+  const target = await env.DB.prepare("SELECT role FROM admins WHERE id = ? AND revoked = 0").bind(id).first<{ role: string }>();
+  if (!target) return fail(404, "Admin inconnu.");
+  if (target.role === "owner") {
+    const owners = await env.DB.prepare("SELECT COUNT(*) AS n FROM admins WHERE role = 'owner' AND revoked = 0").first<{ n: number }>();
+    if ((owners?.n ?? 0) <= 1) return fail(409, "Impossible de retirer le dernier propriétaire.");
+  }
+  await env.DB.prepare("UPDATE admins SET revoked = 1 WHERE id = ?").bind(id).run();
+  return json({ ok: true });
+}
+
+async function adminLogout(env: Env, auth: AdminAuth) {
+  if (auth.id) await env.DB.prepare("UPDATE admins SET revoked = 1 WHERE id = ?").bind(auth.id).run();
+  return json({ ok: true });
+}
+
+async function adminRoute(req: Request, env: Env, pathname: string, method: string) {
+  if (pathname === "/api/admin/login" && method === "POST") return adminLogin(req, env);
+  if (pathname === "/api/admin/accept" && method === "POST") return adminAccept(req, env);
+  const auth = await adminAuth(req, env);
+  if (!auth) return fail(401, "Connexion admin expirée ou retirée.");
+  if (pathname === "/api/admin/me" && method === "GET") return json({ admin: { name: auth.name, role: auth.role } });
+  if (pathname === "/api/admin/logout" && method === "POST") return adminLogout(env, auth);
+  if (pathname === "/api/admin/players" && method === "GET") return adminPlayers(env);
+  if (pathname === "/api/admin/events" && method === "POST") return adminCreateEvent(req, env);
+  if (pathname === "/api/admin/events/current" && method === "PATCH") return adminUpdateEvent(req, env);
+  const ban = pathname.match(/^\/api\/admin\/players\/([\w-]{1,64})\/ban$/);
+  if (ban && method === "POST") return adminBan(req, env, ban[1]);
+  if (auth.role !== "owner") return fail(403, "Réservé au propriétaire.");
+  if (pathname === "/api/admin/team" && method === "GET") return adminTeam(env, auth);
+  if (pathname === "/api/admin/invites" && method === "POST") return adminInvite(req, env, auth);
+  const revoke = pathname.match(/^\/api\/admin\/team\/([\w-]{1,64})\/revoke$/);
+  if (revoke && method === "POST") return adminRevoke(env, revoke[1]);
+  return fail(404, "Introuvable.");
+}
+
 async function route(req: Request, env: Env) {
   const { pathname } = new URL(req.url);
   const method = req.method;
@@ -241,14 +383,7 @@ async function route(req: Request, env: Env) {
   const run = pathname.match(/^\/api\/runs\/([\w-]{1,64})$/);
   if (run && method === "POST") return finishRun(req, env, run[1]);
 
-  if (pathname.startsWith("/api/admin/")) {
-    if (!env.ADMIN_KEY || req.headers.get("x-admin-key") !== env.ADMIN_KEY) return fail(401, "Clé admin incorrecte.");
-    if (pathname === "/api/admin/players" && method === "GET") return adminPlayers(env);
-    if (pathname === "/api/admin/events" && method === "POST") return adminCreateEvent(req, env);
-    if (pathname === "/api/admin/events/current" && method === "PATCH") return adminUpdateEvent(req, env);
-    const ban = pathname.match(/^\/api\/admin\/players\/([\w-]{1,64})\/ban$/);
-    if (ban && method === "POST") return adminBan(req, env, ban[1]);
-  }
+  if (pathname.startsWith("/api/admin/")) return adminRoute(req, env, pathname, method);
 
   return fail(404, "Introuvable.");
 }

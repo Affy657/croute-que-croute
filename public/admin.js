@@ -1,0 +1,306 @@
+const $ = (id) => document.getElementById(id);
+const TOKEN_KEY = "cqc-admin-token";
+const store = {
+  get() { try { return localStorage.getItem(TOKEN_KEY); } catch (e) { return null; } },
+  set(v) { try { if (v) localStorage.setItem(TOKEN_KEY, v); else localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+};
+
+let token = store.get();
+let me = null;
+let data = null;
+let timer = null;
+
+const fmtCs = (cs) => (cs / 100).toFixed(2).replace(".", ",");
+const hour = (ms) => new Date(ms).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
+const toInput = (ms) => new Date(ms - new Date(ms).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+const fromInput = (value) => (value ? new Date(value).getTime() : NaN);
+
+function clock(ms) {
+  const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  const ss = String(sec).padStart(2, "0");
+  return h > 0 ? h + ":" + String(m).padStart(2, "0") + ":" + ss : m + ":" + ss;
+}
+
+function ago(ms) {
+  const min = Math.floor((Date.now() - ms) / 60000);
+  if (min < 5) return "actif à l'instant";
+  if (min < 60) return "vu il y a " + min + " min";
+  if (min < 1440) return "vu il y a " + Math.floor(min / 60) + " h";
+  return "vu il y a " + Math.floor(min / 1440) + " j";
+}
+
+function say(el, text, error) {
+  el.textContent = text || "";
+  el.hidden = !text;
+  el.classList.toggle("error", !!error);
+}
+
+async function call(method, path, body) {
+  const headers = { "content-type": "application/json" };
+  if (token) headers.authorization = "Bearer " + token;
+  const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  const json = await res.json().catch(() => null);
+  if (res.status === 401 && token) signOut();
+  if (!res.ok) throw new Error((json && json.error) || "Pas de réseau, réessaie.");
+  return json;
+}
+
+function show(view) {
+  $("login").hidden = view !== "login";
+  $("invite").hidden = view !== "invite";
+  $("app").hidden = view !== "app";
+  $("who").hidden = view !== "app";
+}
+
+function signOut() {
+  token = null;
+  me = null;
+  store.set(null);
+  clearInterval(timer);
+  show("login");
+}
+
+function cell(tag, cls, text) {
+  const el = document.createElement(tag);
+  el.className = cls;
+  el.textContent = text;
+  return el;
+}
+
+function renderEvent() {
+  const ev = data && data.event;
+  $("eventName").textContent = ev ? ev.name : "Aucune soirée";
+  $("editEndBtn").hidden = !ev;
+  const best = data ? Math.max(0, ...data.players.filter((p) => !p.banned).map((p) => p.best)) : 0;
+  $("statPlayers").textContent = data ? data.stats.players : 0;
+  $("statRuns").textContent = data ? data.stats.runs : 0;
+  $("statBest").textContent = best ? fmtCs(best) : "-";
+  tick();
+}
+
+function tick() {
+  const ev = data && data.event;
+  if (!ev) {
+    $("eventEnd").textContent = "Crée une soirée pour ouvrir le classement.";
+    return;
+  }
+  const left = ev.closesAt - Date.now();
+  $("eventEnd").textContent = left > 0 ? "Fin à " + hour(ev.closesAt) + ", dans " + clock(left) : "Classement fermé depuis " + hour(ev.closesAt);
+}
+
+function renderPlayers() {
+  const players = data ? data.players : [];
+  let rank = 0;
+  $("players").replaceChildren(...players.map((p) => {
+    const li = document.createElement("li");
+    const ranked = !p.banned && p.best > 0;
+    if (ranked) rank++;
+    if (p.banned) li.className = "out";
+    const main = document.createElement("div");
+    main.className = "main";
+    main.append(
+      cell("span", "name", p.pseudo),
+      cell("span", "meta", (p.best ? fmtCs(p.best) + " s, " : "") + p.runs + (p.runs > 1 ? " parties" : " partie") + (p.banned ? ", retiré" : ""))
+    );
+    const btn = cell("button", "btn ghost small", p.banned ? "Réintégrer" : "Retirer");
+    btn.type = "button";
+    btn.addEventListener("click", async () => {
+      if (!p.banned && !confirm("Retirer " + p.pseudo + " du classement ?")) return;
+      btn.disabled = true;
+      try {
+        await call("POST", "/api/admin/players/" + p.id + "/ban", { banned: !p.banned });
+        await load();
+      } catch (e) {
+        say($("playersMsg"), e.message, true);
+        btn.disabled = false;
+      }
+    });
+    li.append(cell("span", "pos", ranked ? String(rank) : ""), main, btn);
+    return li;
+  }));
+  $("playersEmpty").hidden = players.length > 0;
+}
+
+async function load() {
+  try {
+    data = await call("GET", "/api/admin/players");
+    say($("playersMsg"), "");
+    renderEvent();
+    renderPlayers();
+  } catch (e) {
+    say($("playersMsg"), e.message, true);
+  }
+}
+
+async function loadTeam() {
+  try {
+    const { team } = await call("GET", "/api/admin/team");
+    $("team").replaceChildren(...team.map((a) => {
+      const li = document.createElement("li");
+      const main = document.createElement("div");
+      main.className = "main";
+      main.append(
+        cell("span", "name", a.name + (a.me ? " (toi)" : "")),
+        cell("span", "meta", (a.role === "owner" ? "Propriétaire" : "Admin") + ", " + ago(a.last_seen))
+      );
+      li.append(cell("span", "pos", a.role === "owner" ? "P" : "A"), main);
+      if (!a.me) {
+        const btn = cell("button", "btn ghost small", "Retirer");
+        btn.type = "button";
+        btn.addEventListener("click", async () => {
+          if (!confirm("Retirer l'accès de " + a.name + " ? Son téléphone sera déconnecté.")) return;
+          try {
+            await call("POST", "/api/admin/team/" + a.id + "/revoke");
+            await loadTeam();
+          } catch (e) {
+            say($("teamMsg"), e.message, true);
+          }
+        });
+        li.append(btn);
+      } else {
+        li.append(document.createElement("span"));
+      }
+      return li;
+    }));
+  } catch (e) {
+    say($("teamMsg"), e.message, true);
+  }
+}
+
+async function boot() {
+  try {
+    me = (await call("GET", "/api/admin/me")).admin;
+  } catch (e) {
+    if (!token) return;
+    show("app");
+    say($("playersMsg"), e.message, true);
+    return;
+  }
+  $("who").textContent = me.name + ", " + (me.role === "owner" ? "propriétaire" : "admin");
+  $("teamCard").hidden = me.role !== "owner";
+  show("app");
+  await load();
+  if (me.role === "owner") await loadTeam();
+  clearInterval(timer);
+  timer = setInterval(() => {
+    if (!document.hidden) load();
+  }, 10000);
+}
+
+$("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    const r = await call("POST", "/api/admin/login", { name: $("loginName").value, key: $("loginKey").value });
+    token = r.token;
+    store.set(token);
+    $("loginKey").value = "";
+    say($("loginMsg"), "");
+    await boot();
+  } catch (err) {
+    say($("loginMsg"), err.message, true);
+  }
+});
+
+function showInvite(invite) {
+  show("invite");
+  $("acceptBtn").onclick = async () => {
+    $("acceptBtn").disabled = true;
+    try {
+      const r = await call("POST", "/api/admin/accept", { invite });
+      token = r.token;
+      store.set(token);
+      history.replaceState(null, "", "/admin");
+      await boot();
+    } catch (e) {
+      say($("inviteMsg"), e.message, true);
+      $("acceptBtn").disabled = false;
+    }
+  };
+}
+
+$("editEndBtn").addEventListener("click", () => {
+  $("eventForm").hidden = true;
+  $("endForm").hidden = !$("endForm").hidden;
+  if (data && data.event) $("endAt").value = toInput(data.event.closesAt);
+});
+
+$("newEventBtn").addEventListener("click", () => {
+  $("endForm").hidden = true;
+  $("eventForm").hidden = !$("eventForm").hidden;
+});
+
+$("endForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    await call("PATCH", "/api/admin/events/current", { closesAt: fromInput($("endAt").value) });
+    $("endForm").hidden = true;
+    say($("eventMsg"), "Heure de fin enregistrée.");
+    await load();
+  } catch (err) {
+    say($("eventMsg"), err.message, true);
+  }
+});
+
+$("eventForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!confirm("Créer une nouvelle soirée ? Le classement repart de zéro.")) return;
+  try {
+    await call("POST", "/api/admin/events", { name: $("eventNameInput").value, closesAt: fromInput($("eventEndInput").value) });
+    $("eventForm").hidden = true;
+    $("eventNameInput").value = "";
+    $("eventEndInput").value = "";
+    say($("eventMsg"), "Soirée créée.");
+    await load();
+  } catch (err) {
+    say($("eventMsg"), err.message, true);
+  }
+});
+
+$("inviteForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    const r = await call("POST", "/api/admin/invites", { name: $("inviteName").value, role: $("inviteRole").value });
+    $("inviteUrl").value = r.url;
+    $("inviteResult").hidden = false;
+    $("shareBtn").hidden = !navigator.share;
+    $("inviteName").value = "";
+    say($("teamMsg"), "");
+  } catch (err) {
+    say($("teamMsg"), err.message, true);
+  }
+});
+
+$("copyBtn").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText($("inviteUrl").value);
+    say($("teamMsg"), "Lien copié.");
+  } catch (e) {
+    $("inviteUrl").select();
+    say($("teamMsg"), "Sélectionne le lien et copie-le.");
+  }
+});
+
+$("shareBtn").addEventListener("click", () => {
+  navigator.share({ title: "Croûte Admin", text: "Ton accès admin à Croûte que Croûte", url: $("inviteUrl").value }).catch(() => {});
+});
+
+$("logoutBtn").addEventListener("click", async () => {
+  if (!confirm("Se déconnecter de ce téléphone ?")) return;
+  try { await call("POST", "/api/admin/logout"); } catch (e) {}
+  signOut();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && me) load();
+});
+
+setInterval(() => {
+  if (me) tick();
+}, 1000);
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+
+const invite = new URLSearchParams(location.hash.slice(1)).get("invite");
+if (invite) showInvite(invite);
+else if (token) boot();
+else show("login");

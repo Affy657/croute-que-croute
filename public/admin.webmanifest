@@ -1,0 +1,18 @@
+{
+  "id": "/admin",
+  "name": "Croûte Admin",
+  "short_name": "Croûte Admin",
+  "description": "Gérer les soirées et le classement de Croûte que Croûte",
+  "lang": "fr",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0b24",
+  "theme_color": "#0d0b24",
+  "icons": [
+    { "src": "/icons/admin-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/admin-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/admin-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
