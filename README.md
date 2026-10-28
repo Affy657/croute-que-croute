@@ -4,9 +4,10 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 
 ## Liens
 
-- Jeu : https://croute-que-croute.croute-que-croute.workers.dev
-- Admin : https://croute-que-croute.croute-que-croute.workers.dev/admin, dans la même appli que le jeu
-- QR code : `qr/croute-que-croute.png` pour imprimer, `qr/croute-que-croute.svg` pour une affiche
+- Jeu : https://croute-que-croute.tartine-sauvage.workers.dev
+- Admin : https://croute-que-croute.tartine-sauvage.workers.dev/admin, dans la même appli que le jeu
+- QR code : `qr/croute-que-croute.png` pour imprimer, `qr/croute-que-croute.svg` pour une affiche. Le même est dans le jeu (`public/qr.svg`, Paramètres puis « QR code »).
+- Adresse changée le 29/10/2026 (avant : croute-que-croute.croute-que-croute.workers.dev, qui ne répond plus). Régénérer les QR codes : `npx qrcode -t svg -m 2 -o qr/croute-que-croute.svg <adresse>`, puis `-t png -w 1200` pour le PNG, et copier le SVG dans `public/qr.svg`.
 - Code : `C:\dev\couverts-volants`, git local sur `master`, pas encore de dépôt GitHub
 - POC d'origine (artefact Claude, plus mis à jour) : https://claude.ai/artifact/V2KMTGkcktubs8VguX8AxE
 
@@ -233,17 +234,20 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - Accueil hors soirée : record et place au classement général. Message « Bravo X ! » pendant 12 h après une soirée, sinon « Prochaine soirée samedi 07/11 à 19h30 » si elle est créée, avec « Début dans » le dernier jour.
 - Fin de partie : temps, badge « Nouveau record » (record de la soirée pendant une soirée, record perso sinon), record et place, Rejouer, Classement. « Rejouer » est bloqué 0,45 s pour éviter de relancer par erreur.
 - Classement : deux onglets, Soirée et Général (Tous les temps). Top 50, ta ligne en jaune, mis à jour toutes les 10 s. L'onglet Soirée n'existe que pendant une soirée et les 12 h qui suivent.
-- Bulle d'info (bouton rond « i » en bas à droite, sur l'accueil et la fin de partie) : onglets Attaques (progression jusqu'à la fin de la complexification, règles, chaque attaque avec ses infos et un aperçu animé en boucle) et Armes (tous les ustensiles et la tartine à leur taille réelle sur cet écran, avec leur zone de touche, et les variantes rares). Toute la page défile, comme une page web ; les onglets restent en haut, avec une croix pour fermer, et « Retour » est tout en bas.
+- Bulle d'info (bouton rond « i » en bas à droite, sur l'accueil et la fin de partie) : onglets Attaques (progression jusqu'à la fin de la complexification, règles, chaque attaque avec ses infos et un aperçu animé en boucle) Armes (tous les ustensiles et la tartine à leur taille réelle sur cet écran, avec leur zone de touche, et les variantes rares) et Crédits (la musique avec un lien pour l'écouter, et la banque des bruitages). Toute la page défile, comme une page web ; les onglets restent en haut, avec une croix pour fermer, et « Retour » est tout en bas.
 - Police : Bungee partout, chargée depuis Google Fonts.
 - Deux boutons ronds, cachés pendant la partie et dans la page d'info : la note de musique en haut à gauche coupe ou remet la musique, le haut-parleur en haut à droite coupe ou remet les bruitages. Chaque choix est mémorisé sur le téléphone.
-- Bouton rond Admin (roue crantée) en bas à gauche de l'accueil et de la fin de partie, seulement sur les téléphones connectés en admin. Les boutons du bas sont posés dans les coins, hors de la mise en page : ils ne décalent rien.
+- Bouton rond Paramètres (roue crantée) en bas à gauche de l'accueil et de la fin de partie, pour tout le monde. Les boutons du bas sont posés dans les coins, hors de la mise en page : ils ne décalent rien.
+- Paramètres : « Installer le jeu » (bouton Installer quand le navigateur le permet, sinon la marche à suivre) et « Partager le jeu » (« Partager le lien » ouvre le partage du téléphone, ou copie le lien sur ordinateur ; « QR code » l'affiche en grand pour le faire scanner à un voisin). Les téléphones connectés en admin ont en plus un onglet Admin avec le lien vers le tableau de bord.
+- Pop-up « Installe le jeu » : une seule fois par téléphone, sur l'accueil, une fois le pseudo choisi. Sur Android, bouton Installer ; sur iPhone, la marche à suivre (pas de bouton possible). Jamais si le jeu est déjà installé.
 
 ## Musique
 
 - Le jeu lit `public/music/theme.m4a` ou `public/music/theme.mp3` (le premier trouvé).
 - En prod : « Roundabout » de Blacklolita (M4A, 3 min 57, 3,8 Mo), choisi par Adrien en attendant les morceaux des collègues.
 - Le fichier n'est pas dans git (droits et poids) : il est seulement dans `public/music/` sur le PC. À remettre là avant un déploiement depuis un autre ordinateur.
-- Changer de musique : remplacer `public/music/theme.m4a`, puis `npm run deploy`.
+- Changer de musique : remplacer `public/music/theme.m4a`, mettre à jour `MUSIC_CREDIT` dans `public/js/app/audio.js` (titre, artiste, lien), puis `npm run deploy`.
+- Crédits visibles dans Infos, onglet Crédits, avec un lien Spotify vers le morceau.
 - Elle ne joue que pendant une partie : elle repart du début à chaque partie, pour que la montée du morceau suive la montée de la difficulté, et s'arrête en fondu à la mort. Silence sur l'accueil et l'écran de fin.
 - Le bouton musique ne lance rien : il mémorise seulement le choix pour les prochaines parties.
 - Si le morceau prend du retard sur la partie (réseau lent, téléphone qui rame), le jeu le recale dès que l'écart dépasse 0,35 s.
@@ -279,7 +283,7 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 
 ## PWA et mises à jour
 
-- Le jeu s'installe comme une appli : sur Android, bannière ou menu « Installer » ; sur iPhone, Partager puis « Sur l'écran d'accueil ».
+- Le jeu s'installe comme une appli : sur Android, pop-up du jeu ou bouton Installer dans Paramètres ; sur iPhone, Partager puis « Sur l'écran d'accueil ».
 - Service worker : il passe toujours par le réseau d'abord et garde une copie en secours, donc le jeu s'ouvre même sans réseau s'il a déjà été ouvert une fois.
 - Chaque `npm run deploy` crée une version (date + commit), écrite dans `public/js/version.js` et donnée au serveur.
 - Le jeu compare sa version à celle du serveur à l'ouverture, au retour dans l'appli et toutes les 30 s sur l'accueil. Si elle a changé, il se recharge tout seul, jamais en pleine partie.
@@ -289,7 +293,7 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 
 ## Admin
 
-- Même appli que le jeu : une seule installation. Un téléphone connecté en admin voit un bouton rond Admin (roue crantée) en bas à gauche de l'accueil et de la fin de partie, qui ouvre le tableau de bord. « Retour au jeu » ramène au jeu.
+- Même appli que le jeu : une seule installation. Un téléphone connecté en admin trouve le tableau de bord dans Paramètres (roue crantée en bas à gauche), onglet Admin. « Retour au jeu » ramène au jeu.
 - Accès caché : 5 appuis rapides sur « Collectif Tartine Sauvage » ouvrent l'écran admin.
 - Connexion sans mot de passe, le téléphone reste connecté.
 - Dans l'appli installée (surtout sur iPhone, où les liens s'ouvrent dans Safari), on peut coller le lien d'invitation dans « Lien d'invitation reçu ».
@@ -368,13 +372,14 @@ Après :
 | `public/js/app/scene.js` | Dessin du fond, du terrain et des effets |
 | `public/js/app/sprites.js` | Dessin de la tartine et de chaque projectile |
 | `public/js/app/screens.js` | Écrans HTML : accueil, fin, classement, boutons |
+| `public/js/app/settings.js`, `install.js` | Paramètres, partage, QR code et installation de l'appli |
 | `public/js/app/api.js` | Appels au serveur, classement, mise à jour de version |
 | `public/js/app/audio.js` | Musique, bruitages et leurs volumes |
 | `public/sfx/` | Bruitages Mixkit |
 | `public/js/app/input.js` | Glisser du doigt et souris |
 | `public/js/shared/` | Stockage du téléphone, formats et couleurs (`palette.js`, avec les tartinades), partagés avec l'admin |
 | `public/js/admin/admin.js`, `public/admin.html`, `admin.css` | Tableau de bord admin |
-| `public/js/app/catalog.js`, `public/catalog.css` | Pages Attaques et Armes de la bulle d'info |
+| `public/js/app/catalog.js`, `public/catalog.css` | Pages Attaques, Armes et Crédits de la bulle d'info |
 | `public/js/version.js` | Version du jeu, réécrite à chaque déploiement |
 | `public/sw.js`, `manifest.webmanifest` | PWA : service worker et manifeste |
 | `public/_headers` | En-têtes de sécurité des pages |
@@ -446,7 +451,8 @@ Après :
   - À trancher : quels succès, où les voir dans le jeu, liés au téléphone ou à la soirée, et le lien avec la collection.
 - Partage du score en story Insta.
 - Écran géant : classement en plein écran si le lieu en a un.
-- Adresse plus courte : sous-domaine `tartine-sauvage` à changer dans Cloudflare, puis régénérer le QR code.
+- QR code aux couleurs du jeu ou du collectif (question d'Adrien) : possible, avec des points arrondis, les couleurs de l'appli et une petite tartine au centre. À tester au scan sur plusieurs téléphones avant d'imprimer : il faut garder un fort contraste (points foncés sur fond clair) et une marge autour.
+- Adresse sans « workers.dev » : il faut acheter un nom de domaine (payant chaque année), le mettre sur Cloudflare, puis brancher le jeu dessus (par exemple jeu.<domaine>). Le QR code changerait encore : à décider avant d'imprimer les affiches.
 
 ## Bon à savoir
 
@@ -455,3 +461,4 @@ Après :
 - wrangler est connecté au compte Cloudflare sur le PC d'Adrien (`npx wrangler whoami` pour vérifier).
 - Une fois la page chargée, le jeu tourne sans réseau. Le score ne compte que si le réseau passe au début et à la fin de la partie (3 essais d'envoi).
 - Le record perso hors classement reste sur le téléphone.
+- Changement d'adresse du 29/10/2026 : chaque téléphone repart de zéro sur la nouvelle adresse (pseudo, record perso, connexion admin, appli installée à réinstaller). Les scores restent en base, mais un ancien pseudo reste pris : il faut en choisir un autre. Les admins se reconnectent avec la clé admin ou une nouvelle invitation.

@@ -4,6 +4,7 @@ import { ATTACKS } from "../game/attacks.js";
 import { GAP_START, GAP_SLOPE, GAP_MIN } from "../game/sim.js";
 import { PALETTE, SPREADS } from "../shared/palette.js";
 import { drawProjectile, drawWarn, drawToast } from "./sprites.js";
+import { MUSIC_CREDIT, SFX_CREDIT } from "./audio.js";
 
 const SAMPLE_T = 60, PREVIEW_SCALE = 0.5, PREVIEW_MAX_S = 6, PREVIEW_PAUSE_S = 0.6;
 const TOAST = { x: FW / 2, y: FH * 0.62, tilt: 0, thrust: 0.35 };
@@ -214,6 +215,22 @@ export function renderAttacks(root, { showLab = false } = {}) {
     return card;
   });
   root.replaceChildren(progressionCard(), rules, ...cards);
+}
+
+function link(href, text) {
+  const a = el("a", "link", text);
+  a.href = href;
+  a.target = "_blank";
+  a.rel = "noopener";
+  return a;
+}
+
+export function renderCredits(root) {
+  const music = el("section", "card");
+  music.append(el("h2", null, "Musique"), el("p", "track", MUSIC_CREDIT.title), el("p", "sub", MUSIC_CREDIT.artist), link(MUSIC_CREDIT.url, "Écouter sur Spotify"));
+  const sfx = el("section", "card");
+  sfx.append(el("h2", null, "Bruitages"), el("p", "sub", `Sons de la banque ${SFX_CREDIT.name}.`), link(SFX_CREDIT.url, `Voir ${SFX_CREDIT.name}`));
+  root.replaceChildren(music, sfx);
 }
 
 export function animateAttacks(on) {

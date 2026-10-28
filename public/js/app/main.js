@@ -7,7 +7,9 @@ import * as api from "./api.js";
 import * as audio from "./audio.js";
 import { createScene } from "./scene.js";
 import { createInput } from "./input.js";
-import { renderWeapons, renderAttacks, animateAttacks } from "./catalog.js";
+import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./catalog.js";
+import { renderSettings, suggestInstall } from "./settings.js";
+import { onInstallChange } from "./install.js";
 import {
   ui, show, setText, setDigits, tickCountdowns, renderMenu, renderBoard, renderOver, renderOverStats,
   renderHud, renderControls, renderAll, setBoardScope
@@ -28,6 +30,7 @@ const S = {
 };
 let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, lastShown = "";
 let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
+let settingsOpen = false, settingsFrom = "menu";
 
 const playing = () => S.mode === "play" || S.mode === "dying";
 const input = createInput(canvas, { active: () => S.mode === "play", scale: () => scene.view.scale });
@@ -67,10 +70,25 @@ function showMenu() {
   renderMenu();
   renderControls(false);
   if (api.net.updatePending) api.applyUpdate();
+  maybeSuggest();
+}
+
+function maybeSuggest() {
+  if (S.mode === "menu" && !ui.menu.hidden && api.registered()) suggestInstall();
+}
+
+function backTo(from) {
+  if (from === "over") {
+    show("over");
+    renderControls(false);
+    renderAll();
+  } else {
+    showMenu();
+  }
 }
 
 function start() {
-  if (boardOpen || infoOpen || !ui.joinForm.hidden) return false;
+  if (boardOpen || infoOpen || settingsOpen || !ui.joinForm.hidden || !ui.installPop.hidden) return false;
   if (S.mode !== "menu" && S.mode !== "over") return false;
   if (S.mode === "over" && ui.again.disabled) return false;
   if (api.net.updatePending && api.applyUpdate()) return false;
@@ -150,7 +168,8 @@ function renderInfo() {
   for (const tab of ui.infoTabs.children) tab.setAttribute("aria-selected", String(tab.dataset.tab === infoTab));
   const showLab = !!store.get(KEYS.adminToken);
   if (infoTab === "attacks") renderAttacks(ui.infoBody, { showLab });
-  else renderWeapons(ui.infoBody, { showLab });
+  else if (infoTab === "weapons") renderWeapons(ui.infoBody, { showLab });
+  else renderCredits(ui.infoBody);
   animateAttacks(infoTab === "attacks");
   ui.info.scrollTop = 0;
 }
@@ -166,13 +185,21 @@ function openInfo() {
 function closeInfo() {
   infoOpen = false;
   animateAttacks(false);
-  if (infoFrom === "over") {
-    show("over");
-    renderControls(false);
-    renderAll();
-  } else {
-    showMenu();
-  }
+  backTo(infoFrom);
+}
+
+function openSettings() {
+  settingsOpen = true;
+  settingsFrom = S.mode === "over" ? "over" : "menu";
+  show("settings");
+  renderControls(false);
+  renderSettings();
+  ui.settings.scrollTop = 0;
+}
+
+function closeSettings() {
+  settingsOpen = false;
+  backTo(settingsFrom);
 }
 
 function update(dt) {
@@ -244,7 +271,17 @@ ui.boardBack.addEventListener("click", closeBoard);
 for (const tab of ui.boardTabs.children) tab.addEventListener("click", () => setBoardScope(tab.dataset.scope));
 ui.infoBtn.addEventListener("click", openInfo);
 ui.infoBack.addEventListener("click", closeInfo);
-ui.infoClose.addEventListener("click", closeInfo);
+ui.closeBtn.addEventListener("click", () => (settingsOpen ? closeSettings() : closeInfo()));
+ui.settingsBtn.addEventListener("click", openSettings);
+ui.settingsBack.addEventListener("click", closeSettings);
+ui.qrBtn.addEventListener("click", () => {
+  show("qr");
+  renderControls(false);
+});
+ui.qrBack.addEventListener("click", () => {
+  show("settings");
+  renderControls(false);
+});
 for (const tab of ui.infoTabs.children) {
   tab.addEventListener("click", () => {
     infoTab = tab.dataset.tab;
@@ -262,6 +299,7 @@ ui.joinForm.addEventListener("submit", async (e) => {
   try {
     await api.join(ui.pseudo.value);
     ui.pseudo.blur();
+    maybeSuggest();
   } catch (err) {
     setText(ui.joinError, err.status ? err.message : "Pas de réseau, réessaie.");
   } finally {
@@ -295,9 +333,10 @@ document.addEventListener("visibilitychange", () => {
 
 api.on("board", renderAll);
 api.on("update", () => {
-  if (S.mode === "menu" && !boardOpen && !infoOpen) api.applyUpdate();
+  if (S.mode === "menu" && !boardOpen && !infoOpen && !settingsOpen) api.applyUpdate();
 });
 audio.onAudioChange(() => renderControls(playing()));
+onInstallChange(maybeSuggest);
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 

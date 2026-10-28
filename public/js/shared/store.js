@@ -5,6 +5,7 @@ export const KEYS = {
   musicOff: "cv-muted",
   sfxOff: "cv-sfx-off",
   adminToken: "cqc-admin-token",
+  installAsked: "cv-install-asked",
   lastReload: "cv-reload"
 };
 

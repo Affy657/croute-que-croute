@@ -1,5 +1,4 @@
 import { fmtCs, ord, clock } from "../shared/format.js";
-import { store, KEYS } from "../shared/store.js";
 import { net, serverNow, registered, isOpen, openEvent, recentEvent, upcomingEvent, standing, knownBest } from "./api.js";
 import { prefs, musicAvailable } from "./audio.js";
 
@@ -10,22 +9,27 @@ export const ui = {
   brand: $("brand"), menuStats: $("menuStats"), menuBestBox: $("menuBestBox"), menuBest: $("menuBest"),
   menuRankBox: $("menuRankBox"), menuRank: $("menuRank"), menuInfo: $("menuInfo"),
   joinForm: $("joinForm"), pseudo: $("pseudo"), joinError: $("joinError"),
-  menuActions: $("menuActions"), play: $("play"), menuBoard: $("menuBoard"), menuCountdown: $("menuCountdown"), adminLink: $("adminLink"),
+  menuActions: $("menuActions"), play: $("play"), menuBoard: $("menuBoard"), menuCountdown: $("menuCountdown"), settingsBtn: $("settingsBtn"),
   final: $("final"), newBest: $("newBest"), overNote: $("overNote"),
   overStats: $("overStats"), overBestBox: $("overBestBox"), overBest: $("overBest"), overRankBox: $("overRankBox"), overRank: $("overRank"),
   again: $("again"), overBoard: $("overBoard"),
   boardTabs: $("boardTabs"), boardEvent: $("boardEvent"), boardCountdown: $("boardCountdown"), boardList: $("boardList"), boardEmpty: $("boardEmpty"), boardBack: $("boardBack"),
   music: $("music"), sfx: $("sfx"),
-  info: $("info"), infoBtn: $("infoBtn"), infoClose: $("infoClose"), infoTabs: $("infoTabs"), infoBody: $("infoBody"), infoBack: $("infoBack")
+  info: $("info"), infoBtn: $("infoBtn"), closeBtn: $("closeBtn"), infoTabs: $("infoTabs"), infoBody: $("infoBody"), infoBack: $("infoBack"),
+  settings: $("settings"), settingsBar: $("settingsBar"), settingsTabs: $("settingsTabs"), settingsApp: $("settingsApp"), settingsAdmin: $("settingsAdmin"),
+  settingsBack: $("settingsBack"), installHint: $("installHint"), installBtn: $("installBtn"), shareBtn: $("shareBtn"), qrBtn: $("qrBtn"),
+  qr: $("qr"), qrHost: $("qrHost"), qrBack: $("qrBack"),
+  installPop: $("installPop"), installPopText: $("installPopText"), installYes: $("installYes"), installLater: $("installLater")
 };
 
-const SCREENS = { menu: ["menu"], play: ["hud"], over: ["over"], board: ["board"], info: ["info"] };
+const PAGES = ["menu", "over", "board", "hud", "info", "settings", "qr"];
+const SCREENS = { menu: ["menu"], play: ["hud"], over: ["over"], board: ["board"], info: ["info"], settings: ["settings"], qr: ["qr"] };
 
 export function show(name) {
-  for (const id of ["menu", "over", "board", "hud", "info"]) ui[id].hidden = !SCREENS[name].includes(id);
+  for (const id of PAGES) ui[id].hidden = !SCREENS[name].includes(id);
   ui.infoBtn.hidden = name !== "menu" && name !== "over";
-  ui.adminLink.hidden = ui.infoBtn.hidden || !store.get(KEYS.adminToken);
-  ui.infoClose.hidden = name !== "info";
+  ui.settingsBtn.hidden = ui.infoBtn.hidden;
+  ui.closeBtn.hidden = name !== "info" && name !== "settings";
 }
 
 export function setText(el, text) {
@@ -167,9 +171,10 @@ function renderToggle(button, on, available) {
 }
 
 export function renderControls(playing) {
-  ui.infoBtn.hidden = playing || !ui.board.hidden || !ui.info.hidden;
-  ui.adminLink.hidden = ui.infoBtn.hidden || !store.get(KEYS.adminToken);
-  const quiet = playing || !ui.info.hidden;
+  const page = !ui.info.hidden || !ui.settings.hidden || !ui.qr.hidden;
+  ui.infoBtn.hidden = playing || page || !ui.board.hidden;
+  ui.settingsBtn.hidden = ui.infoBtn.hidden;
+  const quiet = playing || page;
   renderToggle(ui.music, prefs.music, !quiet && musicAvailable());
   renderToggle(ui.sfx, prefs.sfx, !quiet);
 }
