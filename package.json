@@ -1,0 +1,17 @@
+{
+  "name": "couverts-volants",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "db:local": "wrangler d1 migrations apply couverts-volants --local",
+    "db:remote": "wrangler d1 migrations apply couverts-volants --remote",
+    "deploy": "wrangler deploy",
+    "types": "wrangler types",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "wrangler": "^4.154.0"
+  }
+}

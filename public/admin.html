@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Admin Couverts Volants</title>
+<style>
+:root {
+  --bg: #0d0b24;
+  --card: #1a1640;
+  --line: rgba(255, 246, 224, 0.1);
+  --ink: #fff6e0;
+  --dim: #b9b0d6;
+  --accent: #ffcf33;
+  --danger: #e0244a;
+  color-scheme: dark;
+}
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, sans-serif; }
+main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; display: flex; flex-direction: column; gap: 18px; }
+h1 { margin: 0; font-size: 1.5rem; color: var(--accent); }
+h2 { margin: 0 0 10px; font-size: 1.1rem; }
+section { background: var(--card); border-radius: 14px; padding: 16px; }
+p { margin: 0; }
+label { display: block; font-weight: 600; margin: 12px 0 4px; color: var(--dim); }
+input { box-sizing: border-box; width: 100%; font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--dim); background: var(--bg); color: var(--ink); }
+button { font: inherit; font-weight: 700; padding: 8px 14px; margin-top: 12px; border: 0; border-radius: 8px; background: var(--accent); color: var(--bg); cursor: pointer; }
+button.danger { background: var(--danger); color: var(--ink); }
+button.small { margin: 0; padding: 4px 10px; font-size: 0.9rem; background: transparent; color: var(--ink); border: 1px solid var(--dim); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.muted { color: var(--dim); }
+.msg { min-height: 1.4em; margin-top: 10px; color: var(--accent); font-weight: 600; }
+.table { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td.num { font-variant-numeric: tabular-nums; }
+tr.banned td { opacity: 0.5; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Admin Couverts Volants</h1>
+
+  <section>
+    <label for="key">Clé admin</label>
+    <input id="key" type="password" autocomplete="off">
+    <button id="load" type="button">Charger</button>
+    <p id="msg" class="msg" role="status"></p>
+  </section>
+
+  <section>
+    <h2>Soirée en cours</h2>
+    <p id="current" class="muted">Entre la clé admin puis Charger.</p>
+    <label for="closeAt">Heure de fin du classement</label>
+    <input id="closeAt" type="datetime-local">
+    <button id="saveClose" type="button">Changer l'heure de fin</button>
+  </section>
+
+  <section>
+    <h2>Nouvelle soirée</h2>
+    <p class="muted">Crée un classement vide. L'ancien n'est plus affiché.</p>
+    <label for="newName">Nom</label>
+    <input id="newName" maxlength="60" placeholder="Space Tartinade #4">
+    <label for="newClose">Fin du classement</label>
+    <input id="newClose" type="datetime-local">
+    <button id="create" type="button" class="danger">Créer la soirée</button>
+  </section>
+
+  <section>
+    <h2>Joueurs</h2>
+    <div class="table">
+      <table>
+        <thead><tr><th>#</th><th>Pseudo</th><th>Meilleur</th><th>Parties</th><th></th></tr></thead>
+        <tbody id="players"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const key = $("key");
+try { key.value = sessionStorage.getItem("cv-admin") || ""; } catch (e) {}
+const say = (text) => { $("msg").textContent = text; };
+const fmtCs = (cs) => (cs / 100).toFixed(2).replace(".", ",") + " s";
+const toInput = (ms) => {
+  const d = new Date(ms);
+  return new Date(ms - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+};
+const fromInput = (value) => (value ? new Date(value).getTime() : NaN);
+
+async function call(method, path, body) {
+  const res = await fetch(path, {
+    method,
+    headers: { "content-type": "application/json", "x-admin-key": key.value },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error((data && data.error) || "Erreur " + res.status);
+  return data;
+}
+
+function cell(text, cls) {
+  const td = document.createElement("td");
+  td.textContent = text;
+  if (cls) td.className = cls;
+  return td;
+}
+
+async function load() {
+  try { sessionStorage.setItem("cv-admin", key.value); } catch (e) {}
+  try {
+    const r = await call("GET", "/api/admin/players");
+    if (r.event) {
+      const end = new Date(r.event.closesAt).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+      $("current").textContent = r.event.name + " : fin du classement " + end + ", " + r.players.length + " joueur" + (r.players.length > 1 ? "s" : "") + ".";
+      $("closeAt").value = toInput(r.event.closesAt);
+    } else {
+      $("current").textContent = "Aucune soirée. Crée la première ci-dessous.";
+    }
+    let rank = 0;
+    $("players").replaceChildren(...r.players.map((p) => {
+      const tr = document.createElement("tr");
+      if (p.banned) tr.className = "banned";
+      const ranked = !p.banned && p.best > 0;
+      if (ranked) rank++;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "small";
+      button.textContent = p.banned ? "Réintégrer" : "Retirer";
+      button.addEventListener("click", async () => {
+        try {
+          await call("POST", "/api/admin/players/" + p.id + "/ban", { banned: !p.banned });
+          await load();
+        } catch (e) { say(e.message); }
+      });
+      const action = document.createElement("td");
+      action.append(button);
+      tr.append(cell(ranked ? String(rank) : "", "num"), cell(p.pseudo), cell(p.best ? fmtCs(p.best) : "", "num"), cell(String(p.runs), "num"), action);
+      return tr;
+    }));
+    say("");
+  } catch (e) {
+    say(e.message);
+  }
+}
+
+$("load").addEventListener("click", load);
+key.addEventListener("keydown", (e) => { if (e.key === "Enter") load(); });
+
+$("saveClose").addEventListener("click", async () => {
+  try {
+    await call("PATCH", "/api/admin/events/current", { closesAt: fromInput($("closeAt").value) });
+    say("Heure de fin enregistrée.");
+    await load();
+  } catch (e) { say(e.message); }
+});
+
+$("create").addEventListener("click", async () => {
+  if (!confirm("Créer une nouvelle soirée ? Le classement repart de zéro.")) return;
+  try {
+    await call("POST", "/api/admin/events", { name: $("newName").value, closesAt: fromInput($("newClose").value) });
+    say("Soirée créée.");
+    $("newName").value = "";
+    $("newClose").value = "";
+    await load();
+  } catch (e) { say(e.message); }
+});
+
+if (key.value) load();
+</script>
+</body>
+</html>
