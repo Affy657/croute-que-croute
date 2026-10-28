@@ -6,13 +6,13 @@
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0d0b24">
 <title>Croûte Admin</title>
-<link rel="manifest" href="/admin.webmanifest">
-<link rel="icon" href="/icons/admin-192.png" type="image/png">
-<link rel="apple-touch-icon" href="/icons/admin-apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Croûte Admin">
+<meta name="apple-mobile-web-app-title" content="Croûte">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&display=swap">
@@ -21,21 +21,30 @@
 <body>
 <main>
   <header class="top">
-    <h1>Croûte Admin</h1>
-    <p id="who" class="who" hidden></p>
+    <div>
+      <h1>Croûte Admin</h1>
+      <p id="who" class="who" hidden></p>
+    </div>
+    <a class="btn ghost small" href="/">Retour au jeu</a>
   </header>
 
   <section id="login" class="card" hidden>
     <h2>Connexion</h2>
+    <form id="pasteForm" class="form">
+      <label for="pasteInvite">Lien d'invitation reçu</label>
+      <input id="pasteInvite" inputmode="url" autocomplete="off" placeholder="Colle le lien ici" required>
+      <button class="btn" type="submit">Utiliser le lien</button>
+      <p id="pasteMsg" class="msg" hidden></p>
+    </form>
+    <p class="sub">Propriétaire avec la clé admin :</p>
     <form id="loginForm" class="form">
       <label for="loginName">Ton prénom</label>
       <input id="loginName" autocomplete="given-name" maxlength="30" required>
       <label for="loginKey">Clé admin</label>
       <input id="loginKey" type="password" autocomplete="current-password" required>
-      <button class="btn" type="submit">Se connecter</button>
+      <button class="btn ghost" type="submit">Se connecter avec la clé</button>
       <p id="loginMsg" class="msg" hidden></p>
     </form>
-    <p class="hint">Pas de clé ? Demande un lien d'invitation au propriétaire.</p>
   </section>
 
   <section id="invite" class="card" hidden>

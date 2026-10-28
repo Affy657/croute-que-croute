@@ -7,15 +7,12 @@
     "db:local": "wrangler d1 migrations apply croute-que-croute --local",
     "db:remote": "wrangler d1 migrations apply croute-que-croute --remote",
     "deploy": "node scripts/deploy.mjs",
-    "preview": "node scripts/preview.mjs",
-    "music:test": "node scripts/test-music.mjs",
     "icons": "node scripts/icons.mjs",
     "types": "wrangler types",
     "check": "tsc --noEmit",
     "test": "node test/fairness.mjs 100 150"
   },
   "devDependencies": {
-    "@breezystack/lamejs": "^1.2.7",
     "@resvg/resvg-js": "^2.6.2",
     "typescript": "^7.0.2",
     "wrangler": "^4.154.0"

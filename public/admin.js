@@ -201,22 +201,42 @@ $("loginForm").addEventListener("submit", async (e) => {
   }
 });
 
+async function acceptInvite(invite) {
+  const r = await call("POST", "/api/admin/accept", { invite });
+  token = r.token;
+  store.set(token);
+  history.replaceState(null, "", "/admin");
+  await boot();
+}
+
 function showInvite(invite) {
   show("invite");
   $("acceptBtn").onclick = async () => {
     $("acceptBtn").disabled = true;
     try {
-      const r = await call("POST", "/api/admin/accept", { invite });
-      token = r.token;
-      store.set(token);
-      history.replaceState(null, "", "/admin");
-      await boot();
+      await acceptInvite(invite);
     } catch (e) {
       say($("inviteMsg"), e.message, true);
       $("acceptBtn").disabled = false;
     }
   };
 }
+
+$("pasteForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const text = $("pasteInvite").value.trim();
+  const match = text.match(/invite=([a-f0-9]+)/i) || text.match(/^([a-f0-9]{32,})$/i);
+  if (!match) {
+    say($("pasteMsg"), "Ce n'est pas un lien d'invitation.", true);
+    return;
+  }
+  try {
+    await acceptInvite(match[1]);
+    $("pasteInvite").value = "";
+  } catch (err) {
+    say($("pasteMsg"), err.message, true);
+  }
+});
 
 $("editEndBtn").addEventListener("click", () => {
   $("eventForm").hidden = true;
