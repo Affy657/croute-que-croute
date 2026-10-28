@@ -1,9 +1,10 @@
 import { FW, FH, HIT_R, NEAR, OUT, X_MIN, X_MAX, Y_MIN, Y_MAX, clamp, segDist2 } from "./field.js";
 import { pickAttack } from "./attacks.js";
-import { moveProjectile } from "./projectiles.js";
+import { moveProjectile, sprinkleRare } from "./projectiles.js";
 import { solve } from "./solver.js";
 
 const TRIES = 5, REACT = 0.1;
+export const GAP_START = 1.25, GAP_SLOPE = 0.016, GAP_MIN = 0.42;
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
 export function createSim(rng = Math.random, { fair = true, react = REACT } = {}) {
@@ -33,12 +34,14 @@ export function createSim(rng = Math.random, { fair = true, react = REACT } = {}
     const ok = solveTimed(items);
     if (ok || !fair) {
       if (!ok) state.stats.impossible++;
+      for (const w of items) for (const o of w.obs) o.from = attack.id;
+      sprinkleRare(items);
       state.warns.push(...items);
       state.stats.spawned++;
       state.tries = 0;
       state.streak = attack.id === state.last ? state.streak + 1 : 1;
       state.last = attack.id;
-      state.next = Math.max(0.42, 1.25 - t * 0.016) * attack.cost * rnd(0.85, 1.15);
+      state.next = Math.max(GAP_MIN, GAP_START - t * GAP_SLOPE) * attack.cost * rnd(0.85, 1.15);
       return;
     }
     state.stats.rejected++;
@@ -70,7 +73,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT } = {}
       const hr = HIT_R + o.rad;
       if (d2 < hr * hr) {
         state.dead = true;
-        events.push({ type: "death" });
+        events.push({ type: "death", by: o.from });
         return;
       }
       if (!o.near && d2 < (hr + NEAR) * (hr + NEAR)) {

@@ -291,7 +291,7 @@ select:focus-visible,
 
 .gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 8px;
 }
 
@@ -401,4 +401,34 @@ select:focus-visible,
   .attack-text {
     width: 100%;
   }
+}
+
+.verdict {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--row);
+  border-left: 4px solid var(--mustard);
+  font-weight: 600;
+}
+
+.timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.timeline li {
+  display: grid;
+  grid-template-columns: 3.4rem 1fr;
+  gap: 8px;
+}
+
+.timeline .when {
+  font-family: var(--font-display);
+  color: var(--mustard);
+  text-align: right;
 }

@@ -54,6 +54,18 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
   |     |  |      |    |      chute presque droite
 ```
 
+### Hachoir (dès 10 s)
+
+- Un hachoir tombe tout droit au-dessus de la tartine, très vite (300 px/s au départ).
+- Annonce 0,9 s avant, plus longue que les autres : il suffit de quitter sa colonne.
+
+```
+     v        flèche au-dessus de la tartine
+     #
+     #        chute verticale
+    [T]
+```
+
 ### Mur (dès 14 s)
 
 - Une rangée de couverts serrés avec un seul trou d'environ 100 px.
@@ -71,6 +83,17 @@ Par le côté            Par le haut
 >=====
 ```
 
+### Rouleau à pâtisserie (dès 18 s)
+
+- Un gros rouleau debout (84 px de haut) traverse lentement l'écran par un côté, dans les 60 % du haut.
+- Annonce 0,7 s avant. Passer au-dessus ou en dessous.
+
+```
+>  ||
+   ||  ->     le rouleau glisse vers l'autre côté
+   ||
+```
+
 ### Éventail (dès 24 s)
 
 - 5 couteaux lancés d'un même point, ouverts sur environ 50° et centrés sur la tartine. 6 couteaux à partir de 44 s, 7 à partir de 64 s.
@@ -84,10 +107,15 @@ Par le côté            Par le haut
        [T]
 ```
 
-### Croix (dès 30 s)
+### Fouet (dès 28 s)
+
+- Un fouet qui tourne sur lui-même descend lentement (100 px/s au départ) vers la tartine. Sa zone tournante est grosse.
+- Annonce 0,7 s avant. S'écarter de sa ligne tôt.
+
+### Croix (dès 32 s)
 
 - 4 couteaux en même temps : un de chaque coin du haut et un de chaque côté (dans les 60 % du haut), tous vers la tartine.
-- Annonce 0,6 s avant. Il faut s'écarter du point visé, par exemple vers le bas.
+- Annonce 0,7 s avant. Il faut s'écarter du point visé, par exemple vers le bas.
 
 ```
   >           <
@@ -95,9 +123,23 @@ Par le côté            Par le haut
   >--- [T] ---<
 ```
 
-### Couloir (dès 40 s)
+### Couteau à pain (dès 38 s)
 
-- Un mur par un côté, puis un mur par l'autre côté 0,55 s plus tard, chacun avec son propre trou.
+- Lancé d'un coin du haut vers le bord opposé, il rebondit une fois puis file vers la tartine.
+- Annonce 0,6 s avant. Le solveur connaît le rebond.
+
+```
+  >
+    \
+      \      |
+        \    |  rebond
+          \  |
+     [T] <---
+```
+
+### Couloir (dès 46 s)
+
+- Un mur par un côté, puis un mur par l'autre côté 0,7 s plus tard, chacun avec son trou (120 px, plus grand que pour un mur seul).
 - Il faut passer le premier trou puis rejoindre le second.
 
 ```
@@ -107,68 +149,78 @@ Par le côté            Par le haut
 >=====          =====<
 ```
 
-### Double pluie (dès 45 s)
+### Double pluie (dès 54 s)
 
-- Deux fois plus de fourchettes que la pluie (8 à 16), une toutes les 0,09 s.
+- 5 à 9 fourchettes qui tombent tout droit, une toutes les 0,13 s, en alternant moitié gauche et moitié droite.
+- Revue le 28/10/2026 : la première version (8 à 16 fourchettes en biais) était trop dure à lire.
 
 ### Variantes rares
 
-- Environ 1 couteau sur 25 porte autre chose que du beurre : confiture, pâte à tartiner, miel ou ketchup.
+- Environ 1 attaque sur 40 : un seul de ses couteaux porte autre chose que du beurre (confiture, pâte à tartiner, miel ou ketchup).
 - Pur visuel : même taille, même zone de touche, aucun effet sur le score ni sur l'équité.
-
-### Prototypes (pas encore en jeu)
-
-- Rouleau à pâtisserie : gros, debout, traverse lentement par un côté.
-- Fouet : tourne sur lui-même en descendant vers la tartine.
-- Hachoir : tombe tout droit et très vite, annoncé 0,9 s avant.
-- Couteau à pain : rebondit une fois sur le bord opposé puis file vers la tartine. Pour le mettre en jeu, il faudra apprendre le rebond au solveur.
-- À voir dessinés et en mouvement dans l'admin (onglets Armes et Attaques). Adrien choisit ceux qui entrent dans le jeu.
 
 ## Progression de la difficulté
 
-- Tout est aléatoire. La difficulté monte en continu et de nouvelles attaques se débloquent par paliers.
-- Jamais plus de 3 fois la même attaque d'affilée. Une attaque qui vient de sortir a deux fois moins de chances de ressortir (quatre fois moins au deuxième coup), pour éviter les longues séries.
+- **Fin de la complexification : 80 s.** Dernière nouvelle attaque à 54 s, rythme maximal à 52 s, pluies et éventails au maximum à 60 et 64 s, vitesse maximale à 80 s. Au-delà, plus rien ne change.
+- Tout est aléatoire. La difficulté monte en continu et les attaques arrivent une par une, à peu près toutes les 4 à 8 s.
+- Jamais plus de 3 fois la même attaque d'affilée. Une attaque qui vient de sortir a deux fois moins de chances de ressortir (quatre fois moins au deuxième coup).
+- Les grosses figures (croix, couloir, double pluie) ne sortent jamais deux fois de suite.
 - Pas encore de phases (moments calmes, pics) : remis à plus tard, voir « À brainstormer ».
+- Le calendrier complet, généré depuis le code, est dans l'admin, onglet Attaques, carte « Progression ».
 
 ```
-temps     0s      6s      14s     24s     35s     52s          80s
-          |-------|-------|-------|-------|-------|------------|------>
-visé      ################################################################
-pluie             ########################################################
-mur                       ################################################
-éventail                          ########################################
-croix (30s), couloir (40s), double pluie (45s)        ##########################
-tournant                                  ################################
-vitesse   x1,0 ................................................ x2,6 (max)
-rythme    1 attaque / 1,25 s ...................... 1 / 0,42 s (max)
+temps     0   6   10  14  18  24  28  32  38  46  52  54  60  64      80 s
+          |---|---|---|---|---|---|---|---|---|---|---|---|---|-------|---->
+visé      ######################################################################
+pluie         ##################################################################
+hachoir           ##############################################################
+mur                   ##########################################################
+rouleau                   ######################################################
+éventail                      ##################################################
+fouet                             ##############################################
+croix                                 ##########################################
+couteau à pain                            ######################################
+couloir                                       ##################################
+double pluie                                          ##########################
+vitesse   x1,0 ............................................................ x2,6
+rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 ```
 
 | Réglage | Valeur |
 |---|---|
 | Vitesse des couverts | × (1 + t / 50), plafond × 2,6 atteint à 80 s |
 | Délai entre deux attaques | 1,25 s - 0,016 × t, jamais moins de 0,42 s (atteint à 52 s) |
-| Après une attaque à plusieurs couverts | délai × 1,5 (pluie, éventail), × 1,6 (croix), × 1,7 (mur), × 2 (double pluie), × 2,2 (couloir) |
+| Délai après l'attaque | × 1 (visé), 1,1 (hachoir), 1,2 (couteau à pain), 1,3 (rouleau, fouet), 1,5 (pluie, éventail), 1,6 (croix), 1,7 (mur), 1,8 (double pluie), 2,2 (couloir) |
 | Hasard sur le délai | ± 15 % |
-| Chances de tirage | visé 3, pluie 1,4, mur 1,1, éventail 1,1, croix 0,7, couloir 0,6, double pluie 0,6 (parmi les attaques débloquées, divisé par 2 si elle vient de sortir) |
-| Vitesse de base | visé 230 px/s, croix 210, éventail 200, pluie et double pluie 190, mur et couloir 150 |
+| Chances de tirage | visé 3, pluie 1,4, mur 1,1, éventail 1,1, hachoir 0,9, rouleau 0,8, fouet 0,7, croix 0,7, couteau à pain 0,7, couloir 0,6, double pluie 0,6 (parmi les attaques débloquées) |
+| Vitesse de base | hachoir 300 px/s, couteau à pain 240, visé 230, éventail 200, croix 190, pluies 190, mur et couloir 150, rouleau 110, fouet 100 |
 
-Repères mesurés avec des robots :
+Équilibrage mesuré le 28/10/2026 avec un « robot humain » (il ne revoit son plan que toutes les 0,25 s et bouge à 320 px/s au plus), puis un robot plus fort (0,12 s, 420 px/s), 60 parties chacun :
 
-- Joueur immobile : mort vers 2,9 s.
-- Robot qui esquive bêtement : environ 19 s.
-- Robot parfait (qui suit le solveur) : tient 150 s sans mourir.
+| Robot | Survie (quart, médiane, trois quarts, max) | Attaque la plus meurtrière |
+|---|---|---|
+| Humain (0,25 s, 320 px/s) | 15 s, 31 s, 46 s, 89 s | éventail, croix, couteau à pain, couloir : 6 à 8 % des lancers |
+| Fort (0,12 s, 420 px/s) | 43 s, 54 s, 67 s, 128 s | double pluie 6,5 %, pluie et croix 3,6 % |
+
+- Les morts s'étalent sans pic à l'arrivée d'une attaque. Le robot fort meurt surtout entre 50 et 60 s, quand le rythme est au maximum.
+
+- Le fouet et la croix tuaient 10 % du temps à leur arrivée : ralentis et annoncés plus tôt.
+- Aucune attaque ne crée de pic de morts à son arrivée.
+- Joueur immobile : mort vers 2,9 s. Robot parfait (qui suit le solveur) : tient 150 s.
 
 ## Équité : jamais de situation impossible
 
 - Avant chaque attaque, le jeu simule les 3,5 s suivantes avec tous les couverts en vol et annoncés, plus l'attaque candidate.
 - Temps de réaction : le solveur suppose que la tartine ne bouge pas pendant les 0,1 s qui suivent. Une attaque qui ne laisse une issue qu'en réagissant à l'instant est refusée.
+- Rebond : le solveur suit le couteau à pain jusqu'au bord, puis dans l'autre sens.
 - Ajouté le 28/10/2026 : sans cette marge, le couloir pouvait créer des pièges où il fallait partir dans la bonne direction à l'instant même (le robot y mourait 2 fois sur 100). Comparé sur 100 parties : 0,07 s refuse 9 % des attaques, 0,1 s en refuse 12 %, 0,17 s en refuse 20 % et double le temps de calcul. Retenu : 0,1 s.
 - Il cherche un chemin pour la tartine : grille de cases de 12 px, pas de 1/30 s, doigt à 360 px/s au plus, marge de 11 px autour de chaque couvert.
 - Sans chemin, l'attaque est remplacée par une autre (jusqu'à 5 essais, un par image).
 - Le modèle est prudent : si le robot passe, un humain peut passer.
 - La garantie vaut au moment où l'attaque est lancée. Un joueur peut toujours se coincer tout seul ensuite.
 - `npm test` fait jouer le robot pendant 100 parties de 150 s, avec puis sans le solveur.
-- Dernier résultat (28/10/2026, avec croix, couloir et double pluie) : 0 mort et 0 blocage sur 100 parties de 150 s avec le solveur ; 39 morts sans. 12 % des attaques sont refusées puis remplacées. Calcul : environ 50 % plus lourd qu'avant les nouvelles figures (de l'ordre de 3 à 4 ms par vérification sur PC, jusqu'à 25 ms dans les cas chargés) : à surveiller sur téléphone.
+- Résultat du 28/10/2026 avec toutes les attaques (couloir élargi, grosses figures jamais deux fois de suite) : 0 mort et 0 blocage sur 100 parties de 150 s, 9 % d'attaques refusées puis remplacées.
+- Résultat précédent (avant les ustensiles) : 0 mort et 0 blocage sur 100 parties de 150 s avec le solveur ; 39 morts sans. 12 % des attaques sont refusées puis remplacées. Calcul : environ 50 % plus lourd qu'avant les nouvelles figures (de l'ordre de 3 à 4 ms par vérification sur PC, jusqu'à 25 ms dans les cas chargés) : à surveiller sur téléphone.
 
 ## Écrans
 
@@ -240,7 +292,7 @@ Repères mesurés avec des robots :
 - Rôles : propriétaire (soirées, joueurs et équipe) et admin (soirées et joueurs).
 - Chaque téléphone connecté apparaît dans « Équipe » et peut être retiré : il est déconnecté aussitôt.
 - On ne peut pas retirer le dernier propriétaire.
-- Trois onglets : Soirée (tableau de bord), Armes (tous les ustensiles dessinés avec leur zone de touche, variantes rares, prototypes) et Attaques (chaque attaque avec ses infos et un aperçu animé en boucle).
+- Trois onglets : Soirée (tableau de bord), Armes (tous les ustensiles et la tartine à leur taille réelle dans le jeu sur cet écran, avec leur zone de touche, et les variantes rares) et Attaques (progression jusqu'à la fin de la complexification, règles, chaque attaque avec ses infos et un aperçu animé en boucle).
 - Tableau de bord : soirée en cours, fin du classement avec compte à rebours, joueurs, parties, record, classement mis à jour toutes les 10 s, bouton pour retirer un tricheur.
 - « Record à vérifier » (trait rouge) : le record a pris nettement plus de temps réel que le score (plus de 15 % et 15 s d'écart). Signe d'un jeu ralenti exprès, ou d'une appli mise en arrière-plan en pleine partie.
 - Une nouvelle soirée ne peut être créée qu'une fois la précédente fermée : avancer d'abord son heure de fin à maintenant. Ça évite d'effacer le classement en pleine soirée par erreur.
@@ -336,6 +388,8 @@ Après :
 - Nouvelle attaque : une fonction dans `attacks.js` qui renvoie ses avertissements et projectiles, puis une ligne dans `ATTACKS` (à partir de quand, poids, durée). Le solveur la vérifie tout seul.
 - Nouveau projectile : sa taille dans `projectiles.js` et son dessin dans `sprites.js` (même nom).
 - Prototype : `lab: true` dans `ATTACKS` ou `PROJECTILES`. Il apparaît dans l'admin mais n'est jamais tiré en jeu. Pour le mettre en jeu : retirer `lab`, régler `from` et `weight`, puis `npm test`.
+- Grosse figure qui ne doit jamais sortir deux fois de suite : `solo: true` dans `ATTACKS`.
+- Ce qui grossit avec le temps à l'intérieur d'une attaque : `growsUntil` et `growth` dans `ATTACKS`, pour que l'admin l'affiche dans la progression.
 - Nouvelle tartinade rare : une ligne dans `SPREADS` (`palette.js`) et son nom dans `RARE_SPREADS` (`projectiles.js`).
 - Nouveau bruitage : voir « Bruitages ».
 - Nouvel événement de partie (objet ramassé, etc.) : `sim.js` le renvoie dans la liste d'événements de `step`, et `main.js` y réagit dans `ON_SIM`.
@@ -357,7 +411,6 @@ Après :
   - Peut-on avoir deux soirées en même temps (deux lieux, deux QR codes) ?
   - Faut-il un classement général, même en dehors des soirées (tous les temps, par mois) ?
   - Comment les soirées et le hors-soirée existent dans le jeu et dans le classement : ce que voit un joueur qui ouvre l'appli un mardi, ce que devient son record de la soirée, ce qui reste visible après la fermeture.
-- Prototypes à valider : rouleau, fouet, hachoir, couteau à pain (voir l'admin, onglets Armes et Attaques).
 - Phases structurées, remises à plus tard par Adrien : moments calmes et pics. Piste : caler les pics sur les drops du morceau, possible car la musique repart du début à chaque partie. Je peux repérer les drops en analysant le fichier.
 - Images rigolotes qui défilent dans le fond : références aux anciennes soirées et aux délires du collectif (par exemple un maximator qui tourne).
 - Mini wiki dans le jeu : une page qui présente chaque type d'attaque (dessin, nom, à partir de quand elle arrive, comment l'esquiver). L'onglet Attaques de l'admin en est déjà la base.
