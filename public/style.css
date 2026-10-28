@@ -34,7 +34,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-#cv, #fx {
+#cv, #fx, #party {
   position: fixed;
   inset: 0;
   width: 100%;
@@ -43,8 +43,29 @@ body {
   touch-action: none;
 }
 
-#fx {
+#fx, #party {
   pointer-events: none;
+}
+
+#party {
+  z-index: 40;
+}
+
+.cheer {
+  animation: cheer 0.7s ease-out;
+}
+
+@keyframes cheer {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.25) rotate(-3deg); }
+  60% { transform: scale(0.96) rotate(2deg); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cheer {
+    animation: none;
+  }
 }
 
 .sr-only {
@@ -276,6 +297,11 @@ h2 {
   letter-spacing: 0.08em;
 }
 
+.badge.gold {
+  background: var(--mustard);
+  color: var(--void);
+}
+
 .digits .d {
   display: inline-block;
   width: 0.76em;
@@ -449,6 +475,11 @@ a.ghost {
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   color: var(--ink-dim);
+}
+
+#time.hot,
+#hudBest.hot {
+  color: var(--mustard);
 }
 
 .screen.board {

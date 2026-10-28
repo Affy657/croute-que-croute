@@ -227,6 +227,12 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - Accueil pendant une soirée : record et place de la soirée, Jouer, Classement, « Fin dans ».
 - Accueil hors soirée : record et place au classement général. Message « Bravo X ! » pendant 12 h après une soirée, sinon « Prochaine soirée samedi 07/11 à 19h30 » si elle est créée, avec « Début dans » le dernier jour.
 - Fin de partie : temps, badge « Nouveau record » (record de la soirée pendant une soirée, record perso sinon), record et place, Rejouer, Classement. « Rejouer » est bloqué 0,45 s pour éviter de relancer par erreur.
+- Effets de fête (idée d'Adrien, depuis le 29/10/2026) :
+  - En pleine partie, quand le temps dépasse ton record : le chrono passe en jaune avec un petit rebond, « Record x,xx » devient « Nouveau record » et quelques confettis partent du chrono. Pas au tout premier essai (pas encore de record).
+  - En pleine partie, quand le temps dépasse le 1er du classement (de la soirée pendant une soirée, général sinon) : même chose en doré avec « N°1 ! ». Seulement si la partie compte (pseudo choisi, réseau au départ) et si le 1er n'est pas déjà toi.
+  - Fin de partie avec un nouveau record : le temps rebondit et une gerbe de confettis part du score.
+  - Fin de partie avec la 1re place confirmée par le serveur : le badge devient « N°1 ! » en jaune, grosse gerbe dorée et pluie de confettis sur tout l'écran, en plus de la fanfare.
+  - Les confettis sont dessinés par `public/js/app/party.js` sur un calque au-dessus de tout (`#party`), qui ne bloque pas les doigts. Rien ne bouge si le téléphone demande moins d'animations.
 - Classement : deux onglets, Soirée et Général (Tous les temps). Top 50, ta ligne en jaune, mis à jour toutes les 10 s. L'onglet Soirée n'existe que pendant une soirée et les 12 h qui suivent.
 - Bulle d'info (bouton rond « i » en bas à droite, sur l'accueil et la fin de partie) : onglets Attaques (progression jusqu'à la fin de la complexification, règles, chaque attaque avec ses infos et un aperçu animé en boucle) Armes (tous les ustensiles et la tartine à leur taille réelle sur cet écran, avec leur zone de touche, et les variantes rares) et Crédits (la musique avec un lien pour l'écouter, et la banque des bruitages). Toute la page défile, comme une page web ; les onglets restent en haut, avec une croix pour fermer, et « Retour » est tout en bas.
 - Police : Bungee partout, chargée depuis Google Fonts.
@@ -365,6 +371,7 @@ Après :
 | `public/js/app/main.js` | Chef d'orchestre : états (accueil, partie, fin, classement), boucle d'affichage |
 | `public/js/app/scene.js` | Dessin du fond, du terrain et des effets |
 | `public/js/app/sprites.js` | Dessin de la tartine et de chaque projectile |
+| `public/js/app/party.js` | Confettis et rebonds des effets de fête (record, N°1) |
 | `public/js/app/screens.js` | Écrans HTML : accueil, fin, classement, boutons |
 | `public/js/app/settings.js`, `install.js` | Paramètres, partage, QR code et installation de l'appli |
 | `public/js/app/api.js` | Appels au serveur, classement, mise à jour de version |
@@ -438,7 +445,6 @@ Après :
   - À trancher : est-ce que ça donne un avantage au classement (non, pour rester juste ?), la collection est-elle liée à la soirée ou au téléphone.
 - Succès à débloquer (achievements, idée d'Adrien) : à définir.
   - À trancher : quels succès, où les voir dans le jeu, liés au téléphone ou à la soirée, et le lien avec la collection.
-- Effet visuel quand on bat son record ou qu'on passe premier (idée d'Adrien) : par exemple des paillettes ou un mouvement sur le score. À définir : sur l'écran de fin seulement, ou aussi en pleine partie au moment où on dépasse.
 - Partage du score en story Insta.
 - Écran géant : classement en plein écran si le lieu en a un.
 - QR code aux couleurs du jeu ou du collectif (question d'Adrien) : possible, avec des points arrondis, les couleurs de l'appli et une petite tartine au centre. À tester au scan sur plusieurs téléphones avant d'imprimer : il faut garder un fort contraste (points foncés sur fond clair) et une marge autour.
