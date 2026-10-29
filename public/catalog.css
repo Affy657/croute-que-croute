@@ -186,14 +186,6 @@
   }
 }
 
-.catalog .verdict {
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--row);
-  border-left: 4px solid var(--mustard);
-  font-weight: 600;
-}
-
 .catalog .timeline {
   margin: 0;
   padding: 0;
