@@ -12,6 +12,7 @@ export interface Profile {
   pseudo: string;
   best: number;
   banned: number;
+  run_count: number;
 }
 
 export interface Ranked {
@@ -66,7 +67,7 @@ export const eventById = (env: Env, id: number) =>
 export async function findProfile(req: Request, env: Env) {
   const token = bearer(req);
   if (!token) return null;
-  return env.DB.prepare("SELECT id, pseudo, best, banned FROM profiles WHERE token = ?").bind(token).first<Profile>();
+  return env.DB.prepare("SELECT id, pseudo, best, banned, run_count FROM profiles WHERE token = ?").bind(token).first<Profile>();
 }
 
 export async function entryBest(env: Env, eventId: number, playerId: string) {

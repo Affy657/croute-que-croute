@@ -47,6 +47,7 @@ export async function board({ req, env }: Ctx) {
       ? {
           pseudo: me.pseudo,
           best: me.best,
+          runs: me.run_count,
           rank: me.banned ? null : rankIn(general, me.id),
           eventBest: eventMine,
           eventRank: me.banned || !eventList ? null : rankIn(eventList, me.id),

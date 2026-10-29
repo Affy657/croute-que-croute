@@ -236,6 +236,7 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - « Frôlé ! » s'affiche au-dessus de la tartine à chaque frôlé, et s'efface à la mort pour ne pas contredire « Tartinée ! ».
 - Boutons : le gros bouton jaune et les rangées en dessous ont la même largeur (18rem au plus) ; les boutons secondaires vont par deux, tous de la même taille, 44 px de haut au moins pour le doigt.
 - Cadre du terrain : il n'apparaît qu'en partie (fondu de 0,2 s au départ et à la mort). Sur l'accueil, la fin et le classement, l'interface prend tout l'écran sans que le trait du cadre la coupe, quelle que soit la forme du téléphone. Les alertes d'attaque au bord ne sont dessinées qu'avec le terrain.
+- Fond (depuis le 29/10/2026, demandé par Adrien) : les planètes des affiches défilent en boucle derrière tout, sur l'accueil comme en partie, une à la fois en alternant gauche et droite : planète violette à anneau, petites lunes vertes, planète pancake avec pot de confiture, planète verte à anneau, planète enceintes (ondes qui pulsent), petite planète orange. Dessinées dans le code (`public/js/app/planets.js`, couleurs `SKY` dans `palette.js`), sombres pour ne pas gêner la lecture des couverts. Elles avancent à 20 px/s en partie (plus vite quand le jeu accélère, comme les étoiles) et à 10 px/s hors partie ; une nouvelle planète arrive toutes les demi-hauteurs d'écran.
 - Tailles d'écran (revu le 29/10/2026 après une critique de l'interface) : vérifié sans chevauchement ni débordement de 320×480 à 430×932 (iPhone SE dans Safari 375×548, Android 360×640, iPhone récents 390×664, Pixel 412×780, Pro Max 430×932). Les tailles verticales (titre, temps, gros bouton, espacements) suivent la hauteur visible de l'écran (unité `svh`) ; les titres de page rétrécissent avec la largeur pour tenir entre les boutons ronds du haut ; le contenu du bas s'arrête au-dessus des boutons ronds du bas.
 - Effets de fête (idée d'Adrien, depuis le 29/10/2026) :
   - En pleine partie, quand le temps dépasse ton record : le chrono passe en jaune avec un petit rebond, « Record x,xx » devient « Nouveau record » et quelques confettis partent du chrono. Pas au tout premier essai (pas encore de record).
@@ -260,11 +261,12 @@ Décidé avec Adrien le 29/10/2026 : 4 familles, gardés sur le téléphone, mon
 | Temps | Premiers pas (10 s), Bien beurrée (20 s), Croustillante (30 s), Dorée à point (45 s), Une minute de gloire (60 s), Tartine de légende (80 s, bout de la montée) |
 | Frôlés et découvertes | Ça passe (5 frôlés dans une partie), Ça passe crème (20), Confiture !, Pâte à tartiner !, Miel !, Ketchup ?! (voir un couteau de cette tartinade rare), Tout vu (voir les 11 attaques, sur plusieurs parties) |
 | Assiduité et soirées | Dix tartines (10 parties), Boulangerie (50), Accro à la croûte (100), Fidèle du Space (jouer à 3 soirées), Dans le top (top 10 d'une soirée), Tartine d'or (finir 1er d'une soirée) |
-| Secrets | Tartinée express (moins de 2 s), Zen (5 s sans bouger), Chiffre rond (finir pile sur x,00). Affichés « ??? » tant qu'ils ne sont pas débloqués |
+| Secrets | Tartinée express (moins de 2 s), En détente (5 s sans bouger, appelé « Zen » avant le 29/10/2026), Chiffre rond (finir pile sur x,00). Affichés « ??? » tant qu'ils ne sont pas débloqués |
 
-- Gardés sur le téléphone (`cv-succes` dans le stockage du navigateur) : cumulés sur toutes les soirées, sans rien côté serveur, aucun effet sur le classement. Perdus si on change de téléphone ou de navigateur. Les parties d'entraînement (sans pseudo) comptent aussi.
+- Gardés sur le téléphone (`cv-succes` dans le stockage du navigateur) : cumulés sur toutes les soirées, sans rien côté serveur sauf le nombre de parties (voir plus bas), aucun effet sur le classement. Perdus si on change de téléphone ou de navigateur. Les parties d'entraînement (sans pseudo) comptent aussi.
 - Plusieurs fenêtres du jeu ouvertes sur le même téléphone (onglet et appli installée sur Android, deux onglets sur ordinateur) partagent les mêmes succès : chaque déblocage relit d'abord ce qui est enregistré (corrigé le 29/10/2026 : une fenêtre restée ouverte pouvait effacer les succès d'une autre, qu'on redébloquait ensuite).
 - Sur iPhone, Safari et l'appli installée sur l'écran d'accueil ont chacun leur propre stockage : un succès eu dans Safari se redébloque dans l'appli installée. Seul un stockage sur le serveur, lié au pseudo, réglerait ça.
+- Nombre de parties (Dix tartines, Boulangerie, Accro à la croûte) : on prend le plus grand entre le compteur du téléphone et celui du serveur (`run_count` du profil, envoyé par `/api/board` dans `me.runs`). Corrigé le 29/10/2026 après un signalement d'Adrien : le compteur du téléphone n'existait que depuis l'arrivée des succès et repartait de zéro à chaque changement d'adresse, de navigateur ou entre Safari et l'appli installée. Le serveur ne compte que les parties envoyées avec un pseudo ; le téléphone compte aussi l'entraînement et les parties hors ligne.
 - En fin de partie, la ligne « ★ » rappelle les succès débloqués pendant cette partie, y compris ceux déjà montrés par le bandeau en jeu : ce n'est pas un second déblocage.
 - En pleine partie : un petit bandeau jaune « ★ Nom » sous le chrono pendant 2,6 s (plusieurs succès d'un coup s'ajoutent à la suite).
 - En fin de partie : une ligne « ★ Nom, Nom » sous le temps avec les succès de la partie ; la toucher ouvre la page Succès.
@@ -420,6 +422,7 @@ Après :
 | `public/js/app/main.js` | Chef d'orchestre : états (accueil, partie, fin, classement), boucle d'affichage |
 | `public/js/app/scene.js` | Dessin du fond, du terrain et des effets |
 | `public/js/app/sprites.js` | Dessin de la tartine et de chaque projectile |
+| `public/js/app/planets.js` | Dessin des planètes du fond et leur ordre de passage (`BODIES`) |
 | `public/js/app/party.js` | Confettis et rebonds des effets de fête (record, N°1) |
 | `public/js/app/achievements.js` | Succès : liste, conditions, page Succès |
 | `public/js/app/screens.js` | Écrans HTML : accueil, fin, classement, boutons |
