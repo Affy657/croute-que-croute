@@ -6,7 +6,7 @@ import type { Ctx } from "../router";
 
 const INVITE_MS = 48 * 3600 * 1000;
 const SEEN_MS = 5 * 60 * 1000;
-const SUSPECT_MS = 15000, SUSPECT_RATIO = 1.15;
+const SUSPECT_MS = 15000, SUSPECT_RATIO = 1.15, SUSPECT_HIGH = 9000;
 
 export interface AdminAuth {
   id: string | null;
@@ -92,8 +92,12 @@ export async function logout({ env, auth }: Ctx) {
   return json({ ok: true });
 }
 
-const suspect = (p: PlayerAdminRow) =>
-  !!p.best && p.best_elapsed !== null && p.best_elapsed > p.best * 10 * SUSPECT_RATIO + SUSPECT_MS;
+function suspect(p: PlayerAdminRow) {
+  if (!p.best) return null;
+  if (p.best >= SUSPECT_HIGH) return "high";
+  if (p.best_elapsed !== null && p.best_elapsed > p.best * 10 * SUSPECT_RATIO + SUSPECT_MS) return "slow";
+  return null;
+}
 
 const statusOf = (e: EventRow, now: number) => (now < e.opens_at ? "upcoming" : now < e.closes_at ? "open" : "closed");
 

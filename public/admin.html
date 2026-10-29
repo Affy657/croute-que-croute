@@ -68,6 +68,7 @@
         <div class="row">
           <button id="editEndBtn" class="btn ghost" type="button">Modifier</button>
           <button id="newEventBtn" class="btn ghost" type="button">Nouvelle soirée</button>
+          <a class="btn ghost" href="/ecran" target="_blank" rel="noopener">Écran géant</a>
         </div>
         <form id="endForm" class="form" hidden>
           <label for="editName">Nom de la soirée</label>
@@ -96,6 +97,7 @@
           <button class="btn ghost small scope" type="button" data-scope="event" aria-selected="true">Soirée</button>
           <button class="btn ghost small scope" type="button" data-scope="general" aria-selected="false">Général</button>
         </div>
+        <p id="suspectAlert" class="msg error alert" hidden></p>
         <ol id="players" class="list"></ol>
         <p id="playersEmpty" class="hint" hidden>Aucun joueur pour l'instant.</p>
         <p id="playersMsg" class="msg" hidden></p>
