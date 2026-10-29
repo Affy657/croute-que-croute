@@ -508,15 +508,18 @@ Après :
 - Tester sur de vrais téléphones : fluidité, son, réseau du lieu.
 - À décider : vérifier les meilleurs scores en rejouant la partie. Le serveur donne une graine, le jeu enregistre les gestes, et le tableau de bord rejoue les 3 premiers pour confirmer leur temps. Bloquerait la triche par faux score.
 
-## Idées retenues par Adrien (29/10/2026), pas encore faites
+## Idées retenues par Adrien (29/10/2026), en essai
 
-- Rival à battre : sur l'écran de fin, « Encore 1,2 s pour passer X » avec le joueur juste au-dessus (classement de la soirée pendant une soirée, général sinon).
-- Série de frôlés : « Frôlé x3 » quand les frôlés s'enchaînent, avec un son qui monte. Aucun effet sur le score.
-- Entraînement par attaque : un bouton « S'entraîner » sur chaque carte d'Infos qui lance seulement cette attaque, hors classement.
-- Paliers : un petit flash du chrono à 10, 20, 30 s…
-- Traînées de vitesse derrière les couverts rapides, pour mieux lire la vitesse.
-- Musique étouffée à la mort : le morceau passe « sous l'eau » une demi-seconde avant de couper.
-- Écran géant : annonce en grand quand le n°1 change (« Nouveau n°1 : X ! »).
+Codées le 29/10/2026 sur la branche `essais` (une branche par idée, fusionnée dans `essais` : `rival`, `frole-serie`, `entrainement`, `paliers`, `trainees`, `musique-etouffee`, `nouveau-n1`), pas encore sur `master`. Adrien les essaie puis choisit lesquelles garder ; on retire les autres (`git revert -m 1` de leur fusion) et on range la description des gardées dans les bonnes parties du README.
+
+- Rival à battre : sur l'écran de fin, sous record et place, « Encore 1,21 s pour passer X » : X est le joueur juste au-dessus de toi (classement de la soirée pendant une soirée, général sinon), l'écart est compté depuis le temps de la partie qu'on vient de faire (il faut faire 1 centième de plus que lui). Rien si tu es 1er, sans pseudo, hors ligne ou en entraînement. Le serveur envoie `rival` et `eventRival` ({ pseudo, best }) dans `me` de `/api/board` et dans la réponse de fin de partie. Testé dans `test/player.mjs`.
+- Série de frôlés : quand un frôlé suit le précédent de moins de 1,5 s, le texte devient « Frôlé x2 », « Frôlé x3 »… un peu plus gros à chaque fois, et le son monte de 2 demi-tons par cran (6 crans au plus, une octave). Le nouveau texte remplace l'ancien au lieu de s'empiler. Aucun effet sur le score ni sur les succès.
+- Entraînement par attaque : bouton « S'entraîner » sous les infos de chaque attaque (Infos, onglet Attaques). La partie ne lance que cette attaque, à la vitesse de son heure d'arrivée (le fouet comme à 28 s, la double pluie comme à 54 s), puis accélère normalement ; le chrono part de 0. Sous le chrono : « Entraînement : Fouet ». Ne compte ni pour le classement, ni pour les succès, ni pour le record du téléphone. À la fin : « Entraînement : Fouet », et « Rejouer » relance le même entraînement ; « Accueil » revient au jeu normal. Marche aussi sans pseudo. Une règle l'explique dans la carte Règles.
+- Paliers : à 10, 20, 30 s… les chiffres du chrono flashent en jaune avec une lueur et un petit saut (0,7 s). Couleur seule si le téléphone demande moins d'animations.
+- Traînées de vitesse : un trait clair qui s'efface derrière chaque couvert rapide, d'autant plus long qu'il va vite (rien sous 200 px/s, 90 px au plus). Un trait derrière le manche pour les couverts qui filent droit, deux pour ceux qui tournent, trois en largeur pour le rouleau. Aussi dans les aperçus d'Infos. Code : `drawTrail` dans `sprites.js`, couleurs `trail` dans `palette.js`. Premier réglage trop discret, renforcé le même jour (trait plus épais, plus clair, plus long).
+- Musique étouffée à la mort : le morceau passe « sous l'eau » en 0,12 s (filtre qui coupe les aigus, à 380 Hz avec un peu de résonance), reste étouffé 0,5 s, puis s'éteint en fondu de 0,5 s. Pour ça, la musique passe maintenant par Web Audio sur tous les téléphones, plus seulement sur iPhone (même volume qu'avant partout). Pas d'effet sur l'aperçu de 2 s des Paramètres. À écouter sur un vrai téléphone, Android et iPhone.
+- Écran géant : quand le 1er change, un grand panneau « Nouveau n°1 », le pseudo en très gros et son temps s'affiche par-dessus le classement pendant 6 s, avec la pluie de confettis. Pas au chargement de la page.
+- Vu en essayant l'entraînement : le rouleau ne passe que dans les 60 % du haut de l'écran, donc une tartine qui reste tout en bas ne le croise jamais (déjà le cas en partie normale).
 - Pas retenues pour l'instant : thème de soirée choisi par l'admin, tartine du designer à la place de la tartine dessinée, étoiles au rythme de la musique, son d'annonce par attaque, couche de tension, podium de fin de soirée sur l'écran géant.
 
 ## À brainstormer
