@@ -16,7 +16,7 @@ export const PALETTE = {
   ink: "#fff6e0",
   wood: "#d9a066",
   "wood-dark": "#a86b3c",
-  trail: "rgba(255, 246, 224, 0.42)",
+  trail: "rgba(255, 246, 224, 0.6)",
   "trail-end": "rgba(255, 246, 224, 0)"
 };
 
