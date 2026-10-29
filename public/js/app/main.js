@@ -21,7 +21,7 @@ const ACH_TOAST_MS = 2600, MENU_PLACE_S = 0.5, MENU_LIFT = 6;
 const DIE_S = 0.75, FREEZE_S = 0.12, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
 const BOARD_POLL_MS = 10000, MENU_POLL_MS = 30000;
 const ADMIN_TAPS = 5, ADMIN_TAP_MS = 3000;
-const CHAIN_S = 1.5, CHAIN_STEPS = 6;
+const CHAIN_S = 1.5, CHAIN_STEPS = 6, LAP_CS = 1000;
 
 document.documentElement.dataset.version = VERSION;
 const canvas = document.getElementById("cv");
@@ -114,7 +114,7 @@ function start(train = null) {
   if (api.net.updatePending && api.applyUpdate()) return false;
   const t0 = train ? train.from : 0;
   sim = createSim(Math.random, train ? { only: train.id, t0 } : undefined);
-  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, train, t0, newBest: false, score: 0, submit: null, scope: api.isOpen() ? "event" : "general" });
+  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, scope: api.isOpen() ? "event" : "general" });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0 });
   scene.clear();
   S.run = train ? null : api.startRun();
@@ -160,6 +160,15 @@ function cheerRun(cs) {
     g.reached = 1;
     cheerHud("Nouveau record", 18, false);
   }
+}
+
+function lap(cs) {
+  const n = Math.floor(cs / LAP_CS);
+  if (n <= S.lap) return;
+  S.lap = n;
+  ui.time.classList.remove("lap");
+  void ui.time.offsetWidth;
+  ui.time.classList.add("lap");
 }
 
 function cheerHud(text, count, gold) {
@@ -374,7 +383,10 @@ function frame(now) {
     if (s !== lastShown) {
       setDigits(ui.time, s);
       lastShown = s;
-      if (S.mode === "play") cheerRun(cs);
+      if (S.mode === "play") {
+        cheerRun(cs);
+        lap(cs);
+      }
     }
   }
   if (S.mode === "play") audio.musicRunSync(elapsed());

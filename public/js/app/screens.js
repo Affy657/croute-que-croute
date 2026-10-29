@@ -187,7 +187,7 @@ export function renderRival(score, rival) {
 export function renderHud() {
   setDigits(ui.time, "0,00");
   ui.achToast.hidden = true;
-  ui.time.classList.remove("hot", "cheer");
+  ui.time.classList.remove("hot", "cheer", "lap");
   ui.hudBest.classList.remove("hot");
   ui.hudBest.textContent = knownBest() ? "Record " + fmtCs(knownBest()) : "";
 }
