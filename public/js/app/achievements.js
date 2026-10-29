@@ -13,7 +13,7 @@ export const ACHIEVEMENTS = [
   { id: "t30", family: "time", name: "Croustillante", desc: "Tenir 30 s" },
   { id: "t45", family: "time", name: "Dorée à point", desc: "Tenir 45 s" },
   { id: "t60", family: "time", name: "Une minute de gloire", desc: "Tenir 60 s" },
-  { id: "t80", family: "time", name: "Tartine de légende", desc: "Tenir 80 s, jusqu'au bout de la montée" },
+  { id: "t80", family: "time", name: "Tartine de légende", desc: "Tenir 80 s" },
   { id: "near5", family: "play", name: "Ça passe", desc: "5 frôlés dans une partie" },
   { id: "near20", family: "play", name: "Ça passe crème", desc: "20 frôlés dans une partie" },
   { id: "jam", family: "play", name: "Confiture !", desc: "Voir un couteau à la confiture" },
