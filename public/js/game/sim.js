@@ -1,5 +1,5 @@
 import { FW, FH, HIT_R, NEAR, OUT, X_MIN, X_MAX, Y_MIN, Y_MAX, clamp } from "./field.js";
-import { pickAttack } from "./attacks.js";
+import { ATTACKS, pickAttack } from "./attacks.js";
 import { moveProjectile, sprinkleRare, gapTo } from "./projectiles.js";
 import { solve } from "./solver.js";
 
@@ -7,11 +7,12 @@ const TRIES = 5, REACT = 0.1;
 export const GAP_START = 1.25, GAP_SLOPE = 0.016, GAP_MIN = 0.42;
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
-export function createSim(rng = Math.random, { fair = true, react = REACT } = {}) {
+export function createSim(rng = Math.random, { fair = true, react = REACT, only = null, t0 = 0 } = {}) {
   const rnd = (a, b) => a + rng() * (b - a);
   const pick = (arr) => arr[Math.floor(rng() * arr.length)];
+  const forced = only && ATTACKS.find((a) => a.id === only);
   const state = {
-    t: 0, next: 0.9, tries: 0, near: 0, dead: false, last: null, streak: 0,
+    t: t0, next: 0.9, tries: 0, near: 0, dead: false, last: null, streak: 0,
     toast: { x: FW / 2, y: FH * 0.7 },
     obs: [], warns: [],
     stats: { spawned: 0, rejected: 0, impossible: 0, solves: 0, solveMs: 0, solveMax: 0 }
@@ -29,13 +30,13 @@ export function createSim(rng = Math.random, { fair = true, react = REACT } = {}
 
   function spawn() {
     const t = state.t;
-    const attack = pickAttack(t, rng, state.last, state.streak);
+    const attack = forced || pickAttack(t, rng, state.last, state.streak, state.warns.length > 0);
     const items = attack.make({ t, toast: state.toast, rng, rnd, pick });
     const ok = solveTimed(items);
     if (ok || !fair) {
       if (!ok) state.stats.impossible++;
       for (const w of items) {
-        w.born = t;
+        w.born = w.notice ? Math.max(t, w.at - w.notice) : t;
         for (const o of w.obs) o.from = attack.id;
       }
       sprinkleRare(items);
@@ -79,7 +80,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT } = {}
       if (!o.near && gap < HIT_R + NEAR) {
         o.near = true;
         state.near++;
-        events.push({ type: "near" });
+        events.push({ type: "near", x: o.x, y: o.y });
       }
     }
   }

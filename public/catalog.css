@@ -145,6 +145,10 @@
   gap: 6px;
 }
 
+.catalog .train {
+  width: 100%;
+}
+
 .catalog .fact {
   display: flex;
   flex-direction: column;

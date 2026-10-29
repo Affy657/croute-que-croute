@@ -3,7 +3,7 @@ import { PROJECTILES, moveProjectile } from "../game/projectiles.js";
 import { ATTACKS } from "../game/attacks.js";
 import { GAP_START, GAP_SLOPE, GAP_MIN } from "../game/sim.js";
 import { PALETTE, SPREADS } from "../shared/palette.js";
-import { drawProjectile, drawWarn, drawToast } from "./sprites.js";
+import { drawTrail, drawProjectile, drawWarn, drawToast } from "./sprites.js";
 import { MUSIC_CREDIT, SFX_CREDIT } from "./audio.js";
 
 const SAMPLE_T = 60, PREVIEW_SCALE = 0.5, PREVIEW_MAX_S = 6, PREVIEW_PAUSE_S = 0.6;
@@ -146,7 +146,7 @@ function progressionCard() {
 function restart(p) {
   const t = Math.max(p.attack.from + 4, 20);
   const items = p.attack.make({ t, toast: { ...TOAST }, rng: Math.random, rnd, pick });
-  p.pending = items.map((w) => ({ ...w, at: w.at - t, born: 0 }));
+  p.pending = items.map((w) => ({ ...w, at: w.at - t, born: w.notice ? Math.max(0, w.at - t - w.notice) : 0 }));
   p.obs = [];
   p.time = 0;
   p.idle = 0;
@@ -182,6 +182,7 @@ function draw(p, clock) {
   ctx.rect(0, 0, FW, FH);
   ctx.clip();
   for (const w of p.pending) drawWarn(ctx, w, clock, p.time);
+  for (const o of p.obs) drawTrail(ctx, o);
   for (const o of p.obs) drawProjectile(ctx, o);
   drawToast(ctx, TOAST, null);
   ctx.restore();
@@ -198,7 +199,7 @@ function stat(label, value) {
   return row;
 }
 
-export function renderAttacks(root, { showLab = false } = {}) {
+export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
   const live = ATTACKS.filter((a) => !a.lab && SAMPLE_T > a.from);
   const total = live.reduce((s, a) => s + a.weight, 0);
   previews.length = 0;
@@ -208,7 +209,8 @@ export function renderAttacks(root, { showLab = false } = {}) {
     "On peut toujours s'en sortir : chaque attaque est testée avant d'être lancée, même si tu réagis un dixième de seconde après l'alerte.",
     "Tout accélère avec le temps, jusqu'à 2,6 fois plus vite à 80 s.",
     "Une attaque ne sort jamais plus de 3 fois d'affilée, et celle qui vient de sortir revient moins souvent. Les grosses figures (croix, couloir, double pluie) ne sortent jamais deux fois de suite.",
-    "Dans les aperçus, la tartine ne bouge pas."
+    "Dans les aperçus, la tartine ne bouge pas.",
+    "« S'entraîner » lance une partie avec seulement cette attaque, à sa vitesse d'arrivée. Elle ne compte ni pour le classement ni pour les succès."
   ]) list.append(el("li", null, text));
   rules.append(el("h2", null, "Règles"), list);
   const cards = ATTACKS.filter((a) => showLab || !a.lab).map((attack) => {
@@ -227,6 +229,12 @@ export function renderAttacks(root, { showLab = false } = {}) {
     );
     const text = el("div", "attack-text");
     text.append(el("p", null, attack.info), facts);
+    if (onTrain) {
+      const go = el("button", "ghost train", "S'entraîner");
+      go.type = "button";
+      go.addEventListener("click", () => onTrain(attack));
+      text.append(go);
+    }
     body.append(cv, text);
     card.append(head, body);
     const p = { attack, cv, ctx: cv.getContext("2d") };

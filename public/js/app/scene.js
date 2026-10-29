@@ -1,12 +1,22 @@
 import { FW, FH, clamp } from "../game/field.js";
-import { PALETTE } from "../shared/palette.js";
-import { drawProjectile, drawWarn, drawToast } from "./sprites.js";
+import { PALETTE, HEAT } from "../shared/palette.js";
+import { drawTrail, drawProjectile, drawWarn, drawToast } from "./sprites.js";
 import { BODIES } from "./planets.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const POP_LIFE = 0.7, PUCK_R = 30, GRAB_S = 0.6, FIELD_FADE = 5;
 const SKY_SPEED = 20, SKY_GAP = 0.5, SKY_TOP = 0.3, SKY_LOOP = SKY_GAP * BODIES.length;
+const HEAT_EASE = 2, HEAT_LOW = 0.45, HEAT_FIELD = 0.85;
 const HINT = "Pose ton doigt où tu veux";
+const HEAT_RGB = HEAT.map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
+
+function heatColor(k, low = 1) {
+  const i = Math.min(HEAT_RGB.length - 2, Math.floor(k * (HEAT_RGB.length - 1)));
+  const f = k * (HEAT_RGB.length - 1) - i;
+  const [a, b, base] = [HEAT_RGB[i], HEAT_RGB[i + 1], HEAT_RGB[0]];
+  const rgb = a.map((v, j) => base[j] + (v + (b[j] - v) * f - base[j]) * low);
+  return `rgb(${rgb.map(Math.round).join(",")})`;
+}
 
 export function createScene(canvas, overlay) {
   const ctx = canvas.getContext("2d");
@@ -15,7 +25,7 @@ export function createScene(canvas, overlay) {
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const view = { W: 0, H: 0, dpr: 1, scale: 1, ox: 0, oy: 0 };
   let hudBox = null;
-  let stars = [], sky = 0, shake = 0, parts = [], pops = [], fieldA = 0;
+  let stars = [], sky = 0, shake = 0, parts = [], pops = [], fieldA = 0, heat = 0;
 
   function resize() {
     view.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -32,8 +42,9 @@ export function createScene(canvas, overlay) {
     stars = Array.from({ length: n }, () => ({ x: Math.random() * view.W, y: Math.random() * view.H, z: rnd(0.1, 1), tw: rnd(0, 6.28) }));
   }
 
-  function update(dt, warp, field) {
+  function update(dt, warp, field, hot = 0) {
     fieldA = clamp(fieldA + (field ? dt : -dt) * FIELD_FADE, 0, 1);
+    heat += (hot - heat) * Math.min(1, dt * HEAT_EASE);
     for (const s of stars) {
       s.y += (18 + 150 * s.z) * warp * dt;
       if (s.y > view.H + 2) { s.y = -2; s.x = Math.random() * view.W; }
@@ -64,8 +75,9 @@ export function createScene(canvas, overlay) {
     return Array.from({ length: 7 }, () => ({ dx: rnd(-13, 13), dy: rnd(-11, 13), r: rnd(4.5, 10) }));
   }
 
-  function pop(x, y, text) {
-    pops.push({ x, y, text, life: POP_LIFE });
+  function pop(x, y, text, { key = null, size = 14 } = {}) {
+    if (key) pops = pops.filter((p) => p.key !== key);
+    pops.push({ x, y, text, key, size, life: POP_LIFE });
   }
 
   function clear() {
@@ -89,7 +101,14 @@ export function createScene(canvas, overlay) {
   function drawBackground(clock) {
     const { W, H, dpr } = view;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = C.void;
+    if (heat > 0.005) {
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, heatColor(heat));
+      g.addColorStop(1, heatColor(heat, HEAT_LOW));
+      ctx.fillStyle = g;
+    } else {
+      ctx.fillStyle = C.void;
+    }
     ctx.fillRect(0, 0, W, H);
     drawSky(clock);
     ctx.fillStyle = C.ink;
@@ -110,11 +129,11 @@ export function createScene(canvas, overlay) {
       ctx.fill();
     }
     ctx.globalAlpha = 1;
-    ctx.font = '14px Bungee, "Arial Black", sans-serif';
     ctx.textAlign = "center";
     ctx.lineJoin = "round";
     ctx.lineWidth = 3.5;
     for (const p of pops) {
+      ctx.font = `${p.size}px Bungee, "Arial Black", sans-serif`;
       ctx.globalAlpha = clamp(p.life / POP_LIFE, 0, 1);
       ctx.strokeStyle = C.void;
       ctx.strokeText(p.text, p.x, p.y);
@@ -211,7 +230,7 @@ export function createScene(canvas, overlay) {
     if (fieldA > 0) drawWarns(world, clock, sx, sy);
     ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * (oy + sy));
     if (fieldA > 0) {
-      ctx.globalAlpha = fieldA;
+      ctx.globalAlpha = fieldA * (1 - HEAT_FIELD * heat);
       ctx.fillStyle = C.field;
       ctx.fillRect(0, 0, FW, FH);
       ctx.strokeStyle = C.frame;
@@ -223,6 +242,7 @@ export function createScene(canvas, overlay) {
     ctx.beginPath();
     ctx.rect(0, 0, FW, FH);
     ctx.clip();
+    for (const o of world.obs) drawTrail(ctx, o, C);
     for (const o of world.obs) drawProjectile(ctx, o, C);
     if (toast) drawToast(ctx, toast, splat, C);
     drawEffects();

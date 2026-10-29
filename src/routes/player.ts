@@ -2,7 +2,7 @@ import { json, fail, readJson, clientIp, outdated, updateRequired, tooFast, allo
 import { randomToken, sha256, matchesSecret } from "../security";
 import { cleanPseudo, pseudoKey, cleanClientId } from "../validate";
 import {
-  events, openEventNow, eventById, findProfile, entryBest, generalRanking, generalCount, generalRank, eventRanking, forgetCaches, rankIn,
+  events, openEventNow, eventById, findProfile, entryBest, generalRanking, generalCount, generalRank, eventRanking, forgetCaches, rankIn, rivalIn,
   promoteGeneral, promoteEvent,
   type EventRow, type Profile, type Ranked,
 } from "../db";
@@ -55,8 +55,10 @@ export async function board({ req, env }: Ctx) {
           best: me.best,
           runs: me.run_count,
           rank,
+          rival: me.banned ? null : rivalIn(general, me.id),
           eventBest: eventMine,
           eventRank: me.banned || !eventList ? null : rankIn(eventList, me.id),
+          eventRival: me.banned || !eventList ? null : rivalIn(eventList, me.id),
           banned: !!me.banned,
         }
       : null,
@@ -175,10 +177,12 @@ async function standing(
     best,
     improved,
     rank,
+    rival: me.banned ? null : rivalIn(general, me.id),
     count,
     eventBest: eventId ? eventBest : null,
     eventImproved,
     eventRank: me.banned || !eventList ? null : rankIn(eventList, me.id),
+    eventRival: me.banned || !eventList ? null : rivalIn(eventList, me.id),
     eventCount: eventList ? eventList.length : 0,
   };
 }

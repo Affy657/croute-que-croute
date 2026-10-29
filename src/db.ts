@@ -150,3 +150,8 @@ export function rankIn(list: Ranked[], playerId: string) {
   const i = list.findIndex((r) => r.id === playerId);
   return i < 0 ? null : i + 1;
 }
+
+export function rivalIn(list: Ranked[], playerId: string) {
+  const i = list.findIndex((r) => r.id === playerId);
+  return i > 0 ? { pseudo: list[i - 1].pseudo, best: list[i - 1].best } : null;
+}

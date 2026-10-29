@@ -1,5 +1,5 @@
 import { createSim } from "../game/sim.js";
-import { FW, FH, STEP, clamp, speedMul } from "../game/field.js";
+import { FW, FH, STEP, clamp, speedMul, SPEED_MAX } from "../game/field.js";
 import { fmtCs } from "../shared/format.js";
 import { store, KEYS } from "../shared/store.js";
 import { VERSION } from "../version.js";
@@ -13,7 +13,7 @@ import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./c
 import { renderSettings, suggestInstall, leaveSettings } from "./settings.js";
 import { onInstallChange } from "./install.js";
 import {
-  ui, show, setText, setDigits, tickCountdowns, renderMenu, renderBoard, renderOver, renderOverStats,
+  ui, show, setText, setDigits, tickCountdowns, renderMenu, renderBoard, renderOver, renderOverStats, renderRival,
   renderHud, renderControls, renderAll, setBoardScope, achLabel
 } from "./screens.js";
 
@@ -21,6 +21,8 @@ const ACH_TOAST_MS = 2600, MENU_PLACE_S = 0.5, MENU_LIFT = 6;
 const DIE_S = 0.75, FREEZE_S = 0.12, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
 const BOARD_POLL_MS = 10000, MENU_POLL_MS = 30000;
 const ADMIN_TAPS = 5, ADMIN_TAP_MS = 3000;
+const CHAIN_S = 1.5, CHAIN_STEPS = 6, LAP_CS = 1000;
+const SCARS_MAX = 12, SCAR_JITTER = 0.3;
 const HUD_WIDEST = "000,00", HUD_PAD = 6;
 
 document.documentElement.dataset.version = VERSION;
@@ -28,9 +30,9 @@ const canvas = document.getElementById("cv");
 const scene = createScene(canvas, document.getElementById("fx"));
 let sim = createSim();
 const S = {
-  mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null,
+  mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, train: null, t0: 0,
   newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general",
-  toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35 }, menuY: FH * 0.55, menuAt: 0
+  toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35, scars: [] }, menuY: FH * 0.55, menuAt: 0
 };
 let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, lastShown = "";
 let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
@@ -38,12 +40,26 @@ let settingsOpen = false, settingsFrom = "menu";
 let achOpen = false, achFrom = "menu", achTimer = null;
 
 const playing = () => S.mode === "play" || S.mode === "dying";
+const elapsed = () => sim.state.t - S.t0;
+const replay = () => (S.mode === "over" ? S.train : null);
 const input = createInput(canvas, { active: () => S.mode === "play", scale: () => scene.view.scale });
 
+function scar(e) {
+  const tt = S.toast;
+  if (tt.scars.length >= SCARS_MAX) return;
+  const a = Math.atan2(e.y - tt.y, e.x - tt.x) - tt.tilt + (Math.random() - 0.5) * SCAR_JITTER;
+  tt.scars.push({ a, len: 7 + Math.random() * 3 });
+}
+
 const ON_SIM = {
-  near() {
-    scene.pop(S.toast.x, S.toast.y - 32, "Frôlé !");
-    audio.playSfx("near");
+  near(e) {
+    scar(e);
+    const t = sim.state.t;
+    S.chain = t - S.nearAt < CHAIN_S ? S.chain + 1 : 1;
+    S.nearAt = t;
+    const step = Math.min(S.chain - 1, CHAIN_STEPS);
+    scene.pop(S.toast.x, S.toast.y - 32, S.chain > 1 ? "Frôlé x" + S.chain : "Frôlé !", { key: "near", size: 14 + step * 1.5 });
+    audio.playSfx("near", 2 ** ((step * 2) / 12));
   },
   death() {
     die();
@@ -57,7 +73,15 @@ function die() {
   S.toast.thrust = 0;
   input.reset();
   S.splat = scene.splash(S.toast.x, S.toast.y);
-  S.score = Math.floor(sim.state.t * 100);
+  S.score = Math.floor(elapsed() * 100);
+  audio.musicRunEnd();
+  audio.playSfx("death");
+  try { if (navigator.vibrate) navigator.vibrate(140); } catch (e) {}
+  if (S.train) {
+    S.newBest = false;
+    S.submit = null;
+    return;
+  }
   ach.runEnd(S.score);
   const before = api.standing(S.scope);
   S.newBest = S.score > before.best;
@@ -68,13 +92,11 @@ function die() {
   }) : null;
   S.submit = sub;
   S.run = null;
-  audio.musicRunEnd();
-  audio.playSfx("death");
-  try { if (navigator.vibrate) navigator.vibrate(140); } catch (e) {}
 }
 
 function showMenu() {
   S.mode = "menu";
+  S.toast.scars = [];
   show("menu");
   renderMenu();
   renderControls(false);
@@ -96,25 +118,27 @@ function backTo(from) {
   }
 }
 
-function start() {
-  if (boardOpen || infoOpen || settingsOpen || achOpen || !ui.joinForm.hidden || !ui.installPop.hidden) return false;
+function start(train = null) {
+  if (boardOpen || infoOpen || settingsOpen || achOpen || (!train && !ui.joinForm.hidden) || !ui.installPop.hidden) return false;
   if (S.mode !== "menu" && S.mode !== "over") return false;
   if (S.mode === "over" && ui.again.disabled) return false;
   if (api.net.updatePending && api.applyUpdate()) return false;
-  sim = createSim();
-  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, newBest: false, score: 0, submit: null, scope: api.isOpen() ? "event" : "general" });
-  Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0 });
+  const t0 = train ? train.from : 0;
+  sim = createSim(Math.random, train ? { only: train.id, t0 } : undefined);
+  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, scope: api.isOpen() ? "event" : "general" });
+  Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0, scars: [] });
   scene.clear();
-  S.run = api.startRun();
-  ach.runStart(api.isOpen() && api.net.board && api.net.board.event ? String(api.net.board.event.opensAt) : null);
+  S.run = train ? null : api.startRun();
+  if (!train) ach.runStart(api.isOpen() && api.net.board && api.net.board.event ? String(api.net.board.event.opensAt) : null);
   if (S.run) S.run.then((r) => { if (r.status === 426 && S.mode === "play") api.applyUpdate(); });
   const lead = api.leader(S.scope);
-  S.goal = { best: api.standing(S.scope).best, lead: S.run && lead && !lead.me ? lead.best : 0, reached: 0 };
+  S.goal = train ? { best: 0, lead: 0, reached: 0 } : { best: api.standing(S.scope).best, lead: S.run && lead && !lead.me ? lead.best : 0, reached: 0 };
   input.reset();
   lastShown = "";
   show("play");
   renderControls(true);
   renderHud();
+  if (train) ui.hudBest.textContent = "Entraînement : " + train.name;
   avoidHud();
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   audio.musicRunStart();
@@ -167,6 +191,15 @@ function cheerRun(cs) {
   }
 }
 
+function lap(cs) {
+  const n = Math.floor(cs / LAP_CS);
+  if (n <= S.lap) return;
+  S.lap = n;
+  ui.time.classList.remove("lap");
+  void ui.time.offsetWidth;
+  ui.time.classList.add("lap");
+}
+
 function cheerHud(text, count, gold) {
   ui.hudBest.textContent = text;
   ui.hudBest.classList.add("hot");
@@ -181,6 +214,7 @@ function showOver() {
   renderControls(false);
   renderOver(S.score, S.newBest);
   renderOverAch();
+  if (S.train) renderOverStats(0, null, 0);
   if (S.newBest) {
     bounce(ui.final.parentElement);
     burst(ui.final, { count: 44 });
@@ -194,10 +228,12 @@ function showOver() {
       setText(ui.overNote, r.error || "");
       ach.afterSubmit(r, S.scope);
       const now = api.standing(S.scope);
-      if (!r.error) renderOverStats(S.newBest ? 0 : now.best, now.rank, now.count);
+      if (r.error) return;
+      renderOverStats(S.newBest ? 0 : now.best, now.rank, now.count);
+      renderRival(S.score, now.rival);
     });
   } else {
-    setText(ui.overNote, api.registered() ? "" : "Entraînement");
+    setText(ui.overNote, S.train ? "Entraînement : " + S.train.name : api.registered() ? "" : "Entraînement");
   }
   ui.again.disabled = true;
   setTimeout(() => { ui.again.disabled = false; }, AGAIN_LOCK_MS);
@@ -228,7 +264,7 @@ function closeBoard() {
 function renderInfo() {
   for (const tab of ui.infoTabs.children) tab.setAttribute("aria-selected", String(tab.dataset.tab === infoTab));
   const showLab = !!store.get(KEYS.adminToken);
-  if (infoTab === "attacks") renderAttacks(ui.infoBody, { showLab });
+  if (infoTab === "attacks") renderAttacks(ui.infoBody, { showLab, onTrain: train });
   else if (infoTab === "weapons") renderWeapons(ui.infoBody, { showLab });
   else renderCredits(ui.infoBody);
   animateAttacks(infoTab === "attacks");
@@ -249,6 +285,14 @@ function closeInfo() {
   backTo(infoFrom);
 }
 
+function train(attack) {
+  infoOpen = false;
+  animateAttacks(false);
+  if (start(attack)) return;
+  infoOpen = true;
+  animateAttacks(true);
+}
+
 function openSettings() {
   settingsOpen = true;
   settingsFrom = S.mode === "over" ? "over" : "menu";
@@ -259,7 +303,7 @@ function openSettings() {
 }
 
 function renderOverAch() {
-  const got = ach.runUnlocked();
+  const got = S.train ? [] : ach.runUnlocked();
   ui.overAch.hidden = !got.length;
   ui.overAch.textContent = "★ " + got.map((a) => a.name).join(", ");
   ui.overAchBtn.textContent = achLabel();
@@ -268,6 +312,8 @@ function renderOverAch() {
 function goHome() {
   if (S.mode !== "over") return;
   S.splat = null;
+  S.train = null;
+  S.t0 = 0;
   sim = createSim();
   scene.clear();
   showMenu();
@@ -316,7 +362,8 @@ function menuToastY() {
 
 function update(dt) {
   S.clock += dt;
-  scene.update(dt, S.mode === "play" ? 1 + (speedMul(sim.state.t) - 1) * 1.6 : 0.5, playing());
+  const hot = S.mode === "menu" ? 0 : (speedMul(sim.state.t) - 1) / (SPEED_MAX - 1);
+  scene.update(dt, S.mode === "play" ? 1 + (speedMul(sim.state.t) - 1) * 1.6 : 0.5, playing(), hot);
   const tt = S.toast;
   if (S.mode === "menu") {
     tt.x = FW / 2;
@@ -341,14 +388,14 @@ function update(dt) {
   const px = sim.state.toast.x, py = sim.state.toast.y;
   const move = input.take();
   const events = sim.step(dt, move.x, move.y);
-  ach.runTick(sim.state, move.x !== 0 || move.y !== 0, dt);
+  if (!S.train) ach.runTick(sim.state, move.x !== 0 || move.y !== 0, dt);
   const st = sim.state.toast;
   const vx = (st.x - px) / dt, vy = (st.y - py) / dt;
   tt.x = st.x;
   tt.y = st.y;
   tt.tilt += (clamp(vx / 900, -0.45, 0.45) - tt.tilt) * Math.min(1, dt * 14);
   tt.thrust += (clamp(Math.hypot(vx, vy) / 600, 0, 1) - tt.thrust) * Math.min(1, dt * 10);
-  for (const e of events) ON_SIM[e.type]();
+  for (const e of events) ON_SIM[e.type](e);
 }
 
 let last = performance.now(), acc = 0;
@@ -362,19 +409,22 @@ function frame(now) {
   }
   scene.render({ clock: S.clock, world: sim.state, toast: S.mode === "over" ? null : S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null });
   if (playing()) {
-    const s = fmtCs(Math.floor(sim.state.t * 100));
+    const cs = Math.floor(elapsed() * 100), s = fmtCs(cs);
     if (s !== lastShown) {
       setDigits(ui.time, s);
       lastShown = s;
-      if (S.mode === "play") cheerRun(Math.floor(sim.state.t * 100));
+      if (S.mode === "play") {
+        cheerRun(cs);
+        lap(cs);
+      }
     }
   }
-  if (S.mode === "play") audio.musicRunSync(sim.state.t);
+  if (S.mode === "play") audio.musicRunSync(elapsed());
   requestAnimationFrame(frame);
 }
 
 const go = (e) => {
-  if (start()) {
+  if (start(replay())) {
     input.begin(e);
     e.preventDefault();
   }
@@ -382,7 +432,7 @@ const go = (e) => {
 ui.play.addEventListener("pointerdown", go);
 ui.again.addEventListener("pointerdown", go);
 ui.play.addEventListener("click", () => start());
-ui.again.addEventListener("click", () => start());
+ui.again.addEventListener("click", () => start(replay()));
 ui.menuBoard.addEventListener("click", () => openBoard("menu"));
 ui.overBoard.addEventListener("click", () => openBoard("over"));
 ui.overAchBtn.addEventListener("click", openAch);
@@ -435,7 +485,7 @@ window.addEventListener("keydown", (e) => {
   if (e.code !== "Space" && e.code !== "Enter") return;
   if (S.mode === "menu" || S.mode === "over") {
     e.preventDefault();
-    start();
+    start(replay());
   }
 });
 

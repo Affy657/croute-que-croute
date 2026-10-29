@@ -216,6 +216,18 @@ h2.page-title {
   color: var(--jam);
 }
 
+.rival {
+  max-width: 24ch;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  color: var(--ink-dim);
+}
+
+.rival b {
+  font-weight: 400;
+  color: var(--mustard);
+}
+
 .actions {
   display: flex;
   flex-direction: column;
@@ -641,6 +653,24 @@ a.ghost {
 #time.hot,
 #hudBest.hot {
   color: var(--mustard);
+}
+
+#time.lap span {
+  animation: lap 0.7s ease-out;
+}
+
+@keyframes lap {
+  0% { color: var(--mustard); text-shadow: 0 0 18px var(--mustard), 0 3px 0 var(--void); transform: translateY(-4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #time.lap span {
+    animation-name: lap-still;
+  }
+
+  @keyframes lap-still {
+    0% { color: var(--mustard); }
+  }
 }
 
 .ach-toast {

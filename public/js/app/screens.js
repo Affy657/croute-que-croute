@@ -11,7 +11,7 @@ export const ui = {
   menuRankBox: $("menuRankBox"), menuRank: $("menuRank"), menuInfo: $("menuInfo"), menuPitch: $("menuPitch"),
   joinForm: $("joinForm"), pseudo: $("pseudo"), joinError: $("joinError"),
   menuActions: $("menuActions"), play: $("play"), menuBoard: $("menuBoard"), menuAch: $("menuAch"), menuCountdown: $("menuCountdown"), settingsBtn: $("settingsBtn"),
-  final: $("final"), newBest: $("newBest"), overNote: $("overNote"),
+  final: $("final"), newBest: $("newBest"), overNote: $("overNote"), overRival: $("overRival"),
   overStats: $("overStats"), overBestBox: $("overBestBox"), overBest: $("overBest"), overRankBox: $("overRankBox"), overRank: $("overRank"),
   again: $("again"), overBoard: $("overBoard"), overAchBtn: $("overAchBtn"), overHome: $("overHome"), overCountdown: $("overCountdown"),
   boardTabs: $("boardTabs"), boardEvent: $("boardEvent"), boardCountdown: $("boardCountdown"), boardList: $("boardList"), boardEmpty: $("boardEmpty"), boardBack: $("boardBack"),
@@ -166,6 +166,7 @@ export function renderOver(score, newBest) {
   ui.newBest.classList.remove("gold");
   ui.newBest.hidden = !newBest;
   ui.overBoard.hidden = !net.board;
+  ui.overRival.hidden = true;
   renderOverStats(newBest ? 0 : knownBest(), null, 0);
 }
 
@@ -173,10 +174,21 @@ export function renderOverStats(best, rank, count) {
   fillStats(ui.overStats, ui.overBestBox, ui.overBest, ui.overRankBox, ui.overRank, best, rank, count);
 }
 
+export function renderRival(score, rival) {
+  ui.overRival.hidden = !rival;
+  if (!rival) return;
+  const b = (text) => {
+    const el = document.createElement("b");
+    el.textContent = text;
+    return el;
+  };
+  ui.overRival.replaceChildren("Encore ", b(fmtCs(rival.best + 1 - score) + " s"), " pour passer ", b(rival.pseudo));
+}
+
 export function renderHud() {
   setDigits(ui.time, "0,00");
   ui.achToast.hidden = true;
-  ui.time.classList.remove("hot", "cheer");
+  ui.time.classList.remove("hot", "cheer", "lap");
   ui.hudBest.classList.remove("hot");
   ui.hudBest.textContent = knownBest() ? "Record " + fmtCs(knownBest()) : "";
 }
