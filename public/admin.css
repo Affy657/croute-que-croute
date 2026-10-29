@@ -172,6 +172,11 @@ select {
   cursor: pointer;
 }
 
+a.btn {
+  display: inline-block;
+  text-decoration: none;
+}
+
 .btn.ghost {
   background: transparent;
   color: var(--ink);
@@ -207,6 +212,13 @@ select:focus-visible,
 
 .msg.error {
   color: var(--jam);
+}
+
+.msg.alert {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--jam);
+  color: var(--ink);
 }
 
 .list {

@@ -30,6 +30,8 @@ function ago(ms) {
   return "vu il y a " + Math.floor(min / 1440) + " j";
 }
 
+const SUSPECT_LABELS = { high: "à vérifier : score très haut", slow: "à vérifier : partie ralentie" };
+
 function say(el, text, error) {
   el.textContent = text || "";
   el.hidden = !text;
@@ -94,6 +96,8 @@ function tick() {
 
 function renderPlayers() {
   const players = data ? data.players : [];
+  const doubt = players.filter((p) => p.suspect && !p.banned).length;
+  say($("suspectAlert"), doubt ? (doubt > 1 ? doubt + " records à vérifier" : "1 record à vérifier") + " (trait rouge). Retire le joueur si c'est de la triche." : "", true);
   let rank = 0;
   $("players").replaceChildren(...players.map((p) => {
     const li = document.createElement("li");
@@ -104,7 +108,7 @@ function renderPlayers() {
     main.className = "main";
     main.append(
       cell("span", "name", p.pseudo),
-      cell("span", "meta", (p.best ? fmtCs(p.best) + " s, " : "") + p.runs + (p.runs > 1 ? " parties" : " partie") + (p.banned ? ", retiré" : p.suspect ? ", record à vérifier" : ""))
+      cell("span", "meta", (p.best ? fmtCs(p.best) + " s, " : "") + p.runs + (p.runs > 1 ? " parties" : " partie") + (p.banned ? ", retiré" : p.suspect ? ", " + SUSPECT_LABELS[p.suspect] : ""))
     );
     const btn = cell("button", "btn ghost small", p.banned ? "Réintégrer" : "Retirer");
     btn.type = "button";

@@ -6,6 +6,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 
 - Jeu : https://croute-que-croute.tartine-sauvage.workers.dev
 - Admin : https://croute-que-croute.tartine-sauvage.workers.dev/admin, dans la même appli que le jeu
+- Écran géant : https://croute-que-croute.tartine-sauvage.workers.dev/ecran, à ouvrir sur l'ordinateur branché à l'écran ou au vidéoprojecteur
 - QR code aux couleurs du jeu (choisi par Adrien le 29/10/2026 parmi 3 essais) : `qr/croute-que-croute.png` pour imprimer, `qr/croute-que-croute.svg` pour une affiche. Le même est dans le jeu (`public/qr.svg`, Paramètres puis « QR code »).
   - Style : fond crème, points ronds bleu nuit, coins arrondis avec un centre confiture, icône du jeu au centre. Correction d'erreur maximale (H) pour que la tartine au centre ne gêne pas.
   - Les lignes de repère et le petit carré de repère en bas à droite restent pleins : avec des points ronds partout, un lecteur de test (jsQR) ratait le code en grand format.
@@ -245,6 +246,17 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - Paramètres : « Son » (deux curseurs, Musique et Bruitages, voir plus bas), « Installer le jeu » (bouton Installer quand le navigateur le permet, sinon la marche à suivre ; la carte disparaît quand le jeu est ouvert depuis l'appli installée) et « Partager le jeu » (« Partager le lien » ouvre le partage du téléphone, ou copie le lien sur ordinateur ; « QR code » l'affiche en grand pour le faire scanner à un voisin). Les téléphones connectés en admin ont en plus un onglet Admin avec le lien vers le tableau de bord.
 - Pop-up « Installe le jeu » : une seule fois par téléphone, sur l'accueil, une fois le pseudo choisi. Sur Android, bouton Installer ; sur iPhone, la marche à suivre (pas de bouton possible). Jamais si le jeu est déjà installé.
 
+## Écran géant
+
+- Page `/ecran` (demandée par Adrien le 29/10/2026), publique, pensée pour un écran en paysage : classement à gauche, QR code à droite avec « Scanne pour jouer », l'adresse et le nombre de joueurs.
+- Pendant une soirée et les 12 h qui suivent : classement de la soirée avec son nom ; sinon : classement général. Top 10, le 1er en jaune, les 2e et 3e plus grands.
+- En haut : « Fin dans » pendant la soirée, « Début dans » le dernier jour avant, sinon la date de la prochaine soirée, ou « Bravo X ! » après.
+- Mise à jour toute seule toutes les 10 s. Une ligne dont le temps change (ou qui entre dans le top) clignote ; quand le 1er change, sa ligne rebondit et une pluie de confettis tombe.
+- Bouton « Plein écran » en bas à droite : passe en plein écran et empêche l'écran de se mettre en veille (si le navigateur le permet). La souris se cache après 3 s sans bouger.
+- Se recharge toute seule après une mise en ligne, pour rester à jour toute la soirée.
+- Liens : bouton « Écran géant » dans la carte de la soirée du tableau de bord, et dans Paramètres, onglet Admin.
+- En portrait (tablette, téléphone), le QR code passe au-dessus du classement.
+
 ## Musique
 
 - Le jeu lit `public/music/theme.m4a` ou `public/music/theme.mp3` (le premier trouvé).
@@ -310,7 +322,10 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - On ne peut pas retirer le dernier propriétaire.
 - Une seule page : la soirée, les classements, l'équipe et les bruitages. Les armes et les attaques sont dans la bulle d'info du jeu, pour tout le monde (29/10/2026 : retirées de l'admin pour éviter le doublon).
 - Tableau de bord : soirée en cours, fin du classement avec compte à rebours, joueurs, parties, record, classement mis à jour toutes les 10 s, bouton pour retirer un tricheur.
-- « Record à vérifier » (trait rouge) : le record a pris nettement plus de temps réel que le score (plus de 15 % et 15 s d'écart). Signe d'un jeu ralenti exprès, ou d'une appli mise en arrière-plan en pleine partie.
+- « À vérifier » (trait rouge), avec la raison :
+  - « score très haut » : record de 90 s ou plus (29/10/2026). Le robot « humain » plafonne vers 89 s et atteindre 80 s est déjà très dur : un tel score mérite un coup d'oeil.
+  - « partie ralentie » : le record a pris nettement plus de temps réel que le score (plus de 15 % et 15 s d'écart). Signe d'un jeu ralenti exprès, ou d'une appli mise en arrière-plan en pleine partie.
+- Un bandeau rouge en haut du classement compte les records à vérifier (hors joueurs déjà retirés), pour les repérer sans faire défiler.
 - Une soirée a un début et une fin : on peut la créer à l'avance pour l'annoncer dans le jeu. Une seule soirée à la fois, en cours ou prévue : pour en créer une autre, avancer d'abord la fin de la précédente à maintenant.
 - La carte de la soirée dit si elle est en cours, prévue (avec le compte à rebours du début) ou terminée. « Modifier » change son nom, son début et sa fin.
 - Le classement du tableau de bord a deux boutons : Soirée (les joueurs de la soirée) et Général (tous les joueurs).
@@ -337,7 +352,7 @@ Décidé par Adrien le 29/10/2026 :
 - Un score renvoyé deux fois (réseau qui coupe) est compté une seule fois, sans message d'erreur.
 - Pas de compte : le téléphone garde un jeton. Le même téléphone qui reprend son pseudo retrouve son compte. Un autre navigateur (Safari puis appli installée sur iPhone) oblige à prendre un nouveau pseudo.
 - Limites contre les abus : 30 inscriptions par minute et par adresse IP (tout le lieu partage souvent la même), 10 débuts de partie par 10 s et par joueur.
-- Faille connue : quelqu'un d'habile peut lancer une partie, attendre, puis envoyer un faux score plausible. Parade actuelle : repérer les temps louches dans l'admin et retirer le joueur. Parade complète possible : rejouer la partie à partir des gestes enregistrés (voir « À faire »).
+- Faille connue : quelqu'un d'habile peut lancer une partie, attendre, puis envoyer un faux score plausible. Parade actuelle : les records de 90 s et plus sont signalés dans l'admin (bandeau rouge), on retire le joueur si besoin. Un faux score plus modeste (par exemple 60 s) passe inaperçu. Parade complète possible : rejouer la partie à partir des gestes enregistrés (voir « À faire »).
 
 ## Check-list d'une soirée
 
@@ -346,10 +361,11 @@ Avant :
 - Dans le tableau de bord, « Nouvelle soirée » : nom, début et fin. On peut le faire plusieurs jours avant : le jeu l'annonce. Le classement de la soirée part de zéro, le général continue.
 - Imprimer le QR code pour les tables, le bar et l'écran si le lieu en a un.
 - Faire une partie depuis le QR code pour vérifier.
+- Si le lieu a un écran : ouvrir `/ecran` sur l'ordinateur branché dessus, puis « Plein écran ».
 
 Pendant :
 
-- Surveiller les temps louches dans Croûte Admin et retirer le joueur si besoin.
+- Surveiller le bandeau rouge « à vérifier » dans Croûte Admin et retirer le joueur si besoin.
 - Repousser l'heure de fin si la soirée glisse.
 
 Après :
@@ -386,6 +402,7 @@ Après :
 | `public/js/app/input.js` | Glisser du doigt et souris (le rond sous le doigt est dessiné par `scene.js`) |
 | `public/js/shared/` | Stockage du téléphone, formats et couleurs (`palette.js`, avec les tartinades), partagés avec l'admin |
 | `public/js/admin/admin.js`, `public/admin.html`, `admin.css` | Tableau de bord admin |
+| `public/js/ecran/ecran.js`, `public/ecran.html`, `ecran.css` | Écran géant (classement plein écran) |
 | `public/js/app/catalog.js`, `public/catalog.css` | Pages Attaques, Armes et Crédits de la bulle d'info |
 | `public/js/version.js` | Version du jeu, réécrite à chaque déploiement |
 | `public/sw.js`, `manifest.webmanifest` | PWA : service worker et manifeste |
@@ -453,7 +470,6 @@ Après :
 - Succès à débloquer (achievements, idée d'Adrien) : à définir.
   - À trancher : quels succès, où les voir dans le jeu, liés au téléphone ou à la soirée, et le lien avec la collection.
 - Partage du score en story Insta.
-- Écran géant : classement en plein écran si le lieu en a un.
 - Adresse sans « workers.dev » : il faut acheter un nom de domaine (payant chaque année), le mettre sur Cloudflare, puis brancher le jeu dessus (par exemple jeu.<domaine>). Le QR code changerait encore : à décider avant d'imprimer les affiches.
 
 ## Bon à savoir
