@@ -30,7 +30,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
   - une pointe orange vers où part l'arme ;
   - un cercle orange qui se remplit jusqu'au lancer.
 - Les pastilles sont dessinées sur un calque au-dessus du score : le chrono ne les cache jamais.
-- Zone du score libre (demandé par Adrien le 29/10/2026 : les pastilles par-dessus le chrono étaient dures à lire) : une pastille du bord haut qui tomberait sur le chrono ou la ligne « Record » est dessinée juste en dessous, à la même place en largeur. La zone fait la largeur de « 000,00 » (ou de la ligne du dessous si elle est plus large) plus 6 px, mesurée au début de chaque partie et quand l’écran change de taille (`avoidHud` dans `main.js`). Les pastilles des côtés et des coins ne bougent pas. Sur les écrans hauts, le terrain commence sous le chrono et rien ne change.
+- Zone du score libre (demandé par Adrien le 29/10/2026 : les pastilles par-dessus le chrono étaient dures à lire) : une pastille du bord haut qui tomberait sur le chrono ou la ligne « Record » est dessinée juste en dessous, à la même place en largeur. La zone fait la largeur de « 000,00 » (ou de la ligne du dessous si elle est plus large) plus 6 px, mesurée au début de chaque partie et quand l'écran change de taille (`avoidHud` dans `main.js`). Les pastilles des côtés et des coins ne bougent pas. Sur les écrans hauts, le terrain commence sous le chrono et rien ne change.
 
 ## Les attaques
 
