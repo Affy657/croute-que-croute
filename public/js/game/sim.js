@@ -30,7 +30,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
 
   function spawn() {
     const t = state.t;
-    const attack = forced || pickAttack(t, rng, state.last, state.streak);
+    const attack = forced || pickAttack(t, rng, state.last, state.streak, state.warns.length > 0);
     const items = attack.make({ t, toast: state.toast, rng, rnd, pick });
     const ok = solveTimed(items);
     if (ok || !fair) {
