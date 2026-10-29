@@ -8,6 +8,7 @@ import * as audio from "./audio.js";
 import { createScene } from "./scene.js";
 import { createInput } from "./input.js";
 import { burst, rain, bounce } from "./party.js";
+import * as ach from "./achievements.js";
 import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./catalog.js";
 import { renderSettings, suggestInstall } from "./settings.js";
 import { onInstallChange } from "./install.js";
@@ -16,6 +17,7 @@ import {
   renderHud, renderControls, renderAll, setBoardScope
 } from "./screens.js";
 
+const ACH_TOAST_MS = 2600;
 const DIE_S = 0.75, FREEZE_S = 0.12, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
 const BOARD_POLL_MS = 10000, MENU_POLL_MS = 30000;
 const ADMIN_TAPS = 5, ADMIN_TAP_MS = 3000;
@@ -32,6 +34,7 @@ const S = {
 let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, lastShown = "";
 let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
 let settingsOpen = false, settingsFrom = "menu";
+let achOpen = false, achFrom = "menu", achTimer = null;
 
 const playing = () => S.mode === "play" || S.mode === "dying";
 const input = createInput(canvas, { active: () => S.mode === "play", scale: () => scene.view.scale });
@@ -54,6 +57,7 @@ function die() {
   input.reset();
   S.splat = scene.splash(S.toast.x, S.toast.y);
   S.score = Math.floor(sim.state.t * 100);
+  ach.runEnd(S.score);
   const before = api.standing(S.scope);
   S.newBest = S.score > before.best;
   S.prevRank = before.rank;
@@ -89,7 +93,7 @@ function backTo(from) {
 }
 
 function start() {
-  if (boardOpen || infoOpen || settingsOpen || !ui.joinForm.hidden || !ui.installPop.hidden) return false;
+  if (boardOpen || infoOpen || settingsOpen || achOpen || !ui.joinForm.hidden || !ui.installPop.hidden) return false;
   if (S.mode !== "menu" && S.mode !== "over") return false;
   if (S.mode === "over" && ui.again.disabled) return false;
   if (api.net.updatePending && api.applyUpdate()) return false;
@@ -98,6 +102,7 @@ function start() {
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0 });
   scene.clear();
   S.run = api.startRun();
+  ach.runStart(api.isOpen() && api.net.board && api.net.board.event ? String(api.net.board.event.opensAt) : null);
   if (S.run) S.run.then((r) => { if (r.status === 426 && S.mode === "play") api.applyUpdate(); });
   const lead = api.leader(S.scope);
   S.goal = { best: api.standing(S.scope).best, lead: S.run && lead && !lead.me ? lead.best : 0, reached: 0 };
@@ -153,6 +158,7 @@ function showOver() {
   show("over");
   renderControls(false);
   renderOver(S.score, S.newBest);
+  renderOverAch();
   if (S.newBest) {
     bounce(ui.final.parentElement);
     burst(ui.final, { count: 44 });
@@ -164,6 +170,7 @@ function showOver() {
     mine.then((r) => {
       if (S.submit !== mine || S.mode !== "over") return;
       setText(ui.overNote, r.error || "");
+      ach.afterSubmit(r, S.scope);
       const now = api.standing(S.scope);
       if (!r.error) renderOverStats(S.newBest ? 0 : now.best, now.rank, now.count);
     });
@@ -229,6 +236,40 @@ function openSettings() {
   ui.settings.scrollTop = 0;
 }
 
+function renderOverAch() {
+  const got = ach.runUnlocked();
+  ui.overAch.hidden = !got.length;
+  ui.overAch.textContent = "★ " + got.map((a) => a.name).join(", ");
+}
+
+function toastAch(a) {
+  const t = ui.achToast;
+  t.textContent = !t.hidden && achTimer ? t.textContent + ", " + a.name : "★ " + a.name;
+  if (t.hidden || !achTimer) {
+    t.hidden = false;
+    bounce(t);
+  }
+  clearTimeout(achTimer);
+  achTimer = setTimeout(() => {
+    t.hidden = true;
+    achTimer = null;
+  }, ACH_TOAST_MS);
+}
+
+function openAch() {
+  achOpen = true;
+  achFrom = S.mode === "over" ? "over" : "menu";
+  show("ach");
+  renderControls(false);
+  ach.renderAchievements(ui.achList, ui.achCount);
+  ui.ach.scrollTop = 0;
+}
+
+function closeAch() {
+  achOpen = false;
+  backTo(achFrom);
+}
+
 function closeSettings() {
   settingsOpen = false;
   backTo(settingsFrom);
@@ -257,6 +298,7 @@ function update(dt) {
   const px = sim.state.toast.x, py = sim.state.toast.y;
   const move = input.take();
   const events = sim.step(dt, move.x, move.y);
+  ach.runTick(sim.state, move.x !== 0 || move.y !== 0, dt);
   const st = sim.state.toast;
   const vx = (st.x - px) / dt, vy = (st.y - py) / dt;
   tt.x = st.x;
@@ -304,7 +346,10 @@ ui.boardBack.addEventListener("click", closeBoard);
 for (const tab of ui.boardTabs.children) tab.addEventListener("click", () => setBoardScope(tab.dataset.scope));
 ui.infoBtn.addEventListener("click", openInfo);
 ui.infoBack.addEventListener("click", closeInfo);
-ui.closeBtn.addEventListener("click", () => (settingsOpen ? closeSettings() : closeInfo()));
+ui.closeBtn.addEventListener("click", () => (settingsOpen ? closeSettings() : achOpen ? closeAch() : closeInfo()));
+ui.menuAch.addEventListener("click", openAch);
+ui.overAch.addEventListener("click", openAch);
+ui.achBack.addEventListener("click", closeAch);
 ui.settingsBtn.addEventListener("click", openSettings);
 ui.settingsBack.addEventListener("click", closeSettings);
 ui.qrBtn.addEventListener("click", () => {
@@ -365,8 +410,14 @@ document.addEventListener("visibilitychange", () => {
 });
 
 api.on("board", renderAll);
+api.on("board", () => ach.onBoard(api.net.board));
+ach.onUnlock((a) => {
+  if (S.mode === "play") toastAch(a);
+  else if (S.mode === "over") renderOverAch();
+  else if (!ui.menu.hidden) renderMenu();
+});
 api.on("update", () => {
-  if (S.mode === "menu" && !boardOpen && !infoOpen && !settingsOpen) api.applyUpdate();
+  if (S.mode === "menu" && !boardOpen && !infoOpen && !settingsOpen && !achOpen) api.applyUpdate();
 });
 audio.onAudioChange(() => renderControls(playing()));
 onInstallChange(maybeSuggest);

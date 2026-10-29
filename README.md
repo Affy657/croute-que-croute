@@ -246,6 +246,24 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - Paramètres : « Son » (deux curseurs, Musique et Bruitages, voir plus bas), « Installer le jeu » (bouton Installer quand le navigateur le permet, sinon la marche à suivre ; la carte disparaît quand le jeu est ouvert depuis l'appli installée) et « Partager le jeu » (« Partager le lien » ouvre le partage du téléphone, ou copie le lien sur ordinateur ; « QR code » l'affiche en grand pour le faire scanner à un voisin). Les téléphones connectés en admin ont en plus un onglet Admin avec le lien vers le tableau de bord.
 - Pop-up « Installe le jeu » : une seule fois par téléphone, sur l'accueil, une fois le pseudo choisi. Sur Android, bouton Installer ; sur iPhone, la marche à suivre (pas de bouton possible). Jamais si le jeu est déjà installé.
 
+## Succès
+
+Décidé avec Adrien le 29/10/2026 : 4 familles, gardés sur le téléphone, montrés en pleine partie, en fin de partie et sur une page. La collection d'objets viendra plus tard, à part.
+
+| Famille | Succès |
+|---|---|
+| Temps | Premiers pas (10 s), Bien beurrée (20 s), Croustillante (30 s), Dorée à point (45 s), Une minute de gloire (60 s), Tartine de légende (80 s, bout de la montée) |
+| Frôlés et découvertes | Ça passe (5 frôlés dans une partie), Ça passe crème (20), Confiture !, Pâte à tartiner !, Miel !, Ketchup ?! (voir un couteau de cette tartinade rare), Tout vu (voir les 11 attaques, sur plusieurs parties) |
+| Assiduité et soirées | Dix tartines (10 parties), Boulangerie (50), Accro à la croûte (100), Fidèle du Space (jouer à 3 soirées), Dans le top (top 10 d'une soirée), Tartine d'or (finir 1er d'une soirée) |
+| Secrets | Tartinée express (moins de 2 s), Zen (5 s sans bouger), Chiffre rond (finir pile sur x,00). Affichés « ??? » tant qu'ils ne sont pas débloqués |
+
+- Gardés sur le téléphone (`cv-succes` dans le stockage du navigateur) : cumulés sur toutes les soirées, sans rien côté serveur, aucun effet sur le classement. Perdus si on change de téléphone ou de navigateur. Les parties d'entraînement (sans pseudo) comptent aussi.
+- En pleine partie : un petit bandeau jaune « ★ Nom » sous le chrono pendant 2,6 s (plusieurs succès d'un coup s'ajoutent à la suite).
+- En fin de partie : une ligne « ★ Nom, Nom » sous le temps avec les succès de la partie ; la toucher ouvre la page Succès.
+- Page Succès : bouton « Succès 7/22 » sur l'accueil. Une carte par famille, les succès à débloquer en gris.
+- « Dans le top » se débloque à la réponse du serveur en fin de partie ; « Tartine d'or » quand le classement de la soirée est fermé et que tu es 1er (vu au rafraîchissement suivant).
+- Code : `public/js/app/achievements.js` (liste, conditions et page). Ajouter un succès : une ligne dans `ACHIEVEMENTS` et sa condition dans `runTick`, `runEnd`, `afterSubmit` ou `onBoard`.
+
 ## Écran géant
 
 - Page `/ecran` (demandée par Adrien le 29/10/2026), publique, pensée pour un écran en paysage : classement à gauche, QR code à droite avec « Scanne pour jouer », l'adresse et le nombre de joueurs.
@@ -394,6 +412,7 @@ Après :
 | `public/js/app/scene.js` | Dessin du fond, du terrain et des effets |
 | `public/js/app/sprites.js` | Dessin de la tartine et de chaque projectile |
 | `public/js/app/party.js` | Confettis et rebonds des effets de fête (record, N°1) |
+| `public/js/app/achievements.js` | Succès : liste, conditions, page Succès |
 | `public/js/app/screens.js` | Écrans HTML : accueil, fin, classement, boutons |
 | `public/js/app/settings.js`, `install.js` | Paramètres, partage, QR code et installation de l'appli |
 | `public/js/app/api.js` | Appels au serveur, classement, mise à jour de version |
@@ -463,12 +482,10 @@ Après :
   - Il faudra que le joueur sente clairement le changement de mode.
 - Phases structurées, remises à plus tard par Adrien : moments calmes et pics. Piste : caler les pics sur les drops du morceau, possible car la musique repart du début à chaque partie. Je peux repérer les drops en analysant le fichier.
 - Images rigolotes qui défilent dans le fond : références aux anciennes soirées et aux délires du collectif (par exemple un maximator qui tourne).
-- Collection : des objets à attraper en passant la tartine dessus (par exemple le maximator qui tourne). Chaque objet trouvé rejoint la collection du joueur dans le jeu.
+- Collection : des objets à attraper en passant la tartine dessus (par exemple le maximator qui tourne). Chaque objet trouvé rejoint la collection du joueur dans le jeu. Prévue après les succès (voir « Succès »), à part d'eux.
   - Un nombre fixe d'objets, ceux pas encore trouvés sont affichés en ombre.
   - En fin de partie, l'écran montre les objets attrapés pendant la partie.
   - À trancher : est-ce que ça donne un avantage au classement (non, pour rester juste ?), la collection est-elle liée à la soirée ou au téléphone.
-- Succès à débloquer (achievements, idée d'Adrien) : à définir.
-  - À trancher : quels succès, où les voir dans le jeu, liés au téléphone ou à la soirée, et le lien avec la collection.
 - Partage du score en story Insta.
 - Adresse sans « workers.dev » : il faut acheter un nom de domaine (payant chaque année), le mettre sur Cloudflare, puis brancher le jeu dessus (par exemple jeu.<domaine>). Le QR code changerait encore : à décider avant d'imprimer les affiches.
 
