@@ -420,13 +420,25 @@ a.ghost {
 
 .info-bar {
   position: sticky;
-  top: 0;
+  top: calc(-16px - env(safe-area-inset-top, 0px));
   z-index: 1;
   width: 100%;
   display: flex;
   justify-content: center;
   padding: calc(env(safe-area-inset-top, 0px) + 13px) 0 12px;
   background: var(--void);
+}
+
+#info {
+  padding-top: 0;
+}
+
+.info-head {
+  top: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
 }
 
 .info-body {

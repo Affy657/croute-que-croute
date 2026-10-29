@@ -115,8 +115,6 @@ function progressionCard() {
   steps.push([gapEnd, `rythme maximal : une attaque toutes les ${String(GAP_MIN).replace(".", ",")} s au plus vite`]);
   steps.push([speedEnd, `vitesse maximale : × ${num(SPEED_MAX)}`]);
   steps.sort((x, y) => x[0] - y[0]);
-  const end = Math.max(...steps.map((x) => x[0]));
-  const lastAttack = Math.max(...ATTACKS.filter((x) => !x.lab).map((x) => x.from));
   const section = el("section", "card");
   const list = el("ol", "timeline");
   for (const [t, text] of steps) {
@@ -124,8 +122,7 @@ function progressionCard() {
     li.append(el("span", "when", `${Math.round(t)} s`), el("span", null, text));
     list.append(li);
   }
-  const verdict = el("p", "verdict", `Fin de la complexification : ${Math.round(end)} s. Dernière nouvelle attaque à ${lastAttack} s. Au-delà de ${Math.round(end)} s, plus rien ne change : même vitesse, même rythme, mêmes attaques.`);
-  section.append(el("h2", null, "Progression"), verdict, list);
+  section.append(el("h2", null, "Progression"), list);
   return section;
 }
 
