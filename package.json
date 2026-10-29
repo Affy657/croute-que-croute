@@ -8,6 +8,7 @@
     "db:remote": "wrangler d1 migrations apply croute-que-croute --remote",
     "deploy": "node scripts/deploy.mjs",
     "icons": "node scripts/icons.mjs",
+    "qr": "node scripts/qr.mjs",
     "types": "wrangler types",
     "check": "tsc --noEmit",
     "test": "node test/fairness.mjs 100 150",
@@ -15,6 +16,7 @@
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
+    "qrcode": "^1.5.4",
     "typescript": "^7.0.2",
     "wrangler": "^4.154.0"
   }

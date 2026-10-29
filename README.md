@@ -6,8 +6,12 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 
 - Jeu : https://croute-que-croute.tartine-sauvage.workers.dev
 - Admin : https://croute-que-croute.tartine-sauvage.workers.dev/admin, dans la même appli que le jeu
-- QR code : `qr/croute-que-croute.png` pour imprimer, `qr/croute-que-croute.svg` pour une affiche. Le même est dans le jeu (`public/qr.svg`, Paramètres puis « QR code »).
-- Adresse changée le 29/10/2026 (avant : croute-que-croute.croute-que-croute.workers.dev, qui ne répond plus). Régénérer les QR codes : `npx qrcode -t svg -m 2 -o qr/croute-que-croute.svg <adresse>`, puis `-t png -w 1200` pour le PNG, et copier le SVG dans `public/qr.svg`.
+- QR code aux couleurs du jeu (choisi par Adrien le 29/10/2026 parmi 3 essais) : `qr/croute-que-croute.png` pour imprimer, `qr/croute-que-croute.svg` pour une affiche. Le même est dans le jeu (`public/qr.svg`, Paramètres puis « QR code »).
+  - Style : fond crème, points ronds bleu nuit, coins arrondis avec un centre confiture, icône du jeu au centre. Correction d'erreur maximale (H) pour que la tartine au centre ne gêne pas.
+  - Les lignes de repère et le petit carré de repère en bas à droite restent pleins : avec des points ronds partout, un lecteur de test (jsQR) ratait le code en grand format.
+  - Testé au décodage en grand (1000 px), en petit (110 px), flou et sombre : aussi fiable que le QR simple. À scanner quand même sur plusieurs téléphones avant d'imprimer.
+  - Version simple en secours : `qr/croute-que-croute-simple.png` et `.svg` (carrés noirs sur blanc).
+- Adresse changée le 29/10/2026 (avant : croute-que-croute.croute-que-croute.workers.dev, qui ne répond plus). Régénérer tous les QR codes (stylé, simple et celui du jeu) : `npm run qr`, ou `npm run qr -- <adresse>` pour une autre adresse (script `scripts/qr.mjs`).
 - Code : `C:\dev\couverts-volants`, git local sur `master`, pas encore de dépôt GitHub
 - POC d'origine (artefact Claude, plus mis à jour) : https://claude.ai/artifact/V2KMTGkcktubs8VguX8AxE
 
@@ -397,7 +401,7 @@ Après :
 | `scripts/deploy.mjs` | Déploiement avec numéro de version |
 | `test/fairness.mjs` | Test du solveur avec le robot |
 | `test/player.mjs`, `test/admin.mjs` | Tests de l'API joueurs et admin |
-| `qr/` | QR codes |
+| `qr/` | QR codes (stylé et simple), générés par `scripts/qr.mjs` |
 
 | Commande | À quoi ça sert |
 |---|---|
@@ -408,6 +412,7 @@ Après :
 | `npm run check` | Vérifier les types de l'API |
 | `npm run deploy` | Mettre en ligne avec une nouvelle version (les téléphones se mettent à jour seuls) |
 | `npm run icons` | Regénérer les icônes de l'appli |
+| `npm run qr` | Regénérer les QR codes (stylé, simple et celui du jeu) |
 | `npm run test:api` | Tester l'API joueurs et admin (avec `npm run dev` lancé) |
 | `npm run db:remote` | Appliquer une nouvelle migration sur la base en ligne |
 
@@ -449,7 +454,6 @@ Après :
   - À trancher : quels succès, où les voir dans le jeu, liés au téléphone ou à la soirée, et le lien avec la collection.
 - Partage du score en story Insta.
 - Écran géant : classement en plein écran si le lieu en a un.
-- QR code aux couleurs du jeu ou du collectif (question d'Adrien) : possible, avec des points arrondis, les couleurs de l'appli et une petite tartine au centre. À tester au scan sur plusieurs téléphones avant d'imprimer : il faut garder un fort contraste (points foncés sur fond clair) et une marge autour.
 - Adresse sans « workers.dev » : il faut acheter un nom de domaine (payant chaque année), le mettre sur Cloudflare, puis brancher le jeu dessus (par exemple jeu.<domaine>). Le QR code changerait encore : à décider avant d'imprimer les affiches.
 
 ## Bon à savoir
