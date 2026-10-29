@@ -91,12 +91,9 @@
   cursor: default;
 }
 
-.catalog .swatch {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 3px solid #c0712f;
-  background: #2a2552;
+.catalog .thumb {
+  width: 64px;
+  height: 64px;
 }
 
 .catalog .gallery {

@@ -1,7 +1,7 @@
 import { FW, segDist2 } from "./field.js";
 
 const RARE_CHANCE = 1 / 40;
-const RARE_SPREADS = ["jam", "choco", "honey", "ketchup", "apricot", "pistachio", "blueberry", "tarama", "cheese", "tapenade"];
+const RARE_SPREADS = ["jam", "choco", "honey", "ketchup", "toothpaste", "egg", "sardine", "slime"];
 
 export const PROJECTILES = {
   knife: { name: "Couteau à beurre", by: "un couteau à beurre", len: 66, rad: 5 },

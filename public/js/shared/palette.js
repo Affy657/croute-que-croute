@@ -46,10 +46,8 @@ export const SPREADS = {
   choco: { name: "Pâte à tartiner", with: "à la pâte à tartiner", color: "#5b331d", shine: "#8a5636" },
   honey: { name: "Miel", with: "au miel", color: "#f0a81c", shine: "#ffd36b", drip: true },
   ketchup: { name: "Ketchup", with: "au ketchup", color: "#d8231b", shine: "#ff7a6b" },
-  apricot: { name: "Abricot", with: "à l'abricot", color: "#f08a24", shine: "#ffc072", bits: true },
-  pistachio: { name: "Pistache", with: "à la pistache", color: "#7fae3e", shine: "#bfe07e" },
-  blueberry: { name: "Myrtille", with: "à la myrtille", color: "#3f2f8a", shine: "#8676d6", bits: true },
-  tarama: { name: "Tarama", with: "au tarama", color: "#f3a0b2", shine: "#ffd9e1" },
-  cheese: { name: "Fromage frais", with: "au fromage frais", color: "#f4f1e6", shine: "#ffffff" },
-  tapenade: { name: "Tapenade", with: "à la tapenade", color: "#2f2a22", shine: "#6d6553", bits: true }
+  toothpaste: { name: "Dentifrice", with: "au dentifrice", color: "#f4f8ff", shine: "#e8303a" },
+  egg: { name: "Œuf au plat", with: "à l'œuf", color: "#fdfdf5", shine: "#ffb81c" },
+  sardine: { name: "Sardine", with: "à la sardine", color: "#9fb3c8", shine: "#e3ecf3" },
+  slime: { name: "Slime", with: "au slime", color: "#5ed13a", shine: "#b8f59a", bits: true }
 };
