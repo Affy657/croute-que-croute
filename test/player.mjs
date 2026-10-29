@@ -52,10 +52,13 @@ check("ancienne version refusée (426)", r.status === 426, r);
 
 r = await call("POST", "/api/join", { body: { pseudo, clientId: device } });
 check("inscription", r.status === 201 && r.data.token, r);
-const token = r.data.token;
+const first = r.data.token;
 
 r = await call("POST", "/api/join", { body: { pseudo, clientId: device } });
-check("réinscription du même téléphone = même jeton", r.status === 200 && r.data.token === token, r);
+check("réinscription du même téléphone = même compte, nouveau jeton", r.status === 200 && r.data.token && r.data.token !== first && r.data.pseudo === pseudo, r);
+const token = r.data.token;
+r = await call("GET", "/api/board", { token: first });
+check("ancien jeton refusé après réinscription", r.status === 200 && r.data.me === null, r.data.me);
 
 r = await call("POST", "/api/join", { body: { pseudo: pseudo.toLowerCase(), clientId: hex(32) } });
 check("même pseudo depuis un autre téléphone refusé", r.status === 409, r);
