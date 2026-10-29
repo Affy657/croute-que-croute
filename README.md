@@ -229,7 +229,8 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 ## Écrans
 
 - Première visite : champ pseudo et bouton « C'est parti », à tout moment (le classement général tourne en permanence).
-- Accueil pendant une soirée : record et place de la soirée, Jouer, Classement, « Fin dans ».
+- Accueil pendant une soirée : « Fin dans » juste sous le titre (depuis le 29/10/2026), puis en bas record et place de la soirée, Jouer, Classement, Succès.
+- La tartine de l'accueil flotte au milieu de l'espace libre entre le titre et les boutons (position recalculée toutes les 0,5 s), pour ne jamais passer derrière l'interface, même sur un petit écran.
 - Accueil hors soirée : record et place au classement général. Message « Bravo X ! » pendant 12 h après une soirée, sinon « Prochaine soirée samedi 07/11 à 19h30 » si elle est créée, avec « Début dans » le dernier jour.
 - Fin de partie : temps, badge « Nouveau record » (record de la soirée pendant une soirée, record perso sinon), record et place, Rejouer, Classement. « Rejouer » est bloqué 0,45 s pour éviter de relancer par erreur.
 - Effets de fête (idée d'Adrien, depuis le 29/10/2026) :

@@ -17,7 +17,7 @@ import {
   renderHud, renderControls, renderAll, setBoardScope
 } from "./screens.js";
 
-const ACH_TOAST_MS = 2600;
+const ACH_TOAST_MS = 2600, MENU_PLACE_S = 0.5, MENU_LIFT = 6;
 const DIE_S = 0.75, FREEZE_S = 0.12, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
 const BOARD_POLL_MS = 10000, MENU_POLL_MS = 30000;
 const ADMIN_TAPS = 5, ADMIN_TAP_MS = 3000;
@@ -29,7 +29,7 @@ let sim = createSim();
 const S = {
   mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null,
   newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general",
-  toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35 }
+  toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35 }, menuY: FH * 0.55, menuAt: 0
 };
 let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, lastShown = "";
 let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
@@ -275,13 +275,24 @@ function closeSettings() {
   backTo(settingsFrom);
 }
 
+function menuToastY() {
+  const [head, body] = ui.menu.children;
+  const mid = (head.getBoundingClientRect().bottom + body.getBoundingClientRect().top) / 2;
+  const { scale, oy } = scene.view;
+  return clamp((mid - oy) / scale - MENU_LIFT, FH * 0.25, FH * 0.55);
+}
+
 function update(dt) {
   S.clock += dt;
   scene.update(dt, S.mode === "play" ? 1 + (speedMul(sim.state.t) - 1) * 1.6 : 0.5);
   const tt = S.toast;
   if (S.mode === "menu") {
     tt.x = FW / 2;
-    tt.y = FH * 0.55 + Math.sin(S.clock * 2.2) * 7;
+    if (S.clock >= S.menuAt && !ui.menu.hidden) {
+      S.menuAt = S.clock + MENU_PLACE_S;
+      S.menuY = menuToastY();
+    }
+    tt.y = S.menuY + Math.sin(S.clock * 2.2) * 7;
     tt.tilt = Math.sin(S.clock * 1.3) * 0.08;
     tt.thrust = 0.35;
     return;
