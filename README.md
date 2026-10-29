@@ -30,6 +30,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
   - une pointe orange vers où part l'arme ;
   - un cercle orange qui se remplit jusqu'au lancer.
 - Les pastilles sont dessinées sur un calque au-dessus du score : le chrono ne les cache jamais.
+- Zone du score libre (demandé par Adrien le 29/10/2026 : les pastilles par-dessus le chrono étaient dures à lire) : une pastille du bord haut qui tomberait sur le chrono ou la ligne « Record » est dessinée juste en dessous, à la même place en largeur. La zone fait la largeur de « 000,00 » (ou de la ligne du dessous si elle est plus large) plus 6 px, mesurée au début de chaque partie et quand l’écran change de taille (`avoidHud` dans `main.js`). Les pastilles des côtés et des coins ne bougent pas. Sur les écrans hauts, le terrain commence sous le chrono et rien ne change.
 
 ## Les attaques
 
@@ -271,7 +272,7 @@ Décidé avec Adrien le 29/10/2026 : 4 familles, gardés sur le téléphone, mon
 
 | Famille | Succès |
 |---|---|
-| Temps | Premiers pas (10 s), Bien beurrée (20 s), Croustillante (30 s), Dorée à point (45 s), Une minute de gloire (60 s), Tartine de légende (80 s, bout de la montée) |
+| Temps | Premiers pas (10 s), Bien beurrée (20 s), Croustillante (30 s), Dorée à point (45 s), Une minute de gloire (60 s), Tartine de légende (80 s) |
 | Frôlés et découvertes | Ça passe (5 frôlés dans une partie), Ça passe crème (20), Confiture !, Pâte à tartiner !, Miel !, Ketchup ?! (voir un couteau de cette tartinade rare), Tout vu (voir les 11 attaques, sur plusieurs parties) |
 | Assiduité et soirées | Dix tartines (10 parties), Boulangerie (50), Accro à la croûte (100), Fidèle du Space (jouer à 3 soirées), Dans le top (top 10 d'une soirée), Tartine d'or (finir 1er d'une soirée) |
 | Secrets | Tartinée express (moins de 2 s), En détente (5 s sans bouger, appelé « Zen » avant le 29/10/2026), Chiffre rond (finir pile sur x,00). Affichés « ??? » tant qu'ils ne sont pas débloqués |

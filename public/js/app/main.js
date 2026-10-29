@@ -21,6 +21,7 @@ const ACH_TOAST_MS = 2600, MENU_PLACE_S = 0.5, MENU_LIFT = 6;
 const DIE_S = 0.75, FREEZE_S = 0.12, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
 const BOARD_POLL_MS = 10000, MENU_POLL_MS = 30000;
 const ADMIN_TAPS = 5, ADMIN_TAP_MS = 3000;
+const HUD_WIDEST = "000,00", HUD_PAD = 6;
 
 document.documentElement.dataset.version = VERSION;
 const canvas = document.getElementById("cv");
@@ -114,11 +115,29 @@ function start() {
   show("play");
   renderControls(true);
   renderHud();
+  avoidHud();
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   audio.musicRunStart();
   audio.playSfx("start");
   return true;
 }
+
+const probe = document.createElement("canvas").getContext("2d");
+
+function textWidth(el, text) {
+  const cs = getComputedStyle(el);
+  probe.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  return probe.measureText(text).width + (parseFloat(cs.letterSpacing) || 0) * text.length;
+}
+
+function avoidHud() {
+  const t = ui.time.getBoundingClientRect(), b = ui.hudBest.getBoundingClientRect();
+  const half = Math.max(textWidth(ui.time, HUD_WIDEST), textWidth(ui.hudBest, ui.hudBest.textContent)) / 2 + HUD_PAD;
+  const mid = (t.left + t.right) / 2;
+  scene.avoid({ left: mid - half, right: mid + half, bottom: Math.max(t.bottom, b.bottom) + HUD_PAD });
+}
+
+window.addEventListener("resize", () => { if (S.mode === "play") avoidHud(); });
 
 function cheer() {
   const mine = S.submit, prev = S.prevRank;
