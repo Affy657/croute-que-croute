@@ -42,8 +42,8 @@ export const SKY = {
 
 export const SPREADS = {
   butter: { name: "Beurre", color: "#fff1a8", shine: "#ffffff" },
-  jam: { name: "Confiture", color: "#9b1b3a", shine: "#e0577a", bits: true },
-  choco: { name: "Pâte à tartiner", color: "#5b331d", shine: "#8a5636" },
-  honey: { name: "Miel", color: "#f0a81c", shine: "#ffd36b", drip: true },
-  ketchup: { name: "Ketchup", color: "#d8231b", shine: "#ff7a6b" }
+  jam: { name: "Confiture", with: "à la confiture", color: "#9b1b3a", shine: "#e0577a", bits: true },
+  choco: { name: "Pâte à tartiner", with: "à la pâte à tartiner", color: "#5b331d", shine: "#8a5636" },
+  honey: { name: "Miel", with: "au miel", color: "#f0a81c", shine: "#ffd36b", drip: true },
+  ketchup: { name: "Ketchup", with: "au ketchup", color: "#d8231b", shine: "#ff7a6b" }
 };

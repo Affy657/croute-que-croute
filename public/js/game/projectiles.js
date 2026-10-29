@@ -4,12 +4,12 @@ const RARE_CHANCE = 1 / 40;
 const RARE_SPREADS = ["jam", "choco", "honey", "ketchup"];
 
 export const PROJECTILES = {
-  knife: { name: "Couteau à beurre", len: 66, rad: 5 },
-  fork: { name: "Fourchette", len: 58, rad: 6 },
-  rolling: { name: "Rouleau à pâtisserie", len: 84, rad: 11, across: true, parts: [[-20, 0, 20, 0, 10.5], [-37.5, 0, 37.5, 0, 4.5]] },
-  whisk: { name: "Fouet", len: 54, rad: 8, parts: [[-22.5, 0, -2, 0, 4.5], [8, 0, 19, 0, 8]] },
-  cleaver: { name: "Hachoir", len: 56, rad: 12, parts: [[-4, -6, 22, -6, 6], [-4, 6, 22, 6, 6], [-24, 0, -8, 0, 4]] },
-  bread: { name: "Couteau à pain", len: 84, rad: 5 }
+  knife: { name: "Couteau à beurre", by: "un couteau à beurre", len: 66, rad: 5 },
+  fork: { name: "Fourchette", by: "une fourchette", len: 58, rad: 6 },
+  rolling: { name: "Rouleau à pâtisserie", by: "un rouleau à pâtisserie", len: 84, rad: 11, across: true, parts: [[-20, 0, 20, 0, 10.5], [-37.5, 0, 37.5, 0, 4.5]] },
+  whisk: { name: "Fouet", by: "un fouet", len: 54, rad: 8, parts: [[-22.5, 0, -2, 0, 4.5], [8, 0, 19, 0, 8]] },
+  cleaver: { name: "Hachoir", by: "un hachoir", len: 56, rad: 12, parts: [[-4, -6, 22, -6, 6], [-4, 6, 22, 6, 6], [-24, 0, -8, 0, 4]] },
+  bread: { name: "Couteau à pain", by: "un couteau à pain", len: 84, rad: 5 }
 };
 
 for (const p of Object.values(PROJECTILES)) {
