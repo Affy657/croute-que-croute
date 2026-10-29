@@ -42,8 +42,13 @@ export const SKY = {
 
 export const SPREADS = {
   butter: { name: "Beurre", color: "#fff1a8", shine: "#ffffff" },
-  jam: { name: "Confiture", color: "#9b1b3a", shine: "#e0577a", bits: true },
-  choco: { name: "Pâte à tartiner", color: "#5b331d", shine: "#8a5636" },
-  honey: { name: "Miel", color: "#f0a81c", shine: "#ffd36b", drip: true },
-  ketchup: { name: "Ketchup", color: "#d8231b", shine: "#ff7a6b" }
+  jam: { name: "Confiture", with: "à la confiture", color: "#9b1b3a", shine: "#e0577a", bits: true },
+  choco: { name: "Pâte à tartiner", with: "à la pâte à tartiner", color: "#5b331d", shine: "#8a5636" },
+  honey: { name: "Miel", with: "au miel", color: "#f0a81c", shine: "#ffd36b", drip: true },
+  ketchup: { name: "Ketchup", with: "au ketchup", color: "#d8231b", shine: "#ff7a6b" },
+  toothpaste: { name: "Dentifrice", with: "au dentifrice", color: "#f4f8ff", shine: "#e8303a" },
+  egg: { name: "Œuf au plat", with: "à l'œuf", color: "#fdfdf5", shine: "#ffb81c" },
+  sardine: { name: "Sardine", with: "à la sardine", color: "#9fb3c8", shine: "#e3ecf3" },
+  slime: { name: "Slime", with: "au slime", color: "#5ed13a", shine: "#b8f59a", bits: true },
+  dog: { name: "Pâtée pour chien", with: "à la pâtée pour chien", color: "#6e3f22", shine: "#b07a4e", bits: true }
 };

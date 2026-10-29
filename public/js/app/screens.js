@@ -2,6 +2,8 @@ import { fmtCs, ord, clock } from "../shared/format.js";
 import { net, serverNow, registered, isOpen, openEvent, recentEvent, upcomingEvent, standing, knownBest } from "./api.js";
 import { prefs, musicAvailable } from "./audio.js";
 import { progress } from "./achievements.js";
+import { PROJECTILES } from "../game/projectiles.js";
+import { SPREADS } from "../shared/palette.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -11,7 +13,7 @@ export const ui = {
   menuRankBox: $("menuRankBox"), menuRank: $("menuRank"), menuInfo: $("menuInfo"), menuPitch: $("menuPitch"),
   joinForm: $("joinForm"), pseudo: $("pseudo"), joinError: $("joinError"),
   menuActions: $("menuActions"), play: $("play"), menuBoard: $("menuBoard"), menuAch: $("menuAch"), menuCountdown: $("menuCountdown"), settingsBtn: $("settingsBtn"),
-  final: $("final"), newBest: $("newBest"), overNote: $("overNote"), overRival: $("overRival"),
+  final: $("final"), overBy: $("overBy"), newBest: $("newBest"), overNote: $("overNote"), overRival: $("overRival"),
   overStats: $("overStats"), overBestBox: $("overBestBox"), overBest: $("overBest"), overRankBox: $("overRankBox"), overRank: $("overRank"),
   again: $("again"), overBoard: $("overBoard"), overAchBtn: $("overAchBtn"), overHome: $("overHome"), overCountdown: $("overCountdown"),
   boardTabs: $("boardTabs"), boardEvent: $("boardEvent"), boardCountdown: $("boardCountdown"), boardList: $("boardList"), boardEmpty: $("boardEmpty"), boardBack: $("boardBack"),
@@ -168,6 +170,12 @@ export function renderOver(score, newBest) {
   ui.overBoard.hidden = !net.board;
   ui.overRival.hidden = true;
   renderOverStats(newBest ? 0 : knownBest(), null, 0);
+}
+
+export function renderKiller(killer) {
+  const weapon = killer && PROJECTILES[killer.kind];
+  ui.overBy.hidden = !weapon;
+  if (weapon) ui.overBy.textContent = "par " + (killer.spread ? "un couteau " + SPREADS[killer.spread].with : weapon.by);
 }
 
 export function renderOverStats(best, rank, count) {

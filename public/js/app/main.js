@@ -9,16 +9,18 @@ import { createScene } from "./scene.js";
 import { createInput } from "./input.js";
 import { burst, rain, bounce } from "./party.js";
 import * as ach from "./achievements.js";
+import { chosen, unlockTopping, onTopping, renderToppings } from "./toppings.js";
+import { SPREADS } from "../shared/palette.js";
 import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./catalog.js";
 import { renderSettings, suggestInstall, leaveSettings } from "./settings.js";
 import { onInstallChange } from "./install.js";
 import {
-  ui, show, setText, setDigits, tickCountdowns, renderMenu, renderBoard, renderOver, renderOverStats, renderRival,
+  ui, show, setText, setDigits, tickCountdowns, renderMenu, renderBoard, renderOver, renderOverStats, renderRival, renderKiller,
   renderHud, renderControls, renderAll, setBoardScope, achLabel
 } from "./screens.js";
 
 const ACH_TOAST_MS = 2600, MENU_PLACE_S = 0.5, MENU_LIFT = 6;
-const DIE_S = 0.75, FREEZE_S = 0.12, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
+const DIE_S = 0.75, FREEZE_S = 0.3, KILL_ZOOM = 0.22, ZOOM_BACK_S = 0.25, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
 const BOARD_POLL_MS = 10000, MENU_POLL_MS = 30000;
 const ADMIN_TAPS = 5, ADMIN_TAP_MS = 3000;
 const CHAIN_S = 1.5, CHAIN_STEPS = 6, LAP_CS = 1000;
@@ -32,7 +34,7 @@ let sim = createSim();
 const S = {
   mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, train: null, t0: 0,
   newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general",
-  toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35, scars: [] }, menuY: FH * 0.55, menuAt: 0
+  toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35, scars: [], spread: chosen() }, gotToppings: [], menuY: FH * 0.55, menuAt: 0
 };
 let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, lastShown = "";
 let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
@@ -51,9 +53,16 @@ function scar(e) {
   tt.scars.push({ a, len: 7 + Math.random() * 3 });
 }
 
+function gainTopping(kind) {
+  if (S.train || !kind || !unlockTopping(kind)) return;
+  S.gotToppings.push(kind);
+  if (S.mode === "play") toastAch({ name: "Garniture " + SPREADS[kind].name });
+}
+
 const ON_SIM = {
   near(e) {
     scar(e);
+    gainTopping(e.spread);
     const t = sim.state.t;
     S.chain = t - S.nearAt < CHAIN_S ? S.chain + 1 : 1;
     S.nearAt = t;
@@ -61,18 +70,19 @@ const ON_SIM = {
     scene.pop(S.toast.x, S.toast.y - 32, S.chain > 1 ? "Frôlé x" + S.chain : "Frôlé !", { key: "near", size: 14 + step * 1.5 });
     audio.playSfx("near", 2 ** ((step * 2) / 12));
   },
-  death() {
-    die();
+  death(e) {
+    die(e);
+    gainTopping(e.spread);
   }
 };
 
-function die() {
+function die(killer) {
   S.mode = "dying";
+  S.killer = killer;
   S.dieT = 0;
   S.freeze = FREEZE_S;
   S.toast.thrust = 0;
   input.reset();
-  S.splat = scene.splash(S.toast.x, S.toast.y);
   S.score = Math.floor(elapsed() * 100);
   audio.musicRunEnd();
   audio.playSfx("death");
@@ -125,7 +135,7 @@ function start(train = null) {
   if (api.net.updatePending && api.applyUpdate()) return false;
   const t0 = train ? train.from : 0;
   sim = createSim(Math.random, train ? { only: train.id, t0 } : undefined);
-  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, scope: api.isOpen() ? "event" : "general" });
+  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.isOpen() ? "event" : "general" });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0, scars: [] });
   scene.clear();
   S.run = train ? null : api.startRun();
@@ -213,6 +223,7 @@ function showOver() {
   show("over");
   renderControls(false);
   renderOver(S.score, S.newBest);
+  renderKiller(S.killer);
   renderOverAch();
   if (S.train) renderOverStats(0, null, 0);
   if (S.newBest) {
@@ -303,9 +314,9 @@ function openSettings() {
 }
 
 function renderOverAch() {
-  const got = S.train ? [] : ach.runUnlocked();
+  const got = S.train ? [] : [...ach.runUnlocked().map((a) => a.name), ...S.gotToppings.map((k) => "Garniture " + SPREADS[k].name)];
   ui.overAch.hidden = !got.length;
-  ui.overAch.textContent = "★ " + got.map((a) => a.name).join(", ");
+  ui.overAch.textContent = "★ " + got.join(", ");
   ui.overAchBtn.textContent = achLabel();
 }
 
@@ -339,6 +350,7 @@ function openAch() {
   show("ach");
   renderControls(false);
   ach.renderAchievements(ui.achList, ui.achCount);
+  ui.achList.prepend(renderToppings());
   ui.ach.scrollTop = 0;
 }
 
@@ -377,7 +389,11 @@ function update(dt) {
     return;
   }
   if (S.mode !== "play") {
-    if (S.freeze > 0) { S.freeze -= dt; return; }
+    if (S.freeze > 0) {
+      S.freeze -= dt;
+      if (S.freeze <= 0) S.splat = scene.splash(S.toast.x, S.toast.y);
+      return;
+    }
     sim.drift(dt);
     if (S.mode === "dying") {
       S.dieT += dt;
@@ -398,6 +414,12 @@ function update(dt) {
   for (const e of events) ON_SIM[e.type](e);
 }
 
+function killZoom() {
+  if (S.mode !== "dying") return null;
+  const k = S.freeze > 0 ? 1 - (S.freeze / FREEZE_S) ** 2 : Math.max(0, 1 - S.dieT / ZOOM_BACK_S);
+  return { x: S.toast.x, y: S.toast.y, k: 1 + KILL_ZOOM * k };
+}
+
 let last = performance.now(), acc = 0;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
@@ -407,7 +429,7 @@ function frame(now) {
     update(STEP);
     acc -= STEP;
   }
-  scene.render({ clock: S.clock, world: sim.state, toast: S.mode === "over" ? null : S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null });
+  scene.render({ clock: S.clock, world: sim.state, toast: S.mode === "over" ? null : S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null, zoom: killZoom() });
   if (playing()) {
     const cs = Math.floor(elapsed() * 100), s = fmtCs(cs);
     if (s !== lastShown) {
@@ -506,6 +528,7 @@ document.addEventListener("visibilitychange", () => {
 
 api.on("board", renderAll);
 api.on("board", () => ach.onBoard(api.net.board));
+onTopping((kind) => { S.toast.spread = kind; });
 ach.onUnlock((a) => {
   if (S.mode === "play") toastAch(a);
   else if (S.mode === "over") renderOverAch();

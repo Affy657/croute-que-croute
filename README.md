@@ -20,6 +20,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Zones de touche : la tartine est un cercle de 26 px, chaque arme est faite de gélules (`parts` dans `projectiles.js`). « Frôlé » quand la tartine passe à moins de 11 px.
 - Frôlés : « Frôlé x2 », « x3 »… quand ils s'enchaînent à moins de 1,5 s, avec un son plus aigu à chaque cran (6 au plus). Chaque frôlé laisse une entaille dans la croûte, du côté où le couvert est passé (12 au plus). Aucun effet sur le score ni sur la zone de touche.
 - Effets : le chrono flashe en jaune toutes les 10 s, les couverts rapides (dès 380 px/s) laissent une traînée, et le fond passe du bleu nuit au violet vers 40 s puis au rouge sombre à 80 s, au rythme de la vitesse des couverts (`HEAT` dans `palette.js`).
+- Mort : le jeu se fige 0,3 s avec un léger zoom sur la tartine, puis l'éclaboussure (pas de zoom si le téléphone demande moins d'animations). Sous « Tartinée ! », l'arme qui t'a eu (« par un hachoir », « par un couteau au dentifrice ») : `by` dans `PROJECTILES`, `with` dans `SPREADS`.
 - Fin de partie : « Encore 1,21 s pour passer X », X étant le joueur juste devant (soirée pendant une soirée, général sinon). Rien si tu es 1er, sans pseudo ou au-delà du 1 000e du général.
 - Entraînement : bouton « S'entraîner » sur chaque attaque d'Infos. Seulement cette attaque, à la vitesse de son heure d'arrivée. Ne compte ni au classement, ni pour les succès, ni pour le record.
 
@@ -102,6 +103,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - 22 succès en 4 familles (temps, frôlés et découvertes, assiduité et soirées, secrets) : liste et conditions dans `achievements.js`.
 - Gardés sur le téléphone (`cv-succes`), sans effet sur le classement. Perdus en changeant de téléphone ou de navigateur. Sur iPhone, Safari et l'appli installée ne partagent pas leurs succès.
 - Le nombre de parties prend le plus grand entre le compteur du téléphone et celui du serveur.
+- Garnitures : 9 tartinades dessinées sur la tartine (`TOPPINGS` dans `sprites.js`) : confiture, pâte à tartiner, miel et son abeille, ketchup en zigzag, dentifrice rayé, œuf au plat, sardine entière, slime qui a un œil, pâtée pour chien et sa mouche. Beurre au départ. 1 attaque sur 40 a un couteau garni : le frôler ou se faire tuer par lui débloque sa garniture (pas en entraînement). Choix dans Succès, carte Garnitures (ombres pour celles pas encore gagnées). Gardées sur le téléphone (`cv-garnitures`, `cv-garniture`), purement visuel.
 
 ## Appli et réseau
 
@@ -149,7 +151,7 @@ Après :
 | `migrations/` | Schéma de la base |
 | `scripts/` | Mise en ligne, icônes, QR codes |
 | `test/` | Robot d'équité, tests de l'API |
-| `maquettes/` | Images de travail : pistes de redesign de la tartine, planche des garnitures |
+| `maquettes/` | Images de travail : pistes de redesign de la tartine (pas retenues), planche des garnitures |
 
 | Commande | À quoi ça sert |
 |---|---|
@@ -168,7 +170,7 @@ Après :
 - Attaque : une fonction dans `attacks.js` et une ligne dans `ATTACKS` (dès quand, poids, durée ; `solo: true` pour une grosse figure, `calm: true` pour qu'elle ne parte que sans annonce en cours, `growsUntil` et `growth` si elle grossit avec le temps). `notice` sur une annonce ne l'affiche que peu avant son arrivée. Le solveur la vérifie tout seul.
 - Arme : sa taille dans `projectiles.js` et son dessin dans `sprites.js`, sous le même nom.
 - Prototype : `lab: true` dans `ATTACKS` ou `PROJECTILES`. Visible dans Infos pour les admins seulement, jamais tiré en jeu.
-- Tartinade rare : une ligne dans `SPREADS` (`palette.js`) et son nom dans `RARE_SPREADS` (`projectiles.js`).
+- Tartinade rare : une ligne dans `SPREADS` (`palette.js`, avec `with` pour « par un couteau au… ») et son nom dans `RARE_SPREADS` (`projectiles.js`). Elle devient aussi une garniture à débloquer.
 - Événement de partie : `sim.js` le renvoie dans les événements de `step`, `main.js` y réagit dans `ON_SIM`.
 - Succès : une ligne dans `ACHIEVEMENTS` et sa condition dans `runTick`, `runEnd`, `afterSubmit` ou `onBoard`.
 - Route d'API : une fonction dans `src/routes/` et une ligne dans `src/worker.ts`, avec son niveau d'accès.
@@ -178,26 +180,20 @@ Après :
 - Adresse : garder « workers.dev » ou prendre un nom de domaine payant (le QR code changerait). Décision à l'AG du lundi 02/11/2026 à 20h, avant d'imprimer les affiches.
 - Remplacer ou compléter la musique avec des morceaux des collègues DJ.
 - Faire monter le morceau par un ami DJ : coupes et transitions propres, fin qui boucle. Les coupes faites dans le code en attendant sont approximatives.
-- Reprendre les couleurs et la tartine des affiches : fichiers du designer dans `affiches/`. Les affiches sont aplaties : demander les éléments séparés, comme la tartine (`tartine-fusee.webp`).
+- Reprendre les couleurs des affiches : fichiers du designer dans `affiches/`. Les affiches sont aplaties : demander les éléments séparés.
 - À décider : rejouer les meilleures parties pour confirmer leur temps (graine donnée par le serveur, gestes enregistrés). Bloquerait la triche par faux score.
-
-## En essai
-
-Aucun essai en cours. Une nouveauté à tester passe par la branche `essais`, une fusion par idée, et part en ligne depuis `essais`. Adrien choisit : les idées refusées sont retirées (`git revert -m 1` de leur fusion), puis `essais` est fusionnée dans `master` et leurs descriptions rangées dans les bonnes parties.
 
 ## Idées pour plus tard
 
-- « Tartinée par… » avec l'arme qui t'a eu, vibration au frôlé, succès gardés sur le serveur.
-- Arrêt sur image à la mort : le jeu se fige 0,3 s avec un léger zoom sur le couvert qui t'a eu, puis l'éclaboussure. Va avec « Tartinée par… ».
+- Vibration au frôlé, succès gardés sur le serveur.
 - Dernier quart d'heure : 15 min avant la fermeture, l'accueil et l'écran géant passent en rouge, compte à rebours en grand.
 - Compteur de la salle sur l'écran géant : temps cumulé de toutes les parties de la soirée. Une ligne écrite en plus par partie.
 - Nouvelles attaques vers 65 s, pour que les meilleurs découvrent encore quelque chose (la dernière arrive à 54 s) : cuillère boomerang qui traverse puis revient, pince de deux couteaux qui se referment, spirale de fourchettes.
-- Tartines à débloquer : la garniture de la tartine reprend celle des couteaux à tartinade (confiture, pâte à tartiner, miel, ketchup, et d'autres pour avoir à peu près chaque couleur). On débloque une garniture en frôlant son couteau ou en se faisant tuer par lui. Purement visuel.
 - Même partie pour tous : une seule suite d'attaques par soirée, identique pour tout le monde. La plus tryhard, mais elle change l'esprit du classement.
 - Une phase après 80 s (« mode sérieux »), ou des moments calmes et des pics calés sur les drops du morceau.
 - Suites d'attaques calées sur la musique, ou tirées parmi des enchaînements déjà écrits qui reviennent : analyser d'abord le morceau pour caler au moins les montées et les drops.
 - Images ou objets à collectionner (le maximator qui tourne), partage du score en story Insta.
-- Pas retenues pour l'instant : thème de soirée choisi par l'admin, tartine du designer à la place de la tartine dessinée, étoiles au rythme de la musique, son d'annonce par attaque, couche de tension, podium de fin de soirée sur l'écran géant.
+- Pas retenues pour l'instant : thème de soirée choisi par l'admin, tartine du designer ou redessinée (Adrien garde la tartine actuelle, pistes dans `maquettes/`), étoiles au rythme de la musique, son d'annonce par attaque, couche de tension, podium de fin de soirée sur l'écran géant.
 
 ## Bon à savoir
 
