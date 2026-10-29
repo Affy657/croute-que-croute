@@ -33,6 +33,7 @@
   <div class="block">
     <p id="brand" class="eyebrow">Collectif Tartine Sauvage</p>
     <h1>Croûte que Croûte</h1>
+    <p id="menuPitch" class="pitch" hidden>Esquive les couverts le plus longtemps possible</p>
     <p id="menuCountdown" class="countdown" hidden></p>
   </div>
   <div class="block">
@@ -49,16 +50,17 @@
     </form>
     <div id="menuActions" class="actions">
       <button id="play" class="cta" type="button">Jouer</button>
-      <button id="menuBoard" class="ghost" type="button" hidden>Classement</button>
-      <button id="menuAch" class="ghost" type="button">Succès</button>
+      <div class="more">
+        <button id="menuBoard" class="ghost" type="button" hidden>Classement</button>
+        <button id="menuAch" class="ghost" type="button">Succès</button>
+      </div>
     </div>
   </div>
 </section>
 
 <section id="over" class="screen veil" hidden>
   <div class="block">
-    <h2>Tartinée&nbsp;!</h2>
-    <p id="overCountdown" class="countdown" hidden></p>
+    <h2 class="page-title">Tartinée&nbsp;!</h2>
     <p class="score"><span id="final" class="digits">0,00</span><small>s</small></p>
     <p id="newBest" class="badge" hidden>Nouveau record</p>
     <button id="overAch" class="ach-line" type="button" hidden></button>
@@ -70,15 +72,18 @@
   </div>
   <div class="actions">
     <button id="again" class="cta" type="button">Rejouer</button>
-    <button id="overBoard" class="ghost" type="button" hidden>Classement</button>
-    <button id="overAchBtn" class="ghost" type="button">Succès</button>
-    <button id="overHome" class="ghost" type="button">Accueil</button>
+    <div class="more">
+      <button id="overBoard" class="ghost" type="button" hidden>Classement</button>
+      <button id="overAchBtn" class="ghost" type="button">Succès</button>
+      <button id="overHome" class="ghost" type="button">Accueil</button>
+    </div>
   </div>
+  <p id="overCountdown" class="countdown foot" hidden></p>
 </section>
 
 <section id="board" class="screen board" hidden>
   <div class="board-head">
-    <h2>Classement</h2>
+    <h2 class="page-title">Classement</h2>
     <div id="boardTabs" class="board-tabs" role="tablist" hidden>
       <button type="button" role="tab" data-scope="event" aria-selected="true">Soirée</button>
       <button type="button" role="tab" data-scope="general" aria-selected="false">Général</button>
@@ -93,7 +98,7 @@
 
 <section id="info" class="screen info-screen" hidden>
   <div class="info-bar info-head">
-    <h2>Infos</h2>
+    <h2 class="page-title">Infos</h2>
     <div id="infoTabs" class="board-tabs" role="tablist">
       <button type="button" role="tab" data-tab="attacks" aria-selected="true">Attaques</button>
       <button type="button" role="tab" data-tab="weapons" aria-selected="false">Armes</button>
@@ -105,18 +110,22 @@
 </section>
 
 <section id="ach" class="screen info-screen" hidden>
-  <h2>Succès</h2>
-  <p id="achCount" class="eyebrow"></p>
+  <div class="info-bar info-head">
+    <h2 class="page-title">Succès</h2>
+    <p id="achCount" class="eyebrow"></p>
+  </div>
   <div id="achList" class="catalog info-body"></div>
   <button id="achBack" class="cta" type="button">Retour</button>
 </section>
 
 <section id="settings" class="screen info-screen" hidden>
-  <h2>Paramètres</h2>
-  <div id="settingsBar" class="info-bar" hidden>
-    <div id="settingsTabs" class="board-tabs" role="tablist">
-      <button type="button" role="tab" data-tab="app" aria-selected="true">Appli</button>
-      <button type="button" role="tab" data-tab="admin" aria-selected="false">Admin</button>
+  <div class="info-bar info-head">
+    <h2 class="page-title">Paramètres</h2>
+    <div id="settingsBar" hidden>
+      <div id="settingsTabs" class="board-tabs" role="tablist">
+        <button type="button" role="tab" data-tab="app" aria-selected="true">Appli</button>
+        <button type="button" role="tab" data-tab="admin" aria-selected="false">Admin</button>
+      </div>
     </div>
   </div>
   <div id="settingsApp" class="catalog info-body">
