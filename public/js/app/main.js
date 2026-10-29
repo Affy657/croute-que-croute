@@ -21,13 +21,14 @@ const ACH_TOAST_MS = 2600, MENU_PLACE_S = 0.5, MENU_LIFT = 6;
 const DIE_S = 0.75, FREEZE_S = 0.12, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
 const BOARD_POLL_MS = 10000, MENU_POLL_MS = 30000;
 const ADMIN_TAPS = 5, ADMIN_TAP_MS = 3000;
+const CHAIN_S = 1.5, CHAIN_STEPS = 6;
 
 document.documentElement.dataset.version = VERSION;
 const canvas = document.getElementById("cv");
 const scene = createScene(canvas, document.getElementById("fx"));
 let sim = createSim();
 const S = {
-  mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null,
+  mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity,
   newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general",
   toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35 }, menuY: FH * 0.55, menuAt: 0
 };
@@ -41,8 +42,12 @@ const input = createInput(canvas, { active: () => S.mode === "play", scale: () =
 
 const ON_SIM = {
   near() {
-    scene.pop(S.toast.x, S.toast.y - 32, "Frôlé !");
-    audio.playSfx("near");
+    const t = sim.state.t;
+    S.chain = t - S.nearAt < CHAIN_S ? S.chain + 1 : 1;
+    S.nearAt = t;
+    const step = Math.min(S.chain - 1, CHAIN_STEPS);
+    scene.pop(S.toast.x, S.toast.y - 32, S.chain > 1 ? "Frôlé x" + S.chain : "Frôlé !", { key: "near", size: 14 + step * 1.5 });
+    audio.playSfx("near", 2 ** ((step * 2) / 12));
   },
   death() {
     die();
@@ -101,7 +106,7 @@ function start() {
   if (S.mode === "over" && ui.again.disabled) return false;
   if (api.net.updatePending && api.applyUpdate()) return false;
   sim = createSim();
-  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, newBest: false, score: 0, submit: null, scope: api.isOpen() ? "event" : "general" });
+  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, newBest: false, score: 0, submit: null, scope: api.isOpen() ? "event" : "general" });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0 });
   scene.clear();
   S.run = api.startRun();
