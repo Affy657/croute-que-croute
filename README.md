@@ -170,6 +170,7 @@ Après :
 - Tester sur de vrais téléphones : fluidité, son, réseau du lieu.
 - Inviter les collègues admins.
 - Remplacer ou compléter la musique avec des morceaux des collègues DJ.
+- Faire monter le morceau par un ami DJ : coupes et transitions propres, fin qui boucle. Les coupes faites dans le code en attendant sont approximatives.
 - Reprendre les couleurs et la tartine des affiches : fichiers du designer dans `affiches/`. Les affiches sont aplaties : demander les éléments séparés, comme la tartine (`tartine-fusee.webp`).
 - À décider : rejouer les meilleures parties pour confirmer leur temps (graine donnée par le serveur, gestes enregistrés). Bloquerait la triche par faux score.
 
