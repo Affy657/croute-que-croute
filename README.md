@@ -232,7 +232,8 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - Accueil pendant une soirée : « Fin dans » juste sous le titre (depuis le 29/10/2026), puis en bas record et place de la soirée, Jouer, Classement, Succès.
 - La tartine de l'accueil flotte au milieu de l'espace libre entre le titre et les boutons (position recalculée toutes les 0,5 s), pour ne jamais passer derrière l'interface, même sur un petit écran.
 - Accueil hors soirée : record et place au classement général. Message « Bravo X ! » pendant 12 h après une soirée, sinon « Prochaine soirée samedi 07/11 à 19h30 » si elle est créée, avec « Début dans » le dernier jour.
-- Fin de partie : temps, badge « Nouveau record » (record de la soirée pendant une soirée, record perso sinon), record et place, Rejouer, Classement. « Rejouer » est bloqué 0,45 s pour éviter de relancer par erreur.
+- Fin de partie : « Fin dans » sous « Tartinée ! » pendant une soirée, temps, badge « Nouveau record » (record de la soirée pendant une soirée, record perso sinon), succès de la partie, record et place, puis Rejouer, Classement, Succès et Accueil (ajoutés le 29/10/2026 pour retrouver tout ce qu'a l'accueil). « Rejouer » est bloqué 0,45 s pour éviter de relancer par erreur.
+- Écrans de moins de 620 px de haut (petits téléphones) : marges et espacements réduits pour que l'écran de fin tienne même avec badge, succès et compte à rebours.
 - Effets de fête (idée d'Adrien, depuis le 29/10/2026) :
   - En pleine partie, quand le temps dépasse ton record : le chrono passe en jaune avec un petit rebond, « Record x,xx » devient « Nouveau record » et quelques confettis partent du chrono. Pas au tout premier essai (pas encore de record).
   - En pleine partie, quand le temps dépasse le 1er du classement (de la soirée pendant une soirée, général sinon) : même chose en doré avec « N°1 ! ». Seulement si la partie compte (pseudo choisi, réseau au départ) et si le 1er n'est pas déjà toi.

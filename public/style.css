@@ -113,6 +113,18 @@ body {
   margin: 0;
 }
 
+@media (max-height: 620px) {
+  .screen {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 24px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  }
+
+  .block,
+  .actions {
+    gap: 0.6rem;
+  }
+}
+
 .eyebrow {
   font-size: 0.72rem;
   letter-spacing: 0.14em;
