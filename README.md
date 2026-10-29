@@ -238,7 +238,7 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - Police : Bungee partout, chargée depuis Google Fonts.
 - Deux boutons ronds, cachés pendant la partie et dans la page d'info : la note de musique en haut à gauche coupe ou remet la musique, le haut-parleur en haut à droite coupe ou remet les bruitages. Chaque choix est mémorisé sur le téléphone.
 - Bouton rond Paramètres (roue crantée) en bas à gauche de l'accueil et de la fin de partie, pour tout le monde. Les boutons du bas sont posés dans les coins, hors de la mise en page : ils ne décalent rien.
-- Paramètres : « Installer le jeu » (bouton Installer quand le navigateur le permet, sinon la marche à suivre ; la carte disparaît quand le jeu est ouvert depuis l'appli installée) et « Partager le jeu » (« Partager le lien » ouvre le partage du téléphone, ou copie le lien sur ordinateur ; « QR code » l'affiche en grand pour le faire scanner à un voisin). Les téléphones connectés en admin ont en plus un onglet Admin avec le lien vers le tableau de bord.
+- Paramètres : « Son » (deux curseurs, Musique et Bruitages, voir plus bas), « Installer le jeu » (bouton Installer quand le navigateur le permet, sinon la marche à suivre ; la carte disparaît quand le jeu est ouvert depuis l'appli installée) et « Partager le jeu » (« Partager le lien » ouvre le partage du téléphone, ou copie le lien sur ordinateur ; « QR code » l'affiche en grand pour le faire scanner à un voisin). Les téléphones connectés en admin ont en plus un onglet Admin avec le lien vers le tableau de bord.
 - Pop-up « Installe le jeu » : une seule fois par téléphone, sur l'accueil, une fois le pseudo choisi. Sur Android, bouton Installer ; sur iPhone, la marche à suivre (pas de bouton possible). Jamais si le jeu est déjà installé.
 
 ## Musique
@@ -270,6 +270,8 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 | Nouveau record | Quick win video game notification (269) | `record.mp3` | 1 |
 | Passer 1er | Successful horns fanfare (722) | `first.mp3` | 1 |
 
+- Curseurs de volume dans Paramètres, carte « Son » (demande d'Adrien, 29/10/2026) : Musique et Bruitages, de 0 à 100 %, gardés sur le téléphone (100 % par défaut). En lâchant le curseur, on entend 2 s de musique (à partir de 30 s du morceau) ou le son « Nouveau record ». Monter un curseur rallume le son s'il était coupé par le bouton rond.
+  - Sur iPhone, le navigateur bloque le volume d'un lecteur audio : la musique passe alors par Web Audio avec son propre réglage de volume (détecté tout seul, rien ne change sur Android et ordinateur). À vérifier sur un iPhone.
 - Volumes égalisés à la mesure : « Retro arcade lose » était près de 3 fois plus fort que les autres. Un seul frôlé part toutes les 0,08 s au plus.
 - 29/10/2026 : « Arrow whoosh » retiré (moins satisfaisant), « Dagger woosh » gardé seul à son volume d'origine, qu'Adrien trouve très bon. Mesuré : les frôlements sont aussi fréquents qu'avant, 5 à 6 par minute de jeu.
 - Le jeu attend la réponse du serveur (1,2 s au plus) pour savoir s'il joue le record ou la 1re place.

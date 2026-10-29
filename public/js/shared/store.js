@@ -4,6 +4,8 @@ export const KEYS = {
   localBest: "cv-best-cs",
   musicOff: "cv-muted",
   sfxOff: "cv-sfx-off",
+  musicVolume: "cv-music-vol",
+  sfxVolume: "cv-sfx-vol",
   adminToken: "cqc-admin-token",
   installAsked: "cv-install-asked",
   lastReload: "cv-reload"

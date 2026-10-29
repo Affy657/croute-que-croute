@@ -12,11 +12,20 @@ const SOUNDS = {
 };
 const SFX_GAP = { near: 0.08 };
 const VOLUME = 0.6, FADE_MS = 500, DRIFT = 0.35, SFX_VOLUME = 1, SFX_LATE_MS = 300;
+const PREVIEW_AT = 30, PREVIEW_MS = 2000;
 
-export const prefs = { music: store.get(KEYS.musicOff) !== "1", sfx: store.get(KEYS.sfxOff) !== "1" };
+function level(key) {
+  const raw = store.get(key), v = Number(raw);
+  return raw === null || !Number.isFinite(v) ? 1 : Math.min(1, Math.max(0, v / 100));
+}
+
+export const prefs = {
+  music: store.get(KEYS.musicOff) !== "1", sfx: store.get(KEYS.sfxOff) !== "1",
+  musicLevel: level(KEYS.musicVolume), sfxLevel: level(KEYS.sfxVolume)
+};
 const listeners = [];
-let el = null, live = false, primed = false, running = false, runTime = 0, fadeTimer = null;
-let ctx = null, master = null;
+let el = null, live = false, primed = false, running = false, runTime = 0, fadeTimer = null, previewTimer = null;
+let ctx = null, master = null, musicGain = null;
 const buffers = {}, lastPlayed = {};
 
 export const musicAvailable = () => !!el;
@@ -31,14 +40,39 @@ export async function initAudio() {
         el = new Audio(url);
         el.loop = true;
         el.preload = "auto";
-        el.volume = VOLUME;
         el.addEventListener("playing", () => { live = true; });
         for (const name of ["pause", "waiting", "ended"]) el.addEventListener(name, () => { live = false; });
+        if (ctx && !volumeWorks()) routeMusic();
+        el.volume = musicVolume();
         break;
       }
     } catch (e) {}
   }
   changed();
+}
+
+function volumeWorks() {
+  const probe = new Audio();
+  probe.volume = 0.5;
+  return Math.abs(probe.volume - 0.5) < 0.01;
+}
+
+function routeMusic() {
+  try {
+    musicGain = ctx.createGain();
+    musicGain.gain.value = prefs.musicLevel;
+    ctx.createMediaElementSource(el).connect(musicGain).connect(ctx.destination);
+  } catch (e) {
+    musicGain = null;
+  }
+}
+
+const musicVolume = () => VOLUME * (musicGain ? 1 : prefs.musicLevel);
+
+function applyLevels() {
+  if (master) master.gain.value = SFX_VOLUME * prefs.sfxLevel;
+  if (musicGain) musicGain.gain.value = prefs.musicLevel;
+  if (el && !fadeTimer) el.volume = musicVolume();
 }
 
 function stopFade() {
@@ -49,7 +83,7 @@ function stopFade() {
 function playAt(t) {
   stopFade();
   el.muted = false;
-  el.volume = VOLUME;
+  el.volume = musicVolume();
   el.currentTime = el.duration ? t % el.duration : t;
   el.play().catch(() => {});
 }
@@ -66,7 +100,7 @@ function fadeOut() {
     }
     stopFade();
     el.pause();
-    el.volume = VOLUME;
+    el.volume = musicVolume();
   }, 30);
 }
 
@@ -81,7 +115,7 @@ function ensureContext() {
   limiter.attack.value = 0.002;
   limiter.release.value = 0.1;
   master = ctx.createGain();
-  master.gain.value = SFX_VOLUME;
+  master.gain.value = SFX_VOLUME * prefs.sfxLevel;
   master.connect(limiter).connect(ctx.destination);
   for (const { url } of Object.values(SOUNDS).flat()) {
     fetch(url)
@@ -105,7 +139,7 @@ export function unlockAudio() {
   el.muted = true;
   el.play().then(
     () => {
-      if (!running) el.pause();
+      if (el.muted) el.pause();
       el.muted = false;
     },
     () => {
@@ -158,6 +192,29 @@ export function toggleSfx() {
   prefs.sfx = !prefs.sfx;
   store.set(KEYS.sfxOff, prefs.sfx ? null : "1");
   changed();
+}
+
+export function setLevel(kind, value) {
+  const v = Math.min(1, Math.max(0, value));
+  if (kind === "music") {
+    prefs.musicLevel = v;
+    store.set(KEYS.musicVolume, Math.round(v * 100));
+    if (v > 0 && !prefs.music) toggleMusic();
+  } else {
+    prefs.sfxLevel = v;
+    store.set(KEYS.sfxVolume, Math.round(v * 100));
+    if (v > 0 && !prefs.sfx) toggleSfx();
+  }
+  applyLevels();
+}
+
+export function previewMusic() {
+  if (!el || running || !prefs.music) return;
+  ensureContext();
+  if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
+  playAt(PREVIEW_AT);
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(() => { if (!running) fadeOut(); }, PREVIEW_MS);
 }
 
 function fire(name) {
