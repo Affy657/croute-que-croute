@@ -20,3 +20,8 @@ export async function safeEqual(a: string, b: string) {
   ]);
   return crypto.subtle.timingSafeEqual(x, y);
 }
+
+export const HASH_LENGTH = 64;
+
+export const matchesSecret = async (raw: string, stored: string) =>
+  safeEqual(stored.length === HASH_LENGTH ? await sha256(raw) : raw, stored);

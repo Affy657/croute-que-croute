@@ -1,8 +1,8 @@
 import { json, fail, readJson, clientIp, outdated, updateRequired, tooFast, allowed } from "../http";
-import { randomToken, safeEqual } from "../security";
+import { randomToken, sha256, matchesSecret } from "../security";
 import { cleanPseudo, pseudoKey, cleanClientId } from "../validate";
 import {
-  events, openEventNow, eventById, findProfile, entryBest, generalRanking, eventRanking, forgetCaches, rankIn,
+  events, openEventNow, eventById, findProfile, entryBest, generalRanking, generalCount, generalRank, eventRanking, forgetCaches, rankIn,
   type EventRow, type Profile, type Ranked,
 } from "../db";
 import type { Ctx } from "../router";
@@ -32,16 +32,19 @@ export async function board({ req, env }: Ctx) {
   const now = Date.now();
   const [view, me, general] = await Promise.all([events(env, now), findProfile(req, env), generalRanking(env)]);
   const shown = view.open ?? view.recent;
-  const [eventList, eventMine] = shown
-    ? await Promise.all([eventRanking(env, shown.id), me ? entryBest(env, shown.id, me.id) : 0])
-    : [null, 0];
+  const [eventList, eventMine, count, rank] = await Promise.all([
+    shown ? eventRanking(env, shown.id) : null,
+    shown && me ? entryBest(env, shown.id, me.id) : 0,
+    generalCount(env, general),
+    me && !me.banned ? generalRank(env, general, me.id, me.best, me.best_at) : null,
+  ]);
   return json({
     now,
     version: env.APP_VERSION,
     event: view.open ? eventInfo(view.open, "open") : eventInfo(view.recent, "closed"),
     next: eventInfo(view.next, "upcoming"),
     top: topOf(general, me),
-    count: general.length,
+    count,
     eventTop: eventList ? topOf(eventList, me) : [],
     eventCount: eventList ? eventList.length : 0,
     me: me
@@ -49,7 +52,7 @@ export async function board({ req, env }: Ctx) {
           pseudo: me.pseudo,
           best: me.best,
           runs: me.run_count,
-          rank: me.banned ? null : rankIn(general, me.id),
+          rank,
           eventBest: eventMine,
           eventRank: me.banned || !eventList ? null : rankIn(eventList, me.id),
           banned: !!me.banned,
@@ -74,11 +77,11 @@ export async function feed({ env }: Ctx) {
          WHERE e.event_id = ?1 AND e.best > 0 AND e.best_at > ?2 AND p.banned = 0 ORDER BY e.best_at DESC LIMIT ?3`,
       ).bind(view.open.id, since, FEED_SIZE)
     : env.DB.prepare(
-        `SELECT pseudo, best AS score, best_at AS at FROM profiles
+        `SELECT pseudo, best AS score, best_at AS at FROM profiles INDEXED BY profiles_best_at
          WHERE best > 0 AND best_at > ?1 AND banned = 0 ORDER BY best_at DESC LIMIT ?2`,
       ).bind(since, FEED_SIZE);
   const joins = env.DB.prepare(
-    `SELECT pseudo, created_at AS at FROM profiles WHERE created_at > ?1 AND banned = 0 ORDER BY created_at DESC LIMIT ?2`,
+    `SELECT pseudo, created_at AS at FROM profiles INDEXED BY profiles_joined WHERE created_at > ?1 AND banned = 0 ORDER BY created_at DESC LIMIT ?2`,
   ).bind(since, FEED_SIZE);
   const [b, j] = await Promise.all([bests.all<FeedRow>(), joins.all<FeedRow>()]);
   const items = [
@@ -98,19 +101,21 @@ export async function join({ req, env }: Ctx) {
   if (!pseudo) return fail(400, BAD_PSEUDO);
   const clientId = cleanClientId(body.clientId);
   const key = pseudoKey(pseudo);
-  const taken = await env.DB.prepare("SELECT pseudo, token, client_id FROM profiles WHERE pseudo_key = ?")
+  const taken = await env.DB.prepare("SELECT id, pseudo, client_id FROM profiles WHERE pseudo_key = ?")
     .bind(key)
-    .first<{ pseudo: string; token: string; client_id: string | null }>();
+    .first<{ id: string; pseudo: string; client_id: string | null }>();
+  const token = randomToken();
+  const [tokenHash, clientHash] = await Promise.all([sha256(token), clientId ? sha256(clientId) : null]);
   if (taken) {
-    if (clientId && taken.client_id && (await safeEqual(clientId, taken.client_id))) {
-      return json({ token: taken.token, pseudo: taken.pseudo });
+    if (clientId && taken.client_id && (await matchesSecret(clientId, taken.client_id))) {
+      await env.DB.prepare("UPDATE profiles SET token = ?, client_id = ? WHERE id = ?").bind(tokenHash, clientHash, taken.id).run();
+      return json({ token, pseudo: taken.pseudo });
     }
     return fail(409, "Ce pseudo est déjà pris.");
   }
-  const token = randomToken();
   try {
     await env.DB.prepare("INSERT INTO profiles (id, pseudo, pseudo_key, token, client_id, created_at) VALUES (?, ?, ?, ?, ?, ?)")
-      .bind(crypto.randomUUID(), pseudo, key, token, clientId, Date.now())
+      .bind(crypto.randomUUID(), pseudo, key, tokenHash, clientHash, Date.now())
       .run();
   } catch (e) {
     if (String(e).includes("UNIQUE")) return fail(409, "Ce pseudo est déjà pris.");
@@ -151,17 +156,23 @@ export async function startRun({ req, env }: Ctx) {
   return json({ runId, event: !!event }, 201);
 }
 
-async function standing(env: Env, me: Profile, eventId: number | null, best: number, improved: boolean, eventBest: number, eventImproved: boolean) {
+async function standing(
+  env: Env, me: Profile, eventId: number | null, best: number, bestAt: number | null, improved: boolean, eventBest: number, eventImproved: boolean,
+) {
   if (improved || eventImproved) forgetCaches();
   const [general, eventList] = await Promise.all([
     generalRanking(env, improved),
     eventId ? eventRanking(env, eventId, eventImproved) : Promise.resolve(null),
   ]);
+  const [rank, count] = await Promise.all([
+    me.banned ? null : generalRank(env, general, me.id, best, bestAt),
+    generalCount(env, general, improved),
+  ]);
   return {
     best,
     improved,
-    rank: me.banned ? null : rankIn(general, me.id),
-    count: general.length,
+    rank,
+    count,
     eventBest: eventId ? eventBest : null,
     eventImproved,
     eventRank: me.banned || !eventList ? null : rankIn(eventList, me.id),
@@ -184,14 +195,14 @@ export async function finishRun({ req, env, params }: Ctx) {
   const mine = () => (eventId ? entryBest(env, eventId, me.id) : Promise.resolve(0));
   if (run.finished_at) {
     if (run.score !== score) return fail(409, "Partie déjà enregistrée.");
-    return json(await standing(env, me, eventId, me.best, false, await mine(), false));
+    return json(await standing(env, me, eventId, me.best, me.best_at, false, await mine(), false));
   }
   const elapsed = now - run.started_at;
   if (score * 10 > elapsed + SLACK_MS) return fail(422, "Score refusé.");
   const saved = await env.DB.prepare("UPDATE runs SET finished_at = ?, score = ? WHERE id = ? AND finished_at IS NULL")
     .bind(now, score, run.id)
     .run();
-  if (!saved.meta.changes) return json(await standing(env, me, eventId, me.best, false, await mine(), false));
+  if (!saved.meta.changes) return json(await standing(env, me, eventId, me.best, me.best_at, false, await mine(), false));
   const statements = [
     env.DB.prepare("UPDATE profiles SET run_count = run_count + 1 WHERE id = ?").bind(me.id),
     env.DB.prepare("UPDATE profiles SET best = ?1, best_at = ?2, best_elapsed = ?3 WHERE id = ?4 AND best < ?1 AND banned = 0")
@@ -210,5 +221,5 @@ export async function finishRun({ req, env, params }: Ctx) {
   const improved = !me.banned && results[1].meta.changes > 0;
   const eventImproved = !!eventId && !me.banned && results[3].meta.changes > 0;
   const eventBest = eventImproved ? score : await mine();
-  return json(await standing(env, me, eventId, improved ? score : me.best, improved, eventBest, eventImproved));
+  return json(await standing(env, me, eventId, improved ? score : me.best, improved ? now : me.best_at, improved, eventBest, eventImproved));
 }
