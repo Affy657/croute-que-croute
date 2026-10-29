@@ -3,6 +3,7 @@ import { randomToken, sha256, matchesSecret } from "../security";
 import { cleanPseudo, pseudoKey, cleanClientId } from "../validate";
 import {
   events, openEventNow, eventById, findProfile, entryBest, generalRanking, generalCount, generalRank, eventRanking, forgetCaches, rankIn,
+  promoteGeneral, promoteEvent,
   type EventRow, type Profile, type Ranked,
 } from "../db";
 import type { Ctx } from "../router";
@@ -30,7 +31,8 @@ const topOf = (list: Ranked[], me: Profile | null) =>
 
 export async function board({ req, env }: Ctx) {
   const now = Date.now();
-  const [view, me, general] = await Promise.all([events(env, now), findProfile(req, env), generalRanking(env)]);
+  const [view, me] = await Promise.all([events(env, now), findProfile(req, env)]);
+  const general = await generalRanking(env, !!view.open);
   const shown = view.open ?? view.recent;
   const [eventList, eventMine, count, rank] = await Promise.all([
     shown ? eventRanking(env, shown.id) : null,
@@ -159,14 +161,15 @@ export async function startRun({ req, env }: Ctx) {
 async function standing(
   env: Env, me: Profile, eventId: number | null, best: number, bestAt: number | null, improved: boolean, eventBest: number, eventImproved: boolean,
 ) {
-  if (improved || eventImproved) forgetCaches();
+  if (improved) promoteGeneral({ id: me.id, pseudo: me.pseudo, best });
+  if (eventId && eventImproved) promoteEvent(eventId, { id: me.id, pseudo: me.pseudo, best: eventBest });
   const [general, eventList] = await Promise.all([
-    generalRanking(env, improved),
-    eventId ? eventRanking(env, eventId, eventImproved) : Promise.resolve(null),
+    generalRanking(env, !!eventId),
+    eventId ? eventRanking(env, eventId) : Promise.resolve(null),
   ]);
   const [rank, count] = await Promise.all([
     me.banned ? null : generalRank(env, general, me.id, best, bestAt),
-    generalCount(env, general, improved),
+    generalCount(env, general, improved && !me.best),
   ]);
   return {
     best,

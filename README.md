@@ -257,7 +257,7 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
   - Fin de partie avec un nouveau record : le temps rebondit et une gerbe de confettis part du score.
   - Fin de partie avec la 1re place confirmée par le serveur : le badge devient « N°1 ! » en jaune, grosse gerbe dorée et pluie de confettis sur tout l'écran, en plus de la fanfare.
   - Les confettis sont dessinés par `public/js/app/party.js` sur un calque au-dessus de tout (`#party`), qui ne bloque pas les doigts. Rien ne bouge si le téléphone demande moins d'animations.
-- Classement : deux onglets, Soirée et Général (Tous les temps). Top 50, ta ligne en jaune, mis à jour toutes les 10 s (le serveur garde le classement 10 s, donc jusqu'à 20 s de retard sur les autres joueurs ; ta place après une partie est à jour tout de suite). L'onglet Soirée n'existe que pendant une soirée et les 12 h qui suivent.
+- Classement : deux onglets, Soirée et Général (Tous les temps). Top 50, ta ligne en jaune, mis à jour toutes les 10 s (le serveur garde le classement 10 s, donc jusqu'à 20 s de retard sur les autres joueurs ; pendant une soirée, il garde le Général 60 s, donc jusqu'à 70 s sur cet onglet ; ta place après une partie est à jour tout de suite). Écran éteint ou jeu en arrière-plan, le jeu ne demande plus rien au serveur, ni ici ni sur l'accueil (toutes les 30 s sinon) : il se remet à jour au retour (29/10/2026, pour ménager le quota de requêtes). L'onglet Soirée n'existe que pendant une soirée et les 12 h qui suivent.
 - Bulle d'info (bouton rond « i » en bas à droite, sur l'accueil et la fin de partie) : onglets Attaques (progression : la liste des étapes avec leur temps, sans résumé au-dessus depuis le 29/10/2026 car il répétait la liste ; règles, chaque attaque avec ses infos et un aperçu animé en boucle ; depuis le 29/10/2026 les infos sont en mots de joueur : « Arrive » (dès le début, à 6 s…), « Fréquence » vers 60 s (très souvent, souvent, parfois, rarement), « Vitesse » (lente, moyenne, rapide, très rapide), « Répit après » (court, moyen, long), à la place des px/s et coefficients ; la progression dit « les attaques s'enchaînent au rythme le plus rapide » et « les couverts sont au plus vite ») Armes (carte « Taille réelle » : tous les ustensiles et la tartine à leur taille réelle sur cet écran, avec leur zone de touche, puis les variantes rares) et Crédits (deux cartes au même format que les Paramètres : titre, une ligne de texte, un bouton « Écouter sur Spotify » ou « Voir Mixkit »). Depuis le 29/10/2026, plus de mention « En jeu » (badges des attaques, titre et tailles des armes) : seuls les prototypes, visibles par les admins, gardent leur badge. Toute la page défile, comme une page web ; le titre « Infos » et les onglets forment un en-tête collé tout en haut de l'écran (sans espace où la page défilerait au-dessus), avec la croix pour fermer à côté du titre, et « Retour » est tout en bas. Succès et Paramètres ont le même en-tête collé. Les règles sont écrites avec des mots de joueur (plus de « solveur » ni de formule).
 - Police : Bungee partout, chargée depuis Google Fonts.
 - Deux boutons ronds, cachés pendant la partie et dans la page d'info : la note de musique en haut à gauche coupe ou remet la musique, le haut-parleur en haut à droite coupe ou remet les bruitages. Chaque choix est mémorisé sur le téléphone.
@@ -402,7 +402,7 @@ Décidé par Adrien le 29/10/2026 :
 - Un score renvoyé deux fois (réseau qui coupe) est compté une seule fois, sans message d'erreur.
 - Pas de compte : le téléphone garde un jeton. Le même téléphone qui reprend son pseudo retrouve son compte, avec un jeton neuf (l'ancien ne marche plus).
 - Jetons hachés (29/10/2026) : le jeton et l'identifiant du téléphone sont rangés en base sous forme hachée (SHA-256), comme les connexions admin. Une copie de la base ne permet donc pas de jouer à la place de quelqu'un. Les jetons d'avant sont hachés à leur première utilisation, l'identifiant du téléphone à la réinscription. Un autre navigateur (Safari puis appli installée sur iPhone) oblige à prendre un nouveau pseudo.
-- Limites contre les abus : 150 inscriptions par minute et par adresse IP (montée de 30 à 150 le 29/10/2026 : tout le lieu partage souvent la même adresse sur le wifi, et le rush du début aurait bloqué le 31e), 30 tentatives de connexion admin par minute et par adresse IP (limite à part, `ADMIN_LIMIT`), 10 débuts de partie par 10 s et par joueur, 5 changements de pseudo par minute et par joueur (`RENAME_LIMIT`).
+- Limites contre les abus : 150 inscriptions par minute et par adresse IP (montée de 30 à 150 le 29/10/2026 : tout le lieu partage souvent la même adresse sur le wifi, et le rush du début aurait bloqué le 31e), 30 tentatives de connexion admin par minute et par adresse IP, clé admin envoyée directement à l'API comprise (limite à part, `ADMIN_LIMIT` ; la clé directe y est soumise depuis le 29/10/2026, seuls les tests l'utilisent), 10 débuts de partie par 10 s et par joueur, 5 changements de pseudo par minute et par joueur (`RENAME_LIMIT`).
 - Faille connue : quelqu'un d'habile peut lancer une partie, attendre, puis envoyer un faux score plausible. Parade actuelle : les records de 90 s et plus sont signalés dans l'admin (bandeau rouge), on retire le joueur si besoin. Un faux score plus modeste (par exemple 60 s) passe inaperçu. Parade complète possible : rejouer la partie à partir des gestes enregistrés (voir « À faire »).
 
 ## Check-list d'une soirée
@@ -418,7 +418,7 @@ Pendant :
 
 - Surveiller le bandeau rouge « à vérifier » dans Croûte Admin et retirer le joueur si besoin.
 - Repousser l'heure de fin si la soirée glisse.
-- Ne rien mettre en ligne pendant la soirée : chaque téléphone devrait recharger le jeu avant sa partie suivante (les parties en cours sont quand même comptées).
+- Ne rien mettre en ligne pendant la soirée : chaque téléphone devrait recharger le jeu avant sa partie suivante (les parties en cours sont quand même comptées). Le script de mise en ligne refuse tant que la soirée est ouverte.
 
 Après :
 
@@ -429,11 +429,13 @@ Après :
 - Hébergement : Cloudflare, offre gratuite, compte d'Adrien. Coût : 0 €.
 - Workers pour le site et l'API, base D1 (SQLite) en Europe de l'Ouest.
 - Limites gratuites par jour : 100 000 requêtes, 5 millions de lignes lues et 100 000 lignes écrites en base. Au-delà, l'API répond en erreur jusqu'à 1 h du matin (minuit UTC).
-- Pour tenir ces limites (revu le 29/10/2026) : chaque copie du serveur garde le classement 10 s en mémoire, le rythme des téléphones. Chaque joueur garde son nombre de parties (pas de comptage sur toutes les parties). Chaque requête passe par un index, y compris le fil de l'écran géant (migration `0005_index_fil.sql` : il lit 6 lignes au lieu de tous les profils).
-- Coût : une partie fait environ 5 à 7 lignes écrites. Une consultation du classement lit 2 lignes, plus un recalcul de toute la liste (environ 3 lignes par joueur de la soirée) au plus toutes les 10 s par copie du serveur et à chaque nouveau record.
-- Estimation pour 150 joueurs sur 5 h (30 parties chacun) : environ 45 000 requêtes, 20 000 à 35 000 lignes écrites et 2 à 3 millions de lignes lues si Cloudflare lance 1 ou 2 copies du serveur. On ne choisit pas ce nombre de copies : vérifier après une soirée dans le tableau de bord Cloudflare, D1, onglet Metrics, courbe « Rows read ».
-- Classement général : le serveur garde en mémoire les 1 000 premiers. Au-delà, la place se calcule en comptant les joueurs devant (index `profiles_board`), et le nombre de joueurs par un comptage gardé 10 s. Vérifié en local avec 1 012 joueurs.
+- Pour tenir ces limites (revu le 29/10/2026) : chaque copie du serveur garde le classement 10 s en mémoire, le rythme des téléphones, et le Général 60 s pendant une soirée (les téléphones affichent alors surtout la soirée). Un record met à jour la liste en mémoire au lieu de la relire. Chaque joueur garde son nombre de parties (pas de comptage sur toutes les parties). Chaque requête passe par un index, y compris le fil de l'écran géant (migration `0005_index_fil.sql` : il lit 6 lignes au lieu de tous les profils).
+- Coût : une partie fait environ 5 à 7 lignes écrites. Une consultation du classement lit 2 lignes, plus un recalcul de toute la liste (environ 3 lignes par joueur de la soirée, 1 par joueur du général) au plus toutes les 10 s par copie du serveur (60 s pour le général pendant une soirée). Un nouveau record ne relit plus rien (29/10/2026 : avant, chaque record relisait les deux classements, et le coût aurait grimpé avec la taille du général).
+- Estimation pour 150 joueurs sur 5 h (30 parties chacun) : au plus 45 000 requêtes (moins depuis que les téléphones en veille ne demandent plus rien), 20 000 à 35 000 lignes écrites et 1 à 2 millions de lignes lues si Cloudflare lance 1 ou 2 copies du serveur, 2,5 millions au plus quand le général aura 1 000 joueurs. Ce sont des estimations, pas des mesures. On ne choisit pas ce nombre de copies : vérifier après une soirée dans le tableau de bord Cloudflare, D1, onglet Metrics, courbe « Rows read ».
+- Classement général : le serveur garde en mémoire les 1 000 premiers. Au-delà, la place se calcule en comptant les joueurs devant (index `profiles_board`), et le nombre de joueurs par un comptage gardé 10 s, refait quand un nouveau joueur entre au général. Vérifié en local avec 1 012 joueurs.
 - Non retenu (29/10/2026) : un cache partagé entre les copies du serveur (Durable Object). Il a son propre quota gratuit de 100 000 appels par jour, à peu près ce qu'une soirée consomme.
+- Non retenu (29/10/2026) : partager une lecture en cours entre deux demandes, pour éviter deux relectures du classement au même instant. La doc Cloudflare limite ce qu'une demande peut réutiliser d'une autre (« Cannot perform I/O on behalf of a different request ») : risque d'erreurs difficiles à reproduire, pour un gain faible.
+- Journaux (29/10/2026) : les erreurs du serveur sont gardées 3 jours dans le tableau de bord Cloudflare, page du Worker `croute-que-croute` (réglage `observability` dans `wrangler.jsonc`). Gratuit jusqu'à 200 000 lignes par jour, une soirée en fait au plus 45 000 (une par requête). En direct : `npx wrangler tail`.
 - En-têtes de sécurité sur toutes les pages (`public/_headers`) : pas de script externe, pas d'affichage dans un cadre d'un autre site.
 - Jeu en JavaScript sans compilation, API en TypeScript (compilée par wrangler).
 
@@ -470,10 +472,10 @@ Après :
 | `src/worker.ts` | Entrée de l'API et liste des routes |
 | `src/routes/player.ts`, `src/routes/admin.ts` | Routes joueurs et admin |
 | `src/router.ts` | Aiguillage des routes et contrôle admin / propriétaire |
-| `src/db.ts` | Lectures communes, classement gardé 10 s en mémoire, place au-delà des 1 000 premiers, jetons hachés |
+| `src/db.ts` | Lectures communes, classement gardé 10 s en mémoire (le général 60 s pendant une soirée) et mis à jour sur place à chaque record, place au-delà des 1 000 premiers, jetons hachés |
 | `src/http.ts`, `security.ts`, `validate.ts` | Réponses, limites de requêtes, jetons, contrôle des pseudos |
 | `migrations/` | Schéma de la base |
-| `scripts/deploy.mjs` | Déploiement avec numéro de version |
+| `scripts/deploy.mjs` | Déploiement avec numéro de version et garde-fous |
 | `test/fairness.mjs` | Test du solveur avec le robot |
 | `test/player.mjs`, `test/admin.mjs` | Tests de l'API joueurs et admin |
 | `qr/` | QR codes (stylé et simple), générés par `scripts/qr.mjs` |
@@ -485,7 +487,7 @@ Après :
 | `npm run dev` | Jeu en local sur http://localhost:8787, admin avec la clé de `.dev.vars` |
 | `npm test` | Robot du solveur, 0 mort attendu (environ 4 min) |
 | `npm run check` | Vérifier les types de l'API |
-| `npm run deploy` | Mettre en ligne avec une nouvelle version (les téléphones se mettent à jour seuls) |
+| `npm run deploy` | Mettre en ligne avec une nouvelle version (les téléphones se mettent à jour seuls). Refuse si des changements ne sont pas dans git, si une migration n'est pas appliquée en ligne (`npm run db:remote` d'abord) ou si une soirée est ouverte (`npm run deploy -- --pendant-soiree` pour une urgence) |
 | `npm run icons` | Regénérer les icônes de l'appli |
 | `npm run qr` | Regénérer les QR codes (stylé, simple et celui du jeu) |
 | `npm run test:api` | Tester l'API joueurs et admin (avec `npm run dev` lancé) |
@@ -551,7 +553,7 @@ Après :
 
 ## Bon à savoir
 
-- Base de prod vidée le 29/10/2026 après le changement d'adresse (pseudos, parties, Soirée test, connexions admin, invitations). Sauvegarde d'avant : `sauvegardes/prod-2026-10-29-avant-nettoyage.sql` (hors git, contient des jetons en clair : à garder pour soi ; les sauvegardes faites après le 29/10/2026 n'ont plus que des jetons hachés). Faire une sauvegarde : `npx wrangler d1 export croute-que-croute --remote --output sauvegardes/<nom>.sql`.
+- Base de prod vidée le 29/10/2026 après le changement d'adresse (pseudos, parties, Soirée test, connexions admin, invitations). Sauvegarde d'avant : `sauvegardes/prod-2026-10-29-avant-nettoyage.sql` (hors git, contient des jetons en clair : à garder pour soi ; les sauvegardes faites après le 29/10/2026 n'ont plus que des jetons hachés). Faire une sauvegarde : `npx wrangler d1 export croute-que-croute --remote --output sauvegardes/<nom>.sql`. Sans sauvegarde, la base se remet aussi à n'importe quel moment des 7 derniers jours (Time Travel de Cloudflare, inclus en gratuit) : `npx wrangler d1 time-travel restore croute-que-croute --timestamp=<heure unix>`. Ça écrase la base en ligne : faire d'abord une sauvegarde.
 - `cle-admin.txt` et `.dev.vars` ne sont pas dans git : à garder de côté. Les liens d'invitation non utilisés (`invitation-*.txt`) non plus.
 - wrangler est connecté au compte Cloudflare sur le PC d'Adrien (`npx wrangler whoami` pour vérifier).
 - Une fois la page chargée, le jeu tourne sans réseau. Le score ne compte que si le réseau passe au début de la partie. À la fin, l'envoi est tenace (29/10/2026) : 3 essais en 3 s, puis un essai toutes les 5 s pendant 2 min, avec « Envoi en attente… » sur l'écran de fin. Le score en attente est gardé sur le téléphone (`cv-score-attente`) : si on ferme le jeu, il est renvoyé au prochain lancement dans les 2 min. Chaque essai abandonne au bout de 8 s. Un score arrivé avec plus de 15 s de retard peut s'afficher « partie ralentie » dans l'admin : à juger au cas par cas.
