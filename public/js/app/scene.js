@@ -219,16 +219,18 @@ export function createScene(canvas, overlay) {
     fx.restore();
   }
 
-  function render({ clock, world, toast, splat, finger }) {
+  function render({ clock, world, toast, splat, finger, zoom }) {
     const { dpr, scale, ox, oy } = view;
+    const k = zoom && !reduceMotion ? zoom.k : 1;
+    const zx = k === 1 ? 0 : scale * zoom.x * (1 - k), zy = k === 1 ? 0 : scale * zoom.y * (1 - k);
     drawBackground(clock);
     const sx = shake ? rnd(-shake, shake) : 0;
     const sy = shake ? rnd(-shake, shake) : 0;
     fx.setTransform(1, 0, 0, 1, 0, 0);
     fx.clearRect(0, 0, overlay.width, overlay.height);
     drawFinger(finger, clock);
-    if (fieldA > 0) drawWarns(world, clock, sx, sy);
-    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * (oy + sy));
+    if (fieldA > 0 && !zoom) drawWarns(world, clock, sx, sy);
+    ctx.setTransform(dpr * scale * k, 0, 0, dpr * scale * k, dpr * (ox + sx + zx), dpr * (oy + sy + zy));
     if (fieldA > 0) {
       ctx.globalAlpha = fieldA * (1 - HEAT_FIELD * heat);
       ctx.fillStyle = C.field;
