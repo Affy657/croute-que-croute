@@ -476,7 +476,12 @@ Après :
 
 ## À faire
 
-- Reprendre les couleurs et la tartine de l'affiche numérique (Adrien envoie le fichier).
+- Reprendre les couleurs et la tartine des affiches. Fichiers reçus du designer le 29/10/2026 dans `affiches/` (hors du site en ligne) :
+  - `space-tartinade-1-2026-03-07.webp` : planète pancake avec pot de confiture, planète enceintes violette et verte, nébuleuse violette ;
+  - `space-tartinade-2-2026-05-09.webp` : planète verte à anneau, petites lunes vertes, tartine-fusée ;
+  - `space-tartinade-3-2026-11-07.webp` : affiche rétro de la 3e édition, île tête de mort, palmiers ;
+  - `tartine-fusee.webp` : la tartine-fusée seule, fond transparent, réutilisable telle quelle.
+  - Les affiches sont aplaties : pour reprendre une planète proprement, demander au designer le fichier séparé, comme pour la tartine.
 - Remplacer ou compléter la musique avec des morceaux des collègues DJ.
 - Inviter les collègues admins depuis Croûte Admin.
 - Créer la vraie soirée du samedi 07/11 sur `/admin`.
