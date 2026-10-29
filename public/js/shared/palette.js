@@ -20,6 +20,8 @@ export const PALETTE = {
   "trail-end": "rgba(255, 246, 224, 0)"
 };
 
+export const HEAT = ["#0d0b24", "#3c1268", "#7a1428"];
+
 export const SKY = {
   lit: "rgba(13, 11, 36, 0)",
   shade: "rgba(13, 11, 36, 0.72)",
