@@ -175,7 +175,7 @@ Après :
 
 ## En essai
 
-Onze idées codées sur la branche `essais`, en ligne mais pas encore sur `master`, une fusion par idée (`rival`, `frole-serie`, `entrainement`, `paliers`, `trainees`, `musique-etouffee`, `nouveau-n1`, `ciel-chaud`, `cicatrices`, `reglages-difficulte`, `murs-serie`). Adrien choisit lesquelles garder. Les autres sont retirées (`git revert -m 1` de leur fusion), puis `essais` est fusionnée dans `master` et ces lignes rangées dans les bonnes parties.
+Onze idées codées sur la branche `essais`, en ligne mais pas encore sur `master`, une ou plusieurs fusions par idée (`rival`, `frole-serie`, `entrainement`, `paliers`, `trainees`, `musique-etouffee`, `nouveau-n1`, `ciel-chaud`, `cicatrices`, `reglages-difficulte` avec `reglages-difficulte-2` et `fouet-tot`, `murs-serie` avec `murs-serie-2` et `solveur-long`). Adrien choisit lesquelles garder. Les autres sont retirées (`git revert -m 1` de leur fusion), puis `essais` est fusionnée dans `master` et ces lignes rangées dans les bonnes parties.
 
 - Rival : « Encore 1,21 s pour passer X » en fin de partie, X étant le joueur juste au-dessus (soirée pendant une soirée, général sinon). Rien si tu es 1er ou sans pseudo, et pas au-delà du 1 000e du général. Envoyé par le serveur dans `rival` et `eventRival`.
 - Série de frôlés : « Frôlé x2 », « Frôlé x3 »… quand ils s'enchaînent à moins de 1,5 s, avec un son plus aigu à chaque cran (6 au plus). Aucun effet sur le score.
@@ -186,8 +186,9 @@ Onze idées codées sur la branche `essais`, en ligne mais pas encore sur `maste
 - Écran géant : panneau « Nouveau n°1 » en grand pendant 6 s quand le 1er change.
 - Ciel qui chauffe : le fond passe du bleu nuit au violet vers 40 s, puis au rouge sombre à 80 s, au rythme de la vitesse des couverts. Il redevient bleu à l'accueil et au départ d'une partie (`HEAT` dans `palette.js`).
 - Cicatrices : chaque frôlé laisse une entaille dans la croûte, du côté où le couvert est passé, jusqu'à la fin de la partie (12 au plus). Aucun effet sur la zone de touche.
-- Réglages de difficulté : couteau visé moins fréquent (poids 2 au lieu de 3), éventail de 4 couteaux puis 5 dès 54 s (au lieu de 5 à 7), 2 hachoirs à la suite dès 30 s puis 3 dès 55 s, 2 rouleaux à la suite dès 36 s puis 3 dès 60 s.
-- Murs en série : dès 36 s, 2 murs d'affilée (3 dès 60 s), toujours du même côté ou du haut, chacun avec son trou. Chaque mur après le premier n'est annoncé que 0,7 s avant d'arriver (champ `notice` d'une annonce), pour que les pastilles ne se superposent pas.
+- Réglages de difficulté : couteau visé moins fréquent (poids 2 au lieu de 3), éventail de 4 couteaux puis 5 dès 54 s (au lieu de 5 à 7), 2 hachoirs à la suite dès 30 s puis 3 dès 55 s, 2 rouleaux à la suite dès 36 s puis 3 dès 60 s, un peu plus de répit après les hachoirs et les rouleaux, fouet dès 4 s au lieu de 28 s.
+- Murs en série : dès 36 s, 2 murs d'affilée (3 dès 60 s), toujours du même côté ou du haut, chacun avec son trou d'environ 120 px. Chaque mur après le premier n'est annoncé que 0,7 s avant d'arriver (champ `notice` d'une annonce), pour que les pastilles ne se superposent pas. La série joue seule : elle ne part que si aucune annonce n'est en cours (`calm` dans `ATTACKS`) et laisse un long répit derrière elle. Sans ça, le robot mourait 1 à 3 fois sur 100 parties.
+- Solveur : quand la nouvelle attaque dure plus de 3,5 s (série de murs, rouleaux), il vérifie jusqu'à 4,5 s.
 
 ## Idées pour plus tard
 
