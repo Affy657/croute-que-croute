@@ -35,8 +35,12 @@ main {
   gap: 16px;
 }
 
+.embedded {
+  overscroll-behavior: contain;
+}
+
 .embedded main {
-  padding: 0;
+  padding: 0 0 16px;
 }
 
 .embedded .top {

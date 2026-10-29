@@ -129,8 +129,8 @@ function progressionCard() {
   const steps = [];
   for (const a of ATTACKS.filter((x) => !x.lab)) steps.push([a.from, a.from ? "arrivée : " + a.name : a.name + " dès le début"]);
   for (const a of ATTACKS.filter((x) => !x.lab && x.growsUntil)) steps.push([a.growsUntil, a.growth]);
-  steps.push([gapEnd, `rythme maximal : une attaque toutes les ${String(GAP_MIN).replace(".", ",")} s au plus vite`]);
-  steps.push([speedEnd, `vitesse maximale : × ${num(SPEED_MAX)}`]);
+  steps.push([gapEnd, "les attaques s'enchaînent au rythme le plus rapide"]);
+  steps.push([speedEnd, `les couverts sont au plus vite, ${num(SPEED_MAX)} fois plus qu'au début`]);
   steps.sort((x, y) => x[0] - y[0]);
   const section = el("section", "card");
   const list = el("ol", "timeline");
@@ -187,6 +187,11 @@ function draw(p, clock) {
   ctx.restore();
 }
 
+const OFTEN = [[0.2, "très souvent"], [0.1, "souvent"], [0.06, "parfois"], [0, "rarement"]];
+const SPEED = [[260, "très rapide"], [200, "rapide"], [140, "moyenne"], [0, "lente"]];
+const BREAK = [[1.75, "long"], [1.25, "moyen"], [0, "court"]];
+const level = (value, steps) => steps.find(([min]) => value >= min)[1];
+
 function stat(label, value) {
   const row = el("div", "fact");
   row.append(el("span", "label", label), el("span", "value", value));
@@ -215,10 +220,10 @@ export function renderAttacks(root, { showLab = false } = {}) {
     const cv = canvas(FW * PREVIEW_SCALE, FH * PREVIEW_SCALE);
     const facts = el("div", "facts");
     facts.append(
-      stat("Dès", attack.lab ? "-" : `${attack.from} s`),
-      stat(`Chance à ${SAMPLE_T} s`, attack.lab ? "-" : `${Math.round((100 * attack.weight) / total)} %`),
-      stat("Vitesse de base", `${attack.speed} px/s`),
-      stat("Pause après", `× ${num(attack.cost)}`)
+      stat("Arrive", attack.lab ? "-" : attack.from ? `à ${attack.from} s` : "dès le début"),
+      stat("Fréquence", attack.lab ? "-" : level(attack.weight / total, OFTEN)),
+      stat("Vitesse", level(attack.speed, SPEED)),
+      stat("Répit après", level(attack.cost, BREAK))
     );
     const text = el("div", "attack-text");
     text.append(el("p", null, attack.info), facts);
