@@ -468,6 +468,38 @@ h2.page-title {
   touch-action: pan-x;
 }
 
+.rename {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.rename input {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 0.4em 0.7em;
+  border: 2px solid var(--mustard);
+  border-radius: 12px;
+  background: var(--void);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  -webkit-user-select: text;
+  user-select: text;
+  touch-action: manipulation;
+}
+
+.rename input:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.rename .ghost {
+  flex: none;
+  padding-inline: 0.9em;
+}
+
 a.ghost {
   display: inline-block;
   text-decoration: none;

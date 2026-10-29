@@ -81,6 +81,22 @@ check("autre score sur la même partie refusé", r.status === 409, r);
 r = await call("GET", "/api/board", { token });
 check("classements général et soirée : le joueur y est", r.status === 200 && r.data.me.best === 100 && r.data.me.eventBest === 100 && r.data.me.rank >= 1 && r.data.me.eventRank >= 1 && r.data.top.some((x) => x.me) && r.data.eventTop.some((x) => x.me), r.data.me);
 
+{
+  const other = "Test-" + hex(4), fresh = "Neuf-" + hex(4);
+  await call("POST", "/api/join", { body: { pseudo: other, clientId: hex(32) } });
+  r = await call("PATCH", "/api/me", { body: { pseudo: fresh } });
+  check("changer de pseudo sans jeton refusé", r.status === 401, r);
+  r = await call("PATCH", "/api/me", { token, body: { pseudo: other.toLowerCase() } });
+  check("changer pour un pseudo déjà pris refusé", r.status === 409, r);
+  r = await call("PATCH", "/api/me", { token, body: { pseudo: "x" } });
+  check("changer pour un pseudo invalide refusé", r.status === 400, r);
+  r = await call("PATCH", "/api/me", { token, body: { pseudo: fresh } });
+  const after = await call("GET", "/api/board", { token });
+  check("pseudo changé, record et place gardés", r.status === 200 && after.data.me.pseudo === fresh && after.data.me.best === 100 && after.data.top.some((x) => x.me && x.pseudo === fresh), after.data.me);
+  r = await call("PATCH", "/api/me", { token, body: { pseudo } });
+  check("retour à l'ancien pseudo, libre à nouveau", r.status === 200 && r.data.pseudo === pseudo, r);
+}
+
 r = await call("GET", "/api/admin/players", { key: KEY });
 const row = r.data.players.find((p) => p.pseudo === pseudo);
 check("admin : nombre de parties terminées", row && row.runs === 1 && row.suspect === null, row);

@@ -1,7 +1,8 @@
 import { store, KEYS } from "../shared/store.js";
 import { installMode, promptInstall, shouldSuggest, markSuggested, onInstallChange } from "./install.js";
 import { prefs, setLevel, previewMusic, previewSfx } from "./audio.js";
-import { ui } from "./screens.js";
+import { ui, setText } from "./screens.js";
+import { net, rename } from "./api.js";
 
 const FLASH_MS = 2000;
 const HINTS = {
@@ -21,6 +22,10 @@ export function renderSettings() {
   ui.settings.classList.toggle("admin-mode", tab === "admin");
   if (tab === "admin") mountAdmin();
   else leaveSettings();
+  const me = net.board && net.board.me;
+  ui.renameCard.hidden = !me;
+  if (me && document.activeElement !== ui.newPseudo) ui.newPseudo.value = me.pseudo;
+  setText(ui.renameNote, "");
   const mode = installMode();
   ui.installCard.hidden = mode === "installed";
   ui.installHint.textContent = HINTS[mode] || "";
@@ -39,6 +44,30 @@ function mountAdmin() {
 
 export function leaveSettings() {
   ui.settingsAdmin.replaceChildren();
+}
+
+function renameNote(text, error) {
+  setText(ui.renameNote, text);
+  ui.renameNote.classList.toggle("error", error);
+}
+
+async function renamePlayer(e) {
+  e.preventDefault();
+  const me = net.board && net.board.me, pseudo = ui.newPseudo.value.trim();
+  if (!me || !pseudo || pseudo === me.pseudo) return;
+  const button = ui.renameForm.querySelector("button");
+  button.disabled = true;
+  renameNote("", false);
+  try {
+    await rename(pseudo);
+    ui.newPseudo.value = net.board.me ? net.board.me.pseudo : pseudo;
+    ui.newPseudo.blur();
+    renameNote("C'est changé.", false);
+  } catch (err) {
+    renameNote(err.status ? err.message : "Pas de réseau, réessaie.", true);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function flash(button, text) {
@@ -88,6 +117,7 @@ ui.sfxVol.addEventListener("input", () => setLevel("sfx", ui.sfxVol.value / 100)
 ui.sfxVol.addEventListener("change", () => previewSfx("record"));
 ui.installBtn.addEventListener("click", promptInstall);
 ui.shareBtn.addEventListener("click", shareGame);
+ui.renameForm.addEventListener("submit", renamePlayer);
 ui.installYes.addEventListener("click", () => {
   closePop();
   promptInstall();
