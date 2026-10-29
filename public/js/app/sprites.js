@@ -202,7 +202,7 @@ function bread(ctx, o, C) {
 
 const PROJECTILE_SPRITES = { knife, fork, rolling, whisk, cleaver, bread };
 
-const TRAIL_MIN = 200, TRAIL_K = 0.2, TRAIL_MAX = 90;
+const TRAIL_MIN = 380, TRAIL_K = 0.25, TRAIL_MAX = 90;
 
 export function drawTrail(ctx, o, C = PALETTE) {
   const v = Math.hypot(o.vx, o.vy), len = Math.min(TRAIL_MAX, (v - TRAIL_MIN) * TRAIL_K);

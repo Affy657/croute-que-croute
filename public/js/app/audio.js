@@ -12,7 +12,7 @@ const SOUNDS = {
 };
 const SFX_GAP = { near: 0.08 };
 const VOLUME = 0.6, FADE_MS = 500, DRIFT = 0.35, SFX_VOLUME = 1, SFX_LATE_MS = 300;
-const MUFFLE_HZ = 380, MUFFLE_Q = 6, MUFFLE_IN_S = 0.12, MUFFLE_S = 0.5;
+const MUFFLE_HZ = 320, MUFFLE_Q = 6, MUFFLE_IN_S = 0.8, MUFFLE_FAR = 0.45, MUFFLE_S = 1.5, MUFFLE_FADE_S = 1;
 const PREVIEW_AT = 30, PREVIEW_MS = 2000;
 
 function level(key) {
@@ -110,22 +110,25 @@ function fadeOut(muffle = false) {
   if (!el || el.paused) return;
   stopFade();
   if (musicGain) {
-    const t = ctx.currentTime, hold = muffle ? MUFFLE_S : 0, { gain } = musicGain, { frequency, Q } = musicFilter;
+    const t = ctx.currentTime, { gain } = musicGain, { frequency, Q } = musicFilter, loud = gain.value;
     for (const p of [gain, frequency, Q]) {
       p.cancelScheduledValues(t);
       p.setValueAtTime(p.value, t);
     }
+    let end = t + FADE_MS / 1000;
     if (muffle) {
       frequency.exponentialRampToValueAtTime(MUFFLE_HZ, t + MUFFLE_IN_S);
       Q.linearRampToValueAtTime(MUFFLE_Q, t + MUFFLE_IN_S);
+      gain.linearRampToValueAtTime(loud * MUFFLE_FAR, t + MUFFLE_IN_S);
+      gain.setValueAtTime(loud * MUFFLE_FAR, t + MUFFLE_S);
+      end = t + MUFFLE_S + MUFFLE_FADE_S;
     }
-    gain.setValueAtTime(gain.value, t + hold);
-    gain.linearRampToValueAtTime(0, t + hold + FADE_MS / 1000);
+    gain.linearRampToValueAtTime(0, end);
     fadeTimer = setTimeout(() => {
       fadeTimer = null;
       el.pause();
       openMusic();
-    }, hold * 1000 + FADE_MS);
+    }, (end - t) * 1000);
     return;
   }
   const from = el.volume, t0 = performance.now();
