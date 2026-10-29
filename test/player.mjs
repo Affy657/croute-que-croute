@@ -83,7 +83,7 @@ check("classements général et soirée : le joueur y est", r.status === 200 && 
 
 r = await call("GET", "/api/admin/players", { key: KEY });
 const row = r.data.players.find((p) => p.pseudo === pseudo);
-check("admin : nombre de parties terminées", row && row.runs === 1 && typeof row.suspect === "boolean", row);
+check("admin : nombre de parties terminées", row && row.runs === 1 && row.suspect === null, row);
 
 let limited = 0;
 for (let i = 0; i < 25; i++) if ((await call("POST", "/api/runs", { token })).status === 429) limited++;
