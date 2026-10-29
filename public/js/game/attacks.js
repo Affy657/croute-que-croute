@@ -152,9 +152,9 @@ export const ATTACKS = [
   { id: "bread", name: "Couteau à pain", from: 38, weight: 0.7, cost: 1.2, speed: 240, make: bread,
     info: "Lancé d'un coin du haut, il rebondit sur le bord opposé puis file vers la tartine. Suivre la pointe de la pastille et anticiper le rebond." },
   { id: "corridor", name: "Couloir", solo: true, from: 46, weight: 0.6, cost: 2.2, speed: 150, make: corridor,
-    info: "Un mur par un côté, puis un mur par l'autre côté 0,7 s plus tard, chacun avec son trou (plus grand que pour un mur seul). Passer d'un trou à l'autre." },
+    info: "Un mur par un côté, puis un autre par l'autre côté juste après, chacun avec son trou (plus grand que pour un mur seul). Passer d'un trou à l'autre." },
   { id: "downpour", name: "Double pluie", solo: true, from: 54, weight: 0.6, cost: 1.8, speed: 190, make: downpour,
-    info: "5 à 9 fourchettes qui tombent tout droit, une toutes les 0,13 s, en alternant moitié gauche et moitié droite." }
+    info: "5 à 9 fourchettes tombent tout droit en rafale, une fois à gauche, une fois à droite." }
 ];
 
 export function pickAttack(t, rng, last = null, streak = 0) {
