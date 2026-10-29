@@ -1,9 +1,9 @@
 import { fmtCs, clock } from "../shared/format.js";
 import { rain, bounce } from "../app/party.js";
 
-const POLL_MS = 10000, ROWS = 10, FEED_ROWS = 4, IDLE_MS = 3000, SOON_MS = 24 * 3600 * 1000;
+const POLL_MS = 10000, ROWS = 10, FEED_ROWS = 4, IDLE_MS = 3000, SOON_MS = 24 * 3600 * 1000, CROWN_MS = 6000;
 const $ = (id) => document.getElementById(id);
-let board = null, offset = 0, shown = null, idleTimer = null, lock = null, seen = null;
+let board = null, offset = 0, shown = null, idleTimer = null, lock = null, seen = null, crownTimer = null;
 
 const now = () => Date.now() + offset;
 
@@ -31,6 +31,17 @@ function row(r) {
   return li;
 }
 
+function crown(r) {
+  const el = $("crown");
+  $("crownName").textContent = r.pseudo;
+  $("crownTime").textContent = fmtCs(r.best) + " s";
+  el.hidden = true;
+  void el.offsetWidth;
+  el.hidden = false;
+  clearTimeout(crownTimer);
+  crownTimer = setTimeout(() => { el.hidden = true; }, CROWN_MS);
+}
+
 function render() {
   const v = view();
   const top = v.top.slice(0, ROWS);
@@ -43,6 +54,7 @@ function render() {
     const first = top[0];
     if (first && shown.first && first.pseudo !== shown.first) {
       bounce(rows[0]);
+      crown(first);
       rain();
     }
   }
