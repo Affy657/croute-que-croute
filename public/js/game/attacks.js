@@ -2,6 +2,7 @@ import { FW, FH, M, clamp, speedMul } from "./field.js";
 import { projectile } from "./projectiles.js";
 
 const MAX_STREAK = 3, REPEAT_FACTOR = 0.5;
+const CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55;
 
 const inside = (p) => ({ x: clamp(p.x, 10, FW - 10), y: clamp(p.y, 10, FH - 10) });
 
@@ -89,7 +90,7 @@ function corridor(g) {
 
 function fan({ t, toast, pick }) {
   const p = pick([{ x: -M, y: -M }, { x: FW + M, y: -M }, { x: FW / 2, y: -M }, { x: -M, y: FH * 0.4 }, { x: FW + M, y: FH * 0.4 }]);
-  const n = 5 + Math.min(2, Math.floor((t - 24) / 20));
+  const n = t >= 54 ? 5 : 4;
   const spread = 0.9;
   const v = 200 * speedMul(t);
   const base = Math.atan2(toast.y - p.y, toast.x - p.x);
@@ -108,11 +109,19 @@ function cross({ t, toast, rnd }) {
   return starts.map((p) => aimedFrom(p, toast, at, v));
 }
 
+const rollingCount = (t) => (t >= 60 ? 3 : t >= 36 ? 2 : 1);
+
 function rolling({ t, rnd, pick }) {
-  const side = pick(["left", "right"]);
-  const dir = side === "left" ? 1 : -1;
-  const y = rnd(80, FH * 0.6), v = 110 * speedMul(t);
-  return [{ x: side === "left" ? 10 : FW - 10, y, a: dir > 0 ? 0 : Math.PI, at: t + 0.7, obs: [projectile("rolling", side === "left" ? -M : FW + M, y, dir * v, 0)] }];
+  const top = 80, range = FH * 0.6 - top, v = 110 * speedMul(t);
+  const items = [];
+  let y = rnd(top, top + range);
+  for (let i = 0; i < rollingCount(t); i++) {
+    const side = pick(["left", "right"]);
+    const dir = side === "left" ? 1 : -1;
+    items.push({ x: side === "left" ? 10 : FW - 10, y, a: dir > 0 ? 0 : Math.PI, at: t + 0.7 + i * ROLLING_GAP, obs: [projectile("rolling", side === "left" ? -M : FW + M, y, dir * v, 0)] });
+    y = top + ((y - top + rnd(60, range - 60)) % range);
+  }
+  return items;
 }
 
 function whisk({ t, toast, rng, rnd }) {
@@ -120,9 +129,17 @@ function whisk({ t, toast, rng, rnd }) {
   return [aimedFrom(p, toast, t + 0.7, 100 * speedMul(t), "whisk", 5 * (rng() < 0.5 ? -1 : 1))];
 }
 
-function cleaver({ t, toast, rnd }) {
-  const x = clamp(toast.x + rnd(-10, 10), 30, FW - 30);
-  return [{ x, y: 10, a: Math.PI / 2, at: t + 0.9, obs: [projectile("cleaver", x, -M, 0, 300 * speedMul(t))] }];
+const cleaverCount = (t) => (t >= 55 ? 3 : t >= 30 ? 2 : 1);
+
+function cleaver({ t, toast, rng, rnd }) {
+  const items = [];
+  let x = clamp(toast.x + rnd(-10, 10), 30, FW - 30);
+  for (let i = 0; i < cleaverCount(t); i++) {
+    items.push({ x, y: 10, a: Math.PI / 2, at: t + 0.9 + i * CLEAVER_GAP, obs: [projectile("cleaver", x, -M, 0, 300 * speedMul(t))] });
+    const step = rnd(70, 120) * (rng() < 0.5 ? -1 : 1);
+    x = clamp(x + step < 30 || x + step > FW - 30 ? x - step : x + step, 30, FW - 30);
+  }
+  return items;
 }
 
 function bread({ t, toast, pick }) {
@@ -133,18 +150,18 @@ function bread({ t, toast, pick }) {
 }
 
 export const ATTACKS = [
-  { id: "aimed", name: "Couteau visé", from: 0, weight: 3, cost: 1, speed: 230, make: aimed, growsUntil: 35, growth: "le couteau visé peut tourner sur lui-même",
+  { id: "aimed", name: "Couteau visé", from: 0, weight: 2, cost: 1, speed: 230, make: aimed, growsUntil: 35, growth: "le couteau visé peut tourner sur lui-même",
     info: "Un couteau lancé du haut ou d'un côté vers la tartine. Bouger pendant l'annonce suffit. Dès 35 s, une fois sur trois il tourne sur lui-même." },
   { id: "rain", name: "Pluie de fourchettes", from: 6, weight: 1.4, cost: 1.5, speed: 190, make: rain, growsUntil: 60, growth: "pluies au maximum (8 fourchettes)",
     info: "4 fourchettes (jusqu'à 8) tombent du haut l'une après l'autre, un peu en biais." },
-  { id: "cleaver", name: "Hachoir", from: 10, weight: 0.9, cost: 1.1, speed: 300, make: cleaver,
-    info: "Un hachoir tombe tout droit et très vite au-dessus de la tartine, annoncé 0,9 s avant. Quitter sa colonne." },
+  { id: "cleaver", name: "Hachoir", from: 10, weight: 0.9, cost: 1.1, speed: 300, make: cleaver, growsUntil: 55, growth: "3 hachoirs à la suite",
+    info: "Un hachoir tombe tout droit et très vite au-dessus de la tartine, annoncé 0,9 s avant. Quitter sa colonne. Dès 30 s, un deuxième suit dans une colonne voisine, un troisième dès 55 s." },
   { id: "wall", name: "Mur", from: 14, weight: 1.1, cost: 1.7, speed: 150, make: wall,
     info: "Une rangée serrée avec un seul trou, par le haut ou par un côté. Les pastilles d'annonce montrent déjà le trou." },
-  { id: "rolling", name: "Rouleau à pâtisserie", from: 18, weight: 0.8, cost: 1.3, speed: 110, make: rolling,
-    info: "Un gros rouleau debout traverse lentement l'écran par un côté : passer au-dessus ou en dessous." },
-  { id: "fan", name: "Éventail", from: 24, weight: 1.1, cost: 1.5, speed: 200, make: fan, growsUntil: 64, growth: "éventails au maximum (7 couteaux)",
-    info: "5 à 7 couteaux ouverts en cône depuis un même point, centrés sur la tartine. Il faut sortir du cône par le côté." },
+  { id: "rolling", name: "Rouleau à pâtisserie", from: 18, weight: 0.8, cost: 1.3, speed: 110, make: rolling, growsUntil: 60, growth: "3 rouleaux à la suite",
+    info: "Un gros rouleau debout traverse lentement l'écran par un côté : passer au-dessus ou en dessous. 2 rouleaux à la suite dès 36 s, 3 dès 60 s." },
+  { id: "fan", name: "Éventail", from: 24, weight: 1.1, cost: 1.5, speed: 200, make: fan, growsUntil: 54, growth: "éventails au maximum (5 couteaux)",
+    info: "4 à 5 couteaux ouverts en cône depuis un même point, centrés sur la tartine. Il faut sortir du cône par le côté." },
   { id: "whisk", name: "Fouet", from: 28, weight: 0.7, cost: 1.3, speed: 100, make: whisk,
     info: "Un fouet qui tourne sur lui-même descend lentement vers la tartine et occupe une grosse zone." },
   { id: "cross", name: "Croix", solo: true, from: 32, weight: 0.7, cost: 1.6, speed: 190, make: cross,
