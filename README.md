@@ -175,7 +175,7 @@ Après :
 
 ## En essai
 
-Onze idées codées sur la branche `essais`, en ligne mais pas encore sur `master`, une ou plusieurs fusions par idée (`rival`, `frole-serie`, `entrainement`, `paliers`, `trainees`, `musique-etouffee`, `nouveau-n1`, `ciel-chaud`, `cicatrices`, `reglages-difficulte` avec `reglages-difficulte-2` et `fouet-tot`, `murs-serie` avec `murs-serie-2` et `solveur-long`). Adrien choisit lesquelles garder. Les autres sont retirées (`git revert -m 1` de leur fusion), puis `essais` est fusionnée dans `master` et ces lignes rangées dans les bonnes parties.
+Douze idées codées sur la branche `essais`, en ligne mais pas encore sur `master`, une ou plusieurs fusions par idée (`rival`, `frole-serie`, `entrainement`, `paliers`, `trainees`, `musique-etouffee`, `nouveau-n1`, `ciel-chaud`, `cicatrices`, `reglages-difficulte` avec `reglages-difficulte-2` et `fouet-tot`, `murs-serie` avec `murs-serie-2` et `solveur-long`, `musique-coupee`). Adrien choisit lesquelles garder. Les autres sont retirées (`git revert -m 1` de leur fusion), puis `essais` est fusionnée dans `master` et ces lignes rangées dans les bonnes parties.
 
 - Rival : « Encore 1,21 s pour passer X » en fin de partie, X étant le joueur juste au-dessus (soirée pendant une soirée, général sinon). Rien si tu es 1er ou sans pseudo, et pas au-delà du 1 000e du général. Envoyé par le serveur dans `rival` et `eventRival`.
 - Série de frôlés : « Frôlé x2 », « Frôlé x3 »… quand ils s'enchaînent à moins de 1,5 s, avec un son plus aigu à chaque cran (6 au plus). Aucun effet sur le score.
@@ -189,6 +189,7 @@ Onze idées codées sur la branche `essais`, en ligne mais pas encore sur `maste
 - Réglages de difficulté : couteau visé moins fréquent (poids 2 au lieu de 3), éventail de 4 couteaux puis 5 dès 54 s (au lieu de 5 à 7), 2 hachoirs à la suite dès 30 s puis 3 dès 55 s, 2 rouleaux à la suite dès 36 s puis 3 dès 60 s, un peu plus de répit après les hachoirs et les rouleaux, fouet dès 4 s au lieu de 28 s.
 - Murs en série : dès 36 s, 2 murs d'affilée (3 dès 60 s), toujours du même côté ou du haut, chacun avec son trou d'environ 120 px. Chaque mur après le premier n'est annoncé que 0,7 s avant d'arriver (champ `notice` d'une annonce), pour que les pastilles ne se superposent pas. La série joue seule : elle ne part que si aucune annonce n'est en cours (`calm` dans `ATTACKS`) et laisse un long répit derrière elle. Sans ça, le robot mourait 1 à 3 fois sur 100 parties.
 - Solveur : quand la nouvelle attaque dure plus de 3,5 s (série de murs, rouleaux), il vérifie jusqu'à 4,5 s.
+- Musique coupée et en boucle : le morceau joue jusqu'à 76,8 s, saute au drop de 104 s (jusqu'à 115,2 s), puis au second passage énergique de 136,8 s à 202,4 s, qui boucle tant que la partie dure. La partie molle, la section calme et l'outro ne passent plus. Coupes calées sur le tempo (172 BPM) et sur les débuts de phrase, déclenchées par la position réelle de la musique. Réglage : `MUSIC_PARTS` dans `audio.js`, à refaire en changeant de morceau (ou `[[0, durée]]` pour tout jouer en boucle).
 
 ## Idées pour plus tard
 
@@ -201,7 +202,6 @@ Onze idées codées sur la branche `essais`, en ligne mais pas encore sur `maste
 - Même partie pour tous : une seule suite d'attaques par soirée, identique pour tout le monde. La plus tryhard, mais elle change l'esprit du classement.
 - Une phase après 80 s (« mode sérieux »), ou des moments calmes et des pics calés sur les drops du morceau.
 - Suites d'attaques calées sur la musique, ou tirées parmi des enchaînements déjà écrits qui reviennent : analyser d'abord le morceau pour caler au moins les montées et les drops.
-- Musique : couper la partie molle entre 75 s et à peu près la moitié du morceau, pour qu'il reste énergique, puis le faire boucler si un joueur dépasse sa fin. En attendant d'autres morceaux à enchaîner.
 - Images ou objets à collectionner (le maximator qui tourne), partage du score en story Insta.
 - Adresse sans « workers.dev » : nom de domaine payant, et le QR code changerait. À décider avant d'imprimer les affiches.
 - Pas retenues pour l'instant : thème de soirée choisi par l'admin, tartine du designer à la place de la tartine dessinée, étoiles au rythme de la musique, son d'annonce par attaque, couche de tension, podium de fin de soirée sur l'écran géant.
