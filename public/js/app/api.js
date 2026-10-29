@@ -107,6 +107,11 @@ export async function join(pseudo) {
   await refreshBoard();
 }
 
+export async function rename(pseudo) {
+  await call("PATCH", "/api/me", { pseudo });
+  await refreshBoard();
+}
+
 export function startRun() {
   if (!canCompete()) return null;
   return call("POST", "/api/runs").catch((e) => ({

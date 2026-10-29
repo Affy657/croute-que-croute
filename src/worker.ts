@@ -9,6 +9,7 @@ const routes: Route[] = [
   { method: "GET", path: "/api/board", run: player.board },
   { method: "GET", path: "/api/feed", run: player.feed },
   { method: "POST", path: "/api/join", run: player.join },
+  { method: "PATCH", path: "/api/me", run: player.rename },
   { method: "POST", path: "/api/runs", run: player.startRun },
   { method: "POST", path: new RegExp(`^/api/runs/${ID}$`), run: player.finishRun },
 
