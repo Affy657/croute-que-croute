@@ -146,7 +146,7 @@ function progressionCard() {
 function restart(p) {
   const t = Math.max(p.attack.from + 4, 20);
   const items = p.attack.make({ t, toast: { ...TOAST }, rng: Math.random, rnd, pick });
-  p.pending = items.map((w) => ({ ...w, at: w.at - t, born: 0 }));
+  p.pending = items.map((w) => ({ ...w, at: w.at - t, born: w.notice ? Math.max(0, w.at - t - w.notice) : 0 }));
   p.obs = [];
   p.time = 0;
   p.idle = 0;
