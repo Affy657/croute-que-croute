@@ -80,7 +80,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
       if (!o.near && gap < HIT_R + NEAR) {
         o.near = true;
         state.near++;
-        events.push({ type: "near" });
+        events.push({ type: "near", x: o.x, y: o.y });
       }
     }
   }

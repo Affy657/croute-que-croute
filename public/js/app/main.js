@@ -22,6 +22,7 @@ const DIE_S = 0.75, FREEZE_S = 0.12, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
 const BOARD_POLL_MS = 10000, MENU_POLL_MS = 30000;
 const ADMIN_TAPS = 5, ADMIN_TAP_MS = 3000;
 const CHAIN_S = 1.5, CHAIN_STEPS = 6, LAP_CS = 1000;
+const SCARS_MAX = 12, SCAR_JITTER = 0.3;
 const HUD_WIDEST = "000,00", HUD_PAD = 6;
 
 document.documentElement.dataset.version = VERSION;
@@ -31,7 +32,7 @@ let sim = createSim();
 const S = {
   mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, train: null, t0: 0,
   newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general",
-  toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35 }, menuY: FH * 0.55, menuAt: 0
+  toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35, scars: [] }, menuY: FH * 0.55, menuAt: 0
 };
 let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, lastShown = "";
 let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
@@ -43,8 +44,16 @@ const elapsed = () => sim.state.t - S.t0;
 const replay = () => (S.mode === "over" ? S.train : null);
 const input = createInput(canvas, { active: () => S.mode === "play", scale: () => scene.view.scale });
 
+function scar(e) {
+  const tt = S.toast;
+  if (tt.scars.length >= SCARS_MAX) return;
+  const a = Math.atan2(e.y - tt.y, e.x - tt.x) - tt.tilt + (Math.random() - 0.5) * SCAR_JITTER;
+  tt.scars.push({ a, len: 7 + Math.random() * 3 });
+}
+
 const ON_SIM = {
-  near() {
+  near(e) {
+    scar(e);
     const t = sim.state.t;
     S.chain = t - S.nearAt < CHAIN_S ? S.chain + 1 : 1;
     S.nearAt = t;
@@ -87,6 +96,7 @@ function die() {
 
 function showMenu() {
   S.mode = "menu";
+  S.toast.scars = [];
   show("menu");
   renderMenu();
   renderControls(false);
@@ -116,7 +126,7 @@ function start(train = null) {
   const t0 = train ? train.from : 0;
   sim = createSim(Math.random, train ? { only: train.id, t0 } : undefined);
   Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, scope: api.isOpen() ? "event" : "general" });
-  Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0 });
+  Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0, scars: [] });
   scene.clear();
   S.run = train ? null : api.startRun();
   if (!train) ach.runStart(api.isOpen() && api.net.board && api.net.board.event ? String(api.net.board.event.opensAt) : null);
@@ -385,7 +395,7 @@ function update(dt) {
   tt.y = st.y;
   tt.tilt += (clamp(vx / 900, -0.45, 0.45) - tt.tilt) * Math.min(1, dt * 14);
   tt.thrust += (clamp(Math.hypot(vx, vy) / 600, 0, 1) - tt.thrust) * Math.min(1, dt * 10);
-  for (const e of events) ON_SIM[e.type]();
+  for (const e of events) ON_SIM[e.type](e);
 }
 
 let last = performance.now(), acc = 0;
