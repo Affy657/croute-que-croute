@@ -98,7 +98,7 @@ export function runTick(state, moved, dt) {
   for (const o of state.obs) {
     if (o.seen) continue;
     o.seen = true;
-    if (o.spread) unlock(o.spread);
+    if (o.spread && BY_ID[o.spread]) unlock(o.spread);
     if (o.from && !data.attacks.includes(o.from)) {
       change((d) => {
         if (d.attacks.includes(o.from)) return false;

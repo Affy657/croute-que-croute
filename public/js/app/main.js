@@ -9,6 +9,8 @@ import { createScene } from "./scene.js";
 import { createInput } from "./input.js";
 import { burst, rain, bounce } from "./party.js";
 import * as ach from "./achievements.js";
+import { chosen, unlockTopping, onTopping, renderToppings } from "./toppings.js";
+import { SPREADS } from "../shared/palette.js";
 import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./catalog.js";
 import { renderSettings, suggestInstall, leaveSettings } from "./settings.js";
 import { onInstallChange } from "./install.js";
@@ -32,7 +34,7 @@ let sim = createSim();
 const S = {
   mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, train: null, t0: 0,
   newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general",
-  toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35, scars: [] }, menuY: FH * 0.55, menuAt: 0
+  toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35, scars: [], spread: chosen() }, gotToppings: [], menuY: FH * 0.55, menuAt: 0
 };
 let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, lastShown = "";
 let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
@@ -51,9 +53,16 @@ function scar(e) {
   tt.scars.push({ a, len: 7 + Math.random() * 3 });
 }
 
+function gainTopping(kind) {
+  if (S.train || !kind || !unlockTopping(kind)) return;
+  S.gotToppings.push(kind);
+  if (S.mode === "play") toastAch({ name: "Garniture " + SPREADS[kind].name });
+}
+
 const ON_SIM = {
   near(e) {
     scar(e);
+    gainTopping(e.spread);
     const t = sim.state.t;
     S.chain = t - S.nearAt < CHAIN_S ? S.chain + 1 : 1;
     S.nearAt = t;
@@ -63,6 +72,7 @@ const ON_SIM = {
   },
   death(e) {
     die(e);
+    gainTopping(e.spread);
   }
 };
 
@@ -125,7 +135,7 @@ function start(train = null) {
   if (api.net.updatePending && api.applyUpdate()) return false;
   const t0 = train ? train.from : 0;
   sim = createSim(Math.random, train ? { only: train.id, t0 } : undefined);
-  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, scope: api.isOpen() ? "event" : "general" });
+  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.isOpen() ? "event" : "general" });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0, scars: [] });
   scene.clear();
   S.run = train ? null : api.startRun();
@@ -304,9 +314,9 @@ function openSettings() {
 }
 
 function renderOverAch() {
-  const got = S.train ? [] : ach.runUnlocked();
+  const got = S.train ? [] : [...ach.runUnlocked().map((a) => a.name), ...S.gotToppings.map((k) => "Garniture " + SPREADS[k].name)];
   ui.overAch.hidden = !got.length;
-  ui.overAch.textContent = "★ " + got.map((a) => a.name).join(", ");
+  ui.overAch.textContent = "★ " + got.join(", ");
   ui.overAchBtn.textContent = achLabel();
 }
 
@@ -340,6 +350,7 @@ function openAch() {
   show("ach");
   renderControls(false);
   ach.renderAchievements(ui.achList, ui.achCount);
+  ui.achList.prepend(renderToppings());
   ui.ach.scrollTop = 0;
 }
 
@@ -517,6 +528,7 @@ document.addEventListener("visibilitychange", () => {
 
 api.on("board", renderAll);
 api.on("board", () => ach.onBoard(api.net.board));
+onTopping((kind) => { S.toast.spread = kind; });
 ach.onUnlock((a) => {
   if (S.mode === "play") toastAch(a);
   else if (S.mode === "over") renderOverAch();

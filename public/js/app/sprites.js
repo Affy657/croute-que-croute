@@ -356,6 +356,41 @@ function scars(ctx, list, w, h, C) {
   ctx.restore();
 }
 
+function topping(ctx, kind, C) {
+  const spread = kind !== "butter" && SPREADS[kind];
+  if (!spread) {
+    ctx.save();
+    ctx.translate(-1, 3);
+    ctx.rotate(0.18);
+    ctx.fillStyle = C.butter;
+    ctx.beginPath();
+    rr(ctx, -7, -5.5, 14, 11, 3);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+  ctx.fillStyle = spread.color;
+  ctx.beginPath();
+  rr(ctx, -11, -8, 22, 18, 7);
+  ctx.fill();
+  if (spread.drip) {
+    ctx.beginPath();
+    ctx.ellipse(5, 11, 2, 3.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = spread.shine;
+  ctx.beginPath();
+  ctx.ellipse(-4, -3.5, 4.5, 1.6, -0.35, 0, Math.PI * 2);
+  ctx.fill();
+  if (spread.bits) {
+    for (const [x, y] of [[-6, 3], [1, 5], [6, -1], [3, -5]]) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
 export function drawToast(ctx, t, splat, C = PALETTE) {
   const w = 40, h = 42;
   ctx.save();
@@ -384,14 +419,7 @@ export function drawToast(ctx, t, splat, C = PALETTE) {
     ctx.fill();
   }
   ctx.globalAlpha = 1;
-  ctx.save();
-  ctx.translate(-1, 3);
-  ctx.rotate(0.18);
-  ctx.fillStyle = C.butter;
-  ctx.beginPath();
-  rr(ctx, -7, -5.5, 14, 11, 3);
-  ctx.fill();
-  ctx.restore();
+  topping(ctx, t.spread, C);
   if (t.scars && t.scars.length) scars(ctx, t.scars, w, h, C);
   if (splat) {
     ctx.fillStyle = C.jam;
