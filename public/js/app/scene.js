@@ -14,6 +14,7 @@ export function createScene(canvas, overlay) {
   const C = PALETTE;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const view = { W: 0, H: 0, dpr: 1, scale: 1, ox: 0, oy: 0 };
+  let hudBox = null;
   let stars = [], sky = 0, shake = 0, parts = [], pops = [], fieldA = 0;
 
   function resize() {
@@ -194,7 +195,8 @@ export function createScene(canvas, overlay) {
     fx.beginPath();
     fx.rect(0, 0, FW, FH);
     fx.clip();
-    for (const w of world.warns) drawWarn(fx, w, clock, world.t, C);
+    const zone = hudBox && { x0: (hudBox.left - ox) / scale, x1: (hudBox.right - ox) / scale, y1: (hudBox.bottom - oy) / scale };
+    for (const w of world.warns) drawWarn(fx, w, clock, world.t, C, zone);
     fx.restore();
   }
 
@@ -231,5 +233,7 @@ export function createScene(canvas, overlay) {
   sky = 0.22 + SKY_TOP;
   window.addEventListener("resize", resize);
 
-  return { view, update, render, splash, pop, clear };
+  const avoid = (box) => { hudBox = box; };
+
+  return { view, update, render, splash, pop, clear, avoid };
 }

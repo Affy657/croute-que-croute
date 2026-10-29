@@ -209,7 +209,7 @@ export function drawProjectile(ctx, o, C = PALETTE) {
   ctx.restore();
 }
 
-const BADGE_R = 15, ICON = 2 * BADGE_R - 6;
+const BADGE_R = 15, ICON = 2 * BADGE_R - 6, ARROW = 9;
 
 function badgeIcon(ctx, o, a, C) {
   const s = ICON / o.len;
@@ -233,9 +233,11 @@ function fanIcon(ctx, w, C) {
   }
 }
 
-export function drawWarn(ctx, w, clock, now, C = PALETTE) {
+export function drawWarn(ctx, w, clock, now, C = PALETTE, avoid = null) {
   const r = BADGE_R;
-  const x = clamp(w.x, r + 3, FW - r - 3), y = clamp(w.y, r + 3, FH - r - 3);
+  const x = clamp(w.x, r + 3, FW - r - 3);
+  let y = clamp(w.y, r + 3, FH - r - 3);
+  if (avoid && x + r > avoid.x0 && x - r < avoid.x1 && y - r < avoid.y1) y = avoid.y1 + r + ARROW;
   const done = clamp((now - w.born) / (w.at - w.born), 0, 1);
   const o = w.obs[0];
   ctx.save();
@@ -248,7 +250,7 @@ export function drawWarn(ctx, w, clock, now, C = PALETTE) {
   ctx.strokeStyle = C.void;
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(r + 9, 0);
+  ctx.moveTo(r + ARROW, 0);
   ctx.lineTo(r - 1, -7);
   ctx.lineTo(r - 1, 7);
   ctx.closePath();
