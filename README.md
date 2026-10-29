@@ -175,7 +175,7 @@ Après :
 
 ## En essai
 
-Neuf idées sont codées sur la branche `essais`, en ligne mais pas encore sur `master` : rival, série de frôlés, entraînement, paliers, traînées, musique étouffée, nouveau n°1, ciel qui chauffe, cicatrices. Leur description est dans le README de `essais`.
+Des idées sont codées sur la branche `essais`, en ligne mais pas encore sur `master`. Leur liste et leur description sont dans le README de `essais`.
 
 ## Idées pour plus tard
 
@@ -184,9 +184,11 @@ Neuf idées sont codées sur la branche `essais`, en ligne mais pas encore sur `
 - Dernier quart d'heure : 15 min avant la fermeture, l'accueil et l'écran géant passent en rouge, compte à rebours en grand.
 - Compteur de la salle sur l'écran géant : temps cumulé de toutes les parties de la soirée. Une ligne écrite en plus par partie.
 - Nouvelles attaques vers 65 s, pour que les meilleurs découvrent encore quelque chose (la dernière arrive à 54 s) : cuillère boomerang qui traverse puis revient, pince de deux couteaux qui se referment, spirale de fourchettes.
-- Tartines à débloquer : une tartinade sur la tartine par succès, purement visuelle.
+- Tartines à débloquer : la garniture de la tartine reprend celle des couteaux à tartinade (confiture, pâte à tartiner, miel, ketchup, et d'autres pour avoir à peu près chaque couleur). On débloque une garniture en frôlant son couteau ou en se faisant tuer par lui. Purement visuel.
 - Même partie pour tous : une seule suite d'attaques par soirée, identique pour tout le monde. La plus tryhard, mais elle change l'esprit du classement.
 - Une phase après 80 s (« mode sérieux »), ou des moments calmes et des pics calés sur les drops du morceau.
+- Suites d'attaques calées sur la musique, ou tirées parmi des enchaînements déjà écrits qui reviennent : analyser d'abord le morceau pour caler au moins les montées et les drops.
+- Musique : couper la partie molle entre 75 s et à peu près la moitié du morceau, pour qu'il reste énergique, puis le faire boucler si un joueur dépasse sa fin. En attendant d'autres morceaux à enchaîner.
 - Images ou objets à collectionner (le maximator qui tourne), partage du score en story Insta.
 - Adresse sans « workers.dev » : nom de domaine payant, et le QR code changerait. À décider avant d'imprimer les affiches.
 - Pas retenues pour l'instant : thème de soirée choisi par l'admin, tartine du designer à la place de la tartine dessinée, étoiles au rythme de la musique, son d'annonce par attaque, couche de tension, podium de fin de soirée sur l'écran géant.
