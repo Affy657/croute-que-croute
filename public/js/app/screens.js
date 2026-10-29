@@ -8,7 +8,7 @@ const $ = (id) => document.getElementById(id);
 export const ui = {
   menu: $("menu"), over: $("over"), board: $("board"), hud: $("hud"), time: $("time"), hudBest: $("hudBest"),
   brand: $("brand"), menuStats: $("menuStats"), menuBestBox: $("menuBestBox"), menuBest: $("menuBest"),
-  menuRankBox: $("menuRankBox"), menuRank: $("menuRank"), menuInfo: $("menuInfo"),
+  menuRankBox: $("menuRankBox"), menuRank: $("menuRank"), menuInfo: $("menuInfo"), menuPitch: $("menuPitch"),
   joinForm: $("joinForm"), pseudo: $("pseudo"), joinError: $("joinError"),
   menuActions: $("menuActions"), play: $("play"), menuBoard: $("menuBoard"), menuAch: $("menuAch"), menuCountdown: $("menuCountdown"), settingsBtn: $("settingsBtn"),
   final: $("final"), newBest: $("newBest"), overNote: $("overNote"),
@@ -96,6 +96,7 @@ export const needJoin = () => !!net.board && !registered();
 export function renderMenu() {
   const b = net.board;
   const me = b && b.me;
+  ui.menuPitch.hidden = !!net.token || registered();
   ui.joinForm.hidden = !needJoin();
   ui.menuActions.hidden = needJoin();
   ui.menuBoard.hidden = !b;

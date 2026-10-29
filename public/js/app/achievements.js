@@ -130,7 +130,7 @@ function item(a) {
   row.className = "ach-item" + (got ? "" : " locked");
   const star = document.createElement("span");
   star.className = "ach-star";
-  star.textContent = "★";
+  star.textContent = got ? "★" : "☆";
   const text = document.createElement("div");
   const name = document.createElement("p");
   name.className = "ach-name";

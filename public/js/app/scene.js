@@ -3,7 +3,7 @@ import { PALETTE } from "../shared/palette.js";
 import { drawProjectile, drawWarn, drawToast } from "./sprites.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
-const POP_LIFE = 0.7, PUCK_R = 30, GRAB_S = 0.6;
+const POP_LIFE = 0.7, PUCK_R = 30, GRAB_S = 0.6, FIELD_FADE = 5;
 const HINT = "Pose ton doigt où tu veux";
 
 export function createScene(canvas, overlay) {
@@ -12,7 +12,7 @@ export function createScene(canvas, overlay) {
   const C = PALETTE;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const view = { W: 0, H: 0, dpr: 1, scale: 1, ox: 0, oy: 0 };
-  let stars = [], planetY = 0, shake = 0, parts = [], pops = [];
+  let stars = [], planetY = 0, shake = 0, parts = [], pops = [], fieldA = 0;
 
   const planetR = () => Math.min(view.W, view.H) * 0.13;
 
@@ -31,7 +31,8 @@ export function createScene(canvas, overlay) {
     stars = Array.from({ length: n }, () => ({ x: Math.random() * view.W, y: Math.random() * view.H, z: rnd(0.1, 1), tw: rnd(0, 6.28) }));
   }
 
-  function update(dt, warp) {
+  function update(dt, warp, field) {
+    fieldA = clamp(fieldA + (field ? dt : -dt) * FIELD_FADE, 0, 1);
     for (const s of stars) {
       s.y += (18 + 150 * s.z) * warp * dt;
       if (s.y > view.H + 2) { s.y = -2; s.x = Math.random() * view.W; }
@@ -55,6 +56,7 @@ export function createScene(canvas, overlay) {
 
   function splash(x, y) {
     shake = reduceMotion ? 0 : 12;
+    pops = [];
     for (let i = 0; i < 30; i++) {
       const a = rnd(0, Math.PI * 2), s = rnd(60, 280);
       parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 80, r: rnd(2.5, 7), life: rnd(0.6, 1.1), c: Math.random() < 0.7 ? C.jam : C.crumb });
@@ -219,19 +221,23 @@ export function createScene(canvas, overlay) {
     fx.setTransform(1, 0, 0, 1, 0, 0);
     fx.clearRect(0, 0, overlay.width, overlay.height);
     drawFinger(finger, clock);
-    drawWarns(world, clock, sx, sy);
+    if (fieldA > 0) drawWarns(world, clock, sx, sy);
     ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * (oy + sy));
-    ctx.fillStyle = C.field;
-    ctx.fillRect(0, 0, FW, FH);
-    ctx.strokeStyle = C.frame;
-    ctx.lineWidth = 2 / scale;
-    ctx.strokeRect(0, 0, FW, FH);
+    if (fieldA > 0) {
+      ctx.globalAlpha = fieldA;
+      ctx.fillStyle = C.field;
+      ctx.fillRect(0, 0, FW, FH);
+      ctx.strokeStyle = C.frame;
+      ctx.lineWidth = 2 / scale;
+      ctx.strokeRect(0, 0, FW, FH);
+      ctx.globalAlpha = 1;
+    }
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, FW, FH);
     ctx.clip();
     for (const o of world.obs) drawProjectile(ctx, o, C);
-    drawToast(ctx, toast, splat, C);
+    if (toast) drawToast(ctx, toast, splat, C);
     drawEffects();
     ctx.restore();
   }

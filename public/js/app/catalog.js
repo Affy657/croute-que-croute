@@ -183,10 +183,10 @@ export function renderAttacks(root, { showLab = false } = {}) {
   const rules = el("section", "card");
   const list = el("ul", "rules");
   for (const text of [
-    "Chaque attaque est vérifiée par le solveur avant d'être lancée : on peut toujours s'en sortir, même en ne bougeant que 0,1 s après l'annonce.",
-    "Vitesse de tous les couverts : × (1 + temps / 50), au maximum × 2,6 à partir de 80 s.",
-    "Jamais plus de 3 fois la même attaque d'affilée, et une attaque qui vient de sortir a deux fois moins de chances de ressortir. Les grosses figures (croix, couloir, double pluie) ne sortent jamais deux fois de suite.",
-    "Dans les aperçus, la tartine reste immobile."
+    "On peut toujours s'en sortir : chaque attaque est testée avant d'être lancée, même si tu réagis un dixième de seconde après l'alerte.",
+    "Tout accélère avec le temps, jusqu'à 2,6 fois plus vite à 80 s.",
+    "Une attaque ne sort jamais plus de 3 fois d'affilée, et celle qui vient de sortir revient moins souvent. Les grosses figures (croix, couloir, double pluie) ne sortent jamais deux fois de suite.",
+    "Dans les aperçus, la tartine ne bouge pas."
   ]) list.append(el("li", null, text));
   rules.append(el("h2", null, "Règles"), list);
   const cards = ATTACKS.filter((a) => showLab || !a.lab).map((attack) => {

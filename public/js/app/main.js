@@ -249,6 +249,7 @@ function renderOverAch() {
 function goHome() {
   if (S.mode !== "over") return;
   S.splat = null;
+  sim = createSim();
   scene.clear();
   showMenu();
 }
@@ -295,7 +296,7 @@ function menuToastY() {
 
 function update(dt) {
   S.clock += dt;
-  scene.update(dt, S.mode === "play" ? 1 + (speedMul(sim.state.t) - 1) * 1.6 : 0.5);
+  scene.update(dt, S.mode === "play" ? 1 + (speedMul(sim.state.t) - 1) * 1.6 : 0.5, playing());
   const tt = S.toast;
   if (S.mode === "menu") {
     tt.x = FW / 2;
@@ -339,7 +340,7 @@ function frame(now) {
     update(STEP);
     acc -= STEP;
   }
-  scene.render({ clock: S.clock, world: sim.state, toast: S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null });
+  scene.render({ clock: S.clock, world: sim.state, toast: S.mode === "over" ? null : S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null });
   if (playing()) {
     const s = fmtCs(Math.floor(sim.state.t * 100));
     if (s !== lastShown) {
