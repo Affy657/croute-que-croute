@@ -18,7 +18,7 @@ export const ui = {
   info: $("info"), infoBtn: $("infoBtn"), closeBtn: $("closeBtn"), infoTabs: $("infoTabs"), infoBody: $("infoBody"), infoBack: $("infoBack"),
   settings: $("settings"), settingsBar: $("settingsBar"), settingsTabs: $("settingsTabs"), settingsApp: $("settingsApp"), settingsAdmin: $("settingsAdmin"),
   settingsBack: $("settingsBack"), installCard: $("installCard"), installHint: $("installHint"), installBtn: $("installBtn"), shareBtn: $("shareBtn"), qrBtn: $("qrBtn"),
-  qr: $("qr"), qrHost: $("qrHost"), qrBack: $("qrBack"),
+  qr: $("qr"), qrHost: $("qrHost"), qrBack: $("qrBack"), musicVol: $("musicVol"), sfxVol: $("sfxVol"),
   installPop: $("installPop"), installPopText: $("installPopText"), installYes: $("installYes"), installLater: $("installLater")
 };
 

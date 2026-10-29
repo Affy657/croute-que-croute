@@ -1,5 +1,6 @@
 import { store, KEYS } from "../shared/store.js";
 import { installMode, promptInstall, shouldSuggest, markSuggested, onInstallChange } from "./install.js";
+import { prefs, setLevel, previewMusic, previewSfx } from "./audio.js";
 import { ui } from "./screens.js";
 
 const FLASH_MS = 2000;
@@ -21,6 +22,8 @@ export function renderSettings() {
   ui.installCard.hidden = mode === "installed";
   ui.installHint.textContent = HINTS[mode] || "";
   ui.installBtn.hidden = mode !== "prompt";
+  ui.musicVol.value = Math.round(prefs.musicLevel * 100);
+  ui.sfxVol.value = Math.round(prefs.sfxLevel * 100);
 }
 
 function flash(button, text) {
@@ -64,6 +67,10 @@ for (const b of ui.settingsTabs.children) {
     renderSettings();
   });
 }
+ui.musicVol.addEventListener("input", () => setLevel("music", ui.musicVol.value / 100));
+ui.musicVol.addEventListener("change", previewMusic);
+ui.sfxVol.addEventListener("input", () => setLevel("sfx", ui.sfxVol.value / 100));
+ui.sfxVol.addEventListener("change", () => previewSfx("record"));
 ui.installBtn.addEventListener("click", promptInstall);
 ui.shareBtn.addEventListener("click", shareGame);
 ui.installYes.addEventListener("click", () => {

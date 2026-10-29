@@ -345,6 +345,22 @@ h2 {
   gap: 0.6rem;
 }
 
+.slider {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  align-items: center;
+  gap: 0.8rem;
+  color: var(--ink-dim);
+}
+
+.slider input {
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  accent-color: var(--mustard);
+  touch-action: pan-x;
+}
+
 a.ghost {
   display: inline-block;
   text-decoration: none;
