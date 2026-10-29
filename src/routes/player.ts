@@ -2,7 +2,7 @@ import { json, fail, readJson, clientIp, outdated, updateRequired, tooFast, allo
 import { randomToken, safeEqual } from "../security";
 import { cleanPseudo, pseudoKey, cleanClientId } from "../validate";
 import {
-  events, openEventNow, eventById, findProfile, entryBest, generalRanking, eventRanking, forgetCaches, rankIn,
+  events, openEventNow, eventById, findProfile, entryBest, generalRanking, eventRanking, forgetCaches, rankIn, rivalIn,
   type EventRow, type Profile, type Ranked,
 } from "../db";
 import type { Ctx } from "../router";
@@ -49,8 +49,10 @@ export async function board({ req, env }: Ctx) {
           best: me.best,
           runs: me.run_count,
           rank: me.banned ? null : rankIn(general, me.id),
+          rival: me.banned ? null : rivalIn(general, me.id),
           eventBest: eventMine,
           eventRank: me.banned || !eventList ? null : rankIn(eventList, me.id),
+          eventRival: me.banned || !eventList ? null : rivalIn(eventList, me.id),
           banned: !!me.banned,
         }
       : null,
@@ -143,10 +145,12 @@ async function standing(env: Env, me: Profile, eventId: number | null, best: num
     best,
     improved,
     rank: me.banned ? null : rankIn(general, me.id),
+    rival: me.banned ? null : rivalIn(general, me.id),
     count: general.length,
     eventBest: eventId ? eventBest : null,
     eventImproved,
     eventRank: me.banned || !eventList ? null : rankIn(eventList, me.id),
+    eventRival: me.banned || !eventList ? null : rivalIn(eventList, me.id),
     eventCount: eventList ? eventList.length : 0,
   };
 }

@@ -13,7 +13,7 @@ import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./c
 import { renderSettings, suggestInstall, leaveSettings } from "./settings.js";
 import { onInstallChange } from "./install.js";
 import {
-  ui, show, setText, setDigits, tickCountdowns, renderMenu, renderBoard, renderOver, renderOverStats,
+  ui, show, setText, setDigits, tickCountdowns, renderMenu, renderBoard, renderOver, renderOverStats, renderRival,
   renderHud, renderControls, renderAll, setBoardScope, achLabel
 } from "./screens.js";
 
@@ -175,7 +175,9 @@ function showOver() {
       setText(ui.overNote, r.error || "");
       ach.afterSubmit(r, S.scope);
       const now = api.standing(S.scope);
-      if (!r.error) renderOverStats(S.newBest ? 0 : now.best, now.rank, now.count);
+      if (r.error) return;
+      renderOverStats(S.newBest ? 0 : now.best, now.rank, now.count);
+      renderRival(S.score, now.rival);
     });
   } else {
     setText(ui.overNote, api.registered() ? "" : "Entraînement");

@@ -55,8 +55,8 @@ export function standing(scope = isOpen() ? "event" : "general") {
   if (!registered()) return { best: localBest, rank: null, count: 0 };
   const { me } = net.board;
   return scope === "event"
-    ? { best: me.eventBest || 0, rank: me.eventRank, count: net.board.eventCount }
-    : { best: me.best, rank: me.rank, count: net.board.count };
+    ? { best: me.eventBest || 0, rank: me.eventRank, count: net.board.eventCount, rival: me.eventRival }
+    : { best: me.best, rank: me.rank, count: net.board.count, rival: me.rival };
 }
 
 export const knownBest = () => standing().best;
@@ -134,10 +134,10 @@ function markPending(runId, score, at) {
 function applyResult(r) {
   const me = net.board && net.board.me;
   if (me) {
-    Object.assign(me, { best: r.best, rank: r.rank });
+    Object.assign(me, { best: r.best, rank: r.rank, rival: r.rival });
     net.board.count = r.count;
     if (r.eventBest !== null) {
-      Object.assign(me, { eventBest: r.eventBest, eventRank: r.eventRank });
+      Object.assign(me, { eventBest: r.eventBest, eventRank: r.eventRank, eventRival: r.eventRival });
       net.board.eventCount = r.eventCount;
     }
   }
