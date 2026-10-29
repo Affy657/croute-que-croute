@@ -8,6 +8,7 @@ export const KEYS = {
   sfxVolume: "cv-sfx-vol",
   adminToken: "cqc-admin-token",
   installAsked: "cv-install-asked",
+  achievements: "cv-succes",
   lastReload: "cv-reload"
 };
 

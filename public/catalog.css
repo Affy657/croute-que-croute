@@ -46,6 +46,32 @@
   color: var(--ink-dim);
 }
 
+.catalog .ach-item {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.catalog .ach-star {
+  font-size: 1.3rem;
+  text-align: center;
+  color: var(--mustard);
+}
+
+.catalog .ach-name {
+  font-weight: 700;
+}
+
+.catalog .ach-item.locked .ach-star {
+  color: var(--ink-dim);
+  opacity: 0.35;
+}
+
+.catalog .ach-item.locked .ach-name {
+  color: var(--ink-dim);
+}
+
 .catalog .gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

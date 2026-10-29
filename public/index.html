@@ -24,6 +24,7 @@
 <div id="hud" hidden>
   <div id="time" class="digits">0,00</div>
   <div id="hudBest"></div>
+  <p id="achToast" class="ach-toast" hidden></p>
 </div>
 
 <canvas id="fx" aria-hidden="true"></canvas>
@@ -48,6 +49,7 @@
     <div id="menuActions" class="actions">
       <button id="play" class="cta" type="button">Jouer</button>
       <button id="menuBoard" class="ghost" type="button" hidden>Classement</button>
+      <button id="menuAch" class="ghost" type="button">Succès</button>
     </div>
     <p id="menuCountdown" class="countdown" hidden></p>
   </div>
@@ -58,6 +60,7 @@
     <h2>Tartinée&nbsp;!</h2>
     <p class="score"><span id="final" class="digits">0,00</span><small>s</small></p>
     <p id="newBest" class="badge" hidden>Nouveau record</p>
+    <button id="overAch" class="ach-line" type="button" hidden></button>
     <div id="overStats" class="stats" hidden>
       <p id="overBestBox" class="stat"><span class="stat-label">Record</span><span id="overBest" class="stat-value digits"></span></p>
       <p id="overRankBox" class="stat"><span class="stat-label">Place</span><span id="overRank" class="stat-value hot"></span></p>
@@ -96,6 +99,13 @@
   </div>
   <div id="infoBody" class="catalog info-body"></div>
   <button id="infoBack" class="cta" type="button">Retour</button>
+</section>
+
+<section id="ach" class="screen info-screen" hidden>
+  <h2>Succès</h2>
+  <p id="achCount" class="eyebrow"></p>
+  <div id="achList" class="catalog info-body"></div>
+  <button id="achBack" class="cta" type="button">Retour</button>
 </section>
 
 <section id="settings" class="screen info-screen" hidden>

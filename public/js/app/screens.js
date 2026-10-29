@@ -1,6 +1,7 @@
 import { fmtCs, ord, clock } from "../shared/format.js";
 import { net, serverNow, registered, isOpen, openEvent, recentEvent, upcomingEvent, standing, knownBest } from "./api.js";
 import { prefs, musicAvailable } from "./audio.js";
+import { progress } from "./achievements.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -9,7 +10,7 @@ export const ui = {
   brand: $("brand"), menuStats: $("menuStats"), menuBestBox: $("menuBestBox"), menuBest: $("menuBest"),
   menuRankBox: $("menuRankBox"), menuRank: $("menuRank"), menuInfo: $("menuInfo"),
   joinForm: $("joinForm"), pseudo: $("pseudo"), joinError: $("joinError"),
-  menuActions: $("menuActions"), play: $("play"), menuBoard: $("menuBoard"), menuCountdown: $("menuCountdown"), settingsBtn: $("settingsBtn"),
+  menuActions: $("menuActions"), play: $("play"), menuBoard: $("menuBoard"), menuAch: $("menuAch"), menuCountdown: $("menuCountdown"), settingsBtn: $("settingsBtn"),
   final: $("final"), newBest: $("newBest"), overNote: $("overNote"),
   overStats: $("overStats"), overBestBox: $("overBestBox"), overBest: $("overBest"), overRankBox: $("overRankBox"), overRank: $("overRank"),
   again: $("again"), overBoard: $("overBoard"),
@@ -18,18 +19,19 @@ export const ui = {
   info: $("info"), infoBtn: $("infoBtn"), closeBtn: $("closeBtn"), infoTabs: $("infoTabs"), infoBody: $("infoBody"), infoBack: $("infoBack"),
   settings: $("settings"), settingsBar: $("settingsBar"), settingsTabs: $("settingsTabs"), settingsApp: $("settingsApp"), settingsAdmin: $("settingsAdmin"),
   settingsBack: $("settingsBack"), installCard: $("installCard"), installHint: $("installHint"), installBtn: $("installBtn"), shareBtn: $("shareBtn"), qrBtn: $("qrBtn"),
-  qr: $("qr"), qrHost: $("qrHost"), qrBack: $("qrBack"), musicVol: $("musicVol"), sfxVol: $("sfxVol"),
+  qr: $("qr"), qrHost: $("qrHost"), qrBack: $("qrBack"),
+  ach: $("ach"), achCount: $("achCount"), achList: $("achList"), achBack: $("achBack"), achToast: $("achToast"), overAch: $("overAch"), musicVol: $("musicVol"), sfxVol: $("sfxVol"),
   installPop: $("installPop"), installPopText: $("installPopText"), installYes: $("installYes"), installLater: $("installLater")
 };
 
-const PAGES = ["menu", "over", "board", "hud", "info", "settings", "qr"];
-const SCREENS = { menu: ["menu"], play: ["hud"], over: ["over"], board: ["board"], info: ["info"], settings: ["settings"], qr: ["qr"] };
+const PAGES = ["menu", "over", "board", "hud", "info", "settings", "qr", "ach"];
+const SCREENS = { menu: ["menu"], play: ["hud"], over: ["over"], board: ["board"], info: ["info"], settings: ["settings"], qr: ["qr"], ach: ["ach"] };
 
 export function show(name) {
   for (const id of PAGES) ui[id].hidden = !SCREENS[name].includes(id);
   ui.infoBtn.hidden = name !== "menu" && name !== "over";
   ui.settingsBtn.hidden = ui.infoBtn.hidden;
-  ui.closeBtn.hidden = name !== "info" && name !== "settings";
+  ui.closeBtn.hidden = name !== "info" && name !== "settings" && name !== "ach";
 }
 
 export function setText(el, text) {
@@ -105,6 +107,8 @@ export function renderMenu() {
   else if (b && !isOpen() && recent && b.eventTop[0]) info = "Bravo " + b.eventTop[0].pseudo + " !";
   else if (b && !isOpen() && next) info = "Prochaine soirée " + when(next.opensAt);
   setText(ui.menuInfo, info);
+  const p = progress();
+  ui.menuAch.textContent = "Succès " + p.got + "/" + p.total;
   setCountdown(ui.menuCountdown);
 }
 
@@ -163,6 +167,7 @@ export function renderOverStats(best, rank, count) {
 
 export function renderHud() {
   setDigits(ui.time, "0,00");
+  ui.achToast.hidden = true;
   ui.time.classList.remove("hot", "cheer");
   ui.hudBest.classList.remove("hot");
   ui.hudBest.textContent = knownBest() ? "Record " + fmtCs(knownBest()) : "";
@@ -175,7 +180,7 @@ function renderToggle(button, on, available) {
 }
 
 export function renderControls(playing) {
-  const page = !ui.info.hidden || !ui.settings.hidden || !ui.qr.hidden;
+  const page = !ui.info.hidden || !ui.settings.hidden || !ui.qr.hidden || !ui.ach.hidden;
   ui.infoBtn.hidden = playing || page || !ui.board.hidden;
   ui.settingsBtn.hidden = ui.infoBtn.hidden;
   const quiet = playing || page;

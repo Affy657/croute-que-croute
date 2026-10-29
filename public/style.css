@@ -495,6 +495,33 @@ a.ghost {
   color: var(--mustard);
 }
 
+.ach-toast {
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  margin: 8px auto 0;
+  padding: 0.35em 0.9em;
+  border: 2px solid var(--mustard);
+  border-radius: 999px;
+  background: rgba(13, 11, 36, 0.8);
+  color: var(--mustard);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.ach-line {
+  max-width: 100%;
+  padding: 0.2em 0.4em;
+  border: 0;
+  background: none;
+  color: var(--mustard);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
 .screen.board {
   justify-content: flex-start;
   gap: 1rem;
