@@ -14,7 +14,7 @@ import { renderSettings, suggestInstall } from "./settings.js";
 import { onInstallChange } from "./install.js";
 import {
   ui, show, setText, setDigits, tickCountdowns, renderMenu, renderBoard, renderOver, renderOverStats,
-  renderHud, renderControls, renderAll, setBoardScope
+  renderHud, renderControls, renderAll, setBoardScope, achLabel
 } from "./screens.js";
 
 const ACH_TOAST_MS = 2600, MENU_PLACE_S = 0.5, MENU_LIFT = 6;
@@ -240,6 +240,14 @@ function renderOverAch() {
   const got = ach.runUnlocked();
   ui.overAch.hidden = !got.length;
   ui.overAch.textContent = "★ " + got.map((a) => a.name).join(", ");
+  ui.overAchBtn.textContent = achLabel();
+}
+
+function goHome() {
+  if (S.mode !== "over") return;
+  S.splat = null;
+  scene.clear();
+  showMenu();
 }
 
 function toastAch(a) {
@@ -353,6 +361,8 @@ ui.play.addEventListener("click", () => start());
 ui.again.addEventListener("click", () => start());
 ui.menuBoard.addEventListener("click", () => openBoard("menu"));
 ui.overBoard.addEventListener("click", () => openBoard("over"));
+ui.overAchBtn.addEventListener("click", openAch);
+ui.overHome.addEventListener("click", goHome);
 ui.boardBack.addEventListener("click", closeBoard);
 for (const tab of ui.boardTabs.children) tab.addEventListener("click", () => setBoardScope(tab.dataset.scope));
 ui.infoBtn.addEventListener("click", openInfo);

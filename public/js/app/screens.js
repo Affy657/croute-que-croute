@@ -13,7 +13,7 @@ export const ui = {
   menuActions: $("menuActions"), play: $("play"), menuBoard: $("menuBoard"), menuAch: $("menuAch"), menuCountdown: $("menuCountdown"), settingsBtn: $("settingsBtn"),
   final: $("final"), newBest: $("newBest"), overNote: $("overNote"),
   overStats: $("overStats"), overBestBox: $("overBestBox"), overBest: $("overBest"), overRankBox: $("overRankBox"), overRank: $("overRank"),
-  again: $("again"), overBoard: $("overBoard"),
+  again: $("again"), overBoard: $("overBoard"), overAchBtn: $("overAchBtn"), overHome: $("overHome"), overCountdown: $("overCountdown"),
   boardTabs: $("boardTabs"), boardEvent: $("boardEvent"), boardCountdown: $("boardCountdown"), boardList: $("boardList"), boardEmpty: $("boardEmpty"), boardBack: $("boardBack"),
   music: $("music"), sfx: $("sfx"),
   info: $("info"), infoBtn: $("infoBtn"), closeBtn: $("closeBtn"), infoTabs: $("infoTabs"), infoBody: $("infoBody"), infoBack: $("infoBack"),
@@ -74,6 +74,7 @@ function setCountdown(el) {
 
 export function tickCountdowns() {
   if (!ui.menu.hidden) setCountdown(ui.menuCountdown);
+  if (!ui.over.hidden) setCountdown(ui.overCountdown);
   if (!ui.board.hidden) boardCountdown();
 }
 
@@ -107,8 +108,7 @@ export function renderMenu() {
   else if (b && !isOpen() && recent && b.eventTop[0]) info = "Bravo " + b.eventTop[0].pseudo + " !";
   else if (b && !isOpen() && next) info = "Prochaine soirée " + when(next.opensAt);
   setText(ui.menuInfo, info);
-  const p = progress();
-  ui.menuAch.textContent = "Succès " + p.got + "/" + p.total;
+  ui.menuAch.textContent = achLabel();
   setCountdown(ui.menuCountdown);
 }
 
@@ -152,8 +152,14 @@ export function renderBoard() {
   setText(ui.boardEmpty, rows.length ? "" : b ? "Aucun score pour l'instant" : "Hors ligne");
 }
 
+export function achLabel() {
+  const p = progress();
+  return "Succès " + p.got + "/" + p.total;
+}
+
 export function renderOver(score, newBest) {
   setDigits(ui.final, fmtCs(score));
+  setCountdown(ui.overCountdown);
   ui.newBest.textContent = "Nouveau record";
   ui.newBest.classList.remove("gold");
   ui.newBest.hidden = !newBest;
