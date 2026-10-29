@@ -508,7 +508,23 @@ Après :
 - Tester sur de vrais téléphones : fluidité, son, réseau du lieu.
 - À décider : vérifier les meilleurs scores en rejouant la partie. Le serveur donne une graine, le jeu enregistre les gestes, et le tableau de bord rejoue les 3 premiers pour confirmer leur temps. Bloquerait la triche par faux score.
 
+## Idées retenues par Adrien (29/10/2026), pas encore faites
+
+- Rival à battre : sur l'écran de fin, « Encore 1,2 s pour passer X » avec le joueur juste au-dessus (classement de la soirée pendant une soirée, général sinon).
+- Série de frôlés : « Frôlé x3 » quand les frôlés s'enchaînent, avec un son qui monte. Aucun effet sur le score.
+- Entraînement par attaque : un bouton « S'entraîner » sur chaque carte d'Infos qui lance seulement cette attaque, hors classement.
+- Paliers : un petit flash du chrono à 10, 20, 30 s…
+- Traînées de vitesse derrière les couverts rapides, pour mieux lire la vitesse.
+- Musique étouffée à la mort : le morceau passe « sous l'eau » une demi-seconde avant de couper.
+- Écran géant : annonce en grand quand le n°1 change (« Nouveau n°1 : X ! »).
+- Pas retenues pour l'instant : thème de soirée choisi par l'admin, tartine du designer à la place de la tartine dessinée, étoiles au rythme de la musique, son d'annonce par attaque, couche de tension, podium de fin de soirée sur l'écran géant.
+
 ## À brainstormer
+
+- Idées notées pendant les sessions, pas encore tranchées :
+  - « Tartinée par… » sur l'écran de fin, avec l'arme qui t'a eu ;
+  - vibration du téléphone à chaque frôlé ;
+  - succès gardés sur le serveur, liés au pseudo, pour ne plus les perdre en changeant de téléphone ou entre Safari et l'appli installée.
 
 - Deuxième phase après 80 s (idée d'Adrien, pas prioritaire : atteindre 80 s est déjà très dur pour un humain) :
   - « Roundabout » commence à se calmer entre 75 et 80 s, pile quand la complexification s'arrête.
