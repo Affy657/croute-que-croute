@@ -371,7 +371,7 @@ Décidé par Adrien le 29/10/2026 :
 - Le serveur refuse un score plus long que le temps réellement écoulé depuis le début de la partie (5 s de marge pour les réseaux lents), et tout score au-delà de 15 min.
 - Un score renvoyé deux fois (réseau qui coupe) est compté une seule fois, sans message d'erreur.
 - Pas de compte : le téléphone garde un jeton. Le même téléphone qui reprend son pseudo retrouve son compte. Un autre navigateur (Safari puis appli installée sur iPhone) oblige à prendre un nouveau pseudo.
-- Limites contre les abus : 30 inscriptions par minute et par adresse IP (tout le lieu partage souvent la même), 10 débuts de partie par 10 s et par joueur.
+- Limites contre les abus : 150 inscriptions par minute et par adresse IP (montée de 30 à 150 le 29/10/2026 : tout le lieu partage souvent la même adresse sur le wifi, et le rush du début aurait bloqué le 31e), 30 tentatives de connexion admin par minute et par adresse IP (limite à part, `ADMIN_LIMIT`), 10 débuts de partie par 10 s et par joueur.
 - Faille connue : quelqu'un d'habile peut lancer une partie, attendre, puis envoyer un faux score plausible. Parade actuelle : les records de 90 s et plus sont signalés dans l'admin (bandeau rouge), on retire le joueur si besoin. Un faux score plus modeste (par exemple 60 s) passe inaperçu. Parade complète possible : rejouer la partie à partir des gestes enregistrés (voir « À faire »).
 
 ## Check-list d'une soirée

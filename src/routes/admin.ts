@@ -59,7 +59,7 @@ export async function adminAuth(req: Request, env: Env): Promise<AdminAuth | nul
 }
 
 export async function login({ req, env }: Ctx) {
-  if (!(await allowed(env.JOIN_LIMIT, "admin:" + clientIp(req)))) return tooFast();
+  if (!(await allowed(env.ADMIN_LIMIT, "admin:" + clientIp(req)))) return tooFast();
   const body = await readJson(req);
   if (!(await keyMatches(env, body.key))) return fail(401, "Clé admin incorrecte.");
   const name = cleanName(body.name);
@@ -68,7 +68,7 @@ export async function login({ req, env }: Ctx) {
 }
 
 export async function accept({ req, env }: Ctx) {
-  if (!(await allowed(env.JOIN_LIMIT, "admin:" + clientIp(req)))) return tooFast();
+  if (!(await allowed(env.ADMIN_LIMIT, "admin:" + clientIp(req)))) return tooFast();
   const invite = (await readJson(req)).invite;
   if (typeof invite !== "string" || !invite) return fail(400, "Invitation invalide.");
   const hash = await sha256(invite);
