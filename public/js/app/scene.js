@@ -63,8 +63,9 @@ export function createScene(canvas, overlay) {
     return Array.from({ length: 7 }, () => ({ dx: rnd(-13, 13), dy: rnd(-11, 13), r: rnd(4.5, 10) }));
   }
 
-  function pop(x, y, text) {
-    pops.push({ x, y, text, life: POP_LIFE });
+  function pop(x, y, text, { key = null, size = 14 } = {}) {
+    if (key) pops = pops.filter((p) => p.key !== key);
+    pops.push({ x, y, text, key, size, life: POP_LIFE });
   }
 
   function clear() {
@@ -109,11 +110,11 @@ export function createScene(canvas, overlay) {
       ctx.fill();
     }
     ctx.globalAlpha = 1;
-    ctx.font = '14px Bungee, "Arial Black", sans-serif';
     ctx.textAlign = "center";
     ctx.lineJoin = "round";
     ctx.lineWidth = 3.5;
     for (const p of pops) {
+      ctx.font = `${p.size}px Bungee, "Arial Black", sans-serif`;
       ctx.globalAlpha = clamp(p.life / POP_LIFE, 0, 1);
       ctx.strokeStyle = C.void;
       ctx.strokeText(p.text, p.x, p.y);

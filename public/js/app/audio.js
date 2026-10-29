@@ -217,7 +217,7 @@ export function previewMusic() {
   previewTimer = setTimeout(() => { if (!running) fadeOut(); }, PREVIEW_MS);
 }
 
-function fire(name) {
+function fire(name, rate) {
   const variants = SOUNDS[name], t = ctx.currentTime;
   if (t - (lastPlayed[name] ?? -Infinity) < (SFX_GAP[name] || 0)) return;
   const pick = variants[Math.floor(Math.random() * variants.length)];
@@ -226,27 +226,28 @@ function fire(name) {
   const src = ctx.createBufferSource();
   const gain = ctx.createGain();
   src.buffer = buffers[pick.url];
+  src.playbackRate.value = rate;
   gain.gain.value = pick.gain;
   src.connect(gain).connect(master);
   src.start(t);
 }
 
-function trigger(name, patience) {
+function trigger(name, patience, rate = 1) {
   if (!ctx || !SOUNDS[name]) return;
   if (ctx.state === "running") {
-    fire(name);
+    fire(name, rate);
     return;
   }
   const asked = performance.now();
   ctx.resume().then(() => {
-    if (performance.now() - asked <= patience) fire(name);
+    if (performance.now() - asked <= patience) fire(name, rate);
   }, () => {});
 }
 
 export const SFX_NAMES = Object.keys(SOUNDS);
 
-export function playSfx(name) {
-  if (prefs.sfx) trigger(name, SFX_LATE_MS);
+export function playSfx(name, rate) {
+  if (prefs.sfx) trigger(name, SFX_LATE_MS, rate);
 }
 
 export const prepareSfx = ensureContext;
