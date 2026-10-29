@@ -166,9 +166,8 @@ Après :
 
 ## À faire
 
-- Créer la soirée du samedi 07/11 dans l'admin.
-- Tester sur de vrais téléphones : fluidité, son, réseau du lieu.
-- Inviter les collègues admins.
+- Trier les essais de la branche `essais` avant le 07/11.
+- Adresse : garder « workers.dev » ou prendre un nom de domaine payant (le QR code changerait). Décision à l'AG du lundi 02/11/2026 à 20h, avant d'imprimer les affiches.
 - Remplacer ou compléter la musique avec des morceaux des collègues DJ.
 - Faire monter le morceau par un ami DJ : coupes et transitions propres, fin qui boucle. Les coupes faites dans le code en attendant sont approximatives.
 - Reprendre les couleurs et la tartine des affiches : fichiers du designer dans `affiches/`. Les affiches sont aplaties : demander les éléments séparés, comme la tartine (`tartine-fusee.webp`).
@@ -191,7 +190,6 @@ Des idées sont codées sur la branche `essais`, en ligne mais pas encore sur `m
 - Suites d'attaques calées sur la musique, ou tirées parmi des enchaînements déjà écrits qui reviennent : analyser d'abord le morceau pour caler au moins les montées et les drops.
 - Musique : couper la partie molle entre 75 s et à peu près la moitié du morceau, pour qu'il reste énergique, puis le faire boucler si un joueur dépasse sa fin. En attendant d'autres morceaux à enchaîner.
 - Images ou objets à collectionner (le maximator qui tourne), partage du score en story Insta.
-- Adresse sans « workers.dev » : nom de domaine payant, et le QR code changerait. À décider avant d'imprimer les affiches.
 - Pas retenues pour l'instant : thème de soirée choisi par l'admin, tartine du designer à la place de la tartine dessinée, étoiles au rythme de la musique, son d'annonce par attaque, couche de tension, podium de fin de soirée sur l'écran géant.
 
 ## Bon à savoir
