@@ -1,4 +1,5 @@
 import { bearer } from "./http";
+import { sha256, HASH_LENGTH } from "./security";
 
 export interface EventRow {
   id: number;
@@ -11,6 +12,7 @@ export interface Profile {
   id: string;
   pseudo: string;
   best: number;
+  best_at: number | null;
   banned: number;
   run_count: number;
 }
@@ -27,13 +29,15 @@ export interface EventView {
   next: EventRow | null;
 }
 
-const CACHE_MS = 5000;
+const CACHE_MS = 10000;
 export const RECENT_MS = 12 * 3600 * 1000;
 const GENERAL_LIMIT = 1000;
+const OLD_TOKEN_LENGTH = 48;
 const EVENT_COLS = "id, name, opens_at, closes_at";
+const ABOVE = "banned = 0 AND best > 0 AND (best > ?1 OR (best = ?1 AND best_at < ?2))";
 
 let eventsCache: { at: number; rows: EventRow[] } | null = null;
-const rankingCache = new Map<string, { at: number; list: Ranked[] }>();
+const rankingCache = new Map<string, { at: number; value: unknown }>();
 
 export async function events(env: Env, now = Date.now()): Promise<EventView> {
   if (!eventsCache || now - eventsCache.at > CACHE_MS) {
@@ -67,7 +71,12 @@ export const eventById = (env: Env, id: number) =>
 export async function findProfile(req: Request, env: Env) {
   const token = bearer(req);
   if (!token) return null;
-  return env.DB.prepare("SELECT id, pseudo, best, banned, run_count FROM profiles WHERE token = ?").bind(token).first<Profile>();
+  const hash = await sha256(token);
+  const me = await env.DB.prepare("SELECT id, pseudo, best, best_at, banned, run_count, token FROM profiles WHERE token IN (?1, ?2)")
+    .bind(hash, token.length === OLD_TOKEN_LENGTH ? token : hash)
+    .first<Profile & { token: string }>();
+  if (me && me.token.length !== HASH_LENGTH) await env.DB.prepare("UPDATE profiles SET token = ? WHERE id = ?").bind(hash, me.id).run();
+  return me;
 }
 
 export async function entryBest(env: Env, eventId: number, playerId: string) {
@@ -77,13 +86,13 @@ export async function entryBest(env: Env, eventId: number, playerId: string) {
   return row?.best ?? 0;
 }
 
-function cached(key: string, fresh: boolean, load: () => Promise<Ranked[]>) {
+function cached<T>(key: string, fresh: boolean, load: () => Promise<T>): Promise<T> {
   const now = Date.now();
   const hit = rankingCache.get(key);
-  if (!fresh && hit && now - hit.at < CACHE_MS) return Promise.resolve(hit.list);
-  return load().then((list) => {
-    rankingCache.set(key, { at: now, list });
-    return list;
+  if (!fresh && hit && now - hit.at < CACHE_MS) return Promise.resolve(hit.value as T);
+  return load().then((value) => {
+    rankingCache.set(key, { at: now, value });
+    return value;
   });
 }
 
@@ -94,6 +103,19 @@ export const generalRanking = (env: Env, fresh = false) =>
     )
       .bind(GENERAL_LIMIT)
       .all<Ranked>()).results);
+
+export const generalCount = (env: Env, list: Ranked[], fresh = false) =>
+  list.length < GENERAL_LIMIT
+    ? Promise.resolve(list.length)
+    : cached("count", fresh, async () =>
+        (await env.DB.prepare("SELECT COUNT(*) AS n FROM profiles WHERE banned = 0 AND best > 0").first<{ n: number }>())!.n);
+
+export async function generalRank(env: Env, list: Ranked[], playerId: string, best: number, bestAt: number | null) {
+  const rank = rankIn(list, playerId);
+  if (rank || best <= 0 || list.length < GENERAL_LIMIT) return rank;
+  const above = await env.DB.prepare(`SELECT COUNT(*) AS n FROM profiles WHERE ${ABOVE}`).bind(best, bestAt ?? 0).first<{ n: number }>();
+  return above!.n + 1;
+}
 
 export const eventRanking = (env: Env, eventId: number, fresh = false) =>
   cached("event:" + eventId, fresh, async () =>
