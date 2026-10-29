@@ -1,6 +1,6 @@
 import { FW, FH, clamp } from "../game/field.js";
 import { PALETTE } from "../shared/palette.js";
-import { drawProjectile, drawWarn, drawToast } from "./sprites.js";
+import { drawTrail, drawProjectile, drawWarn, drawToast } from "./sprites.js";
 import { BODIES } from "./planets.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -222,6 +222,7 @@ export function createScene(canvas, overlay) {
     ctx.beginPath();
     ctx.rect(0, 0, FW, FH);
     ctx.clip();
+    for (const o of world.obs) drawTrail(ctx, o, C);
     for (const o of world.obs) drawProjectile(ctx, o, C);
     if (toast) drawToast(ctx, toast, splat, C);
     drawEffects();

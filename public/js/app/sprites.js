@@ -1,5 +1,6 @@
 import { PALETTE, SPREADS } from "../shared/palette.js";
 import { FW, FH, clamp } from "../game/field.js";
+import { PROJECTILES } from "../game/projectiles.js";
 
 export function rr(ctx, x, y, w, h, r) {
   if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
@@ -200,6 +201,32 @@ function bread(ctx, o, C) {
 }
 
 const PROJECTILE_SPRITES = { knife, fork, rolling, whisk, cleaver, bread };
+
+const TRAIL_MIN = 210, TRAIL_K = 0.14, TRAIL_MAX = 64;
+
+export function drawTrail(ctx, o, C = PALETTE) {
+  const v = Math.hypot(o.vx, o.vy), len = Math.min(TRAIL_MAX, (v - TRAIL_MIN) * TRAIL_K);
+  if (len < 4) return;
+  const ux = o.vx / v, uy = o.vy / v;
+  const across = PROJECTILES[o.kind].across;
+  const back = o.spin ? 0 : across ? o.rad : o.len / 2 - 4;
+  const lanes = across ? [-0.32 * o.len, 0, 0.32 * o.len] : o.spin ? [-0.8 * o.rad, 0.8 * o.rad] : [0];
+  ctx.save();
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = "round";
+  for (const k of lanes) {
+    const x = o.x - ux * back - uy * k, y = o.y - uy * back + ux * k;
+    const g = ctx.createLinearGradient(x, y, x - ux * len, y - uy * len);
+    g.addColorStop(0, C.trail);
+    g.addColorStop(1, C["trail-end"]);
+    ctx.strokeStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - ux * len, y - uy * len);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
 
 export function drawProjectile(ctx, o, C = PALETTE) {
   ctx.save();
