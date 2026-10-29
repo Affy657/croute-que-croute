@@ -167,7 +167,7 @@ Après :
 - Attaque : une fonction dans `attacks.js` et une ligne dans `ATTACKS` (dès quand, poids, durée ; `solo: true` pour une grosse figure, `calm: true` pour qu'elle ne parte que sans annonce en cours, `growsUntil` et `growth` si elle grossit avec le temps). `notice` sur une annonce ne l'affiche que peu avant son arrivée. Le solveur la vérifie tout seul.
 - Arme : sa taille dans `projectiles.js` et son dessin dans `sprites.js`, sous le même nom.
 - Prototype : `lab: true` dans `ATTACKS` ou `PROJECTILES`. Visible dans Infos pour les admins seulement, jamais tiré en jeu.
-- Tartinade rare : une ligne dans `SPREADS` (`palette.js`) et son nom dans `RARE_SPREADS` (`projectiles.js`).
+- Tartinade rare : une ligne dans `SPREADS` (`palette.js`, avec `with` pour « par un couteau au… ») et son nom dans `RARE_SPREADS` (`projectiles.js`). Elle devient aussi une garniture à débloquer.
 - Événement de partie : `sim.js` le renvoie dans les événements de `step`, `main.js` y réagit dans `ON_SIM`.
 - Succès : une ligne dans `ACHIEVEMENTS` et sa condition dans `runTick`, `runEnd`, `afterSubmit` ou `onBoard`.
 - Route d'API : une fonction dans `src/routes/` et une ligne dans `src/worker.ts`, avec son niveau d'accès.
@@ -182,16 +182,18 @@ Après :
 
 ## En essai
 
-Aucun essai en cours. Une nouveauté à tester passe par la branche `essais`, une fusion par idée, et part en ligne depuis `essais`. Adrien choisit : les idées refusées sont retirées (`git revert -m 1` de leur fusion), puis `essais` est fusionnée dans `master` et leurs descriptions rangées dans les bonnes parties.
+Trois idées sur la branche `essais`, pas encore sur `master` (une fusion chacune : `arret-image`, `tartinee-par`, `garnitures`). Adrien choisit : les idées refusées sont retirées (`git revert -m 1` de leur fusion), puis `essais` est fusionnée dans `master` et ces lignes rangées dans les bonnes parties.
+
+- Arrêt sur image : à la mort, le jeu se fige 0,3 s avec un léger zoom sur la tartine, puis l'éclaboussure. Les pastilles d'annonce disparaissent pendant la mort. Pas de zoom si le téléphone demande moins d'animations.
+- Tartinée par… : sous « Tartinée ! », l'arme qui t'a eu (« par un hachoir », « par un couteau au tarama »). Textes : `by` dans `PROJECTILES`, `with` dans `SPREADS`.
+- Garnitures : 10 tartinades, dont 6 nouvelles (abricot, pistache, myrtille, tarama, fromage frais, tapenade). Frôler un couteau garni ou se faire tuer par lui débloque sa garniture (pas en entraînement). On la choisit dans Succès, carte Garnitures. Gardées sur le téléphone (`cv-garnitures`, `cv-garniture`), purement visuel. Chaque tartinade est plus rare qu'avant : 1 attaque sur 40 a un couteau garni, tiré parmi 10.
 
 ## Idées pour plus tard
 
-- « Tartinée par… » avec l'arme qui t'a eu, vibration au frôlé, succès gardés sur le serveur.
-- Arrêt sur image à la mort : le jeu se fige 0,3 s avec un léger zoom sur le couvert qui t'a eu, puis l'éclaboussure. Va avec « Tartinée par… ».
+- Vibration au frôlé, succès gardés sur le serveur.
 - Dernier quart d'heure : 15 min avant la fermeture, l'accueil et l'écran géant passent en rouge, compte à rebours en grand.
 - Compteur de la salle sur l'écran géant : temps cumulé de toutes les parties de la soirée. Une ligne écrite en plus par partie.
 - Nouvelles attaques vers 65 s, pour que les meilleurs découvrent encore quelque chose (la dernière arrive à 54 s) : cuillère boomerang qui traverse puis revient, pince de deux couteaux qui se referment, spirale de fourchettes.
-- Tartines à débloquer : la garniture de la tartine reprend celle des couteaux à tartinade (confiture, pâte à tartiner, miel, ketchup, et d'autres pour avoir à peu près chaque couleur). On débloque une garniture en frôlant son couteau ou en se faisant tuer par lui. Purement visuel.
 - Même partie pour tous : une seule suite d'attaques par soirée, identique pour tout le monde. La plus tryhard, mais elle change l'esprit du classement.
 - Une phase après 80 s (« mode sérieux »), ou des moments calmes et des pics calés sur les drops du morceau.
 - Suites d'attaques calées sur la musique, ou tirées parmi des enchaînements déjà écrits qui reviennent : analyser d'abord le morceau pour caler au moins les montées et les drops.
