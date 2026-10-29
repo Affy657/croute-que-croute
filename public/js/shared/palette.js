@@ -45,5 +45,11 @@ export const SPREADS = {
   jam: { name: "Confiture", with: "à la confiture", color: "#9b1b3a", shine: "#e0577a", bits: true },
   choco: { name: "Pâte à tartiner", with: "à la pâte à tartiner", color: "#5b331d", shine: "#8a5636" },
   honey: { name: "Miel", with: "au miel", color: "#f0a81c", shine: "#ffd36b", drip: true },
-  ketchup: { name: "Ketchup", with: "au ketchup", color: "#d8231b", shine: "#ff7a6b" }
+  ketchup: { name: "Ketchup", with: "au ketchup", color: "#d8231b", shine: "#ff7a6b" },
+  apricot: { name: "Abricot", with: "à l'abricot", color: "#f08a24", shine: "#ffc072", bits: true },
+  pistachio: { name: "Pistache", with: "à la pistache", color: "#7fae3e", shine: "#bfe07e" },
+  blueberry: { name: "Myrtille", with: "à la myrtille", color: "#3f2f8a", shine: "#8676d6", bits: true },
+  tarama: { name: "Tarama", with: "au tarama", color: "#f3a0b2", shine: "#ffd9e1" },
+  cheese: { name: "Fromage frais", with: "au fromage frais", color: "#f4f1e6", shine: "#ffffff" },
+  tapenade: { name: "Tapenade", with: "à la tapenade", color: "#2f2a22", shine: "#6d6553", bits: true }
 };
