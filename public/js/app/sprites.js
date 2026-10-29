@@ -621,6 +621,67 @@ const TOPPINGS = {
     oval(ctx, 4, -1, 3.2, 3.2);
     ctx.stroke();
     dots(ctx, C.void, [[4.9, -0.2, 1.5]]);
+  },
+  dog(ctx, C) {
+    ctx.fillStyle = "rgba(196, 128, 62, 0.55)";
+    wavy(ctx, 0, 8, 12.5, 6, 0.16, 6);
+    ctx.fill();
+    dots(ctx, "rgba(255, 222, 170, 0.7)", [[-8, 7, 1], [7, 10, 0.8]]);
+    ctx.fillStyle = "#6e3f22";
+    ctx.beginPath();
+    ctx.moveTo(-6.5, -3);
+    ctx.lineTo(-6.5, 8);
+    ctx.ellipse(0, 8, 6.5, 2.4, 0, Math.PI, 0, true);
+    ctx.lineTo(6.5, -3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#4a2612";
+    ctx.lineWidth = 0.8;
+    for (const y of [0.6, 4.2]) {
+      ctx.beginPath();
+      ctx.ellipse(0, y, 6.5, 2.4, 0, 0.1, Math.PI - 0.1);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+    ctx.fillRect(-5, -2.5, 1.6, 10.5);
+    ctx.fillStyle = "#94603a";
+    oval(ctx, 0, -3, 6.5, 2.4);
+    ctx.fill();
+    dots(ctx, "#4a2612", [[-3, -3.2, 0.9], [2.2, -2.4, 0.8], [0.4, -3.9, 0.6]]);
+    dots(ctx, "#c58a5c", [[-0.8, -2.5, 0.7], [3.6, -3.5, 0.6]]);
+    ctx.save();
+    ctx.translate(9, 6);
+    ctx.rotate(-0.7);
+    ctx.fillStyle = "#f1dcb4";
+    ctx.fillRect(-2.6, -0.9, 5.2, 1.8);
+    dots(ctx, "#f1dcb4", [[-2.8, -1, 1.2], [-2.8, 1, 1.2], [2.8, -1, 1.2], [2.8, 1, 1.2]]);
+    ctx.restore();
+    ctx.strokeStyle = "#9bd35a";
+    ctx.lineWidth = 1.1;
+    ctx.lineCap = "round";
+    for (const x of [-3.5, 2.5]) {
+      line(ctx, Array.from({ length: 13 }, (_, i) => [x + Math.sin(i * 0.8) * 1.3, -6.5 - i * 0.65]));
+      ctx.stroke();
+    }
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.55)";
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([0.9, 1]);
+    ctx.beginPath();
+    ctx.arc(-7.4, -7.4, 3.2, 0.4, 2.6);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(205, 232, 255, 0.85)";
+    ctx.strokeStyle = C.void;
+    ctx.lineWidth = 0.35;
+    for (const [x, a] of [[-10.2, 0.9], [-8.2, -0.9]]) {
+      oval(ctx, x, -11.6, 1.9, 0.95, a);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.fillStyle = C.void;
+    oval(ctx, -9.2, -10.2, 0.95, 1.4);
+    ctx.fill();
+    dots(ctx, "#d8231b", [[-9.7, -11.3, 0.4], [-8.7, -11.3, 0.4]]);
   }
 };
 

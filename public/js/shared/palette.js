@@ -49,5 +49,6 @@ export const SPREADS = {
   toothpaste: { name: "Dentifrice", with: "au dentifrice", color: "#f4f8ff", shine: "#e8303a" },
   egg: { name: "Œuf au plat", with: "à l'œuf", color: "#fdfdf5", shine: "#ffb81c" },
   sardine: { name: "Sardine", with: "à la sardine", color: "#9fb3c8", shine: "#e3ecf3" },
-  slime: { name: "Slime", with: "au slime", color: "#5ed13a", shine: "#b8f59a", bits: true }
+  slime: { name: "Slime", with: "au slime", color: "#5ed13a", shine: "#b8f59a", bits: true },
+  dog: { name: "Pâtée pour chien", with: "à la pâtée pour chien", color: "#6e3f22", shine: "#b07a4e", bits: true }
 };
