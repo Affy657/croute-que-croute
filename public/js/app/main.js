@@ -237,7 +237,7 @@ function openBoard(from) {
   renderBoard();
   api.refreshBoard();
   clearInterval(boardTimer);
-  boardTimer = setInterval(api.refreshBoard, BOARD_POLL_MS);
+  boardTimer = setInterval(() => { if (!document.hidden) api.refreshBoard(); }, BOARD_POLL_MS);
 }
 
 function closeBoard() {
@@ -519,7 +519,7 @@ setInterval(() => {
 }, 1000);
 
 setInterval(() => {
-  if (S.mode === "menu" && !boardOpen) api.refreshBoard();
+  if (S.mode === "menu" && !boardOpen && !document.hidden) api.refreshBoard();
 }, MENU_POLL_MS);
 
 {

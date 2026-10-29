@@ -44,7 +44,11 @@ async function createSession(env: Env, name: string, role: string) {
 }
 
 export async function adminAuth(req: Request, env: Env): Promise<AdminAuth | null> {
-  if (await keyMatches(env, req.headers.get("x-admin-key"))) return { id: null, name: "Clé admin", role: "owner" };
+  const key = req.headers.get("x-admin-key");
+  if (key) {
+    if (!(await allowed(env.ADMIN_LIMIT, "admin:" + clientIp(req))) || !(await keyMatches(env, key))) return null;
+    return { id: null, name: "Clé admin", role: "owner" };
+  }
   const token = bearer(req);
   if (!token) return null;
   const row = await env.DB.prepare("SELECT id, name, role, last_seen, revoked FROM admins WHERE token_hash = ?")
