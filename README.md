@@ -175,11 +175,17 @@ Après :
 
 ## En essai
 
-Sept idées sont codées sur la branche `essais`, en ligne mais pas encore sur `master` : rival, série de frôlés, entraînement, paliers, traînées, musique étouffée, nouveau n°1. Leur description est dans le README de `essais`.
+Neuf idées sont codées sur la branche `essais`, en ligne mais pas encore sur `master` : rival, série de frôlés, entraînement, paliers, traînées, musique étouffée, nouveau n°1, ciel qui chauffe, cicatrices. Leur description est dans le README de `essais`.
 
 ## Idées pour plus tard
 
 - « Tartinée par… » avec l'arme qui t'a eu, vibration au frôlé, succès gardés sur le serveur.
+- Arrêt sur image à la mort : le jeu se fige 0,3 s avec un léger zoom sur le couvert qui t'a eu, puis l'éclaboussure. Va avec « Tartinée par… ».
+- Dernier quart d'heure : 15 min avant la fermeture, l'accueil et l'écran géant passent en rouge, compte à rebours en grand.
+- Compteur de la salle sur l'écran géant : temps cumulé de toutes les parties de la soirée. Une ligne écrite en plus par partie.
+- Nouvelles attaques vers 65 s, pour que les meilleurs découvrent encore quelque chose (la dernière arrive à 54 s) : cuillère boomerang qui traverse puis revient, pince de deux couteaux qui se referment, spirale de fourchettes.
+- Tartines à débloquer : une tartinade sur la tartine par succès, purement visuelle.
+- Même partie pour tous : une seule suite d'attaques par soirée, identique pour tout le monde. La plus tryhard, mais elle change l'esprit du classement.
 - Une phase après 80 s (« mode sérieux »), ou des moments calmes et des pics calés sur les drops du morceau.
 - Images ou objets à collectionner (le maximator qui tourne), partage du score en story Insta.
 - Adresse sans « workers.dev » : nom de domaine payant, et le QR code changerait. À décider avant d'imprimer les affiches.
