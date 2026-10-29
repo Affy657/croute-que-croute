@@ -3,6 +3,7 @@ import { store, KEYS } from "../shared/store.js";
 const MUSIC_FILES = ["/music/theme.m4a", "/music/theme.mp3"];
 export const MUSIC_CREDIT = { title: "Roundabout", artist: "Blacklolita", url: "https://open.spotify.com/track/1GbuLhdSobTcKzQfOGliQX" };
 export const SFX_CREDIT = { name: "Mixkit", url: "https://mixkit.co/free-sound-effects/game/" };
+const MUSIC_PARTS = [[0, 76.807], [104.016, 115.179], [136.807, 202.389]];
 const SOUNDS = {
   start: [{ url: "/sfx/start.mp3", gain: 0.85 }],
   near: [{ url: "/sfx/near.mp3", gain: 0.8 }],
@@ -97,12 +98,41 @@ function openMusic() {
   Q.setValueAtTime(1, t);
 }
 
+function trackAt(t) {
+  for (const [from, to] of MUSIC_PARTS.slice(0, -1)) {
+    if (t < to - from) return from + t;
+    t -= to - from;
+  }
+  const [from, to] = MUSIC_PARTS[MUSIC_PARTS.length - 1];
+  return from + (t % (to - from));
+}
+
+function runAt(p, t) {
+  const last = MUSIC_PARTS.length - 1;
+  let start = 0;
+  for (let i = 0; i < last && p >= MUSIC_PARTS[i][1]; i++) start += MUSIC_PARTS[i][1] - MUSIC_PARTS[i][0];
+  const i = MUSIC_PARTS.findIndex(([, to], k) => k === last || p < to);
+  const run = start + Math.max(0, p - MUSIC_PARTS[i][0]);
+  if (i < last) return run;
+  const lap = MUSIC_PARTS[last][1] - MUSIC_PARTS[last][0];
+  return run + Math.max(0, Math.round((t - run) / lap)) * lap;
+}
+
+function jumpFrom(p) {
+  const last = MUSIC_PARTS.length - 1;
+  for (let i = 0; i <= last; i++) {
+    const end = MUSIC_PARTS[i][1], next = MUSIC_PARTS[i + 1];
+    if (p >= end && (!next || p < next[0])) return (next || MUSIC_PARTS[last])[0] + p - end;
+  }
+  return null;
+}
+
 function playAt(t) {
   stopFade();
   openMusic();
   el.muted = false;
   el.volume = musicVolume();
-  el.currentTime = el.duration ? t % el.duration : t;
+  el.currentTime = trackAt(t);
   el.play().catch(() => {});
 }
 
@@ -203,9 +233,9 @@ export function musicRunStart() {
 export function musicRunSync(t) {
   runTime = t;
   if (!el || !live || el.seeking || !el.duration) return;
-  const want = t % el.duration;
-  const d = Math.abs(el.currentTime - want);
-  if (Math.min(d, el.duration - d) > DRIFT) el.currentTime = want;
+  const jump = jumpFrom(el.currentTime);
+  if (jump !== null) el.currentTime = jump;
+  else if (Math.abs(runAt(el.currentTime, t) - t) > DRIFT) el.currentTime = trackAt(t);
 }
 
 export function musicRunEnd() {
