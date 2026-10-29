@@ -413,6 +413,35 @@ h2.page-title {
   gap: 0.6rem;
 }
 
+.card-actions.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  container-type: inline-size;
+}
+
+.card-actions.pair .ghost {
+  min-width: 0;
+  padding-inline: 0.3em;
+  font-size: min(1rem, calc(4.6cqi - 1px));
+  white-space: nowrap;
+}
+
+.back {
+  margin-top: auto;
+}
+
+#qr .block {
+  flex: 1;
+  justify-content: center;
+}
+
+.admin-frame iframe {
+  display: block;
+  width: 100%;
+  height: 70vh;
+  border: 0;
+}
+
 .slider {
   display: grid;
   grid-template-columns: 6rem 1fr;

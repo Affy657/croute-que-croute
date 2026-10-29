@@ -10,6 +10,8 @@ const store = {
   set: (v) => storage.set(KEYS.adminToken, v || null)
 };
 
+if (window.top !== window) document.documentElement.classList.add("embedded");
+
 let token = store.get();
 let me = null;
 let data = null;

@@ -19,17 +19,18 @@ export const PALETTE = {
 };
 
 export const SKY = {
-  shade: "rgba(13, 11, 36, 0.5)",
-  gleam: "rgba(255, 246, 224, 0.2)",
+  lit: "rgba(13, 11, 36, 0)",
+  shade: "rgba(13, 11, 36, 0.72)",
+  gleam: "rgba(255, 246, 224, 0.14)",
   pancake: {
-    base: "#d97a2b", crater: "#8f4518", floor: "#c06a26",
-    sideLight: "#e8ac62", side: "#9a5524", topLight: "#f6d08e", top: "#d8994f",
-    glazeLight: "#a6d64e", glaze: "#4f8a22", jarLight: "#d63a58", jar: "#7a1229", jam: "#5e0c20"
+    base: "#c26d2c", crater: "#7a3a17", floor: "#a65a22",
+    sideLight: "#a77c47", side: "#6f3d1a", topLight: "#b19666", top: "#9c6e39",
+    glazeLight: "#789a38", glaze: "#396318", jarLight: "#9a2a3f", jar: "#580d1e", jam: "#440917"
   },
   green: { light: "#4f9a55", dark: "#122b1c", band: "#a6d16a", ring: "#c8d65a" },
   speakers: {
-    base: "#7a48b0", land: "#6fb33f", landEdge: "#3f7a26",
-    box: "#1a1030", rim: "#5c4a86", rimLight: "#b9a3e0", cone: "#4a3a6e", wave: "#c07ae0"
+    base: "#74419f", land: "#4f9a3f", landEdge: "#2f6526",
+    box: "#1a1030", rim: "#4e3f75", rimLight: "#9583bd", cone: "#3d3060", wave: "#a77fd0"
   },
   moons: { light: "#5fa85a", dark: "#143320", spot: "#2c6435" },
   rock: { light: "#bf6a2c", dark: "#341910", spot: "#713617" }

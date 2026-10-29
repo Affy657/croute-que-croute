@@ -35,6 +35,14 @@ main {
   gap: 16px;
 }
 
+.embedded main {
+  padding: 0;
+}
+
+.embedded .top {
+  display: none;
+}
+
 .stack {
   display: flex;
   flex-direction: column;

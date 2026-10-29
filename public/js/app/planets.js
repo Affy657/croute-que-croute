@@ -52,17 +52,13 @@ function onSphere(ctx, r, x, y, draw) {
   ctx.restore();
 }
 
-function sphereShade(ctx, r) {
+function tone(ctx, r) {
   clipped(ctx, r, () => {
-    ctx.fillStyle = SKY.shade;
-    ctx.beginPath();
-    ctx.rect(-r, -r, 2 * r, 2 * r);
-    ctx.arc(-r * 0.3, -r * 0.3, r * 1.1, 0, TAU);
-    ctx.fill("evenodd");
-    ctx.fillStyle = SKY.gleam;
-    ctx.beginPath();
-    ctx.ellipse(-r * 0.42, -r * 0.48, r * 0.26, r * 0.12, -0.7, 0, TAU);
-    ctx.fill();
+    const g = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r);
+    g.addColorStop(0, SKY.lit);
+    g.addColorStop(1, SKY.shade);
+    ctx.fillStyle = g;
+    ctx.fillRect(-r, -r, 2 * r, 2 * r);
   });
   ctx.strokeStyle = INK;
   ctx.lineWidth = ink(r);
@@ -148,7 +144,7 @@ function waves(ctx, r, clock) {
   const alpha = ctx.globalAlpha;
   for (let i = 0; i < 3; i++) {
     const k = (clock * 0.6 + i / 3) % 1;
-    ctx.globalAlpha = alpha * 0.6 * (1 - k);
+    ctx.globalAlpha = alpha * 0.45 * (1 - k);
     for (const [mid, span] of [[-0.25, 0.75], [2.4, 0.55]]) {
       ctx.beginPath();
       ctx.arc(0, 0, r * (1.1 + 0.5 * k), mid - span, mid + span);
@@ -176,7 +172,7 @@ function speakers(ctx, r, clock) {
   for (const [x, y, s] of [[0.32, -0.05, 0.36], [-0.5, 0.45, 0.22], [-0.25, -0.58, 0.14]]) {
     onSphere(ctx, r, x, y, (light) => speaker(ctx, s * r, light));
   }
-  sphereShade(ctx, r);
+  tone(ctx, r);
 }
 
 function crater(ctx, s, light) {
@@ -269,23 +265,23 @@ function jar(ctx, x, y, s) {
 function pancake(ctx, r) {
   ctx.fillStyle = SKY.pancake.base;
   disc(ctx, 0, 0, r);
-  const w = r * 0.62, e = w * 0.3, t = w * 0.22, cx = r * 0.12, base = r * 0.42;
+  const w = r * 0.36, e = w * 0.32, t = r * 0.085, sx = -r * 0.08, base = -r * 0.84;
   clipped(ctx, r, () => {
     for (const [x, y, s] of CRATERS) onSphere(ctx, r, x, y, (light) => crater(ctx, s * r, light));
     ctx.fillStyle = SKY.shade;
     ctx.beginPath();
-    ctx.ellipse(cx + w * 0.25, base + t + e * 0.6, w * 1.1, e * 1.1, 0, 0, TAU);
+    ctx.ellipse(sx + w * 0.35, base + t + e * 0.4, w * 1.3, e * 1.4, 0, 0, TAU);
     ctx.fill();
   });
   for (const [x, y, s] of [[-0.82, 0.1, 0.17], [-0.7, 0.5, 0.12]]) onSphere(ctx, r, x, y, (light) => speaker(ctx, s * r, light));
-  sphereShade(ctx, r);
+  tone(ctx, r);
   ctx.strokeStyle = INK;
-  ctx.lineWidth = ink(r);
-  const shifts = [0, 0.05, -0.04, 0.06, 0];
-  shifts.forEach((dx, i) => layer(ctx, cx + dx * w, base - i * t, w * (1 - (i % 2) * 0.04), e, t));
+  ctx.lineWidth = ink(r) * 0.75;
+  const shifts = [0, 0.06, -0.04, 0.05];
+  shifts.forEach((dx, i) => layer(ctx, sx + dx * w, base - i * t, w * (1 - (i % 2) * 0.05), e, t));
   const top = base - (shifts.length - 1) * t;
-  glaze(ctx, cx, top, w, e, t);
-  jar(ctx, cx + w * 0.08, top + e * 0.15, r * 0.4);
+  glaze(ctx, sx, top, w, e, t);
+  jar(ctx, sx + w * 0.08, top + e * 0.15, r * 0.26);
 }
 
 function moons(ctx, r) {

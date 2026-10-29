@@ -93,7 +93,7 @@
   </div>
   <ol id="boardList" class="board-list"></ol>
   <p id="boardEmpty" class="note" hidden></p>
-  <button id="boardBack" class="cta" type="button">Retour</button>
+  <button id="boardBack" class="cta back" type="button">Retour</button>
 </section>
 
 <section id="info" class="screen info-screen" hidden>
@@ -106,7 +106,7 @@
     </div>
   </div>
   <div id="infoBody" class="catalog info-body"></div>
-  <button id="infoBack" class="cta" type="button">Retour</button>
+  <button id="infoBack" class="cta back" type="button">Retour</button>
 </section>
 
 <section id="ach" class="screen info-screen" hidden>
@@ -115,7 +115,7 @@
     <p id="achCount" class="eyebrow"></p>
   </div>
   <div id="achList" class="catalog info-body"></div>
-  <button id="achBack" class="cta" type="button">Retour</button>
+  <button id="achBack" class="cta back" type="button">Retour</button>
 </section>
 
 <section id="settings" class="screen info-screen" hidden>
@@ -144,23 +144,14 @@
     <section class="card">
       <h2>Partager le jeu</h2>
       <p class="sub">Envoie le lien, ou montre le QR code à quelqu'un à côté de toi.</p>
-      <div class="card-actions">
+      <div class="card-actions pair">
         <button id="shareBtn" class="ghost" type="button">Partager le lien</button>
         <button id="qrBtn" class="ghost" type="button">QR code</button>
       </div>
     </section>
   </div>
-  <div id="settingsAdmin" class="catalog info-body" hidden>
-    <section class="card">
-      <h2>Admin</h2>
-      <p class="sub">Soirées, joueurs, équipe et bruitages. L'écran géant affiche le classement en grand pour un écran ou un vidéoprojecteur.</p>
-      <div class="card-actions">
-        <a class="ghost" href="/admin">Tableau de bord</a>
-        <a class="ghost" href="/ecran" target="_blank" rel="noopener">Écran géant</a>
-      </div>
-    </section>
-  </div>
-  <button id="settingsBack" class="cta" type="button">Retour</button>
+  <div id="settingsAdmin" class="info-body admin-frame" hidden></div>
+  <button id="settingsBack" class="cta back" type="button">Retour</button>
 </section>
 
 <section id="qr" class="screen veil" hidden>
@@ -169,7 +160,7 @@
     <img class="qr-img" src="/qr.svg" alt="QR code du jeu" width="280" height="280">
     <p id="qrHost" class="eyebrow"></p>
   </div>
-  <button id="qrBack" class="cta" type="button">Retour</button>
+  <button id="qrBack" class="cta back" type="button">Retour</button>
 </section>
 
 <button id="closeBtn" class="corner" type="button" aria-label="Fermer" hidden>
