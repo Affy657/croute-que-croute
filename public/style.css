@@ -623,6 +623,24 @@ a.ghost {
   color: var(--mustard);
 }
 
+#time.lap span {
+  animation: lap 0.7s ease-out;
+}
+
+@keyframes lap {
+  0% { color: var(--mustard); text-shadow: 0 0 18px var(--mustard), 0 3px 0 var(--void); transform: translateY(-4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #time.lap span {
+    animation-name: lap-still;
+  }
+
+  @keyframes lap-still {
+    0% { color: var(--mustard); }
+  }
+}
+
 .ach-toast {
   width: max-content;
   max-width: calc(100vw - 32px);
