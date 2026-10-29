@@ -18,32 +18,37 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Chaque attaque est annoncée 0,45 à 0,9 s avant par une pastille au bord de l'écran, jamais posée sur le chrono.
 - La difficulté monte jusqu'à 80 s, puis plus rien ne change.
 - Zones de touche : la tartine est un cercle de 26 px, chaque arme est faite de gélules (`parts` dans `projectiles.js`). « Frôlé » quand la tartine passe à moins de 11 px.
+- Frôlés : « Frôlé x2 », « x3 »… quand ils s'enchaînent à moins de 1,5 s, avec un son plus aigu à chaque cran (6 au plus). Chaque frôlé laisse une entaille dans la croûte, du côté où le couvert est passé (12 au plus). Aucun effet sur le score ni sur la zone de touche.
+- Effets : le chrono flashe en jaune toutes les 10 s, les couverts rapides (dès 380 px/s) laissent une traînée, et le fond passe du bleu nuit au violet vers 40 s puis au rouge sombre à 80 s, au rythme de la vitesse des couverts (`HEAT` dans `palette.js`).
+- Fin de partie : « Encore 1,21 s pour passer X », X étant le joueur juste devant (soirée pendant une soirée, général sinon). Rien si tu es 1er, sans pseudo ou au-delà du 1 000e du général.
+- Entraînement : bouton « S'entraîner » sur chaque attaque d'Infos. Seulement cette attaque, à la vitesse de son heure d'arrivée. Ne compte ni au classement, ni pour les succès, ni pour le record.
 
 ## Attaques
 
 | Attaque | Dès | À retenir |
 |---|---|---|
 | Couteau visé | 0 s | Vise la tartine au moment de l'annonce. Tourne 1 fois sur 3 dès 35 s |
+| Fouet | 4 s | Tourne et descend lentement vers la tartine |
 | Pluie de fourchettes | 6 s | 4 fourchettes, 1 de plus toutes les 15 s (8 au plus) |
-| Hachoir | 10 s | Tombe très vite au-dessus de la tartine, annonce longue (0,9 s) |
+| Hachoir | 10 s | Tombe très vite au-dessus de la tartine, annonce longue (0,9 s). 2 à la suite dès 30 s, 3 dès 55 s, dans des colonnes voisines |
 | Mur | 14 s | Rangée serrée avec un seul trou d'environ 100 px |
-| Rouleau | 18 s | Traverse lentement par un côté |
-| Éventail | 24 s | 5 couteaux en cône vers la tartine (6 à 44 s, 7 à 64 s) |
-| Fouet | 28 s | Tourne et descend lentement vers la tartine |
+| Rouleau | 18 s | Traverse lentement par un côté. 2 à la suite dès 36 s, 3 dès 60 s |
+| Éventail | 24 s | 4 couteaux en cône vers la tartine, 5 dès 54 s |
 | Croix | 32 s | 4 couteaux en même temps vers la tartine |
+| Murs en série | 36 s | 2 murs d'affilée du même côté ou du haut (3 dès 60 s), trous d'environ 120 px. Chaque mur n'est annoncé que juste avant d'arriver. Joue seul |
 | Couteau à pain | 38 s | Rebondit une fois sur un bord |
 | Couloir | 46 s | Deux murs décalés, chacun avec son trou |
 | Double pluie | 54 s | 5 à 9 fourchettes, à gauche et à droite en alternance |
 
 - Vitesse des couverts : × (1 + t / 50), plafond × 2,6 à 80 s. Délai entre deux attaques : 1,25 s moins 0,016 × t, 0,42 s au plus court (dès 52 s).
-- Jamais plus de 3 fois la même attaque d'affilée. Croix, couloir et double pluie ne sortent jamais deux fois de suite.
+- Jamais plus de 3 fois la même attaque d'affilée. Croix, murs en série, couloir et double pluie ne sortent jamais deux fois de suite. Les murs en série ne partent que si aucune annonce n'est en cours, et laissent un long répit derrière eux.
 - Environ 1 attaque sur 40 a un couteau à une tartinade rare (confiture, pâte à tartiner, miel, ketchup) : pur visuel.
 - Chances, vitesses et délais de chaque attaque : `attacks.js`. Le calendrier est dans le jeu (Infos, onglet Attaques).
-- Mesure du 28/10/2026 avec un robot « humain » (réaction 0,25 s, 320 px/s) : survie médiane 31 s, maximum 89 s.
+- Mesure du 28/10/2026 avec un robot « humain » (réaction 0,25 s, 320 px/s) : survie médiane 31 s, maximum 89 s. Faite avant les réglages du 29/10 (hachoirs et rouleaux multiples, murs en série, éventail réduit).
 
 ## Équité
 
-- Avant chaque attaque, le solveur simule les 3,5 s suivantes avec tout ce qui est en vol. S'il ne trouve pas de chemin pour la tartine, en comptant 0,1 s de réaction, l'attaque est remplacée (5 essais au plus).
+- Avant chaque attaque, le solveur simule les 3,5 s suivantes (jusqu'à 4,5 s si l'attaque dure plus longtemps, comme les murs en série) avec tout ce qui est en vol. S'il ne trouve pas de chemin pour la tartine, en comptant 0,1 s de réaction, l'attaque est remplacée (5 essais au plus).
 - Le modèle est prudent (grille de 12 px, doigt à 360 px/s au plus, marge de 11 px autour des couverts) : si le robot passe, un humain peut passer.
 - `npm test` fait jouer le robot 100 parties de 150 s : 0 mort attendu. À relancer après chaque changement du jeu.
 
@@ -78,13 +83,16 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - `/ecran`, en paysage : top 10 de la soirée (du général hors soirée) à gauche, QR code et nombre de joueurs à droite.
 - En haut : compte à rebours de fin ou de début, ou « Bravo X ! » après la soirée.
 - Fil en direct : nouveaux records et nouveaux pseudos des 15 dernières minutes (`GET /api/feed`).
+- Panneau « Nouveau n°1 » en grand pendant 6 s quand le 1er change.
 - « Plein écran » empêche la mise en veille. La page se recharge seule après une mise en ligne.
 
 ## Son
 
 - Musique : `public/music/theme.m4a` (ou `.mp3`), hors git pour les droits et le poids : à remettre avant de déployer depuis un autre PC. En prod : « Roundabout » de Blacklolita, en attendant les morceaux des collègues. Demander l'accord de l'artiste avant une diffusion plus large.
 - Elle ne joue qu'en partie et repart du début à chaque partie, pour suivre la montée de la difficulté.
-- Changer de musique : remplacer le fichier, mettre à jour `MUSIC_CREDIT` dans `audio.js`, puis `npm run deploy`.
+- Coupée et en boucle : elle joue jusqu'à 83,1 s (la voix finit de retomber), saute à la montée de 131,9 s qui mène au second passage énergique, puis reboucle sur la montée après 208,7 s. Coupes calées sur le tempo (172 BPM) et les débuts de mesure, déclenchées par la position réelle de la musique (`MUSIC_PARTS` dans `audio.js`). Approximatives en attendant une version montée par un DJ.
+- À la mort, elle passe « sous l'eau » puis s'éteint (2,5 s). Elle passe pour ça par Web Audio sur tous les téléphones.
+- Changer de musique : remplacer le fichier, mettre à jour `MUSIC_CREDIT` et `MUSIC_PARTS` (`[[0, durée]]` pour tout jouer en boucle) dans `audio.js`, puis `npm run deploy`.
 - Bruitages Mixkit dans `public/sfx/` (départ, frôlé, mort, record, 1re place). Licence gratuite d'après la FAQ Mixkit, texte officiel à relire avant une diffusion hors soirée. Changer : remplacer le fichier, ou une ligne dans `SOUNDS` (`audio.js`).
 - Volumes Musique et Bruitages dans Paramètres. Sur iPhone, le bouton silencieux coupe les bruitages, pas la musique (règle d'Apple).
 - Pas de son sur les annonces d'attaque : ça avantagerait ceux qui jouent avec le son.
@@ -156,7 +164,7 @@ Après :
 
 ## Ajouter du contenu
 
-- Attaque : une fonction dans `attacks.js` et une ligne dans `ATTACKS` (dès quand, poids, durée ; `solo: true` pour une grosse figure, `growsUntil` et `growth` si elle grossit avec le temps). Le solveur la vérifie tout seul.
+- Attaque : une fonction dans `attacks.js` et une ligne dans `ATTACKS` (dès quand, poids, durée ; `solo: true` pour une grosse figure, `calm: true` pour qu'elle ne parte que sans annonce en cours, `growsUntil` et `growth` si elle grossit avec le temps). `notice` sur une annonce ne l'affiche que peu avant son arrivée. Le solveur la vérifie tout seul.
 - Arme : sa taille dans `projectiles.js` et son dessin dans `sprites.js`, sous le même nom.
 - Prototype : `lab: true` dans `ATTACKS` ou `PROJECTILES`. Visible dans Infos pour les admins seulement, jamais tiré en jeu.
 - Tartinade rare : une ligne dans `SPREADS` (`palette.js`) et son nom dans `RARE_SPREADS` (`projectiles.js`).
@@ -166,7 +174,6 @@ Après :
 
 ## À faire
 
-- Trier les essais de la branche `essais` avant le 07/11.
 - Adresse : garder « workers.dev » ou prendre un nom de domaine payant (le QR code changerait). Décision à l'AG du lundi 02/11/2026 à 20h, avant d'imprimer les affiches.
 - Remplacer ou compléter la musique avec des morceaux des collègues DJ.
 - Faire monter le morceau par un ami DJ : coupes et transitions propres, fin qui boucle. Les coupes faites dans le code en attendant sont approximatives.
@@ -175,21 +182,7 @@ Après :
 
 ## En essai
 
-Douze idées codées sur la branche `essais`, en ligne mais pas encore sur `master`, une ou plusieurs fusions par idée (`rival`, `frole-serie`, `entrainement`, `paliers`, `trainees`, `musique-etouffee`, `nouveau-n1`, `ciel-chaud`, `cicatrices`, `reglages-difficulte` avec `reglages-difficulte-2` et `fouet-tot`, `murs-serie` avec `murs-serie-2` et `solveur-long`, `musique-coupee` avec `musique-coupee-2`). Adrien choisit lesquelles garder. Les autres sont retirées (`git revert -m 1` de leur fusion), puis `essais` est fusionnée dans `master` et ces lignes rangées dans les bonnes parties.
-
-- Rival : « Encore 1,21 s pour passer X » en fin de partie, X étant le joueur juste au-dessus (soirée pendant une soirée, général sinon). Rien si tu es 1er ou sans pseudo, et pas au-delà du 1 000e du général. Envoyé par le serveur dans `rival` et `eventRival`.
-- Série de frôlés : « Frôlé x2 », « Frôlé x3 »… quand ils s'enchaînent à moins de 1,5 s, avec un son plus aigu à chaque cran (6 au plus). Aucun effet sur le score.
-- Entraînement : bouton « S'entraîner » sur chaque attaque d'Infos. Seulement cette attaque, à la vitesse de son heure d'arrivée. Ne compte ni au classement, ni pour les succès, ni pour le record.
-- Paliers : le chrono flashe en jaune à 10, 20, 30 s…
-- Traînées : un trait derrière les couverts rapides, dès 380 px/s et 90 px au plus (`drawTrail` dans `sprites.js`).
-- Musique étouffée à la mort : elle passe « sous l'eau » puis s'éteint (2,5 s en tout). La musique passe pour ça par Web Audio sur tous les téléphones. À écouter sur Android et iPhone.
-- Écran géant : panneau « Nouveau n°1 » en grand pendant 6 s quand le 1er change.
-- Ciel qui chauffe : le fond passe du bleu nuit au violet vers 40 s, puis au rouge sombre à 80 s, au rythme de la vitesse des couverts. Il redevient bleu à l'accueil et au départ d'une partie (`HEAT` dans `palette.js`).
-- Cicatrices : chaque frôlé laisse une entaille dans la croûte, du côté où le couvert est passé, jusqu'à la fin de la partie (12 au plus). Aucun effet sur la zone de touche.
-- Réglages de difficulté : couteau visé moins fréquent (poids 2 au lieu de 3), éventail de 4 couteaux puis 5 dès 54 s (au lieu de 5 à 7), 2 hachoirs à la suite dès 30 s puis 3 dès 55 s, 2 rouleaux à la suite dès 36 s puis 3 dès 60 s, un peu plus de répit après les hachoirs et les rouleaux, fouet dès 4 s au lieu de 28 s.
-- Murs en série : dès 36 s, 2 murs d'affilée (3 dès 60 s), toujours du même côté ou du haut, chacun avec son trou d'environ 120 px. Chaque mur après le premier n'est annoncé que 0,7 s avant d'arriver (champ `notice` d'une annonce), pour que les pastilles ne se superposent pas. La série joue seule : elle ne part que si aucune annonce n'est en cours (`calm` dans `ATTACKS`) et laisse un long répit derrière elle. Sans ça, le robot mourait 1 à 3 fois sur 100 parties.
-- Solveur : quand la nouvelle attaque dure plus de 3,5 s (série de murs, rouleaux), il vérifie jusqu'à 4,5 s.
-- Musique coupée et en boucle : le morceau joue jusqu'à 83,1 s (fin du passage énergique à 77,5 s, puis la voix qui retombe), saute à la montée de 131,9 s qui mène au second passage énergique (136,8 s), puis joue jusqu'à 208,7 s (la voix de l'outro retombe de la même façon) et reboucle sur la montée tant que la partie dure. Coupes calées sur le tempo (172 BPM) et sur les débuts de mesure, déclenchées par la position réelle de la musique. Réglage : `MUSIC_PARTS` dans `audio.js`, à refaire en changeant de morceau (ou `[[0, durée]]` pour tout jouer en boucle).
+Aucun essai en cours. Une nouveauté à tester passe par la branche `essais`, une fusion par idée, et part en ligne depuis `essais`. Adrien choisit : les idées refusées sont retirées (`git revert -m 1` de leur fusion), puis `essais` est fusionnée dans `master` et leurs descriptions rangées dans les bonnes parties.
 
 ## Idées pour plus tard
 
