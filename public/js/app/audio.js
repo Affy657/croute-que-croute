@@ -12,6 +12,7 @@ const SOUNDS = {
 };
 const SFX_GAP = { near: 0.08 };
 const VOLUME = 0.6, FADE_MS = 500, DRIFT = 0.35, SFX_VOLUME = 1, SFX_LATE_MS = 300;
+const MUFFLE_HZ = 380, MUFFLE_Q = 6, MUFFLE_IN_S = 0.12, MUFFLE_S = 0.5;
 const PREVIEW_AT = 30, PREVIEW_MS = 2000;
 
 function level(key) {
@@ -25,7 +26,7 @@ export const prefs = {
 };
 const listeners = [];
 let el = null, live = false, primed = false, running = false, runTime = 0, fadeTimer = null, previewTimer = null;
-let ctx = null, master = null, musicGain = null;
+let ctx = null, master = null, musicGain = null, musicFilter = null, musicBoost = 1;
 const buffers = {}, lastPlayed = {};
 
 export const musicAvailable = () => !!el;
@@ -42,7 +43,7 @@ export async function initAudio() {
         el.preload = "auto";
         el.addEventListener("playing", () => { live = true; });
         for (const name of ["pause", "waiting", "ended"]) el.addEventListener(name, () => { live = false; });
-        if (ctx && !volumeWorks()) routeMusic();
+        if (ctx) routeMusic(volumeWorks() ? VOLUME : 1);
         el.volume = musicVolume();
         break;
       }
@@ -57,40 +58,76 @@ function volumeWorks() {
   return Math.abs(probe.volume - 0.5) < 0.01;
 }
 
-function routeMusic() {
+function routeMusic(boost) {
   try {
+    musicBoost = boost;
+    musicFilter = ctx.createBiquadFilter();
+    musicFilter.type = "lowpass";
+    musicFilter.frequency.value = ctx.sampleRate / 2;
     musicGain = ctx.createGain();
-    musicGain.gain.value = prefs.musicLevel;
-    ctx.createMediaElementSource(el).connect(musicGain).connect(ctx.destination);
+    musicGain.gain.value = gainLevel();
+    ctx.createMediaElementSource(el).connect(musicFilter).connect(musicGain).connect(ctx.destination);
   } catch (e) {
     musicGain = null;
+    musicFilter = null;
   }
 }
 
-const musicVolume = () => VOLUME * (musicGain ? 1 : prefs.musicLevel);
+const gainLevel = () => prefs.musicLevel * musicBoost;
+const musicVolume = () => (musicGain ? 1 : VOLUME * prefs.musicLevel);
 
 function applyLevels() {
   if (master) master.gain.value = SFX_VOLUME * prefs.sfxLevel;
-  if (musicGain) musicGain.gain.value = prefs.musicLevel;
-  if (el && !fadeTimer) el.volume = musicVolume();
+  if (fadeTimer) return;
+  if (musicGain) musicGain.gain.value = gainLevel();
+  if (el) el.volume = musicVolume();
 }
 
 function stopFade() {
-  clearInterval(fadeTimer);
+  clearTimeout(fadeTimer);
   fadeTimer = null;
+}
+
+function openMusic() {
+  if (!musicGain) return;
+  const t = ctx.currentTime, { gain } = musicGain, { frequency, Q } = musicFilter;
+  for (const p of [gain, frequency, Q]) p.cancelScheduledValues(t);
+  gain.setValueAtTime(gainLevel(), t);
+  frequency.setValueAtTime(ctx.sampleRate / 2, t);
+  Q.setValueAtTime(1, t);
 }
 
 function playAt(t) {
   stopFade();
+  openMusic();
   el.muted = false;
   el.volume = musicVolume();
   el.currentTime = el.duration ? t % el.duration : t;
   el.play().catch(() => {});
 }
 
-function fadeOut() {
+function fadeOut(muffle = false) {
   if (!el || el.paused) return;
   stopFade();
+  if (musicGain) {
+    const t = ctx.currentTime, hold = muffle ? MUFFLE_S : 0, { gain } = musicGain, { frequency, Q } = musicFilter;
+    for (const p of [gain, frequency, Q]) {
+      p.cancelScheduledValues(t);
+      p.setValueAtTime(p.value, t);
+    }
+    if (muffle) {
+      frequency.exponentialRampToValueAtTime(MUFFLE_HZ, t + MUFFLE_IN_S);
+      Q.linearRampToValueAtTime(MUFFLE_Q, t + MUFFLE_IN_S);
+    }
+    gain.setValueAtTime(gain.value, t + hold);
+    gain.linearRampToValueAtTime(0, t + hold + FADE_MS / 1000);
+    fadeTimer = setTimeout(() => {
+      fadeTimer = null;
+      el.pause();
+      openMusic();
+    }, hold * 1000 + FADE_MS);
+    return;
+  }
   const from = el.volume, t0 = performance.now();
   fadeTimer = setInterval(() => {
     const k = (performance.now() - t0) / FADE_MS;
@@ -137,14 +174,19 @@ export function unlockAudio() {
   if (primed) return;
   primed = true;
   el.muted = true;
+  if (musicGain) musicGain.gain.value = 0;
   el.play().then(
     () => {
-      if (el.muted) el.pause();
+      if (el.muted) {
+        el.pause();
+        openMusic();
+      }
       el.muted = false;
     },
     () => {
       primed = false;
       el.muted = false;
+      openMusic();
     }
   );
 }
@@ -165,7 +207,7 @@ export function musicRunSync(t) {
 
 export function musicRunEnd() {
   running = false;
-  fadeOut();
+  fadeOut(true);
 }
 
 export function pauseForBackground(hidden) {
