@@ -18,7 +18,7 @@ import {
 } from "./screens.js";
 
 const ACH_TOAST_MS = 2600, MENU_PLACE_S = 0.5, MENU_LIFT = 6;
-const DIE_S = 0.75, FREEZE_S = 0.12, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
+const DIE_S = 0.75, FREEZE_S = 0.3, KILL_ZOOM = 0.22, ZOOM_BACK_S = 0.25, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
 const BOARD_POLL_MS = 10000, MENU_POLL_MS = 30000;
 const ADMIN_TAPS = 5, ADMIN_TAP_MS = 3000;
 const CHAIN_S = 1.5, CHAIN_STEPS = 6, LAP_CS = 1000;
@@ -72,7 +72,6 @@ function die() {
   S.freeze = FREEZE_S;
   S.toast.thrust = 0;
   input.reset();
-  S.splat = scene.splash(S.toast.x, S.toast.y);
   S.score = Math.floor(elapsed() * 100);
   audio.musicRunEnd();
   audio.playSfx("death");
@@ -377,7 +376,11 @@ function update(dt) {
     return;
   }
   if (S.mode !== "play") {
-    if (S.freeze > 0) { S.freeze -= dt; return; }
+    if (S.freeze > 0) {
+      S.freeze -= dt;
+      if (S.freeze <= 0) S.splat = scene.splash(S.toast.x, S.toast.y);
+      return;
+    }
     sim.drift(dt);
     if (S.mode === "dying") {
       S.dieT += dt;
@@ -398,6 +401,12 @@ function update(dt) {
   for (const e of events) ON_SIM[e.type](e);
 }
 
+function killZoom() {
+  if (S.mode !== "dying") return null;
+  const k = S.freeze > 0 ? 1 - (S.freeze / FREEZE_S) ** 2 : Math.max(0, 1 - S.dieT / ZOOM_BACK_S);
+  return { x: S.toast.x, y: S.toast.y, k: 1 + KILL_ZOOM * k };
+}
+
 let last = performance.now(), acc = 0;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
@@ -407,7 +416,7 @@ function frame(now) {
     update(STEP);
     acc -= STEP;
   }
-  scene.render({ clock: S.clock, world: sim.state, toast: S.mode === "over" ? null : S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null });
+  scene.render({ clock: S.clock, world: sim.state, toast: S.mode === "over" ? null : S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null, zoom: killZoom() });
   if (playing()) {
     const cs = Math.floor(elapsed() * 100), s = fmtCs(cs);
     if (s !== lastShown) {
