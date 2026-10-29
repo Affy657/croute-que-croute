@@ -28,7 +28,7 @@ export const ACHIEVEMENTS = [
   { id: "top10", family: "loyal", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée" },
   { id: "eventWin", family: "loyal", name: "Tartine d'or", desc: "Finir 1er d'une soirée" },
   { id: "express", family: "secret", name: "Tartinée express", desc: "Se faire tartiner en moins de 2 s" },
-  { id: "zen", family: "secret", name: "Zen", desc: "Rester 5 s sans bouger" },
+  { id: "zen", family: "secret", name: "En détente", desc: "Rester 5 s sans bouger" },
   { id: "round", family: "secret", name: "Chiffre rond", desc: "Finir pile sur une seconde ronde" }
 ];
 const BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
@@ -73,6 +73,10 @@ export const onUnlock = (fn) => listeners.push(fn);
 export const runUnlocked = () => fresh.slice();
 export const progress = () => ({ got: ACHIEVEMENTS.filter((a) => data.got[a.id]).length, total: ACHIEVEMENTS.length });
 
+function countRuns(n) {
+  for (const [k, id] of RUNS) if (n >= k) unlock(id);
+}
+
 export function runStart(eventKey) {
   run = { still: 0 };
   fresh = [];
@@ -111,7 +115,7 @@ export function runEnd(score) {
   change((d) => {
     d.runs++;
   });
-  for (const [n, id] of RUNS) if (data.runs >= n) unlock(id);
+  countRuns(data.runs);
   if (score < EXPRESS_CS) unlock("express");
   if (score > 0 && score % 100 === 0) unlock("round");
 }
@@ -121,6 +125,7 @@ export function afterSubmit(r, scope) {
 }
 
 export function onBoard(b) {
+  if (b && b.me) countRuns(Math.max(data.runs, b.me.runs || 0));
   if (b && b.event && b.event.status === "closed" && b.me && !b.me.banned && b.me.eventRank === 1) unlock("eventWin");
 }
 

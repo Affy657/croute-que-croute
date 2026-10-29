@@ -1,9 +1,11 @@
 import { FW, FH, clamp } from "../game/field.js";
 import { PALETTE } from "../shared/palette.js";
 import { drawProjectile, drawWarn, drawToast } from "./sprites.js";
+import { BODIES } from "./planets.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const POP_LIFE = 0.7, PUCK_R = 30, GRAB_S = 0.6, FIELD_FADE = 5;
+const SKY_SPEED = 20, SKY_GAP = 0.5, SKY_TOP = 0.3, SKY_LOOP = SKY_GAP * BODIES.length;
 const HINT = "Pose ton doigt où tu veux";
 
 export function createScene(canvas, overlay) {
@@ -12,9 +14,7 @@ export function createScene(canvas, overlay) {
   const C = PALETTE;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const view = { W: 0, H: 0, dpr: 1, scale: 1, ox: 0, oy: 0 };
-  let stars = [], planetY = 0, shake = 0, parts = [], pops = [], fieldA = 0;
-
-  const planetR = () => Math.min(view.W, view.H) * 0.13;
+  let stars = [], sky = 0, shake = 0, parts = [], pops = [], fieldA = 0;
 
   function resize() {
     view.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -37,8 +37,7 @@ export function createScene(canvas, overlay) {
       s.y += (18 + 150 * s.z) * warp * dt;
       if (s.y > view.H + 2) { s.y = -2; s.x = Math.random() * view.W; }
     }
-    planetY += 7 * warp * dt;
-    if (planetY - planetR() * 1.7 > view.H) planetY = -planetR() * 1.7;
+    sky = (sky + (SKY_SPEED * warp * dt) / view.H) % SKY_LOOP;
     if (shake > 0) shake = Math.max(0, shake - 60 * dt);
     for (const p of parts) {
       p.vy += 420 * dt;
@@ -74,30 +73,16 @@ export function createScene(canvas, overlay) {
     pops = [];
   }
 
-  function drawPlanet() {
-    const r = planetR();
-    ctx.save();
-    ctx.translate(view.W * 0.8, planetY);
-    ctx.rotate(-0.35);
-    ctx.strokeStyle = C.mustard;
-    ctx.lineWidth = Math.max(2, r * 0.07);
-    ctx.globalAlpha = 0.45;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, r * 1.6, r * 0.42, 0, Math.PI, Math.PI * 2);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    const g = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r);
-    g.addColorStop(0, C.planet);
-    g.addColorStop(1, C["planet-shade"]);
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 0.45;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, r * 1.6, r * 0.42, 0, 0, Math.PI);
-    ctx.stroke();
-    ctx.restore();
+  function drawSky(clock) {
+    const { W, H } = view, u = Math.min(W, H);
+    BODIES.forEach((b, i) => {
+      const y = (((((sky - i * SKY_GAP) % SKY_LOOP) + SKY_LOOP) % SKY_LOOP) - SKY_TOP) * H;
+      if (y < -u * 0.3 || y > H + u * 0.3) return;
+      ctx.save();
+      ctx.translate(W * b.x, y);
+      b.draw(ctx, b.r * u, reduceMotion ? 0 : clock);
+      ctx.restore();
+    });
   }
 
   function drawBackground(clock) {
@@ -105,7 +90,7 @@ export function createScene(canvas, overlay) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = C.void;
     ctx.fillRect(0, 0, W, H);
-    drawPlanet();
+    drawSky(clock);
     ctx.fillStyle = C.ink;
     for (const s of stars) {
       ctx.globalAlpha = (0.3 + 0.7 * s.z) * (0.7 + 0.3 * Math.sin(s.tw + clock * 3));
@@ -243,7 +228,7 @@ export function createScene(canvas, overlay) {
   }
 
   resize();
-  planetY = view.H * 0.22;
+  sky = 0.22 + SKY_TOP;
   window.addEventListener("resize", resize);
 
   return { view, update, render, splash, pop, clear };
