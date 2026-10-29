@@ -20,6 +20,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Zones de touche : la tartine est un cercle de 26 px, chaque arme est faite de gélules (`parts` dans `projectiles.js`). « Frôlé » quand la tartine passe à moins de 11 px.
 - Frôlés : « Frôlé x2 », « x3 »… quand ils s'enchaînent à moins de 1,5 s, avec un son plus aigu à chaque cran (6 au plus). Chaque frôlé laisse une entaille dans la croûte, du côté où le couvert est passé (12 au plus). Aucun effet sur le score ni sur la zone de touche.
 - Effets : le chrono flashe en jaune toutes les 10 s, les couverts rapides (dès 380 px/s) laissent une traînée, et le fond passe du bleu nuit au violet vers 40 s puis au rouge sombre à 80 s, au rythme de la vitesse des couverts (`HEAT` dans `palette.js`).
+- Mort : le jeu se fige 0,3 s avec un léger zoom sur la tartine, puis l'éclaboussure (pas de zoom si le téléphone demande moins d'animations). Sous « Tartinée ! », l'arme qui t'a eu (« par un hachoir », « par un couteau au dentifrice ») : `by` dans `PROJECTILES`, `with` dans `SPREADS`.
 - Fin de partie : « Encore 1,21 s pour passer X », X étant le joueur juste devant (soirée pendant une soirée, général sinon). Rien si tu es 1er, sans pseudo ou au-delà du 1 000e du général.
 - Entraînement : bouton « S'entraîner » sur chaque attaque d'Infos. Seulement cette attaque, à la vitesse de son heure d'arrivée. Ne compte ni au classement, ni pour les succès, ni pour le record.
 
@@ -102,6 +103,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - 22 succès en 4 familles (temps, frôlés et découvertes, assiduité et soirées, secrets) : liste et conditions dans `achievements.js`.
 - Gardés sur le téléphone (`cv-succes`), sans effet sur le classement. Perdus en changeant de téléphone ou de navigateur. Sur iPhone, Safari et l'appli installée ne partagent pas leurs succès.
 - Le nombre de parties prend le plus grand entre le compteur du téléphone et celui du serveur.
+- Garnitures : 9 tartinades dessinées sur la tartine (`TOPPINGS` dans `sprites.js`) : confiture, pâte à tartiner, miel et son abeille, ketchup en zigzag, dentifrice rayé, œuf au plat, sardine entière, slime qui a un œil, pâtée pour chien et sa mouche. Beurre au départ. 1 attaque sur 40 a un couteau garni : le frôler ou se faire tuer par lui débloque sa garniture (pas en entraînement). Choix dans Succès, carte Garnitures (ombres pour celles pas encore gagnées). Gardées sur le téléphone (`cv-garnitures`, `cv-garniture`), purement visuel.
 
 ## Appli et réseau
 
@@ -149,7 +151,7 @@ Après :
 | `migrations/` | Schéma de la base |
 | `scripts/` | Mise en ligne, icônes, QR codes |
 | `test/` | Robot d'équité, tests de l'API |
-| `maquettes/` | Images de travail : pistes de redesign de la tartine, planche des garnitures |
+| `maquettes/` | Images de travail : pistes de redesign de la tartine (pas retenues), planche des garnitures |
 
 | Commande | À quoi ça sert |
 |---|---|
@@ -178,16 +180,8 @@ Après :
 - Adresse : garder « workers.dev » ou prendre un nom de domaine payant (le QR code changerait). Décision à l'AG du lundi 02/11/2026 à 20h, avant d'imprimer les affiches.
 - Remplacer ou compléter la musique avec des morceaux des collègues DJ.
 - Faire monter le morceau par un ami DJ : coupes et transitions propres, fin qui boucle. Les coupes faites dans le code en attendant sont approximatives.
-- Reprendre les couleurs et la tartine des affiches : fichiers du designer dans `affiches/`. Les affiches sont aplaties : demander les éléments séparés, comme la tartine (`tartine-fusee.webp`).
+- Reprendre les couleurs des affiches : fichiers du designer dans `affiches/`. Les affiches sont aplaties : demander les éléments séparés.
 - À décider : rejouer les meilleures parties pour confirmer leur temps (graine donnée par le serveur, gestes enregistrés). Bloquerait la triche par faux score.
-
-## En essai
-
-Trois idées sur la branche `essais`, pas encore sur `master` (`arret-image`, `tartinee-par`, `garnitures` avec `garnitures-droles` et `patee-chien`). Adrien choisit : les idées refusées sont retirées (`git revert -m 1` de leur fusion), puis `essais` est fusionnée dans `master` et ces lignes rangées dans les bonnes parties.
-
-- Arrêt sur image : à la mort, le jeu se fige 0,3 s avec un léger zoom sur la tartine, puis l'éclaboussure. Les pastilles d'annonce disparaissent pendant la mort. Pas de zoom si le téléphone demande moins d'animations.
-- Tartinée par… : sous « Tartinée ! », l'arme qui t'a eu (« par un hachoir », « par un couteau au tarama »). Textes : `by` dans `PROJECTILES`, `with` dans `SPREADS`.
-- Garnitures : 9 tartinades, chacune avec son dessin sur la tartine (`TOPPINGS` dans `sprites.js`) : confiture, pâte à tartiner, miel (avec son abeille), ketchup en zigzag, dentifrice rayé, œuf au plat, sardine entière, slime qui a un œil, pâtée pour chien (avec sa mouche). Le beurre reste la garniture de départ. Frôler un couteau garni ou se faire tuer par lui débloque sa garniture (pas en entraînement). On la choisit dans Succès, carte Garnitures, où les garnitures pas encore gagnées sont en ombre. Gardées sur le téléphone (`cv-garnitures`, `cv-garniture`), purement visuel. 1 attaque sur 40 a un couteau garni, tiré parmi 9.
 
 ## Idées pour plus tard
 
@@ -199,7 +193,7 @@ Trois idées sur la branche `essais`, pas encore sur `master` (`arret-image`, `t
 - Une phase après 80 s (« mode sérieux »), ou des moments calmes et des pics calés sur les drops du morceau.
 - Suites d'attaques calées sur la musique, ou tirées parmi des enchaînements déjà écrits qui reviennent : analyser d'abord le morceau pour caler au moins les montées et les drops.
 - Images ou objets à collectionner (le maximator qui tourne), partage du score en story Insta.
-- Pas retenues pour l'instant : thème de soirée choisi par l'admin, tartine du designer à la place de la tartine dessinée, étoiles au rythme de la musique, son d'annonce par attaque, couche de tension, podium de fin de soirée sur l'écran géant.
+- Pas retenues pour l'instant : thème de soirée choisi par l'admin, tartine du designer ou redessinée (Adrien garde la tartine actuelle, pistes dans `maquettes/`), étoiles au rythme de la musique, son d'annonce par attaque, couche de tension, podium de fin de soirée sur l'écran géant.
 
 ## Bon à savoir
 
