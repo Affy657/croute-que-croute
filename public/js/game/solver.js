@@ -1,7 +1,7 @@
 import { FW, FH, HIT_R, X_MIN, X_MAX, Y_MIN, Y_MAX, OUT, clamp } from "./field.js";
 import { PROJECTILES } from "./projectiles.js";
 
-const CELL = 12, SDT = 1 / 30, SUB = 4, HORIZON = 3.5, MARGIN = 11;
+const CELL = 12, SDT = 1 / 30, SUB = 4, HORIZON = 3.5, HORIZON_LONG = 4.5, MARGIN = 11;
 const COLS = Math.floor(FW / CELL), ROWS = Math.floor(FH / CELL), CELLS = COLS * ROWS;
 const I0 = Math.ceil(X_MIN / CELL - 0.5), I1 = Math.floor(X_MAX / CELL - 0.5);
 const J0 = Math.ceil(Y_MIN / CELL - 0.5), J1 = Math.floor(Y_MAX / CELL - 0.5);
@@ -96,10 +96,12 @@ export function solve(state, extra, wantPath, react = 0) {
   const movers = [];
   for (const o of state.obs) addMovers(movers, o, t);
   for (const w of state.warns) for (const o of w.obs) addMovers(movers, o, w.at);
+  const first = movers.length;
   if (extra) for (const w of extra) for (const o of w.obs) addMovers(movers, o, w.at);
-  let end = t;
+  let end = t, own = t;
   for (const m of movers) end = Math.max(end, m.t1);
-  const steps = Math.ceil((Math.min(end, t + HORIZON) - t) / SDT);
+  for (let i = first; i < movers.length; i++) own = Math.max(own, movers[i].t1);
+  const steps = Math.ceil((Math.min(end, t + Math.min(HORIZON_LONG, Math.max(HORIZON, own - t))) - t) / SDT);
   const start = cellOf(state.toast.x, state.toast.y);
   let reach = new Uint8Array(CELLS), next = new Uint8Array(CELLS);
   const blocked = new Uint8Array(CELLS);
