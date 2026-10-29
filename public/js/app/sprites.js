@@ -336,6 +336,25 @@ function thrusters(ctx, t, w, h, C) {
   }
 }
 
+function scars(ctx, list, w, h, C) {
+  ctx.save();
+  toastPath(ctx, w, h);
+  ctx.clip();
+  ctx.fillStyle = C.handle;
+  for (const s of list) {
+    const c = Math.cos(s.a), n = Math.sin(s.a);
+    const edge = 1 / Math.max(Math.abs(c) / (w / 2), Math.abs(n) / (n < 0 ? h * 0.55 : h / 2));
+    const out = edge + 3, tip = edge - s.len;
+    ctx.beginPath();
+    ctx.moveTo(c * out - n * 2.6, n * out + c * 2.6);
+    ctx.lineTo(c * out + n * 2.6, n * out - c * 2.6);
+    ctx.lineTo(c * tip, n * tip);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 export function drawToast(ctx, t, splat, C = PALETTE) {
   const w = 40, h = 42;
   ctx.save();
@@ -372,6 +391,7 @@ export function drawToast(ctx, t, splat, C = PALETTE) {
   rr(ctx, -7, -5.5, 14, 11, 3);
   ctx.fill();
   ctx.restore();
+  if (t.scars && t.scars.length) scars(ctx, t.scars, w, h, C);
   if (splat) {
     ctx.fillStyle = C.jam;
     for (const b of splat) {
