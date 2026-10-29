@@ -149,6 +149,7 @@ Après :
 | `migrations/` | Schéma de la base |
 | `scripts/` | Mise en ligne, icônes, QR codes |
 | `test/` | Robot d'équité, tests de l'API |
+| `maquettes/` | Images de travail : pistes de redesign de la tartine, planche des garnitures |
 
 | Commande | À quoi ça sert |
 |---|---|
