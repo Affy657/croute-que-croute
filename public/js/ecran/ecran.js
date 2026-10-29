@@ -49,16 +49,16 @@ function render() {
   const rows = top.map(row);
   if (shown && shown.title === v.title) {
     top.forEach((r, i) => {
-      if (shown.best[r.pseudo] !== r.best) rows[i].classList.add("up");
+      if (!shown.bests.has(r.best)) rows[i].classList.add("up");
     });
     const first = top[0];
-    if (first && shown.first && first.pseudo !== shown.first) {
+    if (first && shown.first && first.pseudo !== shown.first.pseudo && first.best !== shown.first.best) {
       bounce(rows[0]);
       crown(first);
       rain();
     }
   }
-  shown = { title: v.title, first: top[0] ? top[0].pseudo : null, best: Object.fromEntries(top.map((r) => [r.pseudo, r.best])) };
+  shown = { title: v.title, first: top[0] || null, bests: new Set(top.map((r) => r.best)) };
   $("list").replaceChildren(...rows);
   $("empty").hidden = rows.length > 0;
   $("players").textContent = v.count ? v.count + (v.count > 1 ? " joueurs" : " joueur") : "";

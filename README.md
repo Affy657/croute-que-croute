@@ -261,7 +261,7 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - Police : Bungee partout, chargée depuis Google Fonts.
 - Deux boutons ronds, cachés pendant la partie et dans la page d'info : la note de musique en haut à gauche coupe ou remet la musique, le haut-parleur en haut à droite coupe ou remet les bruitages. Chaque choix est mémorisé sur le téléphone.
 - Bouton rond Paramètres (roue crantée) en bas à gauche de l'accueil et de la fin de partie, pour tout le monde. Les boutons du bas sont posés dans les coins, hors de la mise en page : ils ne décalent rien.
-- Paramètres : « Son » (deux curseurs, Musique et Bruitages, voir plus bas), « Installer le jeu » (bouton Installer quand le navigateur le permet, sinon la marche à suivre ; la carte disparaît quand le jeu est ouvert depuis l'appli installée) et « Partager le jeu » (« Partager le lien » ouvre le partage du téléphone, ou copie le lien sur ordinateur ; « QR code » l'affiche en grand pour le faire scanner à un voisin ; les deux boutons sont côte à côte, leur texte rétrécit avec la largeur de l'écran, 11 px au plus petit sur 320 px). Les téléphones connectés en admin ont en plus un onglet Admin qui affiche directement le tableau de bord sous les onglets (voir « Admin »).
+- Paramètres : « Pseudo » (champ avec le pseudo actuel et bouton « Changer », voir « Soirées et classements »), « Son » (deux curseurs, Musique et Bruitages, voir plus bas), « Installer le jeu » (bouton Installer quand le navigateur le permet, sinon la marche à suivre ; la carte disparaît quand le jeu est ouvert depuis l'appli installée) et « Partager le jeu » (« Partager le lien » ouvre le partage du téléphone, ou copie le lien sur ordinateur ; « QR code » l'affiche en grand pour le faire scanner à un voisin ; les deux boutons sont côte à côte, leur texte rétrécit avec la largeur de l'écran, 11 px au plus petit sur 320 px). Les téléphones connectés en admin ont en plus un onglet Admin qui affiche directement le tableau de bord sous les onglets (voir « Admin »).
 - Bouton « Retour » (Infos, Succès, Paramètres, Classement, QR code) : collé en bas de l'écran quand la page tient sans défiler, juste après le contenu sinon (classe `back`).
 - Pop-up « Installe le jeu » : une seule fois par téléphone, sur l'accueil, une fois le pseudo choisi. Sur Android, bouton Installer ; sur iPhone, la marche à suivre (pas de bouton possible). Jamais si le jeu est déjà installé.
 
@@ -382,7 +382,10 @@ Décidé avec Adrien le 29/10/2026 : 4 familles, gardés sur le téléphone, mon
 
 Décidé par Adrien le 29/10/2026 :
 
-- Profil gardé : un téléphone garde son pseudo pour toujours, unique sur tout le jeu.
+- Profil gardé : un téléphone garde son profil pour toujours, avec un pseudo unique sur tout le jeu.
+- Changer de pseudo (demandé par Adrien le 29/10/2026) : carte « Pseudo » en haut des Paramètres, visible une fois le pseudo choisi. Le record, la place, les records des soirées et le nombre de parties suivent, car tout est rangé par profil et le pseudo n'est écrit qu'à un seul endroit (`profiles`). Route `PATCH /api/me` avec le jeton du téléphone, mêmes règles qu'à l'inscription (409 si le pseudo est pris, majuscules et accents ignorés ; changer seulement les majuscules de son propre pseudo est permis). 5 changements par minute et par joueur au plus (`RENAME_LIMIT`). Le classement en cache est vidé tout de suite.
+  - Ce que ça change, vu avant de le faire : l'ancien pseudo redevient libre pour quelqu'un d'autre ; le nouveau nom s'affiche partout, y compris sur les classements des soirées passées et dans « Bravo X ! » ; un joueur retiré par l'admin reste retiré (le retrait est lié au profil, pas au pseudo). Le même téléphone retrouve son compte en tapant son nouveau pseudo.
+  - Écran géant : un simple changement de nom du 1er ne déclenche pas la fête du nouveau n°1 (il faut que le 1er change de nom et de temps), et une ligne ne clignote que si son temps est nouveau.
 - Deux classements : celui de la soirée (pour le lot) et le général, qui tourne en permanence. Un score fait pendant une soirée compte dans les deux.
 - Une seule soirée à la fois.
 - Entre deux soirées, l'accueil montre le classement général et la prochaine soirée annoncée.
@@ -397,7 +400,7 @@ Décidé par Adrien le 29/10/2026 :
 - Le serveur refuse un score plus long que le temps réellement écoulé depuis le début de la partie (5 s de marge pour les réseaux lents), et tout score au-delà de 15 min.
 - Un score renvoyé deux fois (réseau qui coupe) est compté une seule fois, sans message d'erreur.
 - Pas de compte : le téléphone garde un jeton. Le même téléphone qui reprend son pseudo retrouve son compte. Un autre navigateur (Safari puis appli installée sur iPhone) oblige à prendre un nouveau pseudo.
-- Limites contre les abus : 150 inscriptions par minute et par adresse IP (montée de 30 à 150 le 29/10/2026 : tout le lieu partage souvent la même adresse sur le wifi, et le rush du début aurait bloqué le 31e), 30 tentatives de connexion admin par minute et par adresse IP (limite à part, `ADMIN_LIMIT`), 10 débuts de partie par 10 s et par joueur.
+- Limites contre les abus : 150 inscriptions par minute et par adresse IP (montée de 30 à 150 le 29/10/2026 : tout le lieu partage souvent la même adresse sur le wifi, et le rush du début aurait bloqué le 31e), 30 tentatives de connexion admin par minute et par adresse IP (limite à part, `ADMIN_LIMIT`), 10 débuts de partie par 10 s et par joueur, 5 changements de pseudo par minute et par joueur (`RENAME_LIMIT`).
 - Faille connue : quelqu'un d'habile peut lancer une partie, attendre, puis envoyer un faux score plausible. Parade actuelle : les records de 90 s et plus sont signalés dans l'admin (bandeau rouge), on retire le joueur si besoin. Un faux score plus modeste (par exemple 60 s) passe inaperçu. Parade complète possible : rejouer la partie à partir des gestes enregistrés (voir « À faire »).
 
 ## Check-list d'une soirée

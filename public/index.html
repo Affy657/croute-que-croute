@@ -130,6 +130,16 @@
     </div>
   </div>
   <div id="settingsApp" class="catalog info-body">
+    <section id="renameCard" class="card" hidden>
+      <h2>Pseudo</h2>
+      <p class="sub">Ton record et ta place te suivent.</p>
+      <form id="renameForm" class="rename">
+        <label for="newPseudo" class="sr-only">Nouveau pseudo</label>
+        <input id="newPseudo" name="pseudo" maxlength="16" autocomplete="nickname" autocapitalize="off" spellcheck="false" required>
+        <button class="ghost" type="submit">Changer</button>
+      </form>
+      <p id="renameNote" class="note" hidden></p>
+    </section>
     <section class="card">
       <h2>Son</h2>
       <label class="slider"><span>Musique</span><input id="musicVol" type="range" min="0" max="100" step="5"></label>

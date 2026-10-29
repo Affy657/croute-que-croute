@@ -12,6 +12,7 @@ const SLACK_MS = 5000;
 const MAX_SCORE = 15 * 60 * 100;
 const TOP = 50;
 const FEED_MS = 15 * 60 * 1000, FEED_SIZE = 6;
+const BAD_PSEUDO = "Pseudo de 2 à 16 caractères : lettres, chiffres, espaces, tirets.";
 
 interface RunRow {
   id: string;
@@ -96,7 +97,7 @@ export async function join({ req, env }: Ctx) {
   if (!(await allowed(env.JOIN_LIMIT, "join:" + clientIp(req)))) return tooFast();
   const body = await readJson(req);
   const pseudo = cleanPseudo(body.pseudo);
-  if (!pseudo) return fail(400, "Pseudo de 2 à 16 caractères : lettres, chiffres, espaces, tirets.");
+  if (!pseudo) return fail(400, BAD_PSEUDO);
   const clientId = cleanClientId(body.clientId);
   const key = pseudoKey(pseudo);
   const taken = await env.DB.prepare("SELECT pseudo, token, client_id FROM profiles WHERE pseudo_key = ?")
@@ -118,6 +119,23 @@ export async function join({ req, env }: Ctx) {
     throw e;
   }
   return json({ token, pseudo }, 201);
+}
+
+export async function rename({ req, env }: Ctx) {
+  if (outdated(req, env)) return updateRequired();
+  const me = await findProfile(req, env);
+  if (!me) return fail(401, "Joueur inconnu.");
+  if (!(await allowed(env.RENAME_LIMIT, me.id))) return tooFast();
+  const pseudo = cleanPseudo((await readJson(req)).pseudo);
+  if (!pseudo) return fail(400, BAD_PSEUDO);
+  try {
+    await env.DB.prepare("UPDATE profiles SET pseudo = ?, pseudo_key = ? WHERE id = ?").bind(pseudo, pseudoKey(pseudo), me.id).run();
+  } catch (e) {
+    if (String(e).includes("UNIQUE")) return fail(409, "Ce pseudo est déjà pris.");
+    throw e;
+  }
+  forgetCaches();
+  return json({ pseudo });
 }
 
 export async function startRun({ req, env }: Ctx) {
