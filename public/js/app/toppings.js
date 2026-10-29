@@ -1,5 +1,8 @@
 import { store, KEYS } from "../shared/store.js";
 import { SPREADS } from "../shared/palette.js";
+import { drawToast } from "./sprites.js";
+
+const THUMB = 64, THUMB_SCALE = 0.95, THUMB_MID = 7.5, LOCKED = "#4a4385";
 
 const listeners = [];
 
@@ -32,6 +35,23 @@ export function chooseTopping(kind) {
   for (const fn of listeners) fn(kind);
 }
 
+function thumb(kind, got) {
+  const canvas = document.createElement("canvas");
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5), size = Math.round(THUMB * dpr);
+  canvas.width = canvas.height = size;
+  canvas.className = "thumb";
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr * THUMB_SCALE, 0, 0, dpr * THUMB_SCALE, size / 2, size / 2 - THUMB_MID * THUMB_SCALE * dpr);
+  drawToast(ctx, { x: 0, y: 0, tilt: 0, thrust: 0, scars: [], spread: kind }, null);
+  if (!got) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = "source-atop";
+    ctx.fillStyle = LOCKED;
+    ctx.fillRect(0, 0, size, size);
+  }
+  return canvas;
+}
+
 export function renderToppings() {
   const card = document.createElement("section");
   card.className = "card";
@@ -50,12 +70,9 @@ export function renderToppings() {
     button.className = "topping" + (got ? "" : " locked") + (kind === pick ? " picked" : "");
     button.disabled = !got;
     button.setAttribute("aria-pressed", String(kind === pick));
-    const swatch = document.createElement("span");
-    swatch.className = "swatch";
-    if (got) swatch.style.background = spread.color;
     const name = document.createElement("span");
     name.textContent = got ? spread.name : "???";
-    button.append(swatch, name);
+    button.append(thumb(kind, got), name);
     button.addEventListener("click", () => {
       chooseTopping(kind);
       card.replaceWith(renderToppings());
