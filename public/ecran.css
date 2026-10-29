@@ -148,7 +148,7 @@ body.idle {
 }
 
 .qr {
-  width: min(100%, 62vh);
+  width: min(100%, 50vh);
   height: auto;
 }
 
@@ -167,6 +167,38 @@ body.idle {
 .players {
   margin: 0;
   font-size: 2.4vh;
+}
+
+.feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8vh;
+  width: 100%;
+  font-size: 2.2vh;
+  color: var(--ink-dim);
+}
+
+.feed li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feed b {
+  font-weight: 400;
+  color: var(--mustard);
+}
+
+.feed li.new {
+  animation: feed-in 1.2s ease-out;
+}
+
+@keyframes feed-in {
+  0% { opacity: 0; transform: translateY(-1vh); color: var(--ink); }
+  100% { opacity: 1; transform: none; }
 }
 
 .full {
@@ -222,6 +254,7 @@ body.idle {
 
 @media (prefers-reduced-motion: reduce) {
   .cheer,
+  .feed li.new,
   .list li.up {
     animation: none;
   }

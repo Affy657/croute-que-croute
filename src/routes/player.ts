@@ -11,6 +11,7 @@ const GRACE_MS = 5 * 60 * 1000;
 const SLACK_MS = 5000;
 const MAX_SCORE = 15 * 60 * 100;
 const TOP = 50;
+const FEED_MS = 15 * 60 * 1000, FEED_SIZE = 6;
 
 interface RunRow {
   id: string;
@@ -53,6 +54,38 @@ export async function board({ req, env }: Ctx) {
         }
       : null,
   });
+}
+
+interface FeedRow {
+  pseudo: string;
+  score?: number;
+  at: number;
+}
+
+export async function feed({ env }: Ctx) {
+  const now = Date.now();
+  const since = now - FEED_MS;
+  const view = await events(env, now);
+  const bests = view.open
+    ? env.DB.prepare(
+        `SELECT p.pseudo, e.best AS score, e.best_at AS at FROM entries e JOIN profiles p ON p.id = e.player_id
+         WHERE e.event_id = ?1 AND e.best > 0 AND e.best_at > ?2 AND p.banned = 0 ORDER BY e.best_at DESC LIMIT ?3`,
+      ).bind(view.open.id, since, FEED_SIZE)
+    : env.DB.prepare(
+        `SELECT pseudo, best AS score, best_at AS at FROM profiles
+         WHERE best > 0 AND best_at > ?1 AND banned = 0 ORDER BY best_at DESC LIMIT ?2`,
+      ).bind(since, FEED_SIZE);
+  const joins = env.DB.prepare(
+    `SELECT pseudo, created_at AS at FROM profiles WHERE created_at > ?1 AND banned = 0 ORDER BY created_at DESC LIMIT ?2`,
+  ).bind(since, FEED_SIZE);
+  const [b, j] = await Promise.all([bests.all<FeedRow>(), joins.all<FeedRow>()]);
+  const items = [
+    ...b.results.map((r) => ({ kind: "best", pseudo: r.pseudo, score: r.score, at: r.at })),
+    ...j.results.map((r) => ({ kind: "join", pseudo: r.pseudo, at: r.at })),
+  ]
+    .sort((x, y) => y.at - x.at)
+    .slice(0, FEED_SIZE);
+  return json({ now, items });
 }
 
 export async function join({ req, env }: Ctx) {

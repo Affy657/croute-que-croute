@@ -260,6 +260,9 @@ Décidé avec Adrien le 29/10/2026 : 4 familles, gardés sur le téléphone, mon
 | Secrets | Tartinée express (moins de 2 s), Zen (5 s sans bouger), Chiffre rond (finir pile sur x,00). Affichés « ??? » tant qu'ils ne sont pas débloqués |
 
 - Gardés sur le téléphone (`cv-succes` dans le stockage du navigateur) : cumulés sur toutes les soirées, sans rien côté serveur, aucun effet sur le classement. Perdus si on change de téléphone ou de navigateur. Les parties d'entraînement (sans pseudo) comptent aussi.
+- Plusieurs fenêtres du jeu ouvertes sur le même téléphone (onglet et appli installée sur Android, deux onglets sur ordinateur) partagent les mêmes succès : chaque déblocage relit d'abord ce qui est enregistré (corrigé le 29/10/2026 : une fenêtre restée ouverte pouvait effacer les succès d'une autre, qu'on redébloquait ensuite).
+- Sur iPhone, Safari et l'appli installée sur l'écran d'accueil ont chacun leur propre stockage : un succès eu dans Safari se redébloque dans l'appli installée. Seul un stockage sur le serveur, lié au pseudo, réglerait ça.
+- En fin de partie, la ligne « ★ » rappelle les succès débloqués pendant cette partie, y compris ceux déjà montrés par le bandeau en jeu : ce n'est pas un second déblocage.
 - En pleine partie : un petit bandeau jaune « ★ Nom » sous le chrono pendant 2,6 s (plusieurs succès d'un coup s'ajoutent à la suite).
 - En fin de partie : une ligne « ★ Nom, Nom » sous le temps avec les succès de la partie ; la toucher ouvre la page Succès.
 - Page Succès : bouton « Succès 7/22 » sur l'accueil. Une carte par famille, les succès à débloquer en gris.
@@ -272,6 +275,7 @@ Décidé avec Adrien le 29/10/2026 : 4 familles, gardés sur le téléphone, mon
 - Pendant une soirée et les 12 h qui suivent : classement de la soirée avec son nom ; sinon : classement général. Top 10, le 1er en jaune, les 2e et 3e plus grands.
 - En haut : « Fin dans » pendant la soirée, « Début dans » le dernier jour avant, sinon la date de la prochaine soirée, ou « Bravo X ! » après.
 - Mise à jour toute seule toutes les 10 s. Une ligne dont le temps change (ou qui entre dans le top) clignote ; quand le 1er change, sa ligne rebondit et une pluie de confettis tombe.
+- Fil en direct sous le QR code (29/10/2026) : les 4 derniers événements des 15 dernières minutes, du plus récent au plus ancien. « X vient de faire 45,12 s » quand quelqu'un bat son record (de la soirée pendant une soirée, perso sinon), « Bienvenue X ! » à chaque nouveau pseudo. Une nouvelle ligne apparaît en glissant. Joueurs retirés exclus. Route publique `GET /api/feed`, appelée seulement par l'écran géant.
 - Bouton « Plein écran » en bas à droite : passe en plein écran et empêche l'écran de se mettre en veille (si le navigateur le permet). La souris se cache après 3 s sans bouger.
 - Se recharge toute seule après une mise en ligne, pour rester à jour toute la soirée.
 - Liens : bouton « Écran géant » dans la carte de la soirée du tableau de bord, et dans Paramètres, onglet Admin.
@@ -496,6 +500,6 @@ Après :
 - Base de prod vidée le 29/10/2026 après le changement d'adresse (pseudos, parties, Soirée test, connexions admin, invitations). Sauvegarde d'avant : `sauvegardes/prod-2026-10-29-avant-nettoyage.sql` (hors git, contient des jetons : à garder pour soi). Faire une sauvegarde : `npx wrangler d1 export croute-que-croute --remote --output sauvegardes/<nom>.sql`.
 - `cle-admin.txt` et `.dev.vars` ne sont pas dans git : à garder de côté. Les liens d'invitation non utilisés (`invitation-*.txt`) non plus.
 - wrangler est connecté au compte Cloudflare sur le PC d'Adrien (`npx wrangler whoami` pour vérifier).
-- Une fois la page chargée, le jeu tourne sans réseau. Le score ne compte que si le réseau passe au début et à la fin de la partie (3 essais d'envoi).
+- Une fois la page chargée, le jeu tourne sans réseau. Le score ne compte que si le réseau passe au début de la partie. À la fin, l'envoi est tenace (29/10/2026) : 3 essais en 3 s, puis un essai toutes les 5 s pendant 2 min, avec « Envoi en attente… » sur l'écran de fin. Le score en attente est gardé sur le téléphone (`cv-score-attente`) : si on ferme le jeu, il est renvoyé au prochain lancement dans les 2 min. Chaque essai abandonne au bout de 8 s. Un score arrivé avec plus de 15 s de retard peut s'afficher « partie ralentie » dans l'admin : à juger au cas par cas.
 - Le record perso hors classement reste sur le téléphone.
 - Changement d'adresse du 29/10/2026 : chaque téléphone repart de zéro sur la nouvelle adresse (pseudo, record perso, connexion admin, appli installée à réinstaller). Les scores restent en base, mais un ancien pseudo reste pris : il faut en choisir un autre. Les admins se reconnectent avec la clé admin ou une nouvelle invitation.

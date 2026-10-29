@@ -62,7 +62,10 @@ function die() {
   S.newBest = S.score > before.best;
   S.prevRank = before.rank;
   api.saveLocalBest(S.score);
-  S.submit = S.run ? api.submitScore(S.score, S.run) : null;
+  const sub = S.run ? api.submitScore(S.score, S.run, () => {
+    if (S.submit === sub && S.mode === "over") setText(ui.overNote, "Envoi en attente…");
+  }) : null;
+  S.submit = sub;
   S.run = null;
   audio.musicRunEnd();
   audio.playSfx("death");
@@ -466,5 +469,6 @@ setInterval(() => {
 
 showMenu();
 api.refreshBoard();
+api.resumePending();
 audio.initAudio();
 requestAnimationFrame(frame);

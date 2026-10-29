@@ -1,9 +1,9 @@
 import { fmtCs, clock } from "../shared/format.js";
 import { rain, bounce } from "../app/party.js";
 
-const POLL_MS = 10000, ROWS = 10, IDLE_MS = 3000, SOON_MS = 24 * 3600 * 1000;
+const POLL_MS = 10000, ROWS = 10, FEED_ROWS = 4, IDLE_MS = 3000, SOON_MS = 24 * 3600 * 1000;
 const $ = (id) => document.getElementById(id);
-let board = null, offset = 0, shown = null, idleTimer = null, lock = null;
+let board = null, offset = 0, shown = null, idleTimer = null, lock = null, seen = null;
 
 const now = () => Date.now() + offset;
 
@@ -78,15 +78,36 @@ function tick() {
   }
 }
 
+function feedLine(item) {
+  const li = document.createElement("li");
+  const name = document.createElement("b");
+  name.textContent = item.pseudo;
+  if (item.kind === "best") li.append(name, " vient de faire " + fmtCs(item.score) + " s");
+  else li.append("Bienvenue ", name, " !");
+  return li;
+}
+
+function renderFeed(items) {
+  const keys = items.map((i) => i.kind + i.pseudo + i.at);
+  const rows = items.slice(0, FEED_ROWS).map((item, i) => {
+    const li = feedLine(item);
+    if (seen && !seen.has(keys[i])) li.classList.add("new");
+    return li;
+  });
+  seen = new Set(keys);
+  $("feed").replaceChildren(...rows);
+}
+
 async function refresh() {
   try {
-    const res = await fetch("/api/board", { cache: "no-store" });
+    const [res, live] = await Promise.all([fetch("/api/board", { cache: "no-store" }), fetch("/api/feed", { cache: "no-store" })]);
     if (!res.ok) return;
     const next = await res.json();
     if (board && next.version !== board.version) location.reload();
     board = next;
     offset = board.now - Date.now();
     render();
+    if (live.ok) renderFeed((await live.json()).items);
   } catch (e) {}
 }
 
