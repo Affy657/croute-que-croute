@@ -175,7 +175,7 @@ Après :
 
 ## En essai
 
-Sept idées codées sur la branche `essais`, en ligne mais pas encore sur `master`, une fusion par idée (`rival`, `frole-serie`, `entrainement`, `paliers`, `trainees`, `musique-etouffee`, `nouveau-n1`). Adrien choisit lesquelles garder. Les autres sont retirées (`git revert -m 1` de leur fusion), puis `essais` est fusionnée dans `master` et ces lignes rangées dans les bonnes parties.
+Onze idées codées sur la branche `essais`, en ligne mais pas encore sur `master`, une fusion par idée (`rival`, `frole-serie`, `entrainement`, `paliers`, `trainees`, `musique-etouffee`, `nouveau-n1`, `ciel-chaud`, `cicatrices`, `reglages-difficulte`, `murs-serie`). Adrien choisit lesquelles garder. Les autres sont retirées (`git revert -m 1` de leur fusion), puis `essais` est fusionnée dans `master` et ces lignes rangées dans les bonnes parties.
 
 - Rival : « Encore 1,21 s pour passer X » en fin de partie, X étant le joueur juste au-dessus (soirée pendant une soirée, général sinon). Rien si tu es 1er ou sans pseudo, et pas au-delà du 1 000e du général. Envoyé par le serveur dans `rival` et `eventRival`.
 - Série de frôlés : « Frôlé x2 », « Frôlé x3 »… quand ils s'enchaînent à moins de 1,5 s, avec un son plus aigu à chaque cran (6 au plus). Aucun effet sur le score.
@@ -184,6 +184,10 @@ Sept idées codées sur la branche `essais`, en ligne mais pas encore sur `maste
 - Traînées : un trait derrière les couverts rapides, dès 380 px/s et 90 px au plus (`drawTrail` dans `sprites.js`).
 - Musique étouffée à la mort : elle passe « sous l'eau » puis s'éteint (2,5 s en tout). La musique passe pour ça par Web Audio sur tous les téléphones. À écouter sur Android et iPhone.
 - Écran géant : panneau « Nouveau n°1 » en grand pendant 6 s quand le 1er change.
+- Ciel qui chauffe : le fond passe du bleu nuit au violet vers 40 s, puis au rouge sombre à 80 s, au rythme de la vitesse des couverts. Il redevient bleu à l'accueil et au départ d'une partie (`HEAT` dans `palette.js`).
+- Cicatrices : chaque frôlé laisse une entaille dans la croûte, du côté où le couvert est passé, jusqu'à la fin de la partie (12 au plus). Aucun effet sur la zone de touche.
+- Réglages de difficulté : couteau visé moins fréquent (poids 2 au lieu de 3), éventail de 4 couteaux puis 5 dès 54 s (au lieu de 5 à 7), 2 hachoirs à la suite dès 30 s puis 3 dès 55 s, 2 rouleaux à la suite dès 36 s puis 3 dès 60 s.
+- Murs en série : dès 36 s, 2 murs d'affilée (3 dès 60 s), toujours du même côté ou du haut, chacun avec son trou. Chaque mur après le premier n'est annoncé que 0,7 s avant d'arriver (champ `notice` d'une annonce), pour que les pastilles ne se superposent pas.
 
 ## Idées pour plus tard
 
