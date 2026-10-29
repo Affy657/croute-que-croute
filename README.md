@@ -182,11 +182,11 @@ Après :
 
 ## En essai
 
-Trois idées sur la branche `essais`, pas encore sur `master` (une fusion chacune : `arret-image`, `tartinee-par`, `garnitures`). Adrien choisit : les idées refusées sont retirées (`git revert -m 1` de leur fusion), puis `essais` est fusionnée dans `master` et ces lignes rangées dans les bonnes parties.
+Trois idées sur la branche `essais`, pas encore sur `master` (`arret-image`, `tartinee-par`, `garnitures` avec `garnitures-droles`). Adrien choisit : les idées refusées sont retirées (`git revert -m 1` de leur fusion), puis `essais` est fusionnée dans `master` et ces lignes rangées dans les bonnes parties.
 
 - Arrêt sur image : à la mort, le jeu se fige 0,3 s avec un léger zoom sur la tartine, puis l'éclaboussure. Les pastilles d'annonce disparaissent pendant la mort. Pas de zoom si le téléphone demande moins d'animations.
 - Tartinée par… : sous « Tartinée ! », l'arme qui t'a eu (« par un hachoir », « par un couteau au tarama »). Textes : `by` dans `PROJECTILES`, `with` dans `SPREADS`.
-- Garnitures : 10 tartinades, dont 6 nouvelles (abricot, pistache, myrtille, tarama, fromage frais, tapenade). Frôler un couteau garni ou se faire tuer par lui débloque sa garniture (pas en entraînement). On la choisit dans Succès, carte Garnitures. Gardées sur le téléphone (`cv-garnitures`, `cv-garniture`), purement visuel. Chaque tartinade est plus rare qu'avant : 1 attaque sur 40 a un couteau garni, tiré parmi 10.
+- Garnitures : 8 tartinades, chacune avec son dessin sur la tartine (`TOPPINGS` dans `sprites.js`) : confiture, pâte à tartiner, miel (avec son abeille), ketchup en zigzag, dentifrice rayé, œuf au plat, sardine entière, slime qui a un œil. Le beurre reste la garniture de départ. Frôler un couteau garni ou se faire tuer par lui débloque sa garniture (pas en entraînement). On la choisit dans Succès, carte Garnitures, où les garnitures pas encore gagnées sont en ombre. Gardées sur le téléphone (`cv-garnitures`, `cv-garniture`), purement visuel. 1 attaque sur 40 a un couteau garni, tiré parmi 8.
 
 ## Idées pour plus tard
 
