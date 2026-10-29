@@ -15,7 +15,9 @@ export const PALETTE = {
   handle: "#4a2c1d",
   ink: "#fff6e0",
   wood: "#d9a066",
-  "wood-dark": "#a86b3c"
+  "wood-dark": "#a86b3c",
+  trail: "rgba(255, 246, 224, 0.42)",
+  "trail-end": "rgba(255, 246, 224, 0)"
 };
 
 export const SKY = {

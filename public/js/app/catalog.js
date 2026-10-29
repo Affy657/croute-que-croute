@@ -3,7 +3,7 @@ import { PROJECTILES, moveProjectile } from "../game/projectiles.js";
 import { ATTACKS } from "../game/attacks.js";
 import { GAP_START, GAP_SLOPE, GAP_MIN } from "../game/sim.js";
 import { PALETTE, SPREADS } from "../shared/palette.js";
-import { drawProjectile, drawWarn, drawToast } from "./sprites.js";
+import { drawTrail, drawProjectile, drawWarn, drawToast } from "./sprites.js";
 import { MUSIC_CREDIT, SFX_CREDIT } from "./audio.js";
 
 const SAMPLE_T = 60, PREVIEW_SCALE = 0.5, PREVIEW_MAX_S = 6, PREVIEW_PAUSE_S = 0.6;
@@ -182,6 +182,7 @@ function draw(p, clock) {
   ctx.rect(0, 0, FW, FH);
   ctx.clip();
   for (const w of p.pending) drawWarn(ctx, w, clock, p.time);
+  for (const o of p.obs) drawTrail(ctx, o);
   for (const o of p.obs) drawProjectile(ctx, o);
   drawToast(ctx, TOAST, null);
   ctx.restore();
