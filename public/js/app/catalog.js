@@ -198,7 +198,7 @@ function stat(label, value) {
   return row;
 }
 
-export function renderAttacks(root, { showLab = false } = {}) {
+export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
   const live = ATTACKS.filter((a) => !a.lab && SAMPLE_T > a.from);
   const total = live.reduce((s, a) => s + a.weight, 0);
   previews.length = 0;
@@ -208,7 +208,8 @@ export function renderAttacks(root, { showLab = false } = {}) {
     "On peut toujours s'en sortir : chaque attaque est testée avant d'être lancée, même si tu réagis un dixième de seconde après l'alerte.",
     "Tout accélère avec le temps, jusqu'à 2,6 fois plus vite à 80 s.",
     "Une attaque ne sort jamais plus de 3 fois d'affilée, et celle qui vient de sortir revient moins souvent. Les grosses figures (croix, couloir, double pluie) ne sortent jamais deux fois de suite.",
-    "Dans les aperçus, la tartine ne bouge pas."
+    "Dans les aperçus, la tartine ne bouge pas.",
+    "« S'entraîner » lance une partie avec seulement cette attaque, à sa vitesse d'arrivée. Elle ne compte ni pour le classement ni pour les succès."
   ]) list.append(el("li", null, text));
   rules.append(el("h2", null, "Règles"), list);
   const cards = ATTACKS.filter((a) => showLab || !a.lab).map((attack) => {
@@ -227,6 +228,12 @@ export function renderAttacks(root, { showLab = false } = {}) {
     );
     const text = el("div", "attack-text");
     text.append(el("p", null, attack.info), facts);
+    if (onTrain) {
+      const go = el("button", "ghost train", "S'entraîner");
+      go.type = "button";
+      go.addEventListener("click", () => onTrain(attack));
+      text.append(go);
+    }
     body.append(cv, text);
     card.append(head, body);
     const p = { attack, cv, ctx: cv.getContext("2d") };
