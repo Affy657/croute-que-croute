@@ -179,7 +179,7 @@ export const ATTACKS = [
     info: "Un gros rouleau debout traverse lentement l'écran par un côté : passer au-dessus ou en dessous. 2 rouleaux à la suite dès 36 s, 3 dès 60 s." },
   { id: "fan", name: "Éventail", from: 24, weight: 1.1, cost: 1.5, speed: 200, make: fan, growsUntil: 54, growth: "éventails au maximum (5 couteaux)",
     info: "4 à 5 couteaux ouverts en cône depuis un même point, centrés sur la tartine. Il faut sortir du cône par le côté." },
-  { id: "whisk", name: "Fouet", from: 28, weight: 0.7, cost: 1.3, speed: 100, make: whisk,
+  { id: "whisk", name: "Fouet", from: 4, weight: 0.7, cost: 1.3, speed: 100, make: whisk,
     info: "Un fouet qui tourne sur lui-même descend lentement vers la tartine et occupe une grosse zone." },
   { id: "cross", name: "Croix", solo: true, from: 32, weight: 0.7, cost: 1.6, speed: 190, make: cross,
     info: "4 couteaux en même temps depuis les deux coins du haut et les deux côtés, tous vers la tartine. S'écarter du point visé." },
