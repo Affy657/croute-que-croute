@@ -74,7 +74,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
       const gap = gapTo(o, tt.x, tt.y);
       if (gap < HIT_R) {
         state.dead = true;
-        events.push({ type: "death", by: o.from });
+        events.push({ type: "death", by: o.from, kind: o.kind, spread: o.spread });
         return;
       }
       if (!o.near && gap < HIT_R + NEAR) {

@@ -13,7 +13,7 @@ import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./c
 import { renderSettings, suggestInstall, leaveSettings } from "./settings.js";
 import { onInstallChange } from "./install.js";
 import {
-  ui, show, setText, setDigits, tickCountdowns, renderMenu, renderBoard, renderOver, renderOverStats, renderRival,
+  ui, show, setText, setDigits, tickCountdowns, renderMenu, renderBoard, renderOver, renderOverStats, renderRival, renderKiller,
   renderHud, renderControls, renderAll, setBoardScope, achLabel
 } from "./screens.js";
 
@@ -61,13 +61,14 @@ const ON_SIM = {
     scene.pop(S.toast.x, S.toast.y - 32, S.chain > 1 ? "Frôlé x" + S.chain : "Frôlé !", { key: "near", size: 14 + step * 1.5 });
     audio.playSfx("near", 2 ** ((step * 2) / 12));
   },
-  death() {
-    die();
+  death(e) {
+    die(e);
   }
 };
 
-function die() {
+function die(killer) {
   S.mode = "dying";
+  S.killer = killer;
   S.dieT = 0;
   S.freeze = FREEZE_S;
   S.toast.thrust = 0;
@@ -212,6 +213,7 @@ function showOver() {
   show("over");
   renderControls(false);
   renderOver(S.score, S.newBest);
+  renderKiller(S.killer);
   renderOverAch();
   if (S.train) renderOverStats(0, null, 0);
   if (S.newBest) {
