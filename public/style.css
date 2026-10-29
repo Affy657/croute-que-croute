@@ -367,11 +367,8 @@ a.ghost {
 }
 
 .qr-img {
-  width: min(72vw, 320px);
+  width: min(80vw, 340px);
   height: auto;
-  padding: 12px;
-  border-radius: 18px;
-  background: #ffffff;
 }
 
 .pop {
