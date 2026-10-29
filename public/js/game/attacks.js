@@ -2,7 +2,7 @@ import { FW, FH, M, clamp, speedMul } from "./field.js";
 import { projectile } from "./projectiles.js";
 
 const MAX_STREAK = 3, REPEAT_FACTOR = 0.5;
-const CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55, SERIES_GAP = 0.8, SERIES_SHIFT = 140, SERIES_NOTICE = 0.7;
+const CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55, SERIES_GAP = 0.7, SERIES_SHIFT = 140, SERIES_NOTICE = 0.7, SERIES_HOLE = 60;
 
 const inside = (p) => ({ x: clamp(p.x, 10, FW - 10), y: clamp(p.y, 10, FH - 10) });
 
@@ -56,8 +56,7 @@ function downpour({ t, rng, rnd }) {
   return items;
 }
 
-function topWall({ rnd }, at, v, gc = rnd(70, FW - 70)) {
-  const gap = 50;
+function topWall({ rnd }, at, v, gap = 50, gc = rnd(70, FW - 70)) {
   const items = [];
   for (let x = 18; x < FW; x += 36) {
     if (Math.abs(x - gc) >= gap) items.push({ x, y: 10, a: Math.PI / 2, at, obs: [projectile("fork", x, -M, 0, v)] });
@@ -91,7 +90,7 @@ function wallSeries(g) {
   let gc = side === "top" ? rnd(70, FW - 70) : rnd(100, FH * 0.62);
   for (let i = 0; i < seriesSize(t); i++) {
     const at = t + 0.7 + i * SERIES_GAP;
-    const wall = side === "top" ? topWall(g, at, v, gc) : sideWall(g, side, at, v, 50, gc);
+    const wall = side === "top" ? topWall(g, at, v, SERIES_HOLE, gc) : sideWall(g, side, at, v, SERIES_HOLE, gc);
     if (i) for (const w of wall) w.notice = SERIES_NOTICE;
     items.push(...wall);
     gc = side === "top" ? rnd(70, FW - 70) : clamp(gc + rnd(-SERIES_SHIFT, SERIES_SHIFT), 100, FH * 0.62);
@@ -185,16 +184,16 @@ export const ATTACKS = [
     info: "4 couteaux en même temps depuis les deux coins du haut et les deux côtés, tous vers la tartine. S'écarter du point visé." },
   { id: "bread", name: "Couteau à pain", from: 38, weight: 0.7, cost: 1.2, speed: 240, make: bread,
     info: "Lancé d'un coin du haut, il rebondit sur le bord opposé puis file vers la tartine. Suivre la pointe de la pastille et anticiper le rebond." },
-  { id: "walls", name: "Murs en série", solo: true, from: 36, weight: 0.6, cost: 2.4, speed: 150, make: wallSeries, growsUntil: 60, growth: "3 murs en série",
-    info: "2 murs d'affilée (3 dès 60 s), toujours du même côté ou du haut, chacun avec son trou. Chaque mur est annoncé juste avant d'arriver." },
+  { id: "walls", name: "Murs en série", solo: true, calm: true, from: 36, weight: 0.6, cost: 4, speed: 150, make: wallSeries, growsUntil: 60, growth: "3 murs en série",
+    info: "2 murs d'affilée (3 dès 60 s), toujours du même côté ou du haut, chacun avec son trou. Chaque mur est annoncé juste avant d'arriver. La série joue seule : rien d'autre n'est lancé pendant." },
   { id: "corridor", name: "Couloir", solo: true, from: 46, weight: 0.6, cost: 2.2, speed: 150, make: corridor,
     info: "Un mur par un côté, puis un autre par l'autre côté juste après, chacun avec son trou (plus grand que pour un mur seul). Passer d'un trou à l'autre." },
   { id: "downpour", name: "Double pluie", solo: true, from: 54, weight: 0.6, cost: 1.8, speed: 190, make: downpour,
     info: "5 à 9 fourchettes tombent tout droit en rafale, une fois à gauche, une fois à droite." }
 ];
 
-export function pickAttack(t, rng, last = null, streak = 0) {
-  const open = ATTACKS.filter((a) => !a.lab && t > a.from);
+export function pickAttack(t, rng, last = null, streak = 0, busy = false) {
+  const open = ATTACKS.filter((a) => !a.lab && t > a.from && !(busy && a.calm));
   const allowed = open.filter((a) => a.id !== last || (!a.solo && streak < MAX_STREAK));
   const pool = allowed.length ? allowed : open;
   const weight = (a) => a.weight * (a.id === last ? REPEAT_FACTOR ** streak : 1);
