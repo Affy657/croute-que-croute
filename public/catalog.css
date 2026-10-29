@@ -30,17 +30,6 @@
   line-height: 1.4;
 }
 
-.catalog .track {
-  font-weight: 700;
-  font-size: 1.05rem;
-}
-
-.catalog .link {
-  align-self: flex-start;
-  color: var(--mustard);
-  font-weight: 600;
-}
-
 .catalog .sub {
   font-size: 0.9rem;
   color: var(--ink-dim);

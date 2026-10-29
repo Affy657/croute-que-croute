@@ -34,11 +34,10 @@ function canvas(w, h) {
   return c;
 }
 
-function capsule(ctx, half, r) {
-  ctx.beginPath();
-  ctx.arc(-half, 0, r, Math.PI / 2, Math.PI * 1.5);
-  ctx.lineTo(half, -r);
-  ctx.arc(half, 0, r, -Math.PI / 2, Math.PI / 2);
+function capsule(ctx, [ax, ay, bx, by, r]) {
+  const a = Math.atan2(by - ay, bx - ax);
+  ctx.arc(bx, by, r, a - Math.PI / 2, a + Math.PI / 2);
+  ctx.arc(ax, ay, r, a + Math.PI / 2, a + Math.PI * 1.5);
   ctx.closePath();
 }
 
@@ -50,22 +49,43 @@ function realCanvas(width, scale) {
   return { cv, ctx };
 }
 
-function dashed(ctx, scale) {
-  ctx.setLineDash([3 / scale, 3 / scale]);
-  ctx.lineWidth = 1.2 / scale;
-  ctx.strokeStyle = PALETTE.mustard;
+function hitbox(ctx, scale, shapes) {
+  const off = document.createElement("canvas");
+  off.width = ctx.canvas.width;
+  off.height = ctx.canvas.height;
+  const o = off.getContext("2d");
+  o.setTransform(ctx.getTransform());
+  for (const [width, color, dash] of [[6, PALETTE.void, []], [2.4, PALETTE.mustard, [3, 3]]]) {
+    o.setLineDash(dash.map((d) => d / scale));
+    o.lineWidth = width / scale;
+    o.strokeStyle = color;
+    for (const shape of shapes) {
+      o.beginPath();
+      shape(o);
+      o.stroke();
+    }
+  }
+  o.globalCompositeOperation = "destination-out";
+  for (const shape of shapes) {
+    o.beginPath();
+    shape(o);
+    o.fill();
+  }
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(off, 0, 0);
+  ctx.restore();
 }
 
 function weaponCard(kind, spread, status, scale) {
-  const { name, len, rad } = PROJECTILES[kind];
+  const { name, len, rad, parts } = PROJECTILES[kind];
   const card = el("div", "weapon");
   const { cv, ctx } = realCanvas(len, scale);
   drawProjectile(ctx, { kind, len, rad, x: 0, y: 0, a: 0, spread });
-  dashed(ctx, scale);
-  capsule(ctx, len / 2 - rad, rad);
-  ctx.stroke();
+  hitbox(ctx, scale, parts.map((p) => (c) => capsule(c, p)));
   const title = spread ? SPREADS[spread].name : name;
-  card.append(cv, el("span", "name", title), el("span", "meta", `${len} × ${rad * 2} px, ${status}`));
+  const size = `${len} × ${rad * 2} px`;
+  card.append(cv, el("span", "name", title), el("span", "meta", status ? `${size}, ${status}` : size));
   return card;
 }
 
@@ -73,10 +93,7 @@ function toastCard(scale) {
   const card = el("div", "weapon");
   const { cv, ctx } = realCanvas(TOAST_W, scale);
   drawToast(ctx, { x: 0, y: 0, tilt: 0, thrust: 0.35 }, null);
-  dashed(ctx, scale);
-  ctx.beginPath();
-  ctx.arc(0, 0, HIT_R, 0, Math.PI * 2);
-  ctx.stroke();
+  hitbox(ctx, scale, [(c) => c.arc(0, 0, HIT_R, 0, Math.PI * 2)]);
   card.append(cv, el("span", "name", "Tartine"), el("span", "meta", `touchée dans un cercle de ${HIT_R * 2} px`));
   return card;
 }
@@ -94,8 +111,8 @@ export function renderWeapons(root, { showLab = false } = {}) {
   const kinds = Object.keys(PROJECTILES);
   const lab = kinds.filter((k) => PROJECTILES[k].lab);
   const groups = [
-    weaponGroup("En jeu", `Taille réelle, comme dans le jeu sur cet écran (échelle × ${scale.toFixed(2).replace(".", ",")}). En pointillés jaunes : la zone de touche.`,
-      [toastCard(scale), ...kinds.filter((k) => !PROJECTILES[k].lab).map((k) => weaponCard(k, null, "en jeu", scale))]),
+    weaponGroup("Taille réelle", `Comme dans le jeu sur cet écran (échelle × ${scale.toFixed(2).replace(".", ",")}). En pointillés jaunes : la zone de touche.`,
+      [toastCard(scale), ...kinds.filter((k) => !PROJECTILES[k].lab).map((k) => weaponCard(k, null, null, scale))]),
     weaponGroup("Variantes rares", "Environ 1 attaque sur 40 : un seul de ses couteaux change de tartinade. Pur visuel, la zone de touche ne change pas.",
       Object.keys(SPREADS).filter((sp) => sp !== "butter").map((sp) => weaponCard("knife", sp, "rare", scale)))
   ];
@@ -192,12 +209,13 @@ export function renderAttacks(root, { showLab = false } = {}) {
   const cards = ATTACKS.filter((a) => showLab || !a.lab).map((attack) => {
     const card = el("section", "card attack");
     const head = el("div", "attack-head");
-    head.append(el("h2", null, attack.name), el("span", attack.lab ? "badge lab" : "badge", attack.lab ? "Prototype" : "En jeu"));
+    head.append(el("h2", null, attack.name));
+    if (attack.lab) head.append(el("span", "badge lab", "Prototype"));
     const body = el("div", "attack-body");
     const cv = canvas(FW * PREVIEW_SCALE, FH * PREVIEW_SCALE);
     const facts = el("div", "facts");
     facts.append(
-      stat("Dès", attack.lab ? "pas en jeu" : `${attack.from} s`),
+      stat("Dès", attack.lab ? "-" : `${attack.from} s`),
       stat(`Chance à ${SAMPLE_T} s`, attack.lab ? "-" : `${Math.round((100 * attack.weight) / total)} %`),
       stat("Vitesse de base", `${attack.speed} px/s`),
       stat("Pause après", `× ${num(attack.cost)}`)
@@ -214,20 +232,23 @@ export function renderAttacks(root, { showLab = false } = {}) {
   root.replaceChildren(progressionCard(), rules, ...cards);
 }
 
-function link(href, text) {
-  const a = el("a", "link", text);
+function credit(title, text, href, label) {
+  const card = el("section", "card");
+  const actions = el("div", "card-actions");
+  const a = el("a", "ghost", label);
   a.href = href;
   a.target = "_blank";
   a.rel = "noopener";
-  return a;
+  actions.append(a);
+  card.append(el("h2", null, title), el("p", "sub", text), actions);
+  return card;
 }
 
 export function renderCredits(root) {
-  const music = el("section", "card");
-  music.append(el("h2", null, "Musique"), el("p", "track", MUSIC_CREDIT.title), el("p", "sub", MUSIC_CREDIT.artist), link(MUSIC_CREDIT.url, "Écouter sur Spotify"));
-  const sfx = el("section", "card");
-  sfx.append(el("h2", null, "Bruitages"), el("p", "sub", `Sons de la banque ${SFX_CREDIT.name}.`), link(SFX_CREDIT.url, `Voir ${SFX_CREDIT.name}`));
-  root.replaceChildren(music, sfx);
+  root.replaceChildren(
+    credit("Musique", `${MUSIC_CREDIT.title}, de ${MUSIC_CREDIT.artist}`, MUSIC_CREDIT.url, "Écouter sur Spotify"),
+    credit("Bruitages", `Sons de la banque ${SFX_CREDIT.name}`, SFX_CREDIT.url, `Voir ${SFX_CREDIT.name}`)
+  );
 }
 
 export function animateAttacks(on) {

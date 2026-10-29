@@ -1,4 +1,5 @@
 import { FW, FH, HIT_R, X_MIN, X_MAX, Y_MIN, Y_MAX, OUT, clamp } from "./field.js";
+import { PROJECTILES } from "./projectiles.js";
 
 const CELL = 12, SDT = 1 / 30, SUB = 4, HORIZON = 3.5, MARGIN = 11;
 const COLS = Math.floor(FW / CELL), ROWS = Math.floor(FH / CELL), CELLS = COLS * ROWS;
@@ -17,7 +18,7 @@ function mover(o, t0) {
   return {
     x: o.x, y: o.y, vx: o.vx, vy: o.vy, a: o.a,
     h: spin ? 0 : o.len / 2 - o.rad,
-    r: (spin ? o.len / 2 : o.rad) + HIT_R + MARGIN,
+    r: (spin ? PROJECTILES[o.kind].spinReach : PROJECTILES[o.kind].reach) + HIT_R + MARGIN,
     t0, t1: t0 + Math.min(tx, ty)
   };
 }

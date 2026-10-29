@@ -1,4 +1,4 @@
-import { FW } from "./field.js";
+import { FW, segDist2 } from "./field.js";
 
 const RARE_CHANCE = 1 / 40;
 const RARE_SPREADS = ["jam", "choco", "honey", "ketchup"];
@@ -6,11 +6,29 @@ const RARE_SPREADS = ["jam", "choco", "honey", "ketchup"];
 export const PROJECTILES = {
   knife: { name: "Couteau à beurre", len: 66, rad: 5 },
   fork: { name: "Fourchette", len: 58, rad: 6 },
-  rolling: { name: "Rouleau à pâtisserie", len: 84, rad: 11, across: true },
-  whisk: { name: "Fouet", len: 54, rad: 8 },
-  cleaver: { name: "Hachoir", len: 56, rad: 12 },
+  rolling: { name: "Rouleau à pâtisserie", len: 84, rad: 11, across: true, parts: [[-20, 0, 20, 0, 10.5], [-37.5, 0, 37.5, 0, 4.5]] },
+  whisk: { name: "Fouet", len: 54, rad: 8, parts: [[-22.5, 0, -2, 0, 4.5], [8, 0, 19, 0, 8]] },
+  cleaver: { name: "Hachoir", len: 56, rad: 12, parts: [[-4, -6, 22, -6, 6], [-4, 6, 22, 6, 6], [-24, 0, -8, 0, 4]] },
   bread: { name: "Couteau à pain", len: 84, rad: 5 }
 };
+
+for (const p of Object.values(PROJECTILES)) {
+  const h = p.len / 2 - p.rad;
+  p.parts = p.parts || [[-h, 0, h, 0, p.rad]];
+  const ends = p.parts.flatMap(([ax, ay, bx, by, r]) => [[ax, ay, r], [bx, by, r]]);
+  p.reach = Math.max(...ends.map(([x, y, r]) => Math.hypot(Math.max(0, Math.abs(x) - h), y) + r));
+  p.spinReach = Math.max(...ends.map(([x, y, r]) => Math.hypot(x, y) + r));
+}
+
+export function gapTo(o, px, py) {
+  const c = Math.cos(o.a), s = Math.sin(o.a);
+  let gap = Infinity;
+  for (const [ax, ay, bx, by, r] of PROJECTILES[o.kind].parts) {
+    const d = Math.sqrt(segDist2(px, py, o.x + c * ax - s * ay, o.y + s * ax + c * ay, o.x + c * bx - s * by, o.y + s * bx + c * by)) - r;
+    if (d < gap) gap = d;
+  }
+  return gap;
+}
 
 export function projectile(kind, x, y, vx, vy, spin = 0, extra = {}) {
   const { len, rad, across } = PROJECTILES[kind];

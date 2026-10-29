@@ -10,7 +10,7 @@ import { createInput } from "./input.js";
 import { burst, rain, bounce } from "./party.js";
 import * as ach from "./achievements.js";
 import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./catalog.js";
-import { renderSettings, suggestInstall } from "./settings.js";
+import { renderSettings, suggestInstall, leaveSettings } from "./settings.js";
 import { onInstallChange } from "./install.js";
 import {
   ui, show, setText, setDigits, tickCountdowns, renderMenu, renderBoard, renderOver, renderOverStats,
@@ -284,6 +284,7 @@ function closeAch() {
 
 function closeSettings() {
   settingsOpen = false;
+  leaveSettings();
   backTo(settingsFrom);
 }
 

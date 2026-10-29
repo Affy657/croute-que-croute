@@ -163,6 +163,18 @@ Par le côté            Par le haut
 - Environ 1 attaque sur 40 : un seul de ses couteaux porte autre chose que du beurre (confiture, pâte à tartiner, miel ou ketchup).
 - Pur visuel : même taille, même zone de touche, aucun effet sur le score ni sur l'équité.
 
+## Zones de touche
+
+- Tartine : un cercle de 26 px de diamètre au centre (`HIT_R` dans `field.js`).
+- Chaque arme est faite d'une ou plusieurs gélules (`parts` dans `projectiles.js` : un segment et un rayon). La tartine est touchée quand son cercle mord une gélule, et « Frôlé » compte quand elle passe à moins de 11 px sans toucher.
+- Couteau à beurre, fourchette, couteau à pain : une seule gélule, fine.
+- Depuis le 29/10/2026 (demande d'Adrien, pour moins de frustration) : avant, une seule grosse gélule par arme laissait une grande zone vide autour des manches. Maintenant :
+  - rouleau : le corps (58 × 21 px) et une gélule fine de 9 px pour les poignées ;
+  - fouet : le manche (9 px) et la tête ovale (16 px) ;
+  - hachoir : la lame couverte par deux gélules, coins compris, et le manche (8 px).
+- Le solveur garde une seule gélule qui englobe toutes les parties (`reach`, et `spinReach` pour une arme qui tourne) : il reste prudent. Pour le hachoir elle grandit de 2,5 px, car les coins de la lame comptent maintenant. `npm test` après le changement : 0 mort et 0 blocage sur 100 parties, 9,5 % d'attaques remplacées (9,4 % avant).
+- Infos, onglet Armes : le contour exact de chaque zone en pointillés jaunes sur un liseré sombre, lisible aussi sur la tartine (avant, le cercle de la tartine se perdait dans le jaune du dessin).
+
 ## Progression de la difficulté
 
 - **Fin de la complexification : 80 s.** Dernière nouvelle attaque à 54 s, rythme maximal à 52 s, pluies et éventails au maximum à 60 et 64 s, vitesse maximale à 80 s. Au-delà, plus rien ne change.
@@ -236,7 +248,7 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
 - « Frôlé ! » s'affiche au-dessus de la tartine à chaque frôlé, et s'efface à la mort pour ne pas contredire « Tartinée ! ».
 - Boutons : le gros bouton jaune et les rangées en dessous ont la même largeur (18rem au plus) ; les boutons secondaires vont par deux, tous de la même taille, 44 px de haut au moins pour le doigt.
 - Cadre du terrain : il n'apparaît qu'en partie (fondu de 0,2 s au départ et à la mort). Sur l'accueil, la fin et le classement, l'interface prend tout l'écran sans que le trait du cadre la coupe, quelle que soit la forme du téléphone. Les alertes d'attaque au bord ne sont dessinées qu'avec le terrain.
-- Fond (depuis le 29/10/2026, demandé par Adrien) : les planètes des affiches défilent en boucle derrière tout, sur l'accueil comme en partie, une à la fois en alternant gauche et droite : planète violette à anneau, petites lunes vertes, planète pancake avec pot de confiture, planète verte à anneau, planète enceintes (ondes qui pulsent), petite planète orange. Dessinées dans le code (`public/js/app/planets.js`, couleurs `SKY` dans `palette.js`), sombres pour ne pas gêner la lecture des couverts. Planète pancake et planète enceintes reprises le 29/10/2026 (Adrien trouvait qu'on aurait dit des images collées) dans le style de l'affiche de la 1re édition : contours foncés, même lumière en haut à gauche et même ombre en croissant sur tout ce qui est posé sur la planète, enceintes et cratères aplatis vers le bord comme sur une boule, pile de pancakes avec ombre portée, coulures vertes et pot de confiture, ondes qui partent de la planète. Elles avancent à 20 px/s en partie (plus vite quand le jeu accélère, comme les étoiles) et à 10 px/s hors partie ; une nouvelle planète arrive toutes les demi-hauteurs d'écran.
+- Fond (depuis le 29/10/2026, demandé par Adrien) : les planètes des affiches défilent en boucle derrière tout, sur l'accueil comme en partie, une à la fois en alternant gauche et droite : planète violette à anneau, petites lunes vertes, planète pancake avec pot de confiture, planète verte à anneau, planète enceintes (ondes qui pulsent), petite planète orange. Dessinées dans le code (`public/js/app/planets.js`, couleurs `SKY` dans `palette.js`), sombres pour ne pas gêner la lecture des couverts. Planète pancake et planète enceintes reprises le 29/10/2026 (Adrien trouvait qu'on aurait dit des images collées) dans le style de l'affiche de la 1re édition : contours foncés, enceintes et cratères aplatis vers le bord comme sur une boule, ondes qui partent de la planète. Deuxième passe le même jour : la pile de pancakes (coulures vertes, pot de confiture) est posée sur le dessus de la planète avec son ombre sur le sol, au lieu d'être collée devant ; et les deux planètes ont le même dégradé d'ombre que les autres (de clair en haut à gauche à 72 % d'ombre au bord) pour ne pas ressortir plus qu'elles. Elles avancent à 20 px/s en partie (plus vite quand le jeu accélère, comme les étoiles) et à 10 px/s hors partie ; une nouvelle planète arrive toutes les demi-hauteurs d'écran.
 - Tailles d'écran (revu le 29/10/2026 après une critique de l'interface) : vérifié sans chevauchement ni débordement de 320×480 à 430×932 (iPhone SE dans Safari 375×548, Android 360×640, iPhone récents 390×664, Pixel 412×780, Pro Max 430×932). Les tailles verticales (titre, temps, gros bouton, espacements) suivent la hauteur visible de l'écran (unité `svh`) ; les titres de page rétrécissent avec la largeur pour tenir entre les boutons ronds du haut ; le contenu du bas s'arrête au-dessus des boutons ronds du bas.
 - Effets de fête (idée d'Adrien, depuis le 29/10/2026) :
   - En pleine partie, quand le temps dépasse ton record : le chrono passe en jaune avec un petit rebond, « Record x,xx » devient « Nouveau record » et quelques confettis partent du chrono. Pas au tout premier essai (pas encore de record).
@@ -245,11 +257,12 @@ rythme    1 attaque / 1,25 s .......................... 1 / 0,42 s
   - Fin de partie avec la 1re place confirmée par le serveur : le badge devient « N°1 ! » en jaune, grosse gerbe dorée et pluie de confettis sur tout l'écran, en plus de la fanfare.
   - Les confettis sont dessinés par `public/js/app/party.js` sur un calque au-dessus de tout (`#party`), qui ne bloque pas les doigts. Rien ne bouge si le téléphone demande moins d'animations.
 - Classement : deux onglets, Soirée et Général (Tous les temps). Top 50, ta ligne en jaune, mis à jour toutes les 10 s. L'onglet Soirée n'existe que pendant une soirée et les 12 h qui suivent.
-- Bulle d'info (bouton rond « i » en bas à droite, sur l'accueil et la fin de partie) : onglets Attaques (progression : la liste des étapes avec leur temps, sans résumé au-dessus depuis le 29/10/2026 car il répétait la liste ; règles, chaque attaque avec ses infos et un aperçu animé en boucle) Armes (tous les ustensiles et la tartine à leur taille réelle sur cet écran, avec leur zone de touche, et les variantes rares) et Crédits (la musique avec un lien pour l'écouter, et la banque des bruitages). Toute la page défile, comme une page web ; le titre « Infos » et les onglets forment un en-tête collé tout en haut de l'écran (sans espace où la page défilerait au-dessus), avec la croix pour fermer à côté du titre, et « Retour » est tout en bas. Succès et Paramètres ont le même en-tête collé. Les règles sont écrites avec des mots de joueur (plus de « solveur » ni de formule).
+- Bulle d'info (bouton rond « i » en bas à droite, sur l'accueil et la fin de partie) : onglets Attaques (progression : la liste des étapes avec leur temps, sans résumé au-dessus depuis le 29/10/2026 car il répétait la liste ; règles, chaque attaque avec ses infos et un aperçu animé en boucle) Armes (carte « Taille réelle » : tous les ustensiles et la tartine à leur taille réelle sur cet écran, avec leur zone de touche, puis les variantes rares) et Crédits (deux cartes au même format que les Paramètres : titre, une ligne de texte, un bouton « Écouter sur Spotify » ou « Voir Mixkit »). Depuis le 29/10/2026, plus de mention « En jeu » (badges des attaques, titre et tailles des armes) : seuls les prototypes, visibles par les admins, gardent leur badge. Toute la page défile, comme une page web ; le titre « Infos » et les onglets forment un en-tête collé tout en haut de l'écran (sans espace où la page défilerait au-dessus), avec la croix pour fermer à côté du titre, et « Retour » est tout en bas. Succès et Paramètres ont le même en-tête collé. Les règles sont écrites avec des mots de joueur (plus de « solveur » ni de formule).
 - Police : Bungee partout, chargée depuis Google Fonts.
 - Deux boutons ronds, cachés pendant la partie et dans la page d'info : la note de musique en haut à gauche coupe ou remet la musique, le haut-parleur en haut à droite coupe ou remet les bruitages. Chaque choix est mémorisé sur le téléphone.
 - Bouton rond Paramètres (roue crantée) en bas à gauche de l'accueil et de la fin de partie, pour tout le monde. Les boutons du bas sont posés dans les coins, hors de la mise en page : ils ne décalent rien.
-- Paramètres : « Son » (deux curseurs, Musique et Bruitages, voir plus bas), « Installer le jeu » (bouton Installer quand le navigateur le permet, sinon la marche à suivre ; la carte disparaît quand le jeu est ouvert depuis l'appli installée) et « Partager le jeu » (« Partager le lien » ouvre le partage du téléphone, ou copie le lien sur ordinateur ; « QR code » l'affiche en grand pour le faire scanner à un voisin). Les téléphones connectés en admin ont en plus un onglet Admin avec le lien vers le tableau de bord.
+- Paramètres : « Son » (deux curseurs, Musique et Bruitages, voir plus bas), « Installer le jeu » (bouton Installer quand le navigateur le permet, sinon la marche à suivre ; la carte disparaît quand le jeu est ouvert depuis l'appli installée) et « Partager le jeu » (« Partager le lien » ouvre le partage du téléphone, ou copie le lien sur ordinateur ; « QR code » l'affiche en grand pour le faire scanner à un voisin ; les deux boutons sont côte à côte, leur texte rétrécit avec la largeur de l'écran, 11 px au plus petit sur 320 px). Les téléphones connectés en admin ont en plus un onglet Admin qui affiche directement le tableau de bord sous les onglets (voir « Admin »).
+- Bouton « Retour » (Infos, Succès, Paramètres, Classement, QR code) : collé en bas de l'écran quand la page tient sans défiler, juste après le contenu sinon (classe `back`).
 - Pop-up « Installe le jeu » : une seule fois par téléphone, sur l'accueil, une fois le pseudo choisi. Sur Android, bouton Installer ; sur iPhone, la marche à suivre (pas de bouton possible). Jamais si le jeu est déjà installé.
 
 ## Succès
@@ -283,7 +296,7 @@ Décidé avec Adrien le 29/10/2026 : 4 familles, gardés sur le téléphone, mon
 - Fil en direct sous le QR code (29/10/2026) : les 4 derniers événements des 15 dernières minutes, du plus récent au plus ancien. « X vient de faire 45,12 s » quand quelqu'un bat son record (de la soirée pendant une soirée, perso sinon), « Bienvenue X ! » à chaque nouveau pseudo. Une nouvelle ligne apparaît en glissant. Joueurs retirés exclus. Route publique `GET /api/feed`, appelée seulement par l'écran géant.
 - Bouton « Plein écran » en bas à droite : passe en plein écran et empêche l'écran de se mettre en veille (si le navigateur le permet). La souris se cache après 3 s sans bouger.
 - Se recharge toute seule après une mise en ligne, pour rester à jour toute la soirée.
-- Liens : bouton « Écran géant » dans la carte de la soirée du tableau de bord, et dans Paramètres, onglet Admin.
+- Lien : bouton « Écran géant » dans la carte de la soirée du tableau de bord (donc aussi dans Paramètres, onglet Admin).
 - En portrait (tablette, téléphone), le QR code passe au-dessus du classement.
 
 ## Musique
@@ -292,7 +305,7 @@ Décidé avec Adrien le 29/10/2026 : 4 familles, gardés sur le téléphone, mon
 - En prod : « Roundabout » de Blacklolita (M4A, 3 min 57, 3,8 Mo), choisi par Adrien en attendant les morceaux des collègues.
 - Le fichier n'est pas dans git (droits et poids) : il est seulement dans `public/music/` sur le PC. À remettre là avant un déploiement depuis un autre ordinateur.
 - Changer de musique : remplacer `public/music/theme.m4a`, mettre à jour `MUSIC_CREDIT` dans `public/js/app/audio.js` (titre, artiste, lien), puis `npm run deploy`.
-- Crédits visibles dans Infos, onglet Crédits, avec un lien Spotify vers le morceau.
+- Crédits visibles dans Infos, onglet Crédits, avec un bouton vers le morceau sur Spotify.
 - Elle ne joue que pendant une partie : elle repart du début à chaque partie, pour que la montée du morceau suive la montée de la difficulté, et s'arrête en fondu à la mort. Silence sur l'accueil et l'écran de fin.
 - Le bouton musique ne lance rien : il mémorise seulement le choix pour les prochaines parties.
 - Si le morceau prend du retard sur la partie (réseau lent, téléphone qui rame), le jeu le recale dès que l'écart dépasse 0,35 s.
@@ -340,7 +353,11 @@ Décidé avec Adrien le 29/10/2026 : 4 familles, gardés sur le téléphone, mon
 
 ## Admin
 
-- Même appli que le jeu : une seule installation. Un téléphone connecté en admin trouve le tableau de bord dans Paramètres (roue crantée en bas à gauche), onglet Admin. « Retour au jeu » ramène au jeu.
+- Même appli que le jeu : une seule installation. Un téléphone connecté en admin trouve le tableau de bord dans Paramètres (roue crantée en bas à gauche), onglet Admin, affiché directement sous les onglets depuis le 29/10/2026 (demande d'Adrien).
+  - Technique : la page `/admin` est chargée dans un cadre (`iframe`) seulement quand l'onglet Admin est ouvert, et retirée quand on le quitte (pas de rafraîchissement en arrière-plan). Le cadre prend la hauteur de son contenu, donc toute la page Paramètres défile d'un bloc. Dans le cadre, `/admin` cache son en-tête (« Croûte Admin », « Retour au jeu ») grâce à la classe `embedded`.
+  - `_headers` autorise le cadre seulement depuis le même site (`frame-ancestors 'self'`, au lieu de `'none'`).
+  - Se déconnecter dans le cadre fait disparaître l'onglet Admin tout de suite.
+  - `/admin` ouvert seul (lien d'invitation, ordinateur) garde son en-tête et « Retour au jeu ».
 - Accès caché : 5 appuis rapides sur « Collectif Tartine Sauvage » ouvrent l'écran admin.
 - Connexion sans mot de passe, le téléphone reste connecté.
 - Dans l'appli installée (surtout sur iPhone, où les liens s'ouvrent dans Safari), on peut coller le lien d'invitation dans « Lien d'invitation reçu ».

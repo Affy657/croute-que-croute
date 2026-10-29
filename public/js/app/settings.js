@@ -18,12 +18,33 @@ export function renderSettings() {
   for (const b of ui.settingsTabs.children) b.setAttribute("aria-selected", String(b.dataset.tab === tab));
   ui.settingsApp.hidden = tab !== "app";
   ui.settingsAdmin.hidden = tab !== "admin";
+  if (tab === "admin") mountAdmin();
+  else leaveSettings();
   const mode = installMode();
   ui.installCard.hidden = mode === "installed";
   ui.installHint.textContent = HINTS[mode] || "";
   ui.installBtn.hidden = mode !== "prompt";
   ui.musicVol.value = Math.round(prefs.musicLevel * 100);
   ui.sfxVol.value = Math.round(prefs.sfxLevel * 100);
+}
+
+function mountAdmin() {
+  if (ui.settingsAdmin.firstChild) return;
+  const frame = document.createElement("iframe");
+  frame.src = "/admin";
+  frame.title = "Tableau de bord admin";
+  frame.addEventListener("load", () => {
+    const doc = frame.contentDocument;
+    if (!doc || !doc.body) return;
+    const fit = () => { frame.style.height = doc.body.scrollHeight + "px"; };
+    new frame.contentWindow.ResizeObserver(fit).observe(doc.body);
+    fit();
+  });
+  ui.settingsAdmin.replaceChildren(frame);
+}
+
+export function leaveSettings() {
+  ui.settingsAdmin.replaceChildren();
 }
 
 function flash(button, text) {
@@ -81,4 +102,7 @@ ui.installLater.addEventListener("click", closePop);
 ui.qrHost.textContent = location.host;
 onInstallChange(() => {
   if (!ui.settings.hidden) renderSettings();
+});
+window.addEventListener("storage", (e) => {
+  if (e.key === KEYS.adminToken && !ui.settings.hidden) renderSettings();
 });

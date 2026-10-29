@@ -1,6 +1,6 @@
-import { FW, FH, HIT_R, NEAR, OUT, X_MIN, X_MAX, Y_MIN, Y_MAX, clamp, segDist2 } from "./field.js";
+import { FW, FH, HIT_R, NEAR, OUT, X_MIN, X_MAX, Y_MIN, Y_MAX, clamp } from "./field.js";
 import { pickAttack } from "./attacks.js";
-import { moveProjectile, sprinkleRare } from "./projectiles.js";
+import { moveProjectile, sprinkleRare, gapTo } from "./projectiles.js";
 import { solve } from "./solver.js";
 
 const TRIES = 5, REACT = 0.1;
@@ -70,16 +70,13 @@ export function createSim(rng = Math.random, { fair = true, react = REACT } = {}
   function collide(events) {
     const tt = state.toast;
     for (const o of state.obs) {
-      const h = o.len / 2 - o.rad;
-      const cx = Math.cos(o.a) * h, cy = Math.sin(o.a) * h;
-      const d2 = segDist2(tt.x, tt.y, o.x - cx, o.y - cy, o.x + cx, o.y + cy);
-      const hr = HIT_R + o.rad;
-      if (d2 < hr * hr) {
+      const gap = gapTo(o, tt.x, tt.y);
+      if (gap < HIT_R) {
         state.dead = true;
         events.push({ type: "death", by: o.from });
         return;
       }
-      if (!o.near && d2 < (hr + NEAR) * (hr + NEAR)) {
+      if (!o.near && gap < HIT_R + NEAR) {
         o.near = true;
         state.near++;
         events.push({ type: "near" });
