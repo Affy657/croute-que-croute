@@ -9,6 +9,7 @@ export const KEYS = {
   adminToken: "cqc-admin-token",
   installAsked: "cv-install-asked",
   achievements: "cv-succes",
+  pendingScores: "cv-score-attente",
   lastReload: "cv-reload"
 };
 

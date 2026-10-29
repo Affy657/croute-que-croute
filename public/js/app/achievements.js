@@ -46,12 +46,24 @@ function load() {
 let data = load(), fresh = [], run = null;
 const listeners = [];
 
-const save = () => store.set(KEYS.achievements, JSON.stringify(data));
+function change(fn) {
+  data = load();
+  const changed = fn(data);
+  if (changed !== false) store.set(KEYS.achievements, JSON.stringify(data));
+  return changed !== false;
+}
+
+window.addEventListener("storage", (e) => {
+  if (e.key === KEYS.achievements) data = load();
+});
 
 function unlock(id) {
   if (data.got[id]) return;
-  data.got[id] = Date.now();
-  save();
+  const done = change((d) => {
+    if (d.got[id]) return false;
+    d.got[id] = Date.now();
+  });
+  if (!done) return;
   const a = BY_ID[id];
   fresh.push(a);
   for (const fn of listeners) fn(a);
@@ -65,8 +77,10 @@ export function runStart(eventKey) {
   run = { still: 0 };
   fresh = [];
   if (eventKey && !data.events.includes(eventKey)) {
-    data.events.push(eventKey);
-    save();
+    change((d) => {
+      if (d.events.includes(eventKey)) return false;
+      d.events.push(eventKey);
+    });
   }
   if (data.events.length >= EVENTS) unlock("events3");
 }
@@ -82,8 +96,10 @@ export function runTick(state, moved, dt) {
     o.seen = true;
     if (o.spread) unlock(o.spread);
     if (o.from && !data.attacks.includes(o.from)) {
-      data.attacks.push(o.from);
-      save();
+      change((d) => {
+        if (d.attacks.includes(o.from)) return false;
+        d.attacks.push(o.from);
+      });
       if (data.attacks.length >= ATTACKS.length) unlock("allAttacks");
     }
   }
@@ -92,8 +108,9 @@ export function runTick(state, moved, dt) {
 export function runEnd(score) {
   if (!run) return;
   run = null;
-  data.runs++;
-  save();
+  change((d) => {
+    d.runs++;
+  });
   for (const [n, id] of RUNS) if (data.runs >= n) unlock(id);
   if (score < EXPRESS_CS) unlock("express");
   if (score > 0 && score % 100 === 0) unlock("round");

@@ -2,6 +2,7 @@ import { VERSION } from "../version.js";
 import { store, session, KEYS } from "../shared/store.js";
 
 const RELOAD_GAP = 15000;
+const SEND_TRIES = 3, SEND_GAP_MS = 1500, WAIT_GAP_MS = 5000, WAIT_MS = 120000, SEND_TIMEOUT_MS = 8000;
 
 export const net = { token: store.get(KEYS.playerToken), board: null, offset: 0, online: true, updatePending: false };
 let localBest = parseInt(store.get(KEYS.localBest) || "0", 10) || 0;
@@ -10,10 +11,11 @@ const listeners = { board: [], update: [] };
 export const on = (name, fn) => listeners[name].push(fn);
 const emit = (name) => listeners[name].forEach((fn) => fn());
 
-export async function call(method, path, body) {
+export async function call(method, path, body, timeoutMs) {
   const headers = { "content-type": "application/json", "x-app-version": VERSION };
   if (net.token) headers.authorization = "Bearer " + net.token;
-  const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  const signal = timeoutMs && AbortSignal.timeout ? AbortSignal.timeout(timeoutMs) : undefined;
+  const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined, signal });
   let data = null;
   try { data = await res.json(); } catch (e) {}
   if (!res.ok) {
@@ -113,29 +115,69 @@ export function startRun() {
   }));
 }
 
-export async function submitScore(score, pending) {
-  const run = await pending;
-  if (run.error) return run;
-  for (let i = 0; i < 3; i++) {
-    try {
-      const r = await call("POST", "/api/runs/" + run.runId, { score });
-      const me = net.board && net.board.me;
-      if (me) {
-        Object.assign(me, { best: r.best, rank: r.rank });
-        net.board.count = r.count;
-        if (r.eventBest !== null) {
-          Object.assign(me, { eventBest: r.eventBest, eventRank: r.eventRank });
-          net.board.eventCount = r.eventCount;
-        }
-      }
-      refreshBoard();
-      return r;
-    } catch (e) {
-      if (e.status) return { error: e.message };
-      await new Promise((ok) => setTimeout(ok, 1500));
+function pendingScores() {
+  try {
+    return JSON.parse(store.get(KEYS.pendingScores) || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+const keepPending = (list) => store.set(KEYS.pendingScores, list.length ? JSON.stringify(list) : null);
+const clearPending = (runId) => keepPending(pendingScores().filter((p) => p.runId !== runId));
+
+function markPending(runId, score, at) {
+  const list = pendingScores();
+  if (!list.some((p) => p.runId === runId)) keepPending([...list, { runId, score, at }]);
+}
+
+function applyResult(r) {
+  const me = net.board && net.board.me;
+  if (me) {
+    Object.assign(me, { best: r.best, rank: r.rank });
+    net.board.count = r.count;
+    if (r.eventBest !== null) {
+      Object.assign(me, { eventBest: r.eventBest, eventRank: r.eventRank });
+      net.board.eventCount = r.eventCount;
     }
   }
-  return { error: "Hors ligne : score non envoyé" };
+  refreshBoard();
+}
+
+async function send(runId, score, onWait, since = Date.now()) {
+  markPending(runId, score, since);
+  for (let i = 0; ; i++) {
+    try {
+      const r = await call("POST", "/api/runs/" + runId, { score }, SEND_TIMEOUT_MS);
+      clearPending(runId);
+      applyResult(r);
+      return r;
+    } catch (e) {
+      if (e.status) {
+        clearPending(runId);
+        return { error: e.message };
+      }
+      if (i === SEND_TRIES - 1 && onWait) onWait();
+      if (i >= SEND_TRIES - 1 && Date.now() - since > WAIT_MS) {
+        clearPending(runId);
+        return { error: "Hors ligne : score non envoyé" };
+      }
+      await new Promise((ok) => setTimeout(ok, i < SEND_TRIES - 1 ? SEND_GAP_MS : WAIT_GAP_MS));
+    }
+  }
+}
+
+export async function submitScore(score, pending, onWait) {
+  const run = await pending;
+  if (run.error) return run;
+  return send(run.runId, score, onWait);
+}
+
+export function resumePending() {
+  const now = Date.now();
+  const list = pendingScores().filter((p) => now - p.at < WAIT_MS);
+  keepPending(list);
+  for (const p of list) send(p.runId, p.score, null, p.at);
 }
 
 export function requestUpdate() {
