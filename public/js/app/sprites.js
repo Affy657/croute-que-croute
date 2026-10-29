@@ -261,6 +261,7 @@ function fanIcon(ctx, w, C) {
 }
 
 export function drawWarn(ctx, w, clock, now, C = PALETTE, avoid = null) {
+  if (now < w.born) return;
   const r = BADGE_R;
   const x = clamp(w.x, r + 3, FW - r - 3);
   let y = clamp(w.y, r + 3, FH - r - 3);

@@ -36,7 +36,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
     if (ok || !fair) {
       if (!ok) state.stats.impossible++;
       for (const w of items) {
-        w.born = t;
+        w.born = w.notice ? Math.max(t, w.at - w.notice) : t;
         for (const o of w.obs) o.from = attack.id;
       }
       sprinkleRare(items);

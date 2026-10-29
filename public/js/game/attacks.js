@@ -2,7 +2,7 @@ import { FW, FH, M, clamp, speedMul } from "./field.js";
 import { projectile } from "./projectiles.js";
 
 const MAX_STREAK = 3, REPEAT_FACTOR = 0.5;
-const CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55;
+const CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55, SERIES_GAP = 0.8, SERIES_SHIFT = 140, SERIES_NOTICE = 0.7;
 
 const inside = (p) => ({ x: clamp(p.x, 10, FW - 10), y: clamp(p.y, 10, FH - 10) });
 
@@ -56,8 +56,8 @@ function downpour({ t, rng, rnd }) {
   return items;
 }
 
-function topWall({ rnd }, at, v) {
-  const gap = 50, gc = rnd(70, FW - 70);
+function topWall({ rnd }, at, v, gc = rnd(70, FW - 70)) {
+  const gap = 50;
   const items = [];
   for (let x = 18; x < FW; x += 36) {
     if (Math.abs(x - gc) >= gap) items.push({ x, y: 10, a: Math.PI / 2, at, obs: [projectile("fork", x, -M, 0, v)] });
@@ -65,8 +65,7 @@ function topWall({ rnd }, at, v) {
   return items;
 }
 
-function sideWall({ rnd }, side, at, v, gap = 50) {
-  const gc = rnd(100, FH * 0.62);
+function sideWall({ rnd }, side, at, v, gap = 50, gc = rnd(100, FH * 0.62)) {
   const dir = side === "left" ? 1 : -1;
   const x0 = side === "left" ? -M : FW + M;
   const items = [];
@@ -80,6 +79,24 @@ function wall(g) {
   const side = g.pick(["left", "right", "top"]);
   const v = 150 * speedMul(g.t), at = g.t + 0.7;
   return side === "top" ? topWall(g, at, v) : sideWall(g, side, at, v);
+}
+
+const seriesSize = (t) => (t >= 60 ? 3 : 2);
+
+function wallSeries(g) {
+  const { t, rnd, pick } = g;
+  const side = pick(["left", "right", "top"]);
+  const v = 150 * speedMul(t);
+  const items = [];
+  let gc = side === "top" ? rnd(70, FW - 70) : rnd(100, FH * 0.62);
+  for (let i = 0; i < seriesSize(t); i++) {
+    const at = t + 0.7 + i * SERIES_GAP;
+    const wall = side === "top" ? topWall(g, at, v, gc) : sideWall(g, side, at, v, 50, gc);
+    if (i) for (const w of wall) w.notice = SERIES_NOTICE;
+    items.push(...wall);
+    gc = side === "top" ? rnd(70, FW - 70) : clamp(gc + rnd(-SERIES_SHIFT, SERIES_SHIFT), 100, FH * 0.62);
+  }
+  return items;
 }
 
 function corridor(g) {
@@ -168,6 +185,8 @@ export const ATTACKS = [
     info: "4 couteaux en même temps depuis les deux coins du haut et les deux côtés, tous vers la tartine. S'écarter du point visé." },
   { id: "bread", name: "Couteau à pain", from: 38, weight: 0.7, cost: 1.2, speed: 240, make: bread,
     info: "Lancé d'un coin du haut, il rebondit sur le bord opposé puis file vers la tartine. Suivre la pointe de la pastille et anticiper le rebond." },
+  { id: "walls", name: "Murs en série", solo: true, from: 36, weight: 0.6, cost: 2.4, speed: 150, make: wallSeries, growsUntil: 60, growth: "3 murs en série",
+    info: "2 murs d'affilée (3 dès 60 s), toujours du même côté ou du haut, chacun avec son trou. Chaque mur est annoncé juste avant d'arriver." },
   { id: "corridor", name: "Couloir", solo: true, from: 46, weight: 0.6, cost: 2.2, speed: 150, make: corridor,
     info: "Un mur par un côté, puis un autre par l'autre côté juste après, chacun avec son trou (plus grand que pour un mur seul). Passer d'un trou à l'autre." },
   { id: "downpour", name: "Double pluie", solo: true, from: 54, weight: 0.6, cost: 1.8, speed: 190, make: downpour,
