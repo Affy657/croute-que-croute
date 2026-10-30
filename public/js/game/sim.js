@@ -5,7 +5,7 @@ import { solve } from "./solver.js";
 
 const TRIES = 5, REACT = 0.1, SWEEP = 6, MOVE_MAX = 10 * (FW + FH);
 export const CALM_PASS = 0.2;
-export const GAP_START = 0.95, GAP_SLOPE = 0.0067, GAP_MIN = 0.55;
+export const GAP_START = 0.95, GAP_SLOPE = 0.0067, GAP_MIN = 0.45;
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
 function passAt(items) {

@@ -4,7 +4,7 @@ export const X_MIN = 18, X_MAX = FW - 18, Y_MIN = 22, Y_MAX = FH - 22;
 
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-export const SPEED_START = 1.4, SPEED_MAX = 2.4, SPEED_RAMP = 75;
+export const SPEED_START = 1.4, SPEED_MAX = 3.0, SPEED_RAMP = 75;
 export const speedMul = (t) => Math.min(SPEED_MAX, SPEED_START + t / SPEED_RAMP);
 
 export function segDist2(px, py, ax, ay, bx, by) {
