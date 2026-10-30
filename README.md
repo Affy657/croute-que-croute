@@ -47,7 +47,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 | Double pluie | 54 s | 8 fourchettes (9 dès 60 s), à gauche et à droite en alternance |
 
 - Vitesse des couverts : × (1 + t / 50), plafond × 2,6 à 80 s. Délai entre deux attaques : 1,25 s moins 0,016 × t, 0,42 s au plus court (dès 52 s).
-- Jamais plus de 3 fois la même attaque d'affilée. Croix, murs en série et double pluie ne sortent jamais deux fois de suite. Jamais de mur juste après des murs en série, ni l'inverse (même `kin`). Pas de mur ni de murs en série tant qu'un rouleau est annoncé ou à l'écran, et l'inverse (`shuns`) : un rouleau dans le trou d'un mur le bouchait presque. Les murs en série ne partent que si aucune annonce n'est en cours, et rien d'autre n'arrive tant que leur dernier mur n'a pas quitté l'écran.
+- Jamais plus de 3 fois la même attaque d'affilée. Croix, murs en série et double pluie ne sortent jamais deux fois de suite. Jamais de mur juste après des murs en série, ni l'inverse (même `kin`). Pas de mur ni de murs en série tant qu'un rouleau est annoncé ou à l'écran, et l'inverse (`shuns`) : un rouleau dans le trou d'un mur le bouchait presque. Si les murs en série sont tirés pendant une annonce, ils attendent qu'elle soit partie (rien d'autre n'est annoncé entre-temps), et rien d'autre n'arrive tant que leur dernier mur n'a pas quitté l'écran. Avant, ils étaient écartés à chaque annonce en cours, et après 60 s ils ne sortaient presque plus.
 - 1 attaque à couteaux sur 10 a un couteau garni (voir Garnitures).
 - Fouet mis de côté (jugé trop facile) : `lab: true` dans `attacks.js` et `projectiles.js`, visible seulement dans l'admin. Enlever `lab` pour le remettre.
 - Couloir (deux murs de deux côtés, 46 s) mis de côté de la même façon : trop proche des murs en série, on pouvait le prendre pour un bug.
@@ -58,7 +58,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 
 - Avant chaque attaque, le solveur simule les 3,5 s suivantes (jusqu'à 4,5 s si l'attaque dure plus longtemps, comme les murs en série) avec tout ce qui est en vol. S'il ne trouve pas de chemin pour la tartine, en comptant 0,1 s de réaction, l'attaque est remplacée (5 essais au plus).
 - Le modèle est prudent (grille de 12 px, doigt à 360 px/s au plus, marge de 11 px autour des couverts) : si le robot passe, un humain peut passer.
-- Un geste très rapide ne fait pas traverser un couvert : le trajet de la tartine est vérifié tous les 6 px.
+- Un geste très rapide ne fait pas traverser un couvert : le trajet de la tartine est vérifié tous les 6 px. Un déplacement absurde (infini, ou plus de 10 000 px d'un coup) est borné pour ne pas figer le jeu.
 - `npm test` fait jouer le robot 100 parties de 150 s : 0 mort attendu. À relancer après chaque changement du jeu.
 
 ## Soirées et classements
@@ -76,7 +76,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 ## Triche et sécurité
 
 - Le serveur refuse un score plus long que le temps réellement écoulé (5 s de marge) ou au-delà de 15 min. Un score renvoyé deux fois ne compte qu'une fois.
-- Signalés dans l'admin : record de 90 s ou plus, et partie ralentie (plus de 15 % et 15 s de temps réel en trop).
+- Signalés dans l'admin : record de 90 s ou plus, et partie ralentie ou mise en pause (plus de 15 % et 15 s de temps réel en trop).
 - Faille connue : un faux score plausible (vers 60 s) passe inaperçu. Parade possible : rejouer la partie à partir des gestes (voir « À faire »).
 - Jetons des joueurs, identifiants des téléphones, connexions et invitations admin : rangés hachés (SHA-256). Une copie de la base ne permet pas de se faire passer pour quelqu'un.
 - Limites : 20 inscriptions par minute et par téléphone, 600 par minute et par adresse IP (tout le lieu partage souvent la même sur le wifi). Une inscription au pseudo invalide ne compte pas.
@@ -128,7 +128,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Installable : bouton Installer sur Android, Partager puis « Sur l'écran d'accueil » sur iPhone. Le jeu s'ouvre sans réseau s'il a déjà été ouvert une fois.
 - Chaque `npm run deploy` crée une version. Le jeu se recharge seul quand elle change, jamais en pleine partie. Le serveur refuse l'inscription et le début de partie d'une ancienne version.
 - Une partie ne compte que si le réseau passe au départ. À la fin, l'envoi du score réessaie pendant 2 min (« Envoi en attente… »), même si on ferme le jeu ou si le serveur a une erreur passagère.
-- Téléphone verrouillé ou appli quittée en pleine partie : la partie se met en pause, « Touche pour reprendre ». Le temps de pause compte dans le temps réel vu par le serveur (voir « partie ralentie »).
+- Téléphone verrouillé ou appli quittée en pleine partie : la partie se met en pause, « Touche pour reprendre » (un simple clic suffit aussi sur ordinateur, même très bref). Le temps de pause compte dans le temps réel vu par le serveur : l'admin affiche alors « partie ralentie ou mise en pause ».
 - Le cache hors ligne (`sw.js`) est renouvelé à chaque version.
 
 ## Check-list d'une soirée
@@ -187,7 +187,7 @@ Après :
 
 ## Ajouter du contenu
 
-- Attaque : une fonction dans `attacks.js` et une ligne dans `ATTACKS` (dès quand, poids, durée ; `solo: true` pour une grosse figure, `calm: true` pour qu'elle ne parte que sans annonce en cours, `growsUntil` et `growth` si elle grossit avec le temps). `notice` sur une annonce ne l'affiche que peu avant son arrivée. Le solveur la vérifie tout seul.
+- Attaque : une fonction dans `attacks.js` et une ligne dans `ATTACKS` (dès quand, poids, durée ; `solo: true` pour une grosse figure, `calm: true` pour qu'elle attende la fin des annonces en cours puis joue seule, `growsUntil` et `growth` si elle grossit avec le temps). `notice` sur une annonce ne l'affiche que peu avant son arrivée. Le solveur la vérifie tout seul.
 - Arme : sa taille dans `projectiles.js` et son dessin dans `sprites.js`, sous le même nom.
 - Prototype : `lab: true` dans `ATTACKS` ou `PROJECTILES`. Visible dans Infos pour les admins seulement, jamais tiré en jeu.
 - Tartinade rare : une ligne dans `SPREADS` (`palette.js`, avec `with` pour « par un couteau au… ») et son nom dans `RARE_SPREADS` (`projectiles.js`). Elle devient aussi une garniture à débloquer.

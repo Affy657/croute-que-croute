@@ -3,7 +3,7 @@ import { ATTACKS, pickAttack } from "./attacks.js";
 import { moveProjectile, sprinkleRare, gapTo } from "./projectiles.js";
 import { solve } from "./solver.js";
 
-const TRIES = 5, REACT = 0.1, SWEEP = 6;
+const TRIES = 5, REACT = 0.1, SWEEP = 6, MOVE_MAX = 10 * (FW + FH);
 export const GAP_START = 1.25, GAP_SLOPE = 0.016, GAP_MIN = 0.42;
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
@@ -24,7 +24,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
   const pick = (arr) => arr[Math.floor(rng() * arr.length)];
   const forced = only && ATTACKS.find((a) => a.id === only);
   const state = {
-    t: t0, next: 0.9, tries: 0, near: 0, dead: false, last: null, streak: 0,
+    t: t0, next: 0.9, tries: 0, near: 0, dead: false, last: null, streak: 0, queued: null,
     toast: { x: FW / 2, y },
     obs: [], warns: [],
     stats: { spawned: 0, rejected: 0, impossible: 0, solves: 0, solveMs: 0, solveMax: 0 }
@@ -43,7 +43,13 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
   function spawn() {
     const t = state.t;
     const active = new Set([...state.obs.map((o) => o.from), ...state.warns.flatMap((w) => w.obs.map((o) => o.from))]);
-    const attack = forced || pickAttack(t, rng, state.last, state.streak, state.warns.length > 0, active);
+    const attack = forced || state.queued || pickAttack(t, rng, state.last, state.streak, active);
+    state.queued = null;
+    if (attack.calm && state.warns.length) {
+      state.queued = attack;
+      state.next = Math.max(...state.warns.map((w) => w.at)) - t;
+      return;
+    }
     const items = attack.make({ t, toast: state.toast, rng, rnd, pick });
     const ok = solveTimed(items);
     if (ok || !fair) {
@@ -101,6 +107,8 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
   }
 
   function slide(mx, my, events) {
+    mx = clamp(mx || 0, -MOVE_MAX, MOVE_MAX);
+    my = clamp(my || 0, -MOVE_MAX, MOVE_MAX);
     const tt = state.toast, parts = Math.max(1, Math.ceil(Math.hypot(mx, my) / SWEEP));
     for (let i = 1; i <= parts; i++) {
       tt.x = clamp(tt.x + mx / parts, X_MIN, X_MAX);
