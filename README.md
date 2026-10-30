@@ -103,7 +103,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - 22 succès en 4 familles (temps, frôlés et découvertes, assiduité et soirées, secrets) : liste et conditions dans `achievements.js`.
 - Gardés sur le téléphone (`cv-succes`), sans effet sur le classement. Perdus en changeant de téléphone ou de navigateur. Sur iPhone, Safari et l'appli installée ne partagent pas leurs succès.
 - Le nombre de parties prend le plus grand entre le compteur du téléphone et celui du serveur.
-- Garnitures : 9 tartinades dessinées sur la tartine (`TOPPINGS` dans `sprites.js`) : confiture, pâte à tartiner, miel et son abeille, ketchup en zigzag, dentifrice rayé, œuf au plat, sardine entière, slime qui a un œil, pâtée pour chien et sa mouche. Beurre au départ. 1 attaque sur 40 a un couteau garni : le frôler ou se faire tuer par lui débloque sa garniture (pas en entraînement). Choix dans Succès, carte Garnitures (ombres pour celles pas encore gagnées). Gardées sur le téléphone (`cv-garnitures`, `cv-garniture`), purement visuel.
+- Garnitures : 9 tartinades dessinées sur la tartine (`TOPPINGS` dans `sprites.js`) : confiture, pâte à tartiner, miel et son abeille, ketchup en zigzag, dentifrice rayé, œuf au plat, sardine entière, slime qui a un œil, pâtée pour chien tartinée, avec son odeur et sa mouche. Beurre au départ. 1 attaque sur 40 a un couteau garni : le frôler ou se faire tuer par lui débloque sa garniture (pas en entraînement). Choix dans Succès, carte Garnitures (ombres pour celles pas encore gagnées). Gardées sur le téléphone (`cv-garnitures`, `cv-garniture`), purement visuel.
 
 ## Appli et réseau
 
@@ -193,6 +193,7 @@ Après :
 - Une phase après 80 s (« mode sérieux »), ou des moments calmes et des pics calés sur les drops du morceau.
 - Suites d'attaques calées sur la musique, ou tirées parmi des enchaînements déjà écrits qui reviennent : analyser d'abord le morceau pour caler au moins les montées et les drops.
 - Images ou objets à collectionner (le maximator qui tourne), partage du score en story Insta.
+- Accessoires sur la tartine : petit chapeau de Noël, un truc d'Halloween, deuxième paire de boosters sur les côtés comme sur l'affiche. Moyen de les débloquer à trouver.
 - Pas retenues pour l'instant : thème de soirée choisi par l'admin, tartine du designer ou redessinée (Adrien garde la tartine actuelle, pistes dans `maquettes/`), étoiles au rythme de la musique, son d'annonce par attaque, couche de tension, podium de fin de soirée sur l'écran géant.
 
 ## Bon à savoir
