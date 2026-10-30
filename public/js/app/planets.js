@@ -301,13 +301,155 @@ function rock(ctx, r) {
   dots(ctx, r, R.spot, [[0.3, 0.2, 0.25], [-0.35, 0.35, 0.18], [-0.1, -0.45, 0.14]]);
 }
 
+const POP_S = 6, POP_UP = 0.6;
+const CRUMBS = Array.from({ length: 64 }, (_, i) => [(i / 64) * TAU + Math.sin(i * 7.3) * 0.03, 1 + 0.05 * Math.sin(i * 3.1), 0.028 + 0.01 * Math.sin(i * 5.7)]);
+
+function crumbRing(ctx, r, back) {
+  ctx.save();
+  ctx.rotate(-0.22);
+  ctx.fillStyle = SKY.toaster.crumbs;
+  for (const [a, k, s] of CRUMBS) {
+    if (Math.sin(a) < 0 !== back) continue;
+    disc(ctx, Math.cos(a) * r * 1.55 * k, Math.sin(a) * r * 0.36 * k, s * r);
+  }
+  ctx.restore();
+}
+
+function slice(ctx, x, y, w, h) {
+  const T = SKY.toaster;
+  ctx.fillStyle = T.crust;
+  ctx.beginPath();
+  ctx.moveTo(x - w / 2, y);
+  ctx.lineTo(x - w / 2, y - h);
+  ctx.bezierCurveTo(x - w * 0.62, y - h - w * 0.55, x - w * 0.05, y - h - w * 0.6, x, y - h - w * 0.3);
+  ctx.bezierCurveTo(x + w * 0.05, y - h - w * 0.6, x + w * 0.62, y - h - w * 0.55, x + w / 2, y - h);
+  ctx.lineTo(x + w / 2, y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = T.crumb;
+  ctx.beginPath();
+  rr(ctx, x - w * 0.36, y - h - w * 0.15, w * 0.72, h + w * 0.15, w * 0.2);
+  ctx.fill();
+}
+
+function toaster(ctx, r, clock) {
+  const T = SKY.toaster, w = r * 1.9, h = r * 1.45, top = -h / 2;
+  crumbRing(ctx, r, true);
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = ink(r);
+  for (const [x, delay] of [[-0.42, 0], [0.42, 0.25]]) {
+    const k = (clock + delay) % POP_S, hop = k < POP_UP ? Math.sin((k / POP_UP) * Math.PI) : 0;
+    slice(ctx, x * r, top + r * 0.3, r * 0.62, r * (0.42 + 0.6 * hop));
+  }
+  const g = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r * 1.2);
+  g.addColorStop(0, T.light);
+  g.addColorStop(1, T.dark);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  rr(ctx, -w / 2, top, w, h, r * 0.5);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = T.slot;
+  for (const x of [-0.42, 0.42]) {
+    ctx.beginPath();
+    rr(ctx, x * r - r * 0.34, top + r * 0.06, r * 0.68, r * 0.1, r * 0.05);
+    ctx.fill();
+  }
+  ctx.fillStyle = T.lever;
+  ctx.beginPath();
+  rr(ctx, w / 2 - r * 0.04, -r * 0.1, r * 0.22, r * 0.13, r * 0.05);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = T.lever;
+  disc(ctx, r * 0.55, r * 0.38, r * 0.1);
+  ctx.fillStyle = SKY.gleam;
+  ctx.beginPath();
+  rr(ctx, -w * 0.38, top + h * 0.2, w * 0.07, h * 0.55, w * 0.035);
+  ctx.fill();
+  crumbRing(ctx, r, false);
+}
+
+const HOLES = [[-0.4, -0.35, 0.2], [0.12, 0.1, 0.16], [-0.18, 0.55, 0.13], [0.5, 0.42, 0.11], [-0.62, 0.22, 0.09], [0.25, -0.45, 0.1]];
+const BITES = [[0.8, -0.58, 0.22], [0.95, -0.22, 0.15]];
+
+function hole(ctx, s, light) {
+  const C = SKY.cheese;
+  ctx.fillStyle = C.hole;
+  disc(ctx, 0, 0, s);
+  ctx.fillStyle = C.floor;
+  disc(ctx, -Math.cos(light) * s * 0.25, -Math.sin(light) * s * 0.25, s * 0.75);
+}
+
+function mouse(ctx, r) {
+  const C = SKY.cheese, s = r * 0.3;
+  ctx.save();
+  ctx.translate(r * 1.02, -r * 0.62);
+  ctx.rotate(-0.35);
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = ink(r) * 0.7;
+  ctx.beginPath();
+  ctx.moveTo(s * 0.5, s * 0.15);
+  ctx.quadraticCurveTo(s * 1.2, s * 0.3, s * 1.1, -s * 0.35);
+  ctx.stroke();
+  ctx.fillStyle = C.mouse;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, s * 0.6, s * 0.42, 0, 0, TAU);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(-s * 0.5, -s * 0.18, s * 0.3, 0, TAU);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = C.ear;
+  ctx.beginPath();
+  ctx.arc(-s * 0.42, -s * 0.52, s * 0.17, 0, TAU);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = INK;
+  disc(ctx, -s * 0.6, -s * 0.22, s * 0.06);
+  ctx.fillStyle = C.ear;
+  disc(ctx, -s * 0.8, -s * 0.1, s * 0.07);
+  ctx.restore();
+}
+
+function cheese(ctx, r) {
+  const C = SKY.cheese;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, TAU);
+  for (const [x, y, s] of BITES) {
+    ctx.moveTo(x * r + s * r, y * r);
+    ctx.arc(x * r, y * r, s * r, 0, TAU);
+  }
+  ctx.clip("evenodd");
+  ball(ctx, r, C.light, C.dark);
+  clipped(ctx, r, () => {
+    for (const [x, y, s] of HOLES) onSphere(ctx, r, x, y, (light) => hole(ctx, s * r, light));
+  });
+  tone(ctx, r);
+  clipped(ctx, r, () => {
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = ink(r) * 2;
+    for (const [x, y, s] of BITES) {
+      ctx.beginPath();
+      ctx.arc(x * r, y * r, s * r, 0, TAU);
+      ctx.stroke();
+    }
+  });
+  ctx.restore();
+  mouse(ctx, r);
+}
+
 export const BODIES = [
   { draw: purple, x: 0.8, r: 0.13 },
   { draw: moons, x: 0.2, r: 0.045 },
   { draw: pancake, x: 0.78, r: 0.12 },
   { draw: green, x: 0.22, r: 0.1 },
   { draw: speakers, x: 0.8, r: 0.11 },
-  { draw: rock, x: 0.24, r: 0.05 }
+  { draw: rock, x: 0.24, r: 0.05 },
+  { draw: cheese, x: 0.78, r: 0.09 },
+  { draw: toaster, x: 0.22, r: 0.1 }
 ];
 
 const SANS = "Arial, Helvetica, sans-serif", SERIF = "Georgia, 'Times New Roman', serif";

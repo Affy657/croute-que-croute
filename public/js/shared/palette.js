@@ -44,7 +44,9 @@ export const SKY = {
     box: "#1a1030", rim: "#4e3f75", rimLight: "#9583bd", cone: "#3d3060", wave: "#a77fd0"
   },
   moons: { light: "#5fa85a", dark: "#143320", spot: "#2c6435" },
-  rock: { light: "#bf6a2c", dark: "#341910", spot: "#713617" }
+  rock: { light: "#bf6a2c", dark: "#341910", spot: "#713617" },
+  toaster: { light: "#a3aabd", dark: "#262a3b", slot: "#14121f", crust: "#a65a22", crumb: "#d1aa6a", lever: "#3d3060", crumbs: "#b5874a" },
+  cheese: { light: "#e8c65c", dark: "#4a3510", hole: "#8f6a1c", floor: "#c39a3a", mouse: "#a29bb2", ear: "#d98a9a" }
 };
 
 export const SPREADS = {
