@@ -2,7 +2,7 @@ import { FW, FH, M, clamp, speedMul } from "./field.js";
 import { projectile } from "./projectiles.js";
 
 const MAX_STREAK = 3, REPEAT_FACTOR = 0.5;
-const CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55, SERIES_GAP = 0.7, SERIES_SHIFT = 140, SERIES_NOTICE = 0.7, SERIES_HOLE = 60;
+const SLANT = 0.55, CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55, SERIES_GAP = 0.7, SERIES_SHIFT = 140, SERIES_NOTICE = 0.7, SERIES_HOLE = 60;
 
 const inside = (p) => ({ x: clamp(p.x, 10, FW - 10), y: clamp(p.y, 10, FH - 10) });
 
@@ -43,6 +43,18 @@ function rainOf({ t, rnd }, n, gap) {
 const rainSize = (t) => 3 + Math.min(5, Math.floor(t / 12));
 
 const rain = (g) => rainOf(g, rainSize(g.t), 0.14);
+
+function slant({ t, rnd, pick }) {
+  const n = rainSize(t), dir = pick([1, -1]), v = 190 * speedMul(t);
+  const vx = dir * v * Math.sin(SLANT), vy = v * Math.cos(SLANT);
+  const items = [];
+  for (let i = 0; i < n; i++) {
+    const k = (i + rnd(0.2, 0.8)) / n;
+    const x = dir > 0 ? 16 + k * (FW - 32) : FW - 16 - k * (FW - 32);
+    items.push({ x, y: 10, a: Math.atan2(vy, vx), at: t + 0.45 + i * 0.14, obs: [projectile("fork", x, -M, vx, vy)] });
+  }
+  return items;
+}
 
 function downpour({ t, rng, rnd }) {
   const n = rainSize(t) + 1, v = 190 * speedMul(t);
@@ -172,9 +184,9 @@ export const ATTACKS = [
     info: "3 fourchettes (jusqu'à 8) tombent du haut l'une après l'autre, un peu en biais." },
   { id: "cleaver", name: "Hachoir", from: 8, weight: 0.9, cost: 1.3, speed: 300, make: cleaver, growsUntil: 55, growth: "3 hachoirs à la suite",
     info: "Un hachoir tombe tout droit et très vite au-dessus de la tartine, annoncé 0,9 s avant. Quitter sa colonne. Dès 30 s, un deuxième suit dans une colonne voisine, un troisième dès 55 s." },
-  { id: "wall", name: "Mur", from: 12, weight: 1.1, cost: 1.7, speed: 150, make: wall,
+  { id: "wall", name: "Mur", kin: "wall", shuns: ["rolling"], from: 12, weight: 1.1, cost: 1.7, speed: 150, make: wall,
     info: "Une rangée serrée avec un seul trou, par le haut ou par un côté. Les pastilles d'annonce montrent déjà le trou." },
-  { id: "rolling", name: "Rouleau à pâtisserie", from: 16, weight: 0.8, cost: 1.6, speed: 110, make: rolling, growsUntil: 60, growth: "3 rouleaux à la suite",
+  { id: "rolling", name: "Rouleau à pâtisserie", shuns: ["wall", "walls"], from: 16, weight: 0.8, cost: 1.6, speed: 110, make: rolling, growsUntil: 60, growth: "3 rouleaux à la suite",
     info: "Un gros rouleau debout traverse lentement l'écran par un côté : passer au-dessus ou en dessous. 2 rouleaux à la suite dès 36 s, 3 dès 60 s." },
   { id: "fan", name: "Éventail", from: 22, weight: 1.1, cost: 1.5, speed: 200, make: fan, growsUntil: 54, growth: "éventails au maximum (5 couteaux)",
     info: "3 à 5 couteaux ouverts en cône depuis un même point, centrés sur la tartine. Il faut sortir du cône par le côté." },
@@ -184,17 +196,20 @@ export const ATTACKS = [
     info: "4 couteaux en même temps depuis les deux coins du haut et les deux côtés, tous vers la tartine. S'écarter du point visé." },
   { id: "bread", name: "Couteau à pain", from: 38, weight: 0.7, cost: 1.2, speed: 240, make: bread,
     info: "Lancé d'un coin du haut, il rebondit sur le bord opposé puis file vers la tartine. Suivre la pointe de la pastille et anticiper le rebond." },
-  { id: "walls", name: "Murs en série", solo: true, calm: true, from: 36, weight: 0.6, cost: 4, speed: 150, make: wallSeries, growsUntil: 60, growth: "3 murs en série",
+  { id: "walls", name: "Murs en série", kin: "wall", shuns: ["rolling"], solo: true, calm: true, from: 36, weight: 0.6, cost: 4, speed: 150, make: wallSeries, growsUntil: 60, growth: "3 murs en série",
     info: "2 murs d'affilée (3 dès 60 s), toujours du même côté ou du haut, chacun avec son trou. Chaque mur est annoncé juste avant d'arriver. La série joue seule : rien d'autre n'est lancé pendant." },
-  { id: "corridor", name: "Couloir", solo: true, from: 46, weight: 0.6, cost: 2.2, speed: 150, make: corridor,
+  { id: "corridor", name: "Couloir", lab: true, solo: true, from: 46, weight: 0.6, cost: 2.2, speed: 150, make: corridor,
     info: "Un mur par un côté, puis un autre par l'autre côté juste après, chacun avec son trou (plus grand que pour un mur seul). Passer d'un trou à l'autre." },
+  { id: "slant", name: "Pluie en biais", from: 48, weight: 0.8, cost: 1.5, speed: 190, make: slant, growsUntil: 60, growth: "pluie en biais au maximum (8 fourchettes)",
+    info: "7 ou 8 fourchettes tombent en biais l'une après l'autre, en balayant l'écran d'un côté à l'autre." },
   { id: "downpour", name: "Double pluie", solo: true, from: 54, weight: 0.6, cost: 1.8, speed: 190, make: downpour,
     info: "5 à 9 fourchettes tombent tout droit en rafale, une fois à gauche, une fois à droite." }
 ];
 
-export function pickAttack(t, rng, last = null, streak = 0, busy = false) {
-  const open = ATTACKS.filter((a) => !a.lab && t > a.from && !(busy && a.calm));
-  const allowed = open.filter((a) => a.id !== last || (!a.solo && streak < MAX_STREAK));
+export function pickAttack(t, rng, last = null, streak = 0, busy = false, active = new Set()) {
+  const open = ATTACKS.filter((a) => !a.lab && t > a.from && !(busy && a.calm) && !(a.shuns && a.shuns.some((id) => active.has(id))));
+  const prev = ATTACKS.find((a) => a.id === last), kin = prev && prev.kin;
+  const allowed = open.filter((a) => (a.id !== last || (!a.solo && streak < MAX_STREAK)) && !(kin && a.kin === kin && a.id !== last));
   const pool = allowed.length ? allowed : open;
   const weight = (a) => a.weight * (a.id === last ? REPEAT_FACTOR ** streak : 1);
   let r = rng() * pool.reduce((s, a) => s + weight(a), 0);

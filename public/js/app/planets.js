@@ -309,3 +309,55 @@ export const BODIES = [
   { draw: speakers, x: 0.8, r: 0.11 },
   { draw: rock, x: 0.24, r: 0.05 }
 ];
+
+const CANS = {
+  "86": { light: "#e0303f", dark: "#7d0d1b", text: "#f6c84c", label: "8.6", size: 0.24 },
+  maxi: { light: "#2c3d80", dark: "#101838", text: "#ff8a1f", label: "MAXIMATOR", size: 0.13, vertical: true }
+};
+
+export const CAN_KINDS = Object.keys(CANS);
+
+export function drawCan(ctx, kind, s) {
+  const K = CANS[kind], w = s * 0.5, h = s, e = w * 0.16;
+  const g = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
+  g.addColorStop(0, K.dark);
+  g.addColorStop(0.35, K.light);
+  g.addColorStop(0.55, K.light);
+  g.addColorStop(1, K.dark);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-w / 2, -h / 2 + e);
+  ctx.lineTo(-w / 2, h / 2 - e);
+  ctx.ellipse(0, h / 2 - e, w / 2, e, 0, Math.PI, 0, true);
+  ctx.lineTo(w / 2, -h / 2 + e);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#c9ced8";
+  ctx.beginPath();
+  ctx.ellipse(0, -h / 2 + e, w / 2, e, 0, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = "#8d93a3";
+  ctx.beginPath();
+  ctx.ellipse(0, -h / 2 + e, w * 0.34, e * 0.6, 0, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = "#dfe3ea";
+  ctx.beginPath();
+  ctx.ellipse(w * 0.1, -h / 2 + e * 0.9, w * 0.12, e * 0.3, 0, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.28)";
+  ctx.beginPath();
+  rr(ctx, -w * 0.3, -h / 2 + e * 2.2, w * 0.1, h - e * 4, w * 0.05);
+  ctx.fill();
+  ctx.save();
+  ctx.fillStyle = K.text;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = Math.max(1, s * 0.012);
+  ctx.textAlign = "center";
+  ctx.font = K.size * s + 'px Bungee, "Arial Black", sans-serif';
+  if (K.vertical) ctx.rotate(-Math.PI / 2);
+  const m = ctx.measureText(K.label);
+  const max = K.vertical ? h - e * 4 : w * 0.88, y = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2 + (K.vertical ? 0 : e * 0.4);
+  ctx.strokeText(K.label, 0, y, max);
+  ctx.fillText(K.label, 0, y, max);
+  ctx.restore();
+}

@@ -1,13 +1,16 @@
 import { FW, FH, clamp } from "../game/field.js";
 import { PALETTE, HEAT } from "../shared/palette.js";
 import { drawTrail, drawProjectile, drawWarn, drawToast } from "./sprites.js";
-import { BODIES } from "./planets.js";
+import { BODIES, CAN_KINDS, drawCan } from "./planets.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const POP_LIFE = 0.7, PUCK_R = 30, PUCK_LIFT = 110, GRAB_S = 0.6, FIELD_FADE = 5;
 const SKY_SPEED = 20, SKY_GAP = 0.5, SKY_TOP = 0.3, SKY_LOOP = SKY_GAP * BODIES.length;
 const HEAT_EASE = 0.7, HEAT_LOW = 0.45, HEAT_FIELD = 0.85;
 const HINT = "Pose ton doigt où tu veux";
+const COMET_S = 7, COMET_SIZE = 0.16, COMET_TAIL = 0.55, COMET_ALPHA = 0.8;
+const OFTEN = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("etoiles") === "souvent";
+const COMET_FIRST = OFTEN ? [1, 2] : [25, 80], COMET_GAP = OFTEN ? [4, 6] : [60, 150];
 const HEAT_RGB = HEAT.map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
 
 function heatColor(k, low = 1) {
@@ -24,6 +27,7 @@ export function createScene(canvas, overlay) {
   const view = { W: 0, H: 0, dpr: 1, scale: 1, ox: 0, oy: 0 };
   let hudBox = null;
   let stars = [], sky = 0, shake = 0, parts = [], pops = [], fieldA = 0, heat = 0;
+  let comet = null, cometIn = rnd(...COMET_FIRST);
 
   function resize() {
     view.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -48,6 +52,13 @@ export function createScene(canvas, overlay) {
       if (s.y > view.H + 2) { s.y = -2; s.x = Math.random() * view.W; }
     }
     sky = (sky + (SKY_SPEED * warp * dt) / view.H) % SKY_LOOP;
+    if (comet) {
+      comet.k += dt / COMET_S;
+      if (comet.k >= 1) comet = null;
+    } else if (!reduceMotion && (cometIn -= dt) <= 0) {
+      comet = newComet();
+      cometIn = rnd(...COMET_GAP);
+    }
     if (shake > 0) shake = Math.max(0, shake - 60 * dt);
     for (const p of parts) {
       p.vy += 420 * dt;
@@ -96,6 +107,39 @@ export function createScene(canvas, overlay) {
     });
   }
 
+  function newComet() {
+    const left = Math.random() < 0.5, y0 = rnd(0.06, 0.3);
+    return {
+      k: 0, kind: CAN_KINDS[Math.floor(Math.random() * CAN_KINDS.length)],
+      x0: left ? -0.2 : 1.2, x1: left ? 1.2 : -0.2, y0, y1: y0 + rnd(0.15, 0.35),
+      a0: rnd(-0.6, 0.6), spin: rnd(0.25, 0.5) * (Math.random() < 0.5 ? -1 : 1)
+    };
+  }
+
+  function drawComet() {
+    const { W, H } = view, u = Math.min(W, H), c = comet;
+    const dx = (c.x1 - c.x0) * W, dy = (c.y1 - c.y0) * H, d = Math.hypot(dx, dy);
+    const x = c.x0 * W + dx * c.k, y = c.y0 * H + dy * c.k, tx = x - (dx / d) * u * COMET_TAIL, ty = y - (dy / d) * u * COMET_TAIL;
+    ctx.save();
+    ctx.globalAlpha = COMET_ALPHA;
+    ctx.lineCap = "round";
+    for (const [w, a] of [[0.05, 0.35], [0.018, 0.8]]) {
+      const g = ctx.createLinearGradient(x, y, tx, ty);
+      g.addColorStop(0, "rgba(255, 207, 51, " + a + ")");
+      g.addColorStop(1, "rgba(255, 207, 51, 0)");
+      ctx.strokeStyle = g;
+      ctx.lineWidth = u * w;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(tx, ty);
+      ctx.stroke();
+    }
+    ctx.translate(x, y);
+    ctx.rotate(c.a0 + c.spin * c.k * COMET_S);
+    drawCan(ctx, c.kind, u * COMET_SIZE);
+    ctx.restore();
+  }
+
   function drawBackground(clock) {
     const { W, H, dpr } = view;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -116,6 +160,7 @@ export function createScene(canvas, overlay) {
       ctx.fillRect(s.x, s.y, sz, sz);
     }
     ctx.globalAlpha = 1;
+    if (comet) drawComet();
   }
 
   function drawEffects() {
