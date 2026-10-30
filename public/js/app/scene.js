@@ -8,7 +8,7 @@ const POP_LIFE = 0.7, PUCK_R = 30, PUCK_LIFT = 110, GRAB_S = 0.6, FIELD_FADE = 5
 const SKY_SPEED = 20, SKY_GAP = 0.5, SKY_TOP = 0.3, SKY_LOOP = SKY_GAP * BODIES.length;
 const HEAT_EASE = 0.7, HEAT_LOW = 0.45, HEAT_FIELD = 0.85;
 const HINT = "Pose ton doigt où tu veux";
-const COMET_S = 7, COMET_SIZE = 0.16, COMET_TAIL = 0.55, COMET_ALPHA = 0.8;
+const COMET_S = 7, COMET_SIZE = 0.2, COMET_TAIL = 0.55, COMET_ALPHA = 0.8;
 const OFTEN = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("etoiles") === "souvent";
 const COMET_FIRST = OFTEN ? [1, 2] : [25, 80], COMET_GAP = OFTEN ? [4, 6] : [60, 150];
 const HEAT_RGB = HEAT.map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
