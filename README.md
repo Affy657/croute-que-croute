@@ -269,6 +269,8 @@ Après :
 - Compléter Infos avec toutes les dernières nouveautés, pour en faire un wiki du jeu où tout se trouve : comment débloquer les garnitures et les accessoires, les succès, les planètes et canettes rares, les classements et les soirées, etc.
 - Changement d'appareil : le profil est lié au téléphone (identifiant gardé dans le navigateur). Un joueur qui change d'appareil, ou qui vide son navigateur, ne peut pas reprendre son pseudo et doit recréer un compte. À explorer : un vrai compte (e-mail ou mot de passe), ou plus léger, un code de transfert affiché dans les paramètres, à taper ou scanner sur le nouvel appareil.
 - À décider : rejouer les meilleures parties pour confirmer leur temps (graine donnée par le serveur, gestes enregistrés). Bloquerait la triche par faux score.
+- Mobile ou PC : des joueurs sur PC (souris) font des scores bien meilleurs que sur téléphone. Enregistrer l'appareil de chaque partie, pour ne pas fausser les analyses de difficulté et ne pas récompenser une soirée gagnée sur PC (noté le 30/10/2026).
+- Signalement « score très haut » à revoir (`SUSPECT_HIGH` dans `src/routes/admin.ts`, 90 s) : depuis la courbe du 30/10/2026, dépasser 90 s est devenu courant.
 
 ## Idées pour plus tard
 
