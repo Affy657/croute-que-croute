@@ -623,44 +623,72 @@ const TOPPINGS = {
     dots(ctx, C.void, [[4.9, -0.2, 1.5]]);
   },
   dog(ctx, C) {
-    ctx.fillStyle = "rgba(196, 128, 62, 0.55)";
-    wavy(ctx, 0, 8, 12.5, 6, 0.16, 6);
-    ctx.fill();
-    dots(ctx, "rgba(255, 222, 170, 0.7)", [[-8, 7, 1], [7, 10, 0.8]]);
-    ctx.fillStyle = "#6e3f22";
-    ctx.beginPath();
-    ctx.moveTo(-6.5, -3);
-    ctx.lineTo(-6.5, 8);
-    ctx.ellipse(0, 8, 6.5, 2.4, 0, Math.PI, 0, true);
-    ctx.lineTo(6.5, -3);
+    const layer = (dx, dy) => line(ctx, Array.from({ length: 120 }, (_, i) => {
+      const a = (i / 120) * TAU, c = Math.cos(a), sn = Math.sin(a);
+      const f = 1 + 0.035 * Math.sin(a * 9 + 1.3) + 0.02 * Math.sin(a * 17 + 0.5);
+      return [dx + Math.sign(c) * Math.abs(c) ** 0.65 * 12.4 * f, dy + 2.6 + Math.sign(sn) * Math.abs(sn) ** 0.65 * 12.6 * f];
+    }));
+    ctx.fillStyle = "#4a2611";
+    layer(0.4, 0.9);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = "#4a2612";
-    ctx.lineWidth = 0.8;
-    for (const y of [0.6, 4.2]) {
+    ctx.fillStyle = "#74421f";
+    layer(0, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.save();
+    ctx.clip();
+    ctx.lineCap = "round";
+    for (const r of [17, 23, 29]) {
+      ctx.strokeStyle = "#7f4925";
+      ctx.lineWidth = 3.4;
       ctx.beginPath();
-      ctx.ellipse(0, y, 6.5, 2.4, 0, 0.1, Math.PI - 0.1);
+      ctx.arc(-17, 21, r, -1.75, 0.15);
+      ctx.stroke();
+      ctx.strokeStyle = "#a8703f";
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.arc(-17, 21, r - 1.6, -1.7, 0.1);
+      ctx.stroke();
+      ctx.strokeStyle = "#552d14";
+      ctx.lineWidth = 0.6;
+      ctx.beginPath();
+      ctx.arc(-17, 21, r + 1.8, -1.72, 0.12);
       ctx.stroke();
     }
-    ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
-    ctx.fillRect(-5, -2.5, 1.6, 10.5);
-    ctx.fillStyle = "#94603a";
-    oval(ctx, 0, -3, 6.5, 2.4);
-    ctx.fill();
-    dots(ctx, "#4a2612", [[-3, -3.2, 0.9], [2.2, -2.4, 0.8], [0.4, -3.9, 0.6]]);
-    dots(ctx, "#c58a5c", [[-0.8, -2.5, 0.7], [3.6, -3.5, 0.6]]);
-    ctx.save();
-    ctx.translate(9, 6);
-    ctx.rotate(-0.7);
-    ctx.fillStyle = "#f1dcb4";
-    ctx.fillRect(-2.6, -0.9, 5.2, 1.8);
-    dots(ctx, "#f1dcb4", [[-2.8, -1, 1.2], [-2.8, 1, 1.2], [2.8, -1, 1.2], [2.8, 1, 1.2]]);
+    ctx.strokeStyle = "rgba(255, 236, 200, 0.55)";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.arc(-17, 21, 25.5, -1.3, -0.95);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(-17, 21, 19.5, -0.75, -0.45);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(236, 178, 104, 0.45)";
+    for (const [x, y, rx, ry, a] of [[-4, -5, 3, 1.4, -0.3], [7, 1, 2.4, 1.2, 0.5], [-1, 9, 2.6, 1.1, -0.1]]) {
+      oval(ctx, x, y, rx, ry, a);
+      ctx.fill();
+    }
+    for (const [x, y, r, dark] of [[-6, 3, 1.5, 1], [3, -3, 1.2, 0], [8, 8, 1.3, 1], [-8, -6, 1, 0], [1, 12, 1.1, 1], [9, -7, 0.9, 1], [-3, 7, 0.9, 0]]) {
+      ctx.fillStyle = dark ? "#4a2410" : "#9a6238";
+      wavy(ctx, x, y, r * 1.2, r * 0.9, 0.22, 3);
+      ctx.fill();
+    }
     ctx.restore();
+    ctx.fillStyle = "#4a2611";
+    wavy(ctx, 11.3, 13.3, 3, 2.1, 0.18, 5);
+    ctx.fill();
+    ctx.fillStyle = "#74421f";
+    wavy(ctx, 11, 12.7, 3, 2.1, 0.18, 5);
+    ctx.fill();
+    ctx.fillStyle = "#a8703f";
+    oval(ctx, 10.3, 12, 1.4, 0.6, -0.3);
+    ctx.fill();
     ctx.strokeStyle = "#9bd35a";
     ctx.lineWidth = 1.1;
     ctx.lineCap = "round";
-    for (const x of [-3.5, 2.5]) {
-      line(ctx, Array.from({ length: 13 }, (_, i) => [x + Math.sin(i * 0.8) * 1.3, -6.5 - i * 0.65]));
+    for (const x of [-1.5, 4.5]) {
+      line(ctx, Array.from({ length: 11 }, (_, i) => [x + Math.sin(i * 0.8) * 1.3, -8 - i * 0.65]));
       ctx.stroke();
     }
     ctx.strokeStyle = "rgba(255, 255, 255, 0.55)";
