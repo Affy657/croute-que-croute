@@ -30,7 +30,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 
 | Attaque | Dès | À retenir |
 |---|---|---|
-| Couteau visé | 0 s | Vise la tartine au moment de l'annonce. Tourne 1 fois sur 3 dès 35 s |
+| Couteau visé | 0 s | Vise la tartine au moment de l'annonce. Tourne 1 fois sur 3 dès 25 s |
 | Pluie de fourchettes | 4 s | 3 fourchettes, 1 de plus toutes les 12 s (8 au plus) |
 | Hachoir | 8 s | Tombe très vite au-dessus de la tartine, annonce longue (0,9 s). 2 à la suite dès 30 s, 3 dès 55 s, dans des colonnes voisines |
 | Mur | 12 s | Rangée serrée avec un seul trou d'environ 100 px |

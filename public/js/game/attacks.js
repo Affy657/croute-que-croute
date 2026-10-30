@@ -21,7 +21,7 @@ function aimedFrom(p, target, at, v, kind = "knife", spin = 0, extra) {
 
 function aimed(g) {
   const { t, toast, rng, rnd } = g;
-  const spinning = t > 35 && rng() < 0.35;
+  const spinning = t >= 25 && rng() < 0.35;
   const p = edgePoint(g);
   const v = 230 * speedMul(t) * rnd(0.95, 1.1);
   const a = Math.atan2(toast.y + rnd(-18, 18) - p.y, toast.x + rnd(-18, 18) - p.x);
@@ -166,8 +166,8 @@ function bread({ t, toast, pick }) {
 }
 
 export const ATTACKS = [
-  { id: "aimed", name: "Couteau visé", from: 0, weight: 2.5, cost: 1, speed: 230, make: aimed, growsUntil: 35, growth: "le couteau visé peut tourner sur lui-même",
-    info: "Un couteau lancé du haut ou d'un côté vers la tartine. Bouger pendant l'annonce suffit. Dès 35 s, une fois sur trois il tourne sur lui-même." },
+  { id: "aimed", name: "Couteau visé", from: 0, weight: 2.5, cost: 1, speed: 230, make: aimed, growsUntil: 25, growth: "le couteau visé peut tourner sur lui-même",
+    info: "Un couteau lancé du haut ou d'un côté vers la tartine. Bouger pendant l'annonce suffit. Dès 25 s, une fois sur trois il tourne sur lui-même." },
   { id: "rain", name: "Pluie de fourchettes", from: 4, weight: 1.4, cost: 1.5, speed: 190, make: rain, growsUntil: 60, growth: "pluies au maximum (8 fourchettes)",
     info: "3 fourchettes (jusqu'à 8) tombent du haut l'une après l'autre, un peu en biais." },
   { id: "cleaver", name: "Hachoir", from: 8, weight: 0.9, cost: 1.3, speed: 300, make: cleaver, growsUntil: 55, growth: "3 hachoirs à la suite",
