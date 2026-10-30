@@ -6,15 +6,13 @@ import { BODIES } from "./planets.js";
 const rnd = (a, b) => a + Math.random() * (b - a);
 const POP_LIFE = 0.7, PUCK_R = 30, PUCK_LIFT = 110, GRAB_S = 0.6, FIELD_FADE = 5;
 const SKY_SPEED = 20, SKY_GAP = 0.5, SKY_TOP = 0.3, SKY_LOOP = SKY_GAP * BODIES.length;
-const HEAT_EASE = 2, HEAT_LOW = 0.45, HEAT_FIELD = 0.85;
+const HEAT_EASE = 0.7, HEAT_LOW = 0.45, HEAT_FIELD = 0.85;
 const HINT = "Pose ton doigt où tu veux";
 const HEAT_RGB = HEAT.map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
 
 function heatColor(k, low = 1) {
-  const i = Math.min(HEAT_RGB.length - 2, Math.floor(k * (HEAT_RGB.length - 1)));
-  const f = k * (HEAT_RGB.length - 1) - i;
-  const [a, b, base] = [HEAT_RGB[i], HEAT_RGB[i + 1], HEAT_RGB[0]];
-  const rgb = a.map((v, j) => base[j] + (v + (b[j] - v) * f - base[j]) * low);
+  const [a, b, c] = HEAT_RGB;
+  const rgb = a.map((v, j) => v + ((1 - k) * (1 - k) * v + 2 * k * (1 - k) * b[j] + k * k * c[j] - v) * low);
   return `rgb(${rgb.map(Math.round).join(",")})`;
 }
 

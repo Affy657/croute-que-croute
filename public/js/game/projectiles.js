@@ -1,6 +1,6 @@
 import { FW, segDist2 } from "./field.js";
 
-const RARE_CHANCE = 1 / 40;
+const RARE_CHANCE = 1 / 6;
 const RARE_SPREADS = ["jam", "choco", "honey", "ketchup", "toothpaste", "egg", "sardine", "slime", "dog"];
 
 export const PROJECTILES = {
@@ -37,9 +37,8 @@ export function projectile(kind, x, y, vx, vy, spin = 0, extra = {}) {
 }
 
 export function sprinkleRare(items) {
-  if (Math.random() >= RARE_CHANCE) return;
   const knives = items.flatMap((w) => w.obs.filter((o) => o.kind === "knife"));
-  if (!knives.length) return;
+  if (!knives.length || Math.random() >= RARE_CHANCE) return;
   knives[Math.floor(Math.random() * knives.length)].spread = RARE_SPREADS[Math.floor(Math.random() * RARE_SPREADS.length)];
 }
 
