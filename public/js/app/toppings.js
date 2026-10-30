@@ -20,6 +20,8 @@ function load() {
 export const unlocked = (kind) => kind === "butter" || load().includes(kind);
 export const onTopping = (fn) => listeners.push(fn);
 export const owned = () => Object.keys(SPREADS).filter(unlocked);
+export const hintSeen = () => store.get(KEYS.toppingHint) === "1";
+export const seeHint = () => store.set(KEYS.toppingHint, "1");
 
 export function chosen() {
   const kind = store.get(KEYS.topping);
