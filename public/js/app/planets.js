@@ -310,54 +310,182 @@ export const BODIES = [
   { draw: rock, x: 0.24, r: 0.05 }
 ];
 
+const SANS = "Arial, Helvetica, sans-serif";
+
 const CANS = {
-  "86": { light: "#e0303f", dark: "#7d0d1b", text: "#f6c84c", label: "8.6", size: 0.24 },
-  maxi: { light: "#2c3d80", dark: "#101838", text: "#ff8a1f", label: "MAXIMATOR", size: 0.13, vertical: true }
+  "86": { edge: "#4c5158", mid: "#9aa0a8", lid: "#d9c99c", decor: eightSix },
+  maxi: { edge: "#4f8f7a", mid: "#a6d5c3", lid: "#cfd4dc", decor: maximator }
 };
 
 export const CAN_KINDS = Object.keys(CANS);
 
-export function drawCan(ctx, kind, s) {
-  const K = CANS[kind], w = s * 0.5, h = s, e = w * 0.16;
-  const g = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
-  g.addColorStop(0, K.dark);
-  g.addColorStop(0.35, K.light);
-  g.addColorStop(0.55, K.light);
-  g.addColorStop(1, K.dark);
-  ctx.fillStyle = g;
+function label(ctx, text, y, size, color, max, weight = "bold") {
+  ctx.font = weight + " " + size + "px " + SANS;
+  ctx.fillStyle = color;
+  ctx.fillText(text, 0, y, max);
+}
+
+function arcText(ctx, text, y, r, size, max) {
+  ctx.font = "bold " + size + "px " + SANS;
+  const widths = [...text].map((ch) => ctx.measureText(ch).width);
+  const squeeze = Math.min(1, max / widths.reduce((a, b) => a + b, 0));
+  let a = -(widths.reduce((s, x) => s + x, 0) * squeeze) / (2 * r);
+  [...text].forEach((ch, i) => {
+    const mid = a + (widths[i] * squeeze) / (2 * r);
+    ctx.save();
+    ctx.translate(Math.sin(mid) * r, y + r - Math.cos(mid) * r);
+    ctx.rotate(mid);
+    ctx.scale(squeeze, 1);
+    ctx.fillText(ch, 0, 0);
+    ctx.restore();
+    a += (widths[i] * squeeze) / r;
+  });
+}
+
+function eightSix(ctx, w, h) {
+  ctx.fillStyle = "rgba(40, 44, 50, 0.22)";
   ctx.beginPath();
-  ctx.moveTo(-w / 2, -h / 2 + e);
-  ctx.lineTo(-w / 2, h / 2 - e);
-  ctx.ellipse(0, h / 2 - e, w / 2, e, 0, Math.PI, 0, true);
-  ctx.lineTo(w / 2, -h / 2 + e);
+  ctx.ellipse(0, -h * 0.2, w * 0.13, w * 0.15, 0, 0, TAU);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(40, 44, 50, 0.22)";
+  ctx.lineWidth = w * 0.04;
+  ctx.lineCap = "round";
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(s * w * 0.1, -h * 0.25);
+    ctx.quadraticCurveTo(s * w * 0.22, -h * 0.27, s * w * 0.2, -h * 0.31);
+    ctx.stroke();
+  }
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.font = h * 0.24 + "px Georgia, 'Times New Roman', serif";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText("8", -w * 0.17, h * 0.06, w * 0.34);
+  ctx.fillText("6", w * 0.17, h * 0.06, w * 0.34);
+  ctx.fillStyle = "#e0242f";
+  ctx.beginPath();
+  ctx.arc(0, h * 0.035, w * 0.045, 0, TAU);
+  ctx.fill();
+  label(ctx, "ORIGINAL", h * 0.15, h * 0.075, "#ffffff", w * 0.72);
+  label(ctx, "INTENSE BLOND BEER", h * 0.195, h * 0.03, "#eef0f3", w * 0.66);
+  label(ctx, "8.6% VOL", h * 0.235, h * 0.026, "#eef0f3", w * 0.4);
+  label(ctx, "IMPORTED FROM HOLLAND", -h * 0.345, h * 0.022, "#e3e6ea", w * 0.66, "normal");
+}
+
+function sail(ctx, x, y0, y1, half) {
+  const b = (y1 - y0) * 0.25;
+  ctx.beginPath();
+  ctx.moveTo(x - half, y0);
+  ctx.lineTo(x + half, y0);
+  ctx.quadraticCurveTo(x + half + b, (y0 + y1) / 2, x + half, y1);
+  ctx.lineTo(x - half, y1);
+  ctx.quadraticCurveTo(x - half + b, (y0 + y1) / 2, x - half, y0);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = "#c9ced8";
+}
+
+function ship(ctx, w, cy) {
+  ctx.save();
+  ctx.translate(0, cy);
+  ctx.scale(w, w);
+  ctx.strokeStyle = "#e9dfc6";
+  ctx.lineWidth = 0.025;
+  for (const [x, top] of [[-0.18, -0.5], [0.02, -0.6], [0.2, -0.42]]) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0.1);
+    ctx.lineTo(x, top);
+    ctx.stroke();
+  }
   ctx.beginPath();
-  ctx.ellipse(0, -h / 2 + e, w / 2, e, 0, 0, TAU);
+  ctx.moveTo(0.3, 0.04);
+  ctx.lineTo(0.48, -0.14);
+  ctx.stroke();
+  ctx.fillStyle = "#ffffff";
+  for (const [x, half, rows] of [[-0.18, 0.09, [[-0.44, -0.31], [-0.26, -0.11], [-0.06, 0.05]]], [0.02, 0.11, [[-0.54, -0.39], [-0.34, -0.15], [-0.1, 0.05]]], [0.2, 0.08, [[-0.36, -0.23], [-0.18, -0.03]]]]) {
+    for (const [y0, y1] of rows) sail(ctx, x, y0, y1, half);
+  }
+  ctx.beginPath();
+  ctx.moveTo(0.31, 0.02);
+  ctx.lineTo(0.47, -0.12);
+  ctx.lineTo(0.31, -0.28);
+  ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = "#8d93a3";
+  ctx.fillStyle = "rgba(120, 150, 140, 0.35)";
+  for (const [x, half] of [[-0.18, 0.09], [0.02, 0.11], [0.2, 0.08]]) {
+    ctx.fillRect(x - half, -0.6, half * 0.45, 0.66);
+  }
+  ctx.fillStyle = "#f1e6c8";
   ctx.beginPath();
-  ctx.ellipse(0, -h / 2 + e, w * 0.34, e * 0.6, 0, 0, TAU);
+  ctx.moveTo(-0.36, 0.06);
+  ctx.lineTo(0.38, 0.02);
+  ctx.quadraticCurveTo(0.3, 0.22, 0.18, 0.26);
+  ctx.lineTo(-0.24, 0.26);
+  ctx.quadraticCurveTo(-0.34, 0.2, -0.36, 0.06);
+  ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = "#dfe3ea";
+  ctx.fillStyle = "#c9b98f";
+  ctx.fillRect(-0.3, 0.12, 0.62, 0.025);
+  ctx.restore();
+}
+
+function maximator(ctx, w, h) {
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  label(ctx, "BRASSÉE EN HOLLANDE", -h * 0.35, h * 0.022, "#2f5f50", w * 0.62, "normal");
+  ctx.fillStyle = "#8a3a2a";
   ctx.beginPath();
-  ctx.ellipse(w * 0.1, -h / 2 + e * 0.9, w * 0.12, e * 0.3, 0, 0, TAU);
+  ctx.arc(0, -h * 0.318, w * 0.045, 0, TAU);
   ctx.fill();
-  ctx.fillStyle = "rgba(255, 255, 255, 0.28)";
+  ctx.fillStyle = "#ffffff";
+  arcText(ctx, "AMSTERDAM", -h * 0.24, w * 1.1, h * 0.085, w * 0.9);
+  ship(ctx, w * 0.8, 0);
+  label(ctx, "MAXIMATOR", h * 0.135, h * 0.062, "#ffffff", w * 0.74);
+  label(ctx, "MAXI INTENSE", h * 0.18, h * 0.036, "#f6d55c", w * 0.6);
+  label(ctx, "11.6%", h * 0.23, h * 0.045, "#ffffff", w * 0.4);
+  ctx.fillStyle = "rgba(40, 70, 60, 0.55)";
+  ctx.font = "bold " + h * 0.03 + "px " + SANS;
+  for (let i = 0; i < 3; i++) ctx.fillText("X", -w * 0.38, h * 0.27 + i * h * 0.035);
+}
+
+export function drawCan(ctx, kind, s) {
+  const K = CANS[kind], h = s, w = s * 0.4, e = w * 0.14, neck = w * 0.08, top = -h / 2 + e + neck;
+  ctx.save();
+  const g = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
+  g.addColorStop(0, K.edge);
+  g.addColorStop(0.38, K.mid);
+  g.addColorStop(0.55, K.mid);
+  g.addColorStop(1, K.edge);
+  ctx.fillStyle = g;
   ctx.beginPath();
-  rr(ctx, -w * 0.3, -h / 2 + e * 2.2, w * 0.1, h - e * 4, w * 0.05);
+  ctx.moveTo(-w / 2, top);
+  ctx.lineTo(-w / 2, h / 2 - e);
+  ctx.ellipse(0, h / 2 - e, w / 2, e, 0, Math.PI, 0, true);
+  ctx.lineTo(w / 2, top);
+  ctx.lineTo(w * 0.42, -h / 2 + e);
+  ctx.lineTo(-w * 0.42, -h / 2 + e);
+  ctx.closePath();
   ctx.fill();
   ctx.save();
-  ctx.fillStyle = K.text;
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = Math.max(1, s * 0.012);
-  ctx.textAlign = "center";
-  ctx.font = K.size * s + 'px Bungee, "Arial Black", sans-serif';
-  if (K.vertical) ctx.rotate(-Math.PI / 2);
-  const m = ctx.measureText(K.label);
-  const max = K.vertical ? h - e * 4 : w * 0.88, y = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2 + (K.vertical ? 0 : e * 0.4);
-  ctx.strokeText(K.label, 0, y, max);
-  ctx.fillText(K.label, 0, y, max);
+  ctx.clip();
+  K.decor(ctx, w, h);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+  ctx.fillRect(-w * 0.3, top, w * 0.08, h - e * 2 - neck);
+  ctx.restore();
+  ctx.fillStyle = "#b9bec8";
+  ctx.beginPath();
+  ctx.ellipse(0, h / 2 - e, w * 0.46, e * 0.8, 0, 0, Math.PI);
+  ctx.fill();
+  ctx.fillStyle = K.lid;
+  ctx.beginPath();
+  ctx.ellipse(0, -h / 2 + e, w * 0.42, e, 0, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+  ctx.beginPath();
+  ctx.ellipse(0, -h / 2 + e, w * 0.32, e * 0.62, 0, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = "#e6e9ee";
+  ctx.beginPath();
+  ctx.ellipse(w * 0.08, -h / 2 + e * 0.92, w * 0.1, e * 0.3, 0, 0, TAU);
+  ctx.fill();
   ctx.restore();
 }
