@@ -1,36 +1,40 @@
 import { store, KEYS } from "../shared/store.js";
 import { ATTACKS } from "../game/attacks.js";
+import { SPREADS } from "../shared/palette.js";
+import { owned } from "./toppings.js";
 
-const FAMILIES = [["time", "Temps"], ["play", "Frôlés et découvertes"], ["loyal", "Assiduité et soirées"], ["secret", "Secrets"]];
+const FAMILIES = [["time", "Temps de cuisson"], ["play", "Frôlés et découvertes"], ["topping", "Garnitures"], ["loyal", "Assiduité et soirées"], ["secret", "Secrets"]];
 const TIMES = [[10, "t10"], [20, "t20"], [30, "t30"], [45, "t45"], [60, "t60"], [80, "t80"]];
 const NEARS = [[5, "near5"], [20, "near20"]];
 const RUNS = [[10, "runs10"], [50, "runs50"], [100, "runs100"]];
-const STILL_S = 5, EXPRESS_CS = 200, EVENTS = 3, TOP = 10;
+const STILL_S = 5, EXPRESS_CS = 200, EVENTS = 3, TOP = 10, FRIDGE = 4;
 const LIVE = ATTACKS.filter((a) => !a.lab);
+const EXTRAS = Object.keys(SPREADS).length - 1;
+const TOPPINGS = [[1, "top1"], [FRIDGE, "top4"], [EXTRAS, "topAll"]];
 
 export const ACHIEVEMENTS = [
-  { id: "t10", family: "time", name: "Premiers pas", desc: "Tenir 10 s" },
-  { id: "t20", family: "time", name: "Bien beurrée", desc: "Tenir 20 s" },
-  { id: "t30", family: "time", name: "Croustillante", desc: "Tenir 30 s" },
-  { id: "t45", family: "time", name: "Dorée à point", desc: "Tenir 45 s" },
-  { id: "t60", family: "time", name: "Une minute de gloire", desc: "Tenir 60 s" },
-  { id: "t80", family: "time", name: "Tartine de légende", desc: "Tenir 80 s" },
-  { id: "near5", family: "play", name: "Ça passe", desc: "5 frôlés dans une partie" },
-  { id: "near20", family: "play", name: "Ça passe crème", desc: "20 frôlés dans une partie" },
-  { id: "jam", family: "play", name: "Confiture !", desc: "Voir un couteau à la confiture" },
-  { id: "choco", family: "play", name: "Pâte à tartiner !", desc: "Voir un couteau à la pâte à tartiner" },
-  { id: "honey", family: "play", name: "Miel !", desc: "Voir un couteau au miel" },
-  { id: "ketchup", family: "play", name: "Ketchup ?!", desc: "Voir un couteau au ketchup" },
-  { id: "allAttacks", family: "play", name: "Tout vu", desc: "Voir les " + LIVE.length + " attaques" },
-  { id: "runs10", family: "loyal", name: "Dix tartines", desc: "Jouer 10 parties" },
-  { id: "runs50", family: "loyal", name: "Boulangerie", desc: "Jouer 50 parties" },
-  { id: "runs100", family: "loyal", name: "Accro à la croûte", desc: "Jouer 100 parties" },
-  { id: "events3", family: "loyal", name: "Fidèle du Space", desc: "Jouer à 3 soirées" },
-  { id: "top10", family: "loyal", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée" },
-  { id: "eventWin", family: "loyal", name: "Tartine d'or", desc: "Finir 1er d'une soirée" },
-  { id: "express", family: "secret", name: "Tartinée express", desc: "Se faire tartiner en moins de 2 s" },
-  { id: "zen", family: "secret", name: "En détente", desc: "Rester 5 s sans bouger" },
-  { id: "round", family: "secret", name: "Chiffre rond", desc: "Finir pile sur une seconde ronde" }
+  { id: "t10", family: "time", name: "Premiers pas", desc: "Tenir 10 s", joke: "Un petit pas pour la tartine, un grand pas pour la boulangerie." },
+  { id: "t20", family: "time", name: "Bien beurrée", desc: "Tenir 20 s", joke: "Côté beurre vers le haut, pour une fois." },
+  { id: "t30", family: "time", name: "Croustillante", desc: "Tenir 30 s", joke: "Ça croustille sous la pression." },
+  { id: "t45", family: "time", name: "Dorée à point", desc: "Tenir 45 s", joke: "Le grille-pain est fier de toi." },
+  { id: "t60", family: "time", name: "Une minute de gloire", desc: "Tenir 60 s", joke: "Andy Warhol en promettait 15. Pour une tartine, une suffit." },
+  { id: "t80", family: "time", name: "Tartine de légende", desc: "Tenir 80 s", joke: "Les biscottes racontent ton histoire le soir, au coin du grille-pain." },
+  { id: "near5", family: "play", name: "Ça passe", desc: "5 frôlés dans une partie", joke: "Ni vu ni connu. Enfin, un peu vu quand même." },
+  { id: "near20", family: "play", name: "Ça passe crème", desc: "20 frôlés dans une partie", joke: "La crème de la crème. Fraîche, bien sûr." },
+  { id: "allAttacks", family: "play", name: "Tout vu", desc: "Voir les " + LIVE.length + " attaques", joke: "Tu connais le tiroir à couverts mieux que ta grand-mère." },
+  { id: "top1", family: "topping", name: "Ça change du beurre", desc: "Gagner une garniture", joke: "Le beurre fait un peu la tête." },
+  { id: "top4", family: "topping", name: "Le frigo est plein", desc: "Gagner " + FRIDGE + " garnitures", joke: "Il reste juste un yaourt périmé au fond." },
+  { id: "topAll", family: "topping", name: "Tout le frigo", desc: "Gagner les " + EXTRAS + " garnitures", joke: "Même la sardine. Surtout la sardine." },
+  { id: "runs10", family: "loyal", name: "Dix tartines", desc: "Jouer 10 parties", joke: "Le paquet de pain de mie y est passé." },
+  { id: "runs50", family: "loyal", name: "Boulangerie", desc: "Jouer 50 parties", joke: "À ce rythme, tu devrais ouvrir boutique." },
+  { id: "runs100", family: "loyal", name: "Accro à la croûte", desc: "Jouer 100 parties", joke: "On ne juge pas. Enfin, un tout petit peu." },
+  { id: "events3", family: "loyal", name: "Fidèle du Space", desc: "Jouer à 3 soirées", joke: "Le Space devrait te faire une carte de fidélité." },
+  { id: "top10", family: "loyal", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée", joke: "Dix sur dix. Enfin, dans les dix." },
+  { id: "eventWin", family: "loyal", name: "Tartine d'or", desc: "Finir 1er d'une soirée", joke: "Tu gagnes le droit d'en parler toute la semaine." },
+  { id: "express", family: "secret", name: "Tartinée express", desc: "Se faire tartiner en moins de 2 s", joke: "Record du monde. À l'envers.", hint: "il y a des records qu'on ne cherche pas." },
+  { id: "zen", family: "secret", name: "En détente", desc: "Rester 5 s sans bouger", joke: "Respire. Tout va bien. Pour l'instant.", hint: "le meilleur coup, c'est parfois de ne rien faire." },
+  { id: "round", family: "secret", name: "Chiffre rond", desc: "Finir pile sur une seconde ronde", joke: "Le hasard fait bien les choses. Le couteau aussi.", hint: "les comptes ronds font les bons amis." },
+  { id: "woof", family: "secret", name: "Ouaf", desc: "Se faire tartiner par un couteau à la pâtée pour chien", joke: "Ouaf ouaf. Traduction : bien fait.", hint: "ça sent un peu le chien." }
 ];
 const BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
 
@@ -52,6 +56,13 @@ function change(fn) {
   const changed = fn(data);
   if (changed !== false) store.set(KEYS.achievements, JSON.stringify(data));
   return changed !== false;
+}
+
+if (!data.seen) {
+  change((d) => {
+    if (d.seen) return false;
+    d.seen = Date.now();
+  });
 }
 
 window.addEventListener("storage", (e) => {
@@ -78,9 +89,15 @@ function countRuns(n) {
   for (const [k, id] of RUNS) if (n >= k) unlock(id);
 }
 
+export function countToppings() {
+  const n = owned().length - 1;
+  for (const [k, id] of TOPPINGS) if (n >= k) unlock(id);
+}
+
 export function runStart(eventKey) {
   run = { still: 0 };
   fresh = [];
+  countToppings();
   if (eventKey && !data.events.includes(eventKey)) {
     change((d) => {
       if (d.events.includes(eventKey)) return false;
@@ -99,7 +116,6 @@ export function runTick(state, moved, dt) {
   for (const o of state.obs) {
     if (o.seen) continue;
     o.seen = true;
-    if (o.spread && BY_ID[o.spread]) unlock(o.spread);
     if (o.from && !data.attacks.includes(o.from)) {
       change((d) => {
         if (d.attacks.includes(o.from)) return false;
@@ -110,7 +126,7 @@ export function runTick(state, moved, dt) {
   }
 }
 
-export function runEnd(score) {
+export function runEnd(score, killer) {
   if (!run) return;
   run = null;
   change((d) => {
@@ -119,6 +135,7 @@ export function runEnd(score) {
   countRuns(data.runs);
   if (score < EXPRESS_CS) unlock("express");
   if (score > 0 && score % 100 === 0) unlock("round");
+  if (killer && killer.spread === "dog") unlock("woof");
 }
 
 export function afterSubmit(r, scope) {
@@ -130,34 +147,46 @@ export function onBoard(b) {
   if (b && b.event && b.event.status === "closed" && b.me && !b.me.banned && b.me.eventRank === 1) unlock("eventWin");
 }
 
-function item(a) {
-  const got = !!data.got[a.id], hidden = a.family === "secret" && !got;
+function line(className, text) {
+  const p = document.createElement("p");
+  p.className = className;
+  p.textContent = text;
+  return p;
+}
+
+function item(a, since) {
+  const at = data.got[a.id], hidden = a.family === "secret" && !at;
   const row = document.createElement("div");
-  row.className = "ach-item" + (got ? "" : " locked");
+  row.className = "ach-item" + (at ? "" : " locked");
   const star = document.createElement("span");
   star.className = "ach-star";
-  star.textContent = got ? "★" : "☆";
+  star.textContent = at ? "★" : "☆";
   const text = document.createElement("div");
-  const name = document.createElement("p");
-  name.className = "ach-name";
-  name.textContent = hidden ? "???" : a.name;
-  const desc = document.createElement("p");
-  desc.className = "sub";
-  desc.textContent = hidden ? "Succès secret" : a.desc;
-  text.append(name, desc);
+  const name = line("ach-name", hidden ? "???" : a.name);
+  if (at > since) {
+    const tag = document.createElement("span");
+    tag.className = "ach-new";
+    tag.textContent = "Nouveau";
+    name.append(" ", tag);
+  }
+  text.append(name, line("sub", hidden ? "Indice : " + a.hint : a.desc));
+  if (at) text.append(line("ach-joke", "« " + a.joke + " »"));
   row.append(star, text);
   return row;
 }
 
 export function renderAchievements(list, count) {
-  const p = progress();
+  const p = progress(), since = data.seen || 0;
   count.textContent = p.got + " / " + p.total;
   list.replaceChildren(...FAMILIES.map(([family, title]) => {
     const card = document.createElement("section");
     card.className = "card";
     const h = document.createElement("h2");
     h.textContent = title;
-    card.append(h, ...ACHIEVEMENTS.filter((a) => a.family === family).map(item));
+    card.append(h, ...ACHIEVEMENTS.filter((a) => a.family === family).map((a) => item(a, since)));
     return card;
   }));
+  change((d) => {
+    d.seen = Date.now();
+  });
 }
