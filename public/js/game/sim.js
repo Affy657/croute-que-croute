@@ -3,8 +3,9 @@ import { ATTACKS, pickAttack } from "./attacks.js";
 import { moveProjectile, sprinkleRare, gapTo } from "./projectiles.js";
 import { solve } from "./solver.js";
 
-const TRIES = 5, REACT = 0.1, SWEEP = 6, MOVE_MAX = 10 * (FW + FH), CALM_PASS = 0.4;
-export const GAP_START = 1.25, GAP_SLOPE = 0.016, GAP_MIN = 0.42;
+const TRIES = 5, REACT = 0.1, SWEEP = 6, MOVE_MAX = 10 * (FW + FH);
+export const CALM_PASS = 0.4;
+export const GAP_START = 0.95, GAP_SLOPE = 0.0067, GAP_MIN = 0.55;
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
 function passAt(items) {

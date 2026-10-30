@@ -1,4 +1,4 @@
-import { FW, FH, OUT, HIT_R, SPEED_MAX, SPEED_RAMP } from "../game/field.js";
+import { FW, FH, OUT, HIT_R, SPEED_START, SPEED_MAX, SPEED_RAMP } from "../game/field.js";
 import { PROJECTILES, moveProjectile } from "../game/projectiles.js";
 import { ATTACKS } from "../game/attacks.js";
 import { GAP_START, GAP_SLOPE, GAP_MIN } from "../game/sim.js";
@@ -11,6 +11,7 @@ const TOAST = { x: FW / 2, y: FH * 0.62, tilt: 0, thrust: 0.35 };
 const TOAST_W = 52, CARD_H = 72;
 const gameScale = () => Math.min(window.innerWidth / FW, window.innerHeight / FH);
 const num = (n) => String(Math.round(n * 10) / 10).replace(".", ",");
+const SPEED_END = (SPEED_MAX - SPEED_START) * SPEED_RAMP, SPEED_GAIN = SPEED_MAX / SPEED_START;
 const rnd = (a, b) => a + Math.random() * (b - a);
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const previews = [];
@@ -124,13 +125,12 @@ export function renderWeapons(root, { showLab = false } = {}) {
 }
 
 function progressionCard() {
-  const speedEnd = (SPEED_MAX - 1) * SPEED_RAMP;
   const gapEnd = (GAP_START - GAP_MIN) / GAP_SLOPE;
   const steps = [];
   for (const a of ATTACKS.filter((x) => !x.lab)) steps.push([a.from, a.from ? "arrivée : " + a.name : a.name + " dès le début"]);
   for (const a of ATTACKS.filter((x) => !x.lab && x.growsUntil)) steps.push([a.growsUntil, a.growth]);
   steps.push([gapEnd, "les attaques s'enchaînent au rythme le plus rapide"]);
-  steps.push([speedEnd, `les couverts sont au plus vite, ${num(SPEED_MAX)} fois plus qu'au début`]);
+  steps.push([SPEED_END, `les couverts sont au plus vite, ${num(SPEED_GAIN)} fois plus qu'au début`]);
   steps.sort((x, y) => x[0] - y[0]);
   const section = el("section", "card");
   const list = el("ol", "timeline");
@@ -207,7 +207,7 @@ export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
   const list = el("ul", "rules");
   for (const text of [
     "On peut toujours s'en sortir : chaque attaque est testée avant d'être lancée, même si tu réagis un dixième de seconde après l'alerte.",
-    "Tout accélère avec le temps, jusqu'à 2,6 fois plus vite à 80 s.",
+    `Tout accélère avec le temps, jusqu'à ${num(SPEED_GAIN)} fois plus vite à ${Math.round(SPEED_END)} s.`,
     "Une attaque ne sort jamais plus de 3 fois d'affilée, et celle qui vient de sortir revient moins souvent. Les grosses figures (croix, murs en série, couloir, double pluie) ne sortent jamais deux fois de suite.",
     "Dans les aperçus, la tartine ne bouge pas.",
     "« S'entraîner » lance une partie avec seulement cette attaque, qui démarre à sa vitesse d'arrivée puis accélère. Elle ne compte ni pour le classement ni pour les succès."
