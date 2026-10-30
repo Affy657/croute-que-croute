@@ -39,6 +39,7 @@ export const ACHIEVEMENTS = [
   { id: "night", family: "secret", name: "Tartine de minuit", desc: "Jouer entre minuit et " + NIGHT_UNTIL_H + " h", hint: "les sorcières sortent la nuit.", gear: "witch" }
 ];
 const BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
+const LOCAL = ["127.0.0.1", "localhost"].includes(location.hostname);
 
 const blank = () => ({ got: {}, attacks: [], events: [], runs: 0 });
 
@@ -78,6 +79,12 @@ if (!data.seen) {
   change((d) => {
     if (d.seen) return false;
     d.seen = Date.now();
+  });
+}
+
+if (LOCAL && new URLSearchParams(location.search).get("succes") === "tous") {
+  change((d) => {
+    for (const a of ACHIEVEMENTS) d.got[a.id] = d.got[a.id] || Date.now();
   });
 }
 
