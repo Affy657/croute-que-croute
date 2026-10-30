@@ -113,11 +113,10 @@ export function renderMenu() {
   const mine = standing();
   fillStats(ui.menuStats, ui.menuBestBox, ui.menuBest, ui.menuRankBox, ui.menuRank, needJoin() ? 0 : mine.best, mine.rank, mine.count);
   let info = "";
-  const recent = recentEvent(), next = upcomingEvent();
+  const recent = recentEvent();
   if (!b && !net.online) info = "Hors ligne";
   else if (me && me.banned) info = "Retiré du classement";
   else if (b && !isOpen() && recent && b.eventTop[0]) info = "Bravo " + b.eventTop[0].pseudo + " !";
-  else if (b && !isOpen() && next) info = "Prochaine soirée " + when(next.opensAt);
   setText(ui.menuInfo, info);
   ui.menuAch.textContent = achLabel();
   setCountdown(ui.menuCountdown);
@@ -168,21 +167,23 @@ export function setBoardScope(scope) {
 
 export function renderBoard() {
   const b = net.board;
-  const eventBoard = !!(b && b.event && (isOpen() || recentEvent()));
+  const live = !!(b && b.event && (isOpen() || recentEvent())), next = !live && upcomingEvent();
+  const eventBoard = live || !!next;
   const scope = eventBoard ? boardScope || (isOpen() ? "event" : "general") : "general";
+  const soon = scope === "event" && !live;
   ui.boardTabs.hidden = !eventBoard;
   for (const tab of ui.boardTabs.children) tab.setAttribute("aria-selected", String(tab.dataset.scope === scope));
   shownScope = scope;
-  ui.boardEvent.textContent = scope === "event" ? b.event.name : "Tous les temps";
+  ui.boardEvent.textContent = scope === "event" ? (live ? b.event : next).name : "Tous les temps";
   boardCountdown();
-  const top = b ? (scope === "event" ? b.eventTop : b.top) : [];
-  const mine = standing(scope), me = b && b.me;
+  const top = b && !soon ? (scope === "event" ? b.eventTop : b.top) : [];
+  const mine = soon ? { rank: null } : standing(scope), me = b && b.me;
   let n = Math.min(top.length, BOARD_TOP);
   ui.boardList.hidden = false;
   let count = fillBoard(top.slice(0, n), mine, me);
   while (n > PODIUM && overflows(ui.boardList)) count = fillBoard(top.slice(0, --n), mine, me);
   ui.boardList.hidden = count === 0;
-  setText(ui.boardEmpty, count ? "" : b ? "Aucun score pour l'instant" : "Hors ligne");
+  setText(ui.boardEmpty, count ? "" : soon ? "Prochaine soirée " + when(next.opensAt) : b ? "Aucun score pour l'instant" : "Hors ligne");
 }
 
 const overflows = (list) => list.clientHeight > 0 && list.scrollHeight > list.clientHeight + 1;

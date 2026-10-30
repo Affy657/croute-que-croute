@@ -64,6 +64,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Pseudo unique sur tout le jeu, de 2 à 16 caractères : lettres latines (accents permis), chiffres, espaces, tirets. Majuscules et accents ne comptent pas pour l'unicité. Il se change dans Paramètres, record et place suivent.
 - Deux classements : celui de la soirée (pour le lot) et le général, permanent. À égalité, le premier à avoir fait le temps passe devant.
 - Écran Classement : les 10 premiers, podium or, argent et bronze, puis ta place exacte si tu n'es pas dedans. Jamais de défilement : sur un petit écran, on enlève des lignes par le bas (3 au moins).
+- Quand une soirée est annoncée mais pas commencée, l'écran Classement montre les onglets Soirée et Général et s'ouvre sur Général. L'onglet Soirée donne son nom et « Prochaine soirée lundi 02/11 à 20h00 » (plus sur l'accueil).
 - Une seule soirée à la fois, créée à l'avance dans l'admin pour être annoncée dans le jeu.
 - Les téléphones relisent le classement toutes les 10 s (30 s sur l'accueil), et plus du tout écran éteint. Le serveur le garde 10 s en mémoire, le général 60 s pendant une soirée : jusqu'à 20 s de retard (70 s pour le général). Ta place après une partie est à jour tout de suite.
 - En base : `profiles` (joueurs et record général), `entries` (record par soirée), `runs` (parties), `events` (soirées).
