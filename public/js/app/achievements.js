@@ -1,6 +1,6 @@
 import { store, KEYS } from "../shared/store.js";
 import { ATTACKS } from "../game/attacks.js";
-import { SPREADS } from "../shared/palette.js";
+import { SPREADS, GEAR } from "../shared/palette.js";
 import { owned } from "./toppings.js";
 
 const FAMILIES = [["time", "Temps de cuisson"], ["play", "Frôlés et découvertes"], ["topping", "Garnitures"], ["loyal", "Assiduité et soirées"], ["secret", "Secrets"]];
@@ -15,9 +15,9 @@ const TOPPINGS = [[1, "top1"], [FRIDGE, "top4"], [EXTRAS, "topAll"]];
 export const ACHIEVEMENTS = [
   { id: "t10", family: "time", name: "Premiers pas", desc: "Tenir 10 s" },
   { id: "t20", family: "time", name: "Bien beurrée", desc: "Tenir 20 s" },
-  { id: "t30", family: "time", name: "Croustillante", desc: "Tenir 30 s" },
+  { id: "t30", family: "time", name: "Croustillante", desc: "Tenir 30 s", gear: "witch" },
   { id: "t45", family: "time", name: "Dorée à point", desc: "Tenir 45 s" },
-  { id: "t60", family: "time", name: "Une minute de gloire", desc: "Tenir 60 s" },
+  { id: "t60", family: "time", name: "Une minute de gloire", desc: "Tenir 60 s", gear: "boosters" },
   { id: "t80", family: "time", name: "Tartine de légende", desc: "Tenir 80 s" },
   { id: "near5", family: "play", name: "Ça passe", desc: "5 frôlés dans une partie" },
   { id: "near20", family: "play", name: "Ça passe crème", desc: "20 frôlés dans une partie" },
@@ -25,11 +25,11 @@ export const ACHIEVEMENTS = [
   { id: "top1", family: "topping", name: "Ça change du beurre", desc: "Gagner une garniture" },
   { id: "top4", family: "topping", name: "Le frigo est plein", desc: "Gagner " + FRIDGE + " garnitures" },
   { id: "topAll", family: "topping", name: "Tout le frigo", desc: "Gagner les " + EXTRAS + " garnitures" },
-  { id: "runs10", family: "loyal", name: "Dix tartines", desc: "Jouer 10 parties" },
+  { id: "runs10", family: "loyal", name: "Dix tartines", desc: "Jouer 10 parties", gear: "santa" },
   { id: "runs50", family: "loyal", name: "Boulangerie", desc: "Jouer 50 parties" },
   { id: "runs100", family: "loyal", name: "Accro à la croûte", desc: "Jouer 100 parties" },
   { id: "events3", family: "loyal", name: "Fidèle du Space", desc: "Jouer à 3 soirées" },
-  { id: "top10", family: "loyal", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée" },
+  { id: "top10", family: "loyal", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée", gear: "pirate" },
   { id: "eventWin", family: "loyal", name: "Tartine d'or", desc: "Finir 1er d'une soirée" },
   { id: "express", family: "secret", name: "Tartinée express", desc: "Se faire tartiner en moins de 2 s", hint: "il y a des records qu'on ne cherche pas." },
   { id: "zen", family: "secret", name: "En détente", desc: "Rester 5 s sans bouger", hint: "le meilleur coup, c'est parfois de ne rien faire." },
@@ -82,6 +82,7 @@ function unlock(id) {
 }
 
 export const onUnlock = (fn) => listeners.push(fn);
+export const has = (id) => !!data.got[id];
 export const runUnlocked = () => fresh.slice();
 export const progress = () => ({ got: ACHIEVEMENTS.filter((a) => data.got[a.id]).length, total: ACHIEVEMENTS.length });
 
@@ -170,6 +171,7 @@ function item(a, since) {
     name.append(" ", tag);
   }
   text.append(name, line("sub", hidden ? "Indice : " + a.hint : a.desc));
+  if (a.gear) text.append(line("ach-gear", "Débloque : " + GEAR[a.gear].name));
   row.append(star, text);
   return row;
 }

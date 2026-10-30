@@ -719,6 +719,170 @@ function topping(ctx, kind, C) {
   ctx.restore();
 }
 
+const FUR = "#fbf4ea";
+
+function sideBoosters(ctx, t, C) {
+  ctx.lineJoin = "round";
+  for (const side of [-1, 1]) {
+    const x = side * 25, fl = 6 + t.thrust * 9 + Math.random() * 4;
+    const g = ctx.createLinearGradient(0, 18, 0, 18 + fl);
+    g.addColorStop(0, C.mustard);
+    g.addColorStop(1, C.flame);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(x - 3.2, 18);
+    ctx.lineTo(x + 3.2, 18);
+    ctx.lineTo(x, 18 + fl);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = C.void;
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = C["steel-dark"];
+    ctx.beginPath();
+    rr(ctx, side > 0 ? 18 : -22, 1, 4, 5, 1);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = C.steel;
+    ctx.lineWidth = 1.7;
+    ctx.beginPath();
+    ctx.moveTo(x - 4.5, -2);
+    ctx.quadraticCurveTo(x - 4.5, -10, x, -14);
+    ctx.quadraticCurveTo(x + 4.5, -10, x + 4.5, -2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    rr(ctx, x - 4.5, -3, 9, 15, 2.5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.fillStyle = "#e0a640";
+    ctx.beginPath();
+    rr(ctx, x - 3.6, 12, 7.2, 3, 1.2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#8a5a1e";
+    ctx.beginPath();
+    rr(ctx, x - 3, 15, 6, 2.8, 1.2);
+    ctx.fill();
+    ctx.stroke();
+    dots(ctx, C["steel-dark"], [[x, 2, 0.9], [x, 6.5, 0.9]]);
+  }
+}
+
+const HATS = {
+  witch(ctx, C) {
+    ctx.translate(0, -20);
+    ctx.rotate(-0.14);
+    ctx.strokeStyle = C.void;
+    ctx.lineWidth = 1.8;
+    oval(ctx, 0, 0, 18, 4.2);
+    ctx.fillStyle = "#3a2163";
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-9, -1);
+    ctx.quadraticCurveTo(-6, -14, -1, -22);
+    ctx.quadraticCurveTo(3, -28, 11, -26);
+    ctx.quadraticCurveTo(5, -23, 4, -16);
+    ctx.quadraticCurveTo(6, -7, 9, -1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = C.flame;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-8.7, -2);
+    ctx.lineTo(8.7, -2);
+    ctx.lineTo(7.6, -6.2);
+    ctx.lineTo(-7.7, -6.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = C.mustard;
+    ctx.lineWidth = 1.3;
+    ctx.strokeRect(-2.1, -5.6, 4.2, 3.1);
+    dots(ctx, C.mustard, [[-2.5, -12, 0.9], [1.5, -17, 0.7], [4, -10, 0.6]]);
+  },
+  santa(ctx, C) {
+    ctx.translate(0, -21);
+    ctx.rotate(0.08);
+    ctx.strokeStyle = C.void;
+    ctx.lineWidth = 1.8;
+    ctx.fillStyle = "#d8283c";
+    ctx.beginPath();
+    ctx.moveTo(-14, -1);
+    ctx.bezierCurveTo(-12, -17, 3, -25, 12, -20);
+    ctx.quadraticCurveTo(17, -16, 18, -9);
+    ctx.quadraticCurveTo(13, -13, 8, -12);
+    ctx.quadraticCurveTo(12, -6, 14, -1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = "#9e1426";
+    ctx.lineWidth = 1.2;
+    line(ctx, [[-6, -4], [-3, -13], [4, -18]]);
+    ctx.stroke();
+    ctx.strokeStyle = C.void;
+    ctx.lineWidth = 1.6;
+    ctx.fillStyle = FUR;
+    ctx.beginPath();
+    rr(ctx, -16, -4.5, 32, 7.5, 3.7);
+    ctx.fill();
+    ctx.stroke();
+    dots(ctx, "#ded5c6", [[-11, -1, 1.1], [-4, 0, 1], [3, -1.5, 1.1], [10, 0, 1]]);
+    ctx.beginPath();
+    ctx.arc(18, -8, 4.2, 0, TAU);
+    ctx.fillStyle = FUR;
+    ctx.fill();
+    ctx.stroke();
+  },
+  pirate(ctx, C) {
+    ctx.translate(0, -19);
+    ctx.strokeStyle = C.void;
+    ctx.lineWidth = 1.8;
+    ctx.fillStyle = "#1f1b2b";
+    ctx.beginPath();
+    ctx.moveTo(-21, 1);
+    ctx.quadraticCurveTo(-18, -6, -13, -8);
+    ctx.quadraticCurveTo(-9, -21, 0, -21);
+    ctx.quadraticCurveTo(9, -21, 13, -8);
+    ctx.quadraticCurveTo(18, -6, 21, 1);
+    ctx.quadraticCurveTo(0, -6, -21, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = C.mustard;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-19, -0.4);
+    ctx.quadraticCurveTo(0, -6.8, 19, -0.4);
+    ctx.stroke();
+    ctx.strokeStyle = FUR;
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = "round";
+    line(ctx, [[-5, -7.5], [5, -16]]);
+    ctx.stroke();
+    line(ctx, [[5, -7.5], [-5, -16]]);
+    ctx.stroke();
+    ctx.fillStyle = FUR;
+    ctx.beginPath();
+    ctx.arc(0, -13, 3.7, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    rr(ctx, -2.2, -11, 4.4, 2.8, 1);
+    ctx.fill();
+    dots(ctx, "#1f1b2b", [[-1.4, -13.4, 0.95], [1.4, -13.4, 0.95]]);
+  }
+};
+
+function hat(ctx, kind, C) {
+  if (!HATS[kind]) return;
+  ctx.save();
+  HATS[kind](ctx, C);
+  ctx.restore();
+}
+
 export function drawToast(ctx, t, splat, C = PALETTE) {
   const w = 40, h = 42;
   ctx.save();
@@ -726,6 +890,7 @@ export function drawToast(ctx, t, splat, C = PALETTE) {
   ctx.rotate(splat ? 0.5 : t.tilt);
   ctx.lineJoin = "round";
   if (!splat) thrusters(ctx, t, w, h, C);
+  if (!splat && t.gear === "boosters") sideBoosters(ctx, t, C);
   toastPath(ctx, w, h);
   ctx.fillStyle = C.crust;
   ctx.fill();
@@ -749,6 +914,7 @@ export function drawToast(ctx, t, splat, C = PALETTE) {
   ctx.globalAlpha = 1;
   topping(ctx, t.spread, C);
   if (t.scars && t.scars.length) scars(ctx, t.scars, w, h, C);
+  hat(ctx, t.gear, C);
   if (splat) {
     ctx.fillStyle = C.jam;
     for (const b of splat) {

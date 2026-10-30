@@ -52,6 +52,11 @@
   font-weight: 700;
 }
 
+.catalog .ach-gear {
+  font-size: 0.85rem;
+  color: var(--mustard);
+}
+
 .catalog .ach-new {
   display: inline-block;
   padding: 0.15em 0.6em;

@@ -20,6 +20,13 @@ export const PALETTE = {
   "trail-end": "rgba(255, 246, 224, 0)"
 };
 
+export const GEAR = {
+  boosters: { name: "Boosters" },
+  witch: { name: "Chapeau de sorcière" },
+  santa: { name: "Bonnet de Noël" },
+  pirate: { name: "Chapeau de pirate" }
+};
+
 export const HEAT = ["#0d0b24", "#381496", "#6c1630"];
 
 export const SKY = {
