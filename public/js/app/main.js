@@ -437,6 +437,7 @@ function update(dt) {
 
 let last = performance.now(), acc = 0;
 function frame(now) {
+  scene.pace(now - last);
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
   acc += dt;

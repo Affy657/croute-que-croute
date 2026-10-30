@@ -58,6 +58,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 
 - Avant chaque attaque, le solveur simule les 3,5 s suivantes (jusqu'à 4,5 s si l'attaque dure plus longtemps, comme les murs en série) avec tout ce qui est en vol. S'il ne trouve pas de chemin pour la tartine, en comptant 0,1 s de réaction, l'attaque est remplacée (5 essais au plus).
 - Le modèle est prudent (grille de 12 px, doigt à 360 px/s au plus, marge de 11 px autour des couverts) : si le robot passe, un humain peut passer.
+- Le solveur range chaque ligne de sa grille (30 colonnes) dans un nombre de 32 bits, et ne calcule qu'une fois l'instant partagé entre deux pas : environ 40 % plus rapide, réponses identiques (vérifié sur 6 973 vérifications enregistrées en partie). Il reste le plus gros calcul du jeu, environ 1 ms par attaque sur un PC, sans doute 10 fois plus sur un petit téléphone.
 - Un geste très rapide ne fait pas traverser un couvert : le trajet de la tartine est vérifié tous les 6 px. Un déplacement absurde (infini, ou plus de 10 000 px d'un coup) est borné pour ne pas figer le jeu.
 - `npm test` fait jouer le robot 100 parties de 150 s : 0 mort attendu. À relancer après un gros changement des règles, pas pour un petit réglage.
 
@@ -181,6 +182,7 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 - Une partie ne compte que si le réseau passe au départ. À la fin, l'envoi du score réessaie pendant 2 min (« Envoi en attente… »), même si on ferme le jeu ou si le serveur a une erreur passagère.
 - Téléphone verrouillé ou appli quittée en pleine partie : la partie se met en pause, « Touche pour reprendre » (un simple clic suffit aussi sur ordinateur, même très bref). Le temps de pause compte dans le temps réel vu par le serveur : l'admin affiche alors « partie ralentie ou mise en pause ».
 - Le cache hors ligne (`sw.js`) est renouvelé à chaque version.
+- Petits téléphones (30/10/2026, des joueurs avaient des lags) : le jeu mesure sa fluidité. Si l'image médiane dépasse 24 ms (moins de 42 images par seconde), il baisse sa netteté par paliers (`QUALITY` dans `scene.js` : densité 2, 1,5, 1,25 puis 1) et s'en souvient sur ce téléphone (`cv-qualite`). Densité 2 au plus pour tout le monde (avant : 2,5). La couche des annonces n'est plus effacée quand elle est déjà vide.
 
 ## Check-list d'une soirée
 
