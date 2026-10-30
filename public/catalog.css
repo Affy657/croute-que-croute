@@ -38,27 +38,18 @@
 .catalog .ach-item {
   display: grid;
   grid-template-columns: 28px 1fr;
-  align-items: start;
+  align-items: center;
   gap: 10px;
 }
 
 .catalog .ach-star {
   font-size: 1.3rem;
-  line-height: 1.1;
   text-align: center;
   color: var(--mustard);
 }
 
 .catalog .ach-name {
   font-weight: 700;
-}
-
-.catalog .ach-joke {
-  margin-top: 3px;
-  font-size: 0.85rem;
-  font-style: italic;
-  color: var(--mustard);
-  opacity: 0.85;
 }
 
 .catalog .ach-new {

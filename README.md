@@ -104,7 +104,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 ## Succès
 
 - 22 succès en 5 familles (temps de cuisson, frôlés et découvertes, garnitures, assiduité et soirées, secrets) : liste et conditions dans `achievements.js`.
-- Chaque succès gagné affiche une blague (`joke`), sauf les secrets. Un secret pas encore trouvé montre « ??? » et un indice (`hint`).
+- Un secret pas encore trouvé montre « ??? » et un indice (`hint`).
 - Badge « Nouveau » sur les succès gagnés depuis la dernière visite de l'écran (`seen` dans `cv-succes`).
 - Garnitures : 1, 4 puis toutes gagnées. Le secret « Ouaf » : se faire tartiner par un couteau à la pâtée pour chien.
 - Gardés sur le téléphone (`cv-succes`), sans effet sur le classement. Perdus en changeant de téléphone ou de navigateur. Sur iPhone, Safari et l'appli installée ne partagent pas leurs succès.
