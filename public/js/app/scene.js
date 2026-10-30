@@ -2,6 +2,7 @@ import { FW, FH, clamp } from "../game/field.js";
 import { PALETTE, HEAT } from "../shared/palette.js";
 import { drawTrail, drawProjectile, drawWarn, drawToast } from "./sprites.js";
 import { BODIES, RARE, CAN_KINDS, drawCan } from "./planets.js";
+import { store, KEYS } from "../shared/store.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const POP_LIFE = 0.7, PUCK_R = 30, PUCK_LIFT = 110, GRAB_S = 0.6, FIELD_FADE = 5;
@@ -13,6 +14,7 @@ const COMET_S = 9, COMET_SIZE = 0.13, COMET_TAIL = 0.35, COMET_ALPHA = 0.7;
 const OFTEN = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("etoiles") === "souvent";
 const COMET_FIRST = OFTEN ? [1, 2] : [30, 180], COMET_GAP = OFTEN ? [4, 6] : [120, 240];
 const ODD = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("planetes") === "souvent";
+const QUALITY = [2, 1.5, 1.25, 1], SLOW_MS = 24, SAMPLE = 90, SETTLE = 60, GAP_MS = 250;
 const HEAT_RGB = HEAT.map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
 
 function pickRare(last) {
@@ -36,9 +38,10 @@ export function createScene(canvas, overlay) {
   let stars = [], sky = 0, shake = 0, parts = [], pops = [], fieldA = 0, heat = 0, heatKey = "", heatFill = null;
   let comet = null, cometIn = rnd(...COMET_FIRST);
   let rare = ODD ? pickRare(null) : null, rareY = -Infinity;
+  let quality = Math.min(QUALITY.length - 1, Number(store.get(KEYS.quality)) || 0), frames = [], settle = SETTLE, fxDirty = true;
 
   function resize() {
-    view.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    view.dpr = Math.min(window.devicePixelRatio || 1, QUALITY[quality]);
     view.W = window.innerWidth;
     view.H = window.innerHeight;
     for (const c of [canvas, overlay]) {
@@ -50,6 +53,24 @@ export function createScene(canvas, overlay) {
     view.oy = (view.H - FH * view.scale) / 2;
     const n = Math.round((view.W * view.H) / 2600);
     stars = Array.from({ length: n }, () => ({ x: Math.random() * view.W, y: Math.random() * view.H, z: rnd(0.1, 1), tw: rnd(0, 6.28) }));
+  }
+
+  function pace(ms) {
+    if (ms > GAP_MS || document.hidden || quality === QUALITY.length - 1) return;
+    if (settle > 0) {
+      settle--;
+      return;
+    }
+    frames.push(ms);
+    if (frames.length < SAMPLE) return;
+    const slow = frames.sort((a, b) => a - b)[SAMPLE >> 1] > SLOW_MS;
+    frames = [];
+    const lower = QUALITY.findIndex((d, i) => i > quality && d < view.dpr);
+    if (!slow || lower < 0) return;
+    quality = lower;
+    store.set(KEYS.quality, quality);
+    settle = SETTLE;
+    resize();
   }
 
   function update(dt, warp, field, hot = 0) {
@@ -238,6 +259,7 @@ export function createScene(canvas, overlay) {
 
   function drawFinger(finger, clock) {
     if (!finger || (!finger.held && !finger.touch)) return;
+    fxDirty = true;
     const { W, H, dpr } = view;
     fx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (finger.held) {
@@ -271,6 +293,7 @@ export function createScene(canvas, overlay) {
   function drawWarns(world, clock, sx, sy) {
     const { dpr, scale, ox, oy } = view;
     if (!world.warns.length) return;
+    fxDirty = true;
     fx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * (oy + sy));
     fx.save();
     fx.beginPath();
@@ -286,8 +309,11 @@ export function createScene(canvas, overlay) {
     drawBackground(clock);
     const sx = shake ? rnd(-shake, shake) : 0;
     const sy = shake ? rnd(-shake, shake) : 0;
-    fx.setTransform(1, 0, 0, 1, 0, 0);
-    fx.clearRect(0, 0, overlay.width, overlay.height);
+    if (fxDirty) {
+      fx.setTransform(1, 0, 0, 1, 0, 0);
+      fx.clearRect(0, 0, overlay.width, overlay.height);
+      fxDirty = false;
+    }
     drawFinger(finger, clock);
     if (fieldA > 0 && !dying) drawWarns(world, clock, sx, sy);
     ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * (oy + sy));
@@ -317,5 +343,5 @@ export function createScene(canvas, overlay) {
 
   const avoid = (box) => { hudBox = box; };
 
-  return { view, update, render, splash, pop, clear, avoid };
+  return { view, update, render, splash, pop, clear, avoid, pace };
 }
