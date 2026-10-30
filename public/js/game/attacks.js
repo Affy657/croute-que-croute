@@ -40,7 +40,7 @@ function rainOf({ t, rnd }, n, gap) {
   return items;
 }
 
-const rainSize = (t) => 4 + Math.min(4, Math.floor(t / 15));
+const rainSize = (t) => 3 + Math.min(5, Math.floor(t / 12));
 
 const rain = (g) => rainOf(g, rainSize(g.t), 0.14);
 
@@ -166,11 +166,11 @@ function bread({ t, toast, pick }) {
 }
 
 export const ATTACKS = [
-  { id: "aimed", name: "Couteau visé", from: 0, weight: 2, cost: 1, speed: 230, make: aimed, growsUntil: 35, growth: "le couteau visé peut tourner sur lui-même",
+  { id: "aimed", name: "Couteau visé", from: 0, weight: 2.5, cost: 1, speed: 230, make: aimed, growsUntil: 35, growth: "le couteau visé peut tourner sur lui-même",
     info: "Un couteau lancé du haut ou d'un côté vers la tartine. Bouger pendant l'annonce suffit. Dès 35 s, une fois sur trois il tourne sur lui-même." },
-  { id: "rain", name: "Pluie de fourchettes", from: 6, weight: 1.4, cost: 1.5, speed: 190, make: rain, growsUntil: 60, growth: "pluies au maximum (8 fourchettes)",
-    info: "4 fourchettes (jusqu'à 8) tombent du haut l'une après l'autre, un peu en biais." },
-  { id: "cleaver", name: "Hachoir", from: 10, weight: 0.9, cost: 1.3, speed: 300, make: cleaver, growsUntil: 55, growth: "3 hachoirs à la suite",
+  { id: "rain", name: "Pluie de fourchettes", from: 4, weight: 1.4, cost: 1.5, speed: 190, make: rain, growsUntil: 60, growth: "pluies au maximum (8 fourchettes)",
+    info: "3 fourchettes (jusqu'à 8) tombent du haut l'une après l'autre, un peu en biais." },
+  { id: "cleaver", name: "Hachoir", from: 8, weight: 0.9, cost: 1.3, speed: 300, make: cleaver, growsUntil: 55, growth: "3 hachoirs à la suite",
     info: "Un hachoir tombe tout droit et très vite au-dessus de la tartine, annoncé 0,9 s avant. Quitter sa colonne. Dès 30 s, un deuxième suit dans une colonne voisine, un troisième dès 55 s." },
   { id: "wall", name: "Mur", from: 14, weight: 1.1, cost: 1.7, speed: 150, make: wall,
     info: "Une rangée serrée avec un seul trou, par le haut ou par un côté. Les pastilles d'annonce montrent déjà le trou." },
@@ -178,7 +178,7 @@ export const ATTACKS = [
     info: "Un gros rouleau debout traverse lentement l'écran par un côté : passer au-dessus ou en dessous. 2 rouleaux à la suite dès 36 s, 3 dès 60 s." },
   { id: "fan", name: "Éventail", from: 24, weight: 1.1, cost: 1.5, speed: 200, make: fan, growsUntil: 54, growth: "éventails au maximum (5 couteaux)",
     info: "4 à 5 couteaux ouverts en cône depuis un même point, centrés sur la tartine. Il faut sortir du cône par le côté." },
-  { id: "whisk", name: "Fouet", from: 4, weight: 0.7, cost: 1.3, speed: 100, make: whisk,
+  { id: "whisk", name: "Fouet", lab: true, from: 4, weight: 0.7, cost: 1.3, speed: 100, make: whisk,
     info: "Un fouet qui tourne sur lui-même descend lentement vers la tartine et occupe une grosse zone." },
   { id: "cross", name: "Croix", solo: true, from: 32, weight: 0.7, cost: 1.6, speed: 190, make: cross,
     info: "4 couteaux en même temps depuis les deux coins du haut et les deux côtés, tous vers la tartine. S'écarter du point visé." },

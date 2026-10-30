@@ -6,6 +6,7 @@ const TIMES = [[10, "t10"], [20, "t20"], [30, "t30"], [45, "t45"], [60, "t60"], 
 const NEARS = [[5, "near5"], [20, "near20"]];
 const RUNS = [[10, "runs10"], [50, "runs50"], [100, "runs100"]];
 const STILL_S = 5, EXPRESS_CS = 200, EVENTS = 3, TOP = 10;
+const LIVE = ATTACKS.filter((a) => !a.lab);
 
 export const ACHIEVEMENTS = [
   { id: "t10", family: "time", name: "Premiers pas", desc: "Tenir 10 s" },
@@ -20,7 +21,7 @@ export const ACHIEVEMENTS = [
   { id: "choco", family: "play", name: "Pâte à tartiner !", desc: "Voir un couteau à la pâte à tartiner" },
   { id: "honey", family: "play", name: "Miel !", desc: "Voir un couteau au miel" },
   { id: "ketchup", family: "play", name: "Ketchup ?!", desc: "Voir un couteau au ketchup" },
-  { id: "allAttacks", family: "play", name: "Tout vu", desc: "Voir les " + ATTACKS.length + " attaques" },
+  { id: "allAttacks", family: "play", name: "Tout vu", desc: "Voir les " + LIVE.length + " attaques" },
   { id: "runs10", family: "loyal", name: "Dix tartines", desc: "Jouer 10 parties" },
   { id: "runs50", family: "loyal", name: "Boulangerie", desc: "Jouer 50 parties" },
   { id: "runs100", family: "loyal", name: "Accro à la croûte", desc: "Jouer 100 parties" },
@@ -104,7 +105,7 @@ export function runTick(state, moved, dt) {
         if (d.attacks.includes(o.from)) return false;
         d.attacks.push(o.from);
       });
-      if (data.attacks.length >= ATTACKS.length) unlock("allAttacks");
+      if (LIVE.every((a) => data.attacks.includes(a.id))) unlock("allAttacks");
     }
   }
 }

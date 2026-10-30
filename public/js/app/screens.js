@@ -4,8 +4,10 @@ import { prefs, musicAvailable } from "./audio.js";
 import { progress } from "./achievements.js";
 import { PROJECTILES } from "../game/projectiles.js";
 import { SPREADS } from "../shared/palette.js";
+import { owned, chosen } from "./toppings.js";
 
 const $ = (id) => document.getElementById(id);
+const BOARD_TOP = 10, PODIUM = 3;
 
 export const ui = {
   menu: $("menu"), over: $("over"), board: $("board"), hud: $("hud"), time: $("time"), hudBest: $("hudBest"),
@@ -24,6 +26,7 @@ export const ui = {
   qr: $("qr"), qrHost: $("qrHost"), qrBack: $("qrBack"),
   ach: $("ach"), achCount: $("achCount"), achList: $("achList"), achBack: $("achBack"), achToast: $("achToast"), overAch: $("overAch"), musicVol: $("musicVol"), sfxVol: $("sfxVol"),
   renameCard: $("renameCard"), renameForm: $("renameForm"), newPseudo: $("newPseudo"), renameNote: $("renameNote"),
+  picker: $("picker"), pickPrev: $("pickPrev"), pickNext: $("pickNext"), pickName: $("pickName"), pickCount: $("pickCount"),
   installPop: $("installPop"), installPopText: $("installPopText"), installYes: $("installYes"), installLater: $("installLater")
 };
 
@@ -114,11 +117,19 @@ export function renderMenu() {
   setText(ui.menuInfo, info);
   ui.menuAch.textContent = achLabel();
   setCountdown(ui.menuCountdown);
+  renderPicker();
+}
+
+export function renderPicker() {
+  const list = owned();
+  ui.picker.hidden = needJoin() || list.length < 2;
+  ui.pickName.textContent = SPREADS[chosen()].name;
+  ui.pickCount.textContent = list.length + "/" + Object.keys(SPREADS).length;
 }
 
 function boardRow(rank, pseudo, best, me) {
   const li = document.createElement("li");
-  if (me) li.className = "me";
+  li.className = [me ? "me" : "", rank <= PODIUM ? "podium p" + rank : ""].join(" ").trim();
   for (const [cls, text] of [["pos", String(rank)], ["name", pseudo], ["val", fmtCs(best)]]) {
     const span = document.createElement("span");
     span.className = cls;
@@ -142,7 +153,7 @@ export function renderBoard() {
   shownScope = scope;
   ui.boardEvent.textContent = scope === "event" ? b.event.name : "Tous les temps";
   boardCountdown();
-  const top = b ? (scope === "event" ? b.eventTop : b.top) : [];
+  const top = b ? (scope === "event" ? b.eventTop : b.top).slice(0, BOARD_TOP) : [];
   const rows = top.map((r) => boardRow(r.rank, r.pseudo, r.best, r.me));
   const mine = standing(scope);
   if (b && b.me && mine.rank && !top.some((r) => r.me)) {

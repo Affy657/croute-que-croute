@@ -20,7 +20,8 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Zones de touche : la tartine est un cercle de 26 px, chaque arme est faite de gélules (`parts` dans `projectiles.js`). « Frôlé » quand la tartine passe à moins de 11 px.
 - Frôlés : « Frôlé x2 », « x3 »… quand ils s'enchaînent à moins de 1,5 s, avec un son plus aigu à chaque cran (6 au plus). Chaque frôlé laisse une entaille dans la croûte, du côté où le couvert est passé (12 au plus). Aucun effet sur le score ni sur la zone de touche.
 - Effets : le chrono flashe en jaune toutes les 10 s, les couverts rapides (dès 380 px/s) laissent une traînée, et le fond passe du bleu nuit au violet vers 40 s puis au rouge sombre à 80 s, au rythme de la vitesse des couverts (`HEAT` dans `palette.js`).
-- Mort : le jeu se fige 0,3 s avec un léger zoom sur la tartine, puis l'éclaboussure (pas de zoom si le téléphone demande moins d'animations). Sous « Tartinée ! », l'arme qui t'a eu (« par un hachoir », « par un couteau au dentifrice ») : `by` dans `PROJECTILES`, `with` dans `SPREADS`.
+- Mort : le jeu se fige 0,3 s, puis l'éclaboussure. Sous « Tartinée ! », l'arme qui t'a eu (« par un hachoir », « par un couteau au dentifrice ») : `by` dans `PROJECTILES`, `with` dans `SPREADS`.
+- Garnitures : 9 tartinades dessinées sur la tartine (`TOPPINGS` dans `sprites.js`) : confiture, pâte à tartiner, miel et son abeille, ketchup en zigzag, dentifrice rayé, œuf au plat, sardine entière, slime qui a un œil, pâtée pour chien tartinée avec son odeur et sa mouche. Beurre au départ. 1 attaque sur 40 a un couteau garni : le frôler ou se faire tuer par lui débloque sa garniture (pas en entraînement). Choix sur l'accueil avec les flèches autour de la tartine, qui n'apparaissent qu'à la première garniture gagnée. Gardées sur le téléphone (`cv-garnitures`, `cv-garniture`), purement visuel.
 - Fin de partie : « Encore 1,21 s pour passer X », X étant le joueur juste devant (soirée pendant une soirée, général sinon). Rien si tu es 1er, sans pseudo ou au-delà du 1 000e du général.
 - Entraînement : bouton « S'entraîner » sur chaque attaque d'Infos. Seulement cette attaque, à la vitesse de son heure d'arrivée. Ne compte ni au classement, ni pour les succès, ni pour le record.
 
@@ -29,9 +30,8 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 | Attaque | Dès | À retenir |
 |---|---|---|
 | Couteau visé | 0 s | Vise la tartine au moment de l'annonce. Tourne 1 fois sur 3 dès 35 s |
-| Fouet | 4 s | Tourne et descend lentement vers la tartine |
-| Pluie de fourchettes | 6 s | 4 fourchettes, 1 de plus toutes les 15 s (8 au plus) |
-| Hachoir | 10 s | Tombe très vite au-dessus de la tartine, annonce longue (0,9 s). 2 à la suite dès 30 s, 3 dès 55 s, dans des colonnes voisines |
+| Pluie de fourchettes | 4 s | 3 fourchettes, 1 de plus toutes les 12 s (8 au plus) |
+| Hachoir | 8 s | Tombe très vite au-dessus de la tartine, annonce longue (0,9 s). 2 à la suite dès 30 s, 3 dès 55 s, dans des colonnes voisines |
 | Mur | 14 s | Rangée serrée avec un seul trou d'environ 100 px |
 | Rouleau | 18 s | Traverse lentement par un côté. 2 à la suite dès 36 s, 3 dès 60 s |
 | Éventail | 24 s | 4 couteaux en cône vers la tartine, 5 dès 54 s |
@@ -43,7 +43,8 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 
 - Vitesse des couverts : × (1 + t / 50), plafond × 2,6 à 80 s. Délai entre deux attaques : 1,25 s moins 0,016 × t, 0,42 s au plus court (dès 52 s).
 - Jamais plus de 3 fois la même attaque d'affilée. Croix, murs en série, couloir et double pluie ne sortent jamais deux fois de suite. Les murs en série ne partent que si aucune annonce n'est en cours, et laissent un long répit derrière eux.
-- Environ 1 attaque sur 40 a un couteau à une tartinade rare (confiture, pâte à tartiner, miel, ketchup) : pur visuel.
+- Environ 1 attaque sur 40 a un couteau garni (voir Garnitures).
+- Fouet mis de côté (jugé trop facile) : `lab: true` dans `attacks.js` et `projectiles.js`, visible seulement dans l'admin. Enlever `lab` pour le remettre.
 - Chances, vitesses et délais de chaque attaque : `attacks.js`. Le calendrier est dans le jeu (Infos, onglet Attaques).
 - Mesure du 28/10/2026 avec un robot « humain » (réaction 0,25 s, 320 px/s) : survie médiane 31 s, maximum 89 s. Faite avant les réglages du 29/10 (hachoirs et rouleaux multiples, murs en série, éventail réduit).
 
@@ -58,6 +59,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Pas de compte : le téléphone garde un jeton et son profil pour toujours. Le même téléphone qui retape son pseudo retrouve son compte.
 - Pseudo unique sur tout le jeu, de 2 à 16 caractères : lettres latines (accents permis), chiffres, espaces, tirets. Majuscules et accents ne comptent pas pour l'unicité. Il se change dans Paramètres, record et place suivent.
 - Deux classements : celui de la soirée (pour le lot) et le général, permanent. À égalité, le premier à avoir fait le temps passe devant.
+- Écran Classement : les 10 premiers, podium or, argent et bronze. Si tu n'es pas dans les 10, ta place exacte est épinglée en bas de la liste.
 - Une seule soirée à la fois, créée à l'avance dans l'admin pour être annoncée dans le jeu.
 - Les téléphones relisent le classement toutes les 10 s (30 s sur l'accueil), et plus du tout écran éteint. Le serveur le garde 10 s en mémoire, le général 60 s pendant une soirée : jusqu'à 20 s de retard (70 s pour le général). Ta place après une partie est à jour tout de suite.
 - En base : `profiles` (joueurs et record général), `entries` (record par soirée), `runs` (parties), `events` (soirées).
@@ -103,7 +105,6 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - 22 succès en 4 familles (temps, frôlés et découvertes, assiduité et soirées, secrets) : liste et conditions dans `achievements.js`.
 - Gardés sur le téléphone (`cv-succes`), sans effet sur le classement. Perdus en changeant de téléphone ou de navigateur. Sur iPhone, Safari et l'appli installée ne partagent pas leurs succès.
 - Le nombre de parties prend le plus grand entre le compteur du téléphone et celui du serveur.
-- Garnitures : 9 tartinades dessinées sur la tartine (`TOPPINGS` dans `sprites.js`) : confiture, pâte à tartiner, miel et son abeille, ketchup en zigzag, dentifrice rayé, œuf au plat, sardine entière, slime qui a un œil, pâtée pour chien tartinée, avec son odeur et sa mouche. Beurre au départ. 1 attaque sur 40 a un couteau garni : le frôler ou se faire tuer par lui débloque sa garniture (pas en entraînement). Choix dans Succès, carte Garnitures (ombres pour celles pas encore gagnées). Gardées sur le téléphone (`cv-garnitures`, `cv-garniture`), purement visuel.
 
 ## Appli et réseau
 
@@ -193,6 +194,7 @@ Après :
 - Une phase après 80 s (« mode sérieux »), ou des moments calmes et des pics calés sur les drops du morceau.
 - Suites d'attaques calées sur la musique, ou tirées parmi des enchaînements déjà écrits qui reviennent : analyser d'abord le morceau pour caler au moins les montées et les drops.
 - Images ou objets à collectionner (le maximator qui tourne), partage du score en story Insta.
+- Montrer les fonctionnalités petit à petit, pour ne pas surcharger les premières parties. Déjà fait pour les garnitures (flèches cachées tant qu'aucune n'est gagnée), à étendre au reste (succès, classement de soirée, infos).
 - Accessoires sur la tartine : petit chapeau de Noël, un truc d'Halloween, deuxième paire de boosters sur les côtés comme sur l'affiche. Moyen de les débloquer à trouver.
 - Pas retenues pour l'instant : thème de soirée choisi par l'admin, tartine du designer ou redessinée (Adrien garde la tartine actuelle, pistes dans `maquettes/`), étoiles au rythme de la musique, son d'annonce par attaque, couche de tension, podium de fin de soirée sur l'écran géant.
 
