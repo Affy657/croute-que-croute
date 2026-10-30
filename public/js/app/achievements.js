@@ -13,24 +13,24 @@ const EXTRAS = Object.keys(SPREADS).length - 1;
 const TOPPINGS = [[1, "top1"], [FRIDGE, "top4"], [EXTRAS, "topAll"]];
 
 export const ACHIEVEMENTS = [
-  { id: "t10", family: "time", name: "Premiers pas", desc: "Tenir 10 s", joke: "Un petit pas pour la tartine, un grand pas pour la boulangerie." },
-  { id: "t20", family: "time", name: "Bien beurrée", desc: "Tenir 20 s", joke: "Côté beurre vers le haut, pour une fois." },
-  { id: "t30", family: "time", name: "Croustillante", desc: "Tenir 30 s", joke: "Ça croustille sous la pression." },
-  { id: "t45", family: "time", name: "Dorée à point", desc: "Tenir 45 s", joke: "Le grille-pain est fier de toi." },
-  { id: "t60", family: "time", name: "Une minute de gloire", desc: "Tenir 60 s", joke: "Andy Warhol en promettait 15. Pour une tartine, une suffit." },
-  { id: "t80", family: "time", name: "Tartine de légende", desc: "Tenir 80 s", joke: "Les biscottes racontent ton histoire le soir, au coin du grille-pain." },
-  { id: "near5", family: "play", name: "Ça passe", desc: "5 frôlés dans une partie", joke: "Ni vu ni connu. Enfin, un peu vu quand même." },
-  { id: "near20", family: "play", name: "Ça passe crème", desc: "20 frôlés dans une partie", joke: "La crème de la crème. Fraîche, bien sûr." },
-  { id: "allAttacks", family: "play", name: "Tout vu", desc: "Voir les " + LIVE.length + " attaques", joke: "Tu connais le tiroir à couverts mieux que ta grand-mère." },
-  { id: "top1", family: "topping", name: "Ça change du beurre", desc: "Gagner une garniture", joke: "Le beurre fait un peu la tête." },
-  { id: "top4", family: "topping", name: "Le frigo est plein", desc: "Gagner " + FRIDGE + " garnitures", joke: "Il reste juste un yaourt périmé au fond." },
-  { id: "topAll", family: "topping", name: "Tout le frigo", desc: "Gagner les " + EXTRAS + " garnitures", joke: "Même la sardine. Surtout la sardine." },
-  { id: "runs10", family: "loyal", name: "Dix tartines", desc: "Jouer 10 parties", joke: "Le paquet de pain de mie y est passé." },
-  { id: "runs50", family: "loyal", name: "Boulangerie", desc: "Jouer 50 parties", joke: "À ce rythme, tu devrais ouvrir boutique." },
-  { id: "runs100", family: "loyal", name: "Accro à la croûte", desc: "Jouer 100 parties", joke: "On ne juge pas. Enfin, un tout petit peu." },
-  { id: "events3", family: "loyal", name: "Fidèle du Space", desc: "Jouer à 3 soirées", joke: "Le Space devrait te faire une carte de fidélité." },
-  { id: "top10", family: "loyal", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée", joke: "Dix sur dix. Enfin, dans les dix." },
-  { id: "eventWin", family: "loyal", name: "Tartine d'or", desc: "Finir 1er d'une soirée", joke: "Tu gagnes le droit d'en parler toute la semaine." },
+  { id: "t10", family: "time", name: "Premiers pas", desc: "Tenir 10 s" },
+  { id: "t20", family: "time", name: "Bien beurrée", desc: "Tenir 20 s" },
+  { id: "t30", family: "time", name: "Croustillante", desc: "Tenir 30 s" },
+  { id: "t45", family: "time", name: "Dorée à point", desc: "Tenir 45 s" },
+  { id: "t60", family: "time", name: "Une minute de gloire", desc: "Tenir 60 s" },
+  { id: "t80", family: "time", name: "Tartine de légende", desc: "Tenir 80 s" },
+  { id: "near5", family: "play", name: "Ça passe", desc: "5 frôlés dans une partie" },
+  { id: "near20", family: "play", name: "Ça passe crème", desc: "20 frôlés dans une partie" },
+  { id: "allAttacks", family: "play", name: "Tout vu", desc: "Voir les " + LIVE.length + " attaques" },
+  { id: "top1", family: "topping", name: "Ça change du beurre", desc: "Gagner une garniture" },
+  { id: "top4", family: "topping", name: "Le frigo est plein", desc: "Gagner " + FRIDGE + " garnitures" },
+  { id: "topAll", family: "topping", name: "Tout le frigo", desc: "Gagner les " + EXTRAS + " garnitures" },
+  { id: "runs10", family: "loyal", name: "Dix tartines", desc: "Jouer 10 parties" },
+  { id: "runs50", family: "loyal", name: "Boulangerie", desc: "Jouer 50 parties" },
+  { id: "runs100", family: "loyal", name: "Accro à la croûte", desc: "Jouer 100 parties" },
+  { id: "events3", family: "loyal", name: "Fidèle du Space", desc: "Jouer à 3 soirées" },
+  { id: "top10", family: "loyal", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée" },
+  { id: "eventWin", family: "loyal", name: "Tartine d'or", desc: "Finir 1er d'une soirée" },
   { id: "express", family: "secret", name: "Tartinée express", desc: "Se faire tartiner en moins de 2 s", hint: "il y a des records qu'on ne cherche pas." },
   { id: "zen", family: "secret", name: "En détente", desc: "Rester 5 s sans bouger", hint: "le meilleur coup, c'est parfois de ne rien faire." },
   { id: "round", family: "secret", name: "Chiffre rond", desc: "Finir pile sur une seconde ronde", hint: "les comptes ronds font les bons amis." },
@@ -170,7 +170,6 @@ function item(a, since) {
     name.append(" ", tag);
   }
   text.append(name, line("sub", hidden ? "Indice : " + a.hint : a.desc));
-  if (at && a.joke) text.append(line("ach-joke", "« " + a.joke + " »"));
   row.append(star, text);
   return row;
 }
