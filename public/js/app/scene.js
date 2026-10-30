@@ -8,7 +8,7 @@ const POP_LIFE = 0.7, PUCK_R = 30, PUCK_LIFT = 110, GRAB_S = 0.6, FIELD_FADE = 5
 const SKY_SPEED = 20, SKY_GAP = 0.5, SKY_TOP = 0.3, SKY_LOOP = SKY_GAP * BODIES.length;
 const HEAT_EASE = 0.7, HEAT_LOW = 0.45, HEAT_FIELD = 0.85;
 const HINT = "Pose ton doigt où tu veux";
-const COMET_S = 7, COMET_SIZE = 0.2, COMET_TAIL = 0.55, COMET_ALPHA = 0.8;
+const COMET_S = 9, COMET_SIZE = 0.13, COMET_TAIL = 0.35, COMET_ALPHA = 0.7;
 const OFTEN = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("etoiles") === "souvent";
 const COMET_FIRST = OFTEN ? [1, 2] : [120, 300], COMET_GAP = OFTEN ? [4, 6] : [300, 600];
 const HEAT_RGB = HEAT.map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
@@ -123,7 +123,7 @@ export function createScene(canvas, overlay) {
     ctx.save();
     ctx.globalAlpha = COMET_ALPHA;
     ctx.lineCap = "round";
-    for (const [w, a] of [[0.05, 0.35], [0.018, 0.8]]) {
+    for (const [w, a] of [[0.032, 0.35], [0.012, 0.8]]) {
       const g = ctx.createLinearGradient(x, y, tx, ty);
       g.addColorStop(0, "rgba(255, 207, 51, " + a + ")");
       g.addColorStop(1, "rgba(255, 207, 51, 0)");
@@ -153,6 +153,7 @@ export function createScene(canvas, overlay) {
       ctx.fillStyle = C.void;
     }
     ctx.fillRect(0, 0, W, H);
+    if (comet) drawComet();
     drawSky(clock);
     ctx.fillStyle = C.ink;
     for (const s of stars) {
@@ -161,7 +162,6 @@ export function createScene(canvas, overlay) {
       ctx.fillRect(s.x, s.y, sz, sz);
     }
     ctx.globalAlpha = 1;
-    if (comet) drawComet();
   }
 
   function drawEffects() {
