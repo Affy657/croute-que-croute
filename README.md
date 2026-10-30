@@ -40,10 +40,10 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 | Mur | 12 s | Rangée serrée avec un seul trou d'environ 100 px |
 | Rouleau | 16 s | Traverse lentement par un côté. 2 à la suite dès 36 s, 3 dès 60 s |
 | Éventail | 22 s | 3 couteaux en cône vers la tartine, 4 dès 38 s, 5 dès 54 s |
-| Croix | 30 s | 4 couteaux en même temps vers la tartine |
-| Murs en série | 36 s | 2 murs d'affilée du même côté ou du haut (3 dès 60 s), trous d'environ 120 px. Chaque mur n'est annoncé que juste avant d'arriver. Joue seul |
+| Murs en série | 28 s | 2 murs d'affilée du même côté ou du haut (3 dès 60 s), trous d'environ 120 px. Chaque mur n'est annoncé que juste avant d'arriver. Joue seul |
+| Croix | 32 s | 4 couteaux en même temps vers la tartine |
 | Couteau à pain | 38 s | Rebondit une fois sur un bord |
-| Pluie en biais | 48 s | 7 puis 8 fourchettes en diagonale, qui balaient l'écran d'un côté à l'autre |
+| Pluie en biais | 45 s | 6 à 8 fourchettes en diagonale, qui balaient l'écran d'un côté à l'autre |
 | Double pluie | 54 s | 5 à 9 fourchettes, à gauche et à droite en alternance |
 
 - Vitesse des couverts : × (1 + t / 50), plafond × 2,6 à 80 s. Délai entre deux attaques : 1,25 s moins 0,016 × t, 0,42 s au plus court (dès 52 s).
