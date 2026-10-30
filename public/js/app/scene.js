@@ -14,7 +14,7 @@ const COMET_S = 9, COMET_SIZE = 0.13, COMET_TAIL = 0.35, COMET_ALPHA = 0.7;
 const OFTEN = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("etoiles") === "souvent";
 const COMET_FIRST = OFTEN ? [1, 2] : [30, 180], COMET_GAP = OFTEN ? [4, 6] : [120, 240];
 const ODD = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("planetes") === "souvent";
-const QUALITY = [2, 1.5, 1.25, 1], SLOW_MS = 24, SAMPLE = 90, SETTLE = 60, GAP_MS = 250;
+const QUALITY = [2, 1.5, 1.25, 1], SLOW_MS = 20, SAMPLE = 90, SETTLE = 60, GAP_MS = 250;
 const HEAT_RGB = HEAT.map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
 
 function pickRare(last) {
