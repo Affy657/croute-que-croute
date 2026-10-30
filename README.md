@@ -17,10 +17,10 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - La partie démarre avec la tartine là où elle volait sur l'accueil. Sur téléphone, un rond pulse en bas (`PUCK_LIFT` dans `scene.js`) pour montrer où poser le doigt.
 - Rien n'arrive par le bas (le doigt cacherait les attaques). Les attaques de côté partent des 60 % du haut.
 - Chaque attaque est annoncée 0,45 à 0,9 s avant par une pastille au bord de l'écran, jamais posée sur le chrono.
-- La difficulté monte jusqu'à 60 s, puis plus rien ne change. Le plafond est volontairement bas : au-delà, c'est l'endurance qui départage (voir Équilibrage).
+- Le rythme des attaques plafonne à 60 s, la vitesse des couverts à 75 s, puis plus rien ne change. Le plafond est volontairement bas : au-delà, c'est l'endurance qui départage (voir Équilibrage).
 - Zones de touche : la tartine est un cercle de 26 px, chaque arme est faite de gélules (`parts` dans `projectiles.js`). « Frôlé » quand la tartine passe à moins de 11 px.
 - Frôlés : « Frôlé x2 », « x3 »… quand ils s'enchaînent à moins de 1,5 s, avec un son plus aigu à chaque cran (6 au plus). Chaque frôlé laisse une entaille dans la croûte, du côté où le couvert est passé (12 au plus). Aucun effet sur le score ni sur la zone de touche.
-- Effets : le chrono flashe en jaune toutes les 10 s, les couverts rapides (dès 380 px/s) laissent une traînée, et le fond passe du bleu nuit au violet vers 30 s puis au rouge sombre à 60 s, au rythme de la vitesse des couverts (`HEAT` dans `palette.js`).
+- Effets : le chrono flashe en jaune toutes les 10 s, les couverts rapides (dès 380 px/s) laissent une traînée, et le fond passe du bleu nuit au violet vers 40 s puis au rouge sombre à 75 s, au rythme de la vitesse des couverts (`HEAT` dans `palette.js`).
 - Planètes du fond (`BODIES` dans `planets.js`, couleurs dans `SKY` de `palette.js`) : planète violette à anneau, lunes, planète pancake et son pot de confiture, planète verte à anneau, planète enceintes, astéroïde. Elles défilent en boucle.
 - Planètes rares (`RARE` dans `planets.js`) : Tung Tung Tung Sahur qui danse avec sa batte sur l'astéroïde (trois coups, puis une pause), lune en fromage (jaune beurre, trous creusés et entailles sur le bord) dont une souris grignote le bord, grille-pain rond en chrome (reflets, fentes rougeoyantes, molette, levier) dont les deux tartines (la silhouette de celle du jeu) sautent toutes les 6 s. Un tour sur trois (`PASSES` dans `scene.js`), l'astéroïde laisse sa place à une seule d'entre elles, tirée au hasard, jamais la même deux fois de suite. En local, `?planetes=souvent` démarre juste avant.
 - Étoile filante : de temps en temps (première entre 30 s et 3 min après l'ouverture du jeu, puis toutes les 2 à 4 min, menu compris), une petite canette traverse le fond en 9 s, loin derrière les planètes et les étoiles, avec une traînée dorée, en tournant doucement : 8.6 Original (bleu nuit, loup bleu, gros 8.6 blanc au point rouge) ou Amsterdam Maximator (vert, armoiries, voilier blanc à coque dorée), redessinées d'après les photos produit. Attention, certaines photos de magasin sont délavées : vérifier les couleurs sur l'image seule. Dessinée comme les planètes (sans contour, opaque, seule la traînée est transparente) pour qu'on ne la prenne pas pour une arme. Canettes dans `planets.js` (`CANS`), passage dans `scene.js` (`COMET_*`). En local, `?etoiles=souvent` la fait passer toutes les 4 à 6 s (pour tester seulement : sans ce lien, le vrai rythme).
@@ -35,19 +35,19 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 | Attaque | Dès | À retenir |
 |---|---|---|
 | Couteau visé | 0 s | Vise la tartine au moment de l'annonce. Tourne 1 fois sur 3 dès 25 s |
-| Pluie de fourchettes | 4 s | 4 fourchettes, 1 de plus toutes les 15 s (8 dès 60 s) |
+| Pluie de fourchettes | 3 s | 4 fourchettes, 1 de plus toutes les 15 s (8 dès 60 s) |
 | Hachoir | 8 s | Tombe très vite au-dessus de la tartine, annonce longue (0,9 s). 2 à la suite dès 30 s, 3 dès 55 s, dans des colonnes voisines |
 | Mur | 12 s | Rangée serrée avec un seul trou d'environ 100 px |
 | Rouleau | 16 s | Traverse lentement par un côté. 2 à la suite dès 36 s, 3 dès 60 s |
 | Éventail | 22 s | 3 couteaux en cône vers la tartine, 4 dès 38 s, 5 dès 54 s |
-| Murs en série | 28 s | 2 murs d'affilée du même côté ou du haut (3 dès 60 s), trous d'environ 120 px, décalés de 140 px au plus d'un mur à l'autre. Chaque mur n'est annoncé que juste avant d'arriver. Joue seul : l'attaque suivante part quand le dernier mur a fait 40 % de sa traversée |
+| Murs en série | 28 s | 2 murs d'affilée du même côté ou du haut (3 dès 60 s), trous d'environ 120 px, décalés de 140 px au plus d'un mur à l'autre. Chaque mur n'est annoncé que juste avant d'arriver. Joue seul : l'attaque suivante part quand le dernier mur a fait 20 % de sa traversée |
 | Croix | 32 s | 4 couteaux en même temps vers la tartine |
 | Couteau à pain | 38 s | Rebondit une fois sur un bord |
 | Pluie en biais | 45 s | 7 à 8 fourchettes en diagonale, qui balaient l'écran d'un côté à l'autre |
 | Double pluie | 54 s | 8 fourchettes (9 dès 60 s), à gauche et à droite en alternance |
 
-- Vitesse des couverts : × (1,4 + t / 75), plafond × 2,2 à 60 s (`SPEED_START`, `SPEED_RAMP`, `SPEED_MAX` dans `field.js`). Délai entre deux attaques : 0,95 s moins 0,0067 × t, 0,55 s au plus court dès 60 s (`GAP_*` dans `sim.js`). Courbe du 30/10/2026, choisie avec le robot « humain » (voir Équilibrage). Avant : × 1 à × 2,6 à 80 s, et 1,25 s à 0,42 s dès 52 s. Début trop calme, mur de difficulté entre 40 et 60 s, puis un plafond si haut que la chance décidait.
-- Jamais plus de 3 fois la même attaque d'affilée, sauf si c'est la seule possible (couteau visé avant 4 s). Croix, murs en série et double pluie ne sortent jamais deux fois de suite. Jamais de mur juste après des murs en série, ni l'inverse (même `kin`). Pas de mur ni de murs en série tant qu'un rouleau est annoncé ou à l'écran, et l'inverse (`shuns`) : un rouleau dans le trou d'un mur le bouchait presque. Si les murs en série sont tirés pendant une annonce, ils attendent qu'elle soit partie (rien d'autre n'est annoncé entre-temps), et l'attaque suivante ne part que quand leur dernier mur a fait 40 % de sa traversée (`CALM_PASS` dans `sim.js`). Ça laisse environ 1,2 s sans nouvel objet après le dernier mur, contre 0,6 à 0,75 s entre deux attaques normales. Avant le 30/10/2026, on attendait qu'il ait quitté l'écran : environ 2 s de vide, jugé trop long par Adrien. Avant aussi, les murs en série étaient écartés à chaque annonce en cours, et après 60 s ils ne sortaient presque plus.
+- Vitesse des couverts : × (1,4 + t / 75), plafond × 2,4 à 75 s (`SPEED_START`, `SPEED_RAMP`, `SPEED_MAX` dans `field.js`). Délai entre deux attaques : 0,95 s moins 0,0067 × t, 0,55 s au plus court dès 60 s (`GAP_*` dans `sim.js`). Courbe du 30/10/2026, choisie avec le robot « humain » (voir Équilibrage), puis plafond de vitesse monté de 2,2 à 2,4 par Adrien après l'avoir testée : trop facile après 60 s. Avant : × 1 à × 2,6 à 80 s, et 1,25 s à 0,42 s dès 52 s. Début trop calme, mur de difficulté entre 40 et 60 s, puis un plafond si haut que la chance décidait.
+- Jamais plus de 3 fois la même attaque d'affilée, sauf si c'est la seule possible (couteau visé avant 3 s). Croix, murs en série et double pluie ne sortent jamais deux fois de suite. Jamais de mur juste après des murs en série, ni l'inverse (même `kin`). Pas de mur ni de murs en série tant qu'un rouleau est annoncé ou à l'écran, et l'inverse (`shuns`) : un rouleau dans le trou d'un mur le bouchait presque. Si les murs en série sont tirés pendant une annonce, ils attendent qu'elle soit partie (rien d'autre n'est annoncé entre-temps), et l'attaque suivante ne part que quand leur dernier mur a fait 20 % de sa traversée (`CALM_PASS` dans `sim.js`), avec une « durée » (`cost`) de 1. Il reste environ 1 s sans nouvel objet après le dernier mur entre 28 et 60 s, puis 0,86 s, à peine plus que l'écart normal (0,8 à 0,9 s). Historique du 30/10/2026, Adrien trouvant l'attente trop longue à chaque fois : d'abord jusqu'à ce que le dernier mur quitte l'écran (environ 2 s de vide), puis 40 % de sa traversée avec une durée de 4 (1,2 à 1,8 s, la durée de 4 imposait elle-même l'attente avant 60 s). Avant aussi, les murs en série étaient écartés à chaque annonce en cours, et après 60 s ils ne sortaient presque plus.
 - 1 attaque à couteaux sur 10 a un couteau garni (voir Garnitures).
 - Fouet mis de côté (jugé trop facile) : `lab: true` dans `attacks.js` et `projectiles.js`, visible seulement dans l'admin. Enlever `lab` pour le remettre.
 - Couloir (deux murs de deux côtés, 46 s) mis de côté de la même façon : trop proche des murs en série, on pouvait le prendre pour un bug.
@@ -59,7 +59,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Avant chaque attaque, le solveur simule les 3,5 s suivantes (jusqu'à 4,5 s si l'attaque dure plus longtemps, comme les murs en série) avec tout ce qui est en vol. S'il ne trouve pas de chemin pour la tartine, en comptant 0,1 s de réaction, l'attaque est remplacée (5 essais au plus).
 - Le modèle est prudent (grille de 12 px, doigt à 360 px/s au plus, marge de 11 px autour des couverts) : si le robot passe, un humain peut passer.
 - Un geste très rapide ne fait pas traverser un couvert : le trajet de la tartine est vérifié tous les 6 px. Un déplacement absurde (infini, ou plus de 10 000 px d'un coup) est borné pour ne pas figer le jeu.
-- `npm test` fait jouer le robot 100 parties de 150 s : 0 mort attendu. À relancer après chaque changement du jeu.
+- `npm test` fait jouer le robot 100 parties de 150 s : 0 mort attendu. À relancer après un gros changement des règles, pas pour un petit réglage.
 
 ## Équilibrage
 
@@ -77,7 +77,7 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 |---|---|---|
 | `npm run equilibrage` | 80 joueurs du niveau 0 au niveau 1, 5 parties chacun, sur deux séries de tirages : part du niveau dans le score, surprises, médianes par niveau, risque de mort par tranche de 20 s | environ 10 min pour deux versions |
 | `npm run equilibrage:attaques` | Morts pour 100 lancées de chaque attaque, pour un débutant (niveau 0,1), un moyen (0,5) et un fort (0,9). Murs en série séparés entre haut et côtés | environ 10 min |
-| `npm run equilibrage:vides` | Temps sans nouvel objet après des murs en série, comparé à l'écart normal entre deux attaques | 1 min |
+| `npm run equilibrage:vides` | Temps sans nouvel objet avant et après des murs en série, comparé à l'écart normal entre deux attaques | 1 min |
 | `npm run equilibrage:invariants` | Robots immobile, nerveux, collé aux bords et parfait : valeurs impossibles, couverts oubliés, règles de tirage, couvert traversé sans toucher. Sort en erreur au moindre problème | 1 à 3 min |
 
 **Lire les chiffres**
@@ -93,7 +93,7 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 4. Si c'est mieux, reporter le changement dans `public/js/game`, puis `npm test` (0 mort) et `npm run equilibrage:invariants`.
 - Pour comparer avec une ancienne version : copier ses 5 fichiers de `public/js/game` depuis git dans `.equilibrage/<nom>` (`git show <commit>:public/js/game/sim.js > .equilibrage/<nom>/sim.js`, pareil pour les autres).
 
-**Quand refaire un point** : après une nouvelle attaque, un changement de vitesse, de délai ou de calendrier, et après chaque soirée, en comparant avec le classement réel.
+**Quand refaire un point** : seulement de temps en temps, quand beaucoup de règles changent ou quand la progression paraît mal dosée en voyant les joueurs jouer. Pas à chaque modification, ni pour un petit réglage (choix d'Adrien).
 
 **Point du 30/10/2026** : nouvelle courbe choisie par Adrien
 - Retour des premiers joueurs : le début est trop calme, et le record en prod (82,8 s) tient surtout de la chance, puisque 80 s est à peine le moment où le niveau se stabilise.
