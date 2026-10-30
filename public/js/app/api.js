@@ -6,10 +6,12 @@ const SEND_TRIES = 3, SEND_GAP_MS = 1500, WAIT_GAP_MS = 5000, WAIT_MS = 120000, 
 
 export const net = { token: store.get(KEYS.playerToken), board: null, offset: 0, online: true, updatePending: false };
 let localBest = parseInt(store.get(KEYS.localBest) || "0", 10) || 0;
-const listeners = { board: [], update: [] };
+let boardAsked = 0, boardShown = 0;
+const listeners = { board: [], update: [], result: [] };
 
 export const on = (name, fn) => listeners[name].push(fn);
-const emit = (name) => listeners[name].forEach((fn) => fn());
+const emit = (name, value) => listeners[name].forEach((fn) => fn(value));
+const settled = (status) => status && status < 500 && status !== 408 && status !== 429;
 
 export async function call(method, path, body, timeoutMs) {
   const headers = { "content-type": "application/json", "x-app-version": VERSION };
@@ -73,8 +75,11 @@ export function saveLocalBest(score) {
 }
 
 export async function refreshBoard() {
+  const asked = ++boardAsked, token = net.token;
   try {
     const b = await call("GET", "/api/board");
+    if (asked < boardShown || token !== net.token) return;
+    boardShown = asked;
     net.offset = b.now - Date.now();
     net.online = true;
     if (net.token && !b.me) setToken(null);
@@ -156,16 +161,17 @@ async function send(runId, score, onWait, since = Date.now()) {
       const r = await call("POST", "/api/runs/" + runId, { score }, SEND_TIMEOUT_MS);
       clearPending(runId);
       applyResult(r);
+      emit("result", r);
       return r;
     } catch (e) {
-      if (e.status) {
+      if (settled(e.status)) {
         clearPending(runId);
         return { error: e.message };
       }
       if (i === SEND_TRIES - 1 && onWait) onWait();
       if (i >= SEND_TRIES - 1 && Date.now() - since > WAIT_MS) {
         clearPending(runId);
-        return { error: "Hors ligne : score non envoyé" };
+        return { error: e.status ? e.message : "Hors ligne : score non envoyé" };
       }
       await new Promise((ok) => setTimeout(ok, i < SEND_TRIES - 1 ? SEND_GAP_MS : WAIT_GAP_MS));
     }

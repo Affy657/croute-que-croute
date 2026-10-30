@@ -3,6 +3,7 @@ const SENS = 1.8;
 export function createInput(canvas, { active, scale }) {
   const pend = { x: 0, y: 0 };
   const finger = { held: false, touch: false, x: 0, y: 0, at: 0 };
+  const spare = new Map();
   let drag = null, mouse = null;
 
   const begin = (e) => {
@@ -11,20 +12,35 @@ export function createInput(canvas, { active, scale }) {
   };
 
   const end = (e) => {
-    if (drag && e.pointerId === drag.id) {
+    spare.delete(e.pointerId);
+    if (!drag || e.pointerId !== drag.id) return;
+    const next = spare.entries().next().value;
+    if (next) {
+      const [id, p] = next;
+      spare.delete(id);
+      drag = { id, lx: p.x, ly: p.y };
+      Object.assign(finger, { x: p.x, y: p.y });
+    } else {
       drag = null;
       finger.held = false;
     }
   };
 
   canvas.addEventListener("pointerdown", (e) => {
-    if (active() && !drag) {
-      begin(e);
-      e.preventDefault();
-    }
+    if (!active()) return;
+    if (!drag) begin(e);
+    else if (e.pointerType !== "mouse") spare.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    else return;
+    e.preventDefault();
   });
 
   window.addEventListener("pointermove", (e) => {
+    const s = spare.get(e.pointerId);
+    if (s) {
+      s.x = e.clientX;
+      s.y = e.clientY;
+      return;
+    }
     const k = SENS / scale();
     if (e.pointerType === "mouse" && !drag) {
       if (active() && mouse) {
@@ -53,10 +69,12 @@ export function createInput(canvas, { active, scale }) {
     finger,
     reset() {
       drag = null;
+      spare.clear();
       pend.x = 0;
       pend.y = 0;
       finger.held = false;
     },
+    pending: () => pend.x !== 0 || pend.y !== 0,
     take() {
       const d = { x: pend.x, y: pend.y };
       pend.x = 0;

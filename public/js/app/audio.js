@@ -196,9 +196,13 @@ function ensureContext() {
   }
 }
 
+const wakeContext = () => {
+  if (ctx && ctx.state !== "running" && ctx.state !== "closed") ctx.resume().catch(() => {});
+};
+
 export function unlockAudio() {
   ensureContext();
-  if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
+  wakeContext();
   if (!el) return;
   if (running) {
     if (prefs.music && el.paused) playAt(runTime);
@@ -249,6 +253,7 @@ export function pauseForBackground(hidden) {
     stopFade();
     el.pause();
   } else if (running && prefs.music) {
+    wakeContext();
     playAt(runTime);
   }
 }
@@ -286,7 +291,7 @@ export function setLevel(kind, value) {
 export function previewMusic() {
   if (!el || running || !prefs.music) return;
   ensureContext();
-  if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
+  wakeContext();
   playAt(PREVIEW_AT);
   clearTimeout(previewTimer);
   previewTimer = setTimeout(() => { if (!running) fadeOut(); }, PREVIEW_MS);

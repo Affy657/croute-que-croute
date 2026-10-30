@@ -2,7 +2,7 @@ import { json, fail, readJson, clientIp, outdated, updateRequired, tooFast, allo
 import { randomToken, sha256, matchesSecret } from "../security";
 import { cleanPseudo, pseudoKey, cleanClientId } from "../validate";
 import {
-  events, openEventNow, eventById, findProfile, entryBest, generalRanking, generalCount, generalRank, eventRanking, forgetCaches, rankIn, rivalIn,
+  events, openEventNow, eventById, findProfile, entryBest, generalRanking, generalCount, generalRank, eventRanking, renameCached, rankIn, rivalIn,
   promoteGeneral, promoteEvent,
   type EventRow, type Profile, type Ranked,
 } from "../db";
@@ -24,7 +24,7 @@ interface RunRow {
 }
 
 const eventInfo = (e: EventRow | null, status: string) =>
-  e ? { name: e.name, opensAt: e.opens_at, closesAt: e.closes_at, status } : null;
+  e ? { name: e.name, opensAt: e.opens_at, closesAt: e.closes_at, finalAt: e.closes_at + GRACE_MS, status } : null;
 
 const topOf = (list: Ranked[], me: Profile | null) =>
   list.slice(0, TOP).map((row, i) => ({ rank: i + 1, pseudo: row.pseudo, best: row.best, me: me?.id === row.id }));
@@ -99,11 +99,12 @@ export async function feed({ env }: Ctx) {
 
 export async function join({ req, env }: Ctx) {
   if (outdated(req, env)) return updateRequired();
-  if (!(await allowed(env.JOIN_LIMIT, "join:" + clientIp(req)))) return tooFast();
   const body = await readJson(req);
   const pseudo = cleanPseudo(body.pseudo);
   if (!pseudo) return fail(400, BAD_PSEUDO);
   const clientId = cleanClientId(body.clientId);
+  const ip = clientIp(req);
+  if (!(await allowed(env.JOIN_LIMIT, "join:" + (clientId ?? ip))) || !(await allowed(env.JOIN_IP_LIMIT, "join:" + ip))) return tooFast();
   const key = pseudoKey(pseudo);
   const taken = await env.DB.prepare("SELECT id, pseudo, client_id FROM profiles WHERE pseudo_key = ?")
     .bind(key)
@@ -141,7 +142,7 @@ export async function rename({ req, env }: Ctx) {
     if (String(e).includes("UNIQUE")) return fail(409, "Ce pseudo est déjà pris.");
     throw e;
   }
-  forgetCaches();
+  renameCached(me.id, pseudo);
   return json({ pseudo });
 }
 
@@ -220,9 +221,13 @@ export async function finishRun({ req, env, params }: Ctx) {
       env.DB.prepare(
         "INSERT INTO entries (event_id, player_id, run_count) VALUES (?, ?, 1) ON CONFLICT (event_id, player_id) DO UPDATE SET run_count = run_count + 1",
       ).bind(eventId, me.id),
-      env.DB.prepare("UPDATE entries SET best = ?1, best_at = ?2, best_elapsed = ?3 WHERE event_id = ?4 AND player_id = ?5 AND best < ?1")
-        .bind(score, now, elapsed, eventId, me.id),
     );
+    if (!me.banned) {
+      statements.push(
+        env.DB.prepare("UPDATE entries SET best = ?1, best_at = ?2, best_elapsed = ?3 WHERE event_id = ?4 AND player_id = ?5 AND best < ?1")
+          .bind(score, now, elapsed, eventId, me.id),
+      );
+    }
   }
   const results = await env.DB.batch(statements);
   const improved = !me.banned && results[1].meta.changes > 0;

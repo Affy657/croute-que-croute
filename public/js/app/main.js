@@ -34,7 +34,7 @@ const scene = createScene(canvas, document.getElementById("fx"));
 let sim = createSim();
 const S = {
   mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, train: null, t0: 0,
-  newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general",
+  newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general", held: false,
   toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35, scars: [], spread: chosen(), gear: chosenGear() }, gotToppings: [], menuY: FH * 0.55, menuAt: 0
 };
 let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, lastShown = "";
@@ -138,7 +138,7 @@ function start(train = null) {
   if (api.net.updatePending && api.applyUpdate()) return false;
   const t0 = train ? train.from : 0, y = S.mode === "menu" ? S.toast.y : S.menuY;
   sim = createSim(Math.random, train ? { only: train.id, t0, y } : { y });
-  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.isOpen() ? "event" : "general" });
+  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.isOpen() ? "event" : "general", held: false });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0, scars: [] });
   scene.clear();
   S.run = train ? null : api.startRun();
@@ -243,7 +243,6 @@ function showOver() {
     mine.then((r) => {
       if (S.submit !== mine || S.mode !== "over") return;
       setText(ui.overNote, r.error || "");
-      ach.afterSubmit(r, S.scope);
       const now = api.standing(S.scope);
       if (r.error) return;
       renderOverStats(S.newBest ? 0 : now.best, now.rank, now.count);
@@ -416,6 +415,13 @@ function update(dt) {
     }
     return;
   }
+  if (S.held) {
+    if (!input.finger.held && !input.pending()) return;
+    S.held = false;
+    input.take();
+    ui.holdHint.hidden = true;
+    audio.pauseForBackground(false);
+  }
   const px = sim.state.toast.x, py = sim.state.toast.y;
   const move = input.take();
   const events = sim.step(dt, move.x, move.y);
@@ -431,14 +437,14 @@ function update(dt) {
 
 let last = performance.now(), acc = 0;
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000);
+  const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
   acc += dt;
   while (acc >= STEP) {
     update(STEP);
     acc -= STEP;
   }
-  scene.render({ clock: S.clock, world: sim.state, toast: S.mode === "over" ? null : S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null, dying: S.mode === "dying" });
+  if (!infoOpen && !settingsOpen && !achOpen) scene.render({ clock: S.clock, world: sim.state, toast: S.mode === "over" ? null : S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null, dying: S.mode === "dying" });
   if (playing()) {
     const cs = Math.floor(elapsed() * 100), s = fmtCs(cs);
     if (s !== lastShown) {
@@ -520,12 +526,9 @@ ui.joinForm.addEventListener("submit", async (e) => {
 });
 
 window.addEventListener("keydown", (e) => {
-  if (e.target instanceof Element && e.target.closest("input")) return;
+  if (e.target instanceof Element && e.target.closest("input, button, select, textarea, a")) return;
   if (e.code !== "Space" && e.code !== "Enter") return;
-  if (S.mode === "menu" || S.mode === "over") {
-    e.preventDefault();
-    start(replay());
-  }
+  if ((S.mode === "menu" || S.mode === "over") && start(replay())) e.preventDefault();
 });
 
 let brandTaps = [];
@@ -539,11 +542,16 @@ for (const name of ["pointerup", "touchend", "click", "keydown"]) {
   document.addEventListener(name, audio.unlockAudio, { passive: true });
 }
 document.addEventListener("visibilitychange", () => {
-  audio.pauseForBackground(document.hidden);
+  if (document.hidden && S.mode === "play") {
+    S.held = true;
+    ui.holdHint.hidden = false;
+  }
+  audio.pauseForBackground(document.hidden || S.held);
   if (!document.hidden && S.mode !== "play") api.refreshBoard();
 });
 
 api.on("board", renderAll);
+api.on("result", ach.afterSubmit);
 api.on("board", () => ach.onBoard(api.net.board));
 onTopping((kind) => {
   S.toast.spread = kind;
@@ -567,7 +575,7 @@ api.on("update", () => {
 audio.onAudioChange(() => renderControls(playing()));
 onInstallChange(maybeSuggest);
 
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=" + encodeURIComponent(VERSION)).catch(() => {});
 
 setInterval(() => {
   const open = api.isOpen();

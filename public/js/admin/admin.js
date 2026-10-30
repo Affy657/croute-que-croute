@@ -1,6 +1,7 @@
 import { store as storage, KEYS } from "../shared/store.js";
 import { fmtCs, clock } from "../shared/format.js";
 import { prepareSfx, previewSfx } from "../app/audio.js";
+import { VERSION } from "../version.js";
 
 const $ = (id) => document.getElementById(id);
 const REFRESH_MS = 10000;
@@ -16,6 +17,7 @@ let token = store.get();
 let me = null;
 let data = null;
 let timer = null;
+let retry = null;
 let scope = "event";
 const STATUS = { open: "Soirée en cours", upcoming: "Prochaine soirée", closed: "Dernière soirée" };
 
@@ -62,7 +64,26 @@ function signOut() {
   me = null;
   store.set(null);
   clearInterval(timer);
+  clearTimeout(retry);
   show("login");
+}
+
+function onSubmit(id, fn) {
+  const form = $(id);
+  let busy = false;
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (busy) return;
+    busy = true;
+    const buttons = form.querySelectorAll("button");
+    for (const b of buttons) b.disabled = true;
+    try {
+      await fn();
+    } finally {
+      busy = false;
+      for (const b of buttons) b.disabled = false;
+    }
+  });
 }
 
 function cell(tag, cls, text) {
@@ -185,6 +206,8 @@ async function boot() {
     if (!token) return;
     show("app");
     say($("playersMsg"), e.message, true);
+    clearTimeout(retry);
+    retry = setTimeout(boot, REFRESH_MS);
     return;
   }
   $("who").textContent = me.name + ", " + (me.role === "owner" ? "propriétaire" : "admin");
@@ -198,8 +221,7 @@ async function boot() {
   }, REFRESH_MS);
 }
 
-$("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+onSubmit("loginForm", async () => {
   try {
     const r = await call("POST", "/api/admin/login", { name: $("loginName").value, key: $("loginKey").value });
     token = r.token;
@@ -233,8 +255,7 @@ function showInvite(invite) {
   };
 }
 
-$("pasteForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+onSubmit("pasteForm", async () => {
   const text = $("pasteInvite").value.trim();
   const match = text.match(/invite=([a-f0-9]+)/i) || text.match(/^([a-f0-9]{32,})$/i);
   if (!match) {
@@ -272,8 +293,7 @@ for (const b of document.querySelectorAll(".scope")) {
   });
 }
 
-$("endForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+onSubmit("endForm", async () => {
   try {
     await call("PATCH", "/api/admin/events/current", {
       name: $("editName").value,
@@ -288,8 +308,7 @@ $("endForm").addEventListener("submit", async (e) => {
   }
 });
 
-$("eventForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+onSubmit("eventForm", async () => {
   try {
     await call("POST", "/api/admin/events", {
       name: $("eventNameInput").value,
@@ -307,8 +326,7 @@ $("eventForm").addEventListener("submit", async (e) => {
   }
 });
 
-$("inviteForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+onSubmit("inviteForm", async () => {
   try {
     const r = await call("POST", "/api/admin/invites", { name: $("inviteName").value, role: $("inviteRole").value });
     $("inviteUrl").value = r.url;
@@ -357,7 +375,7 @@ $("sfxList").replaceChildren(...Object.entries(SFX_LABELS).map(([name, label]) =
   return btn;
 }));
 
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=" + encodeURIComponent(VERSION)).catch(() => {});
 
 const invite = new URLSearchParams(location.hash.slice(1)).get("invite");
 if (invite) showInvite(invite);

@@ -28,7 +28,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Garnitures : 9 tartinades dessinées sur la tartine (`TOPPINGS` dans `sprites.js`) : confiture, pâte à tartiner, miel et son abeille, ketchup en zigzag, dentifrice rayé, œuf au plat, sardine entière, slime qui a un œil, pâtée pour chien tartinée avec son odeur et sa mouche. Beurre au départ. 1 attaque à couteaux sur 10 a un couteau garni : le frôler ou se faire tuer par lui débloque sa garniture (pas en entraînement). Une garniture gagnée est mise tout de suite. Dès la première, toucher la tartine de l'accueil ouvre des flèches pour changer (une astuce le dit tant qu'on ne l'a pas fait). Gardées sur le téléphone (`cv-garnitures`, `cv-garniture`, `cv-garniture-astuce`), purement visuel. En local, `?garnitures=toutes` dans l'adresse les débloque toutes.
 - Accessoires : 4 dessinés (`HATS` et `sideBoosters` dans `sprites.js`, noms dans `GEAR` de `palette.js`) : boosters sur les côtés comme l'affiche, chapeau de sorcière, bonnet de Noël, chapeau de pirate. Chacun est la récompense d'un succès (champ `gear`) : Dix tartines → bonnet, Croustillante → sorcière, Une minute de gloire → boosters, Dans le top → pirate. Un accessoire gagné est mis tout de suite, même en pleine partie. Choix dans les flèches de la tartine de l'accueil (2e ligne, « Sans accessoire » possible). Gardé sur le téléphone (`cv-accessoire`), purement visuel. En local, `?accessoires=tous` les débloque tous le temps de la page.
 - Fin de partie : « Encore 1,21 s pour passer X », X étant le joueur juste devant (soirée pendant une soirée, général sinon). Rien si tu es 1er, sans pseudo ou au-delà du 1 000e du général.
-- Entraînement : bouton « S'entraîner » sur chaque attaque d'Infos. Seulement cette attaque, à la vitesse de son heure d'arrivée. Ne compte ni au classement, ni pour les succès, ni pour le record.
+- Entraînement : bouton « S'entraîner » sur chaque attaque d'Infos. Seulement cette attaque : elle démarre à la vitesse de son heure d'arrivée, puis accélère comme en partie. Ne compte ni au classement, ni pour les succès, ni pour le record.
 
 ## Attaques
 
@@ -40,14 +40,14 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 | Mur | 12 s | Rangée serrée avec un seul trou d'environ 100 px |
 | Rouleau | 16 s | Traverse lentement par un côté. 2 à la suite dès 36 s, 3 dès 60 s |
 | Éventail | 22 s | 3 couteaux en cône vers la tartine, 4 dès 38 s, 5 dès 54 s |
-| Murs en série | 28 s | 2 murs d'affilée du même côté ou du haut (3 dès 60 s), trous d'environ 120 px. Chaque mur n'est annoncé que juste avant d'arriver. Joue seul |
+| Murs en série | 28 s | 2 murs d'affilée du même côté ou du haut (3 dès 60 s), trous d'environ 120 px. Chaque mur n'est annoncé que juste avant d'arriver. Joue seul : l'attaque suivante attend que le dernier mur ait quitté l'écran |
 | Croix | 32 s | 4 couteaux en même temps vers la tartine |
 | Couteau à pain | 38 s | Rebondit une fois sur un bord |
 | Pluie en biais | 45 s | 6 à 8 fourchettes en diagonale, qui balaient l'écran d'un côté à l'autre |
-| Double pluie | 54 s | 5 à 9 fourchettes, à gauche et à droite en alternance |
+| Double pluie | 54 s | 8 fourchettes (9 dès 60 s), à gauche et à droite en alternance |
 
 - Vitesse des couverts : × (1 + t / 50), plafond × 2,6 à 80 s. Délai entre deux attaques : 1,25 s moins 0,016 × t, 0,42 s au plus court (dès 52 s).
-- Jamais plus de 3 fois la même attaque d'affilée. Croix, murs en série et double pluie ne sortent jamais deux fois de suite. Jamais de mur juste après des murs en série, ni l'inverse (même `kin`). Pas de mur ni de murs en série tant qu'un rouleau est annoncé ou à l'écran, et l'inverse (`shuns`) : un rouleau dans le trou d'un mur le bouchait presque. Les murs en série ne partent que si aucune annonce n'est en cours, et laissent un long répit derrière eux.
+- Jamais plus de 3 fois la même attaque d'affilée. Croix, murs en série et double pluie ne sortent jamais deux fois de suite. Jamais de mur juste après des murs en série, ni l'inverse (même `kin`). Pas de mur ni de murs en série tant qu'un rouleau est annoncé ou à l'écran, et l'inverse (`shuns`) : un rouleau dans le trou d'un mur le bouchait presque. Les murs en série ne partent que si aucune annonce n'est en cours, et rien d'autre n'arrive tant que leur dernier mur n'a pas quitté l'écran.
 - 1 attaque à couteaux sur 10 a un couteau garni (voir Garnitures).
 - Fouet mis de côté (jugé trop facile) : `lab: true` dans `attacks.js` et `projectiles.js`, visible seulement dans l'admin. Enlever `lab` pour le remettre.
 - Couloir (deux murs de deux côtés, 46 s) mis de côté de la même façon : trop proche des murs en série, on pouvait le prendre pour un bug.
@@ -58,16 +58,18 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 
 - Avant chaque attaque, le solveur simule les 3,5 s suivantes (jusqu'à 4,5 s si l'attaque dure plus longtemps, comme les murs en série) avec tout ce qui est en vol. S'il ne trouve pas de chemin pour la tartine, en comptant 0,1 s de réaction, l'attaque est remplacée (5 essais au plus).
 - Le modèle est prudent (grille de 12 px, doigt à 360 px/s au plus, marge de 11 px autour des couverts) : si le robot passe, un humain peut passer.
+- Un geste très rapide ne fait pas traverser un couvert : le trajet de la tartine est vérifié tous les 6 px.
 - `npm test` fait jouer le robot 100 parties de 150 s : 0 mort attendu. À relancer après chaque changement du jeu.
 
 ## Soirées et classements
 
 - Pas de compte : le téléphone garde un jeton et son profil pour toujours. Le même téléphone qui retape son pseudo retrouve son compte.
-- Pseudo unique sur tout le jeu, de 2 à 16 caractères : lettres latines (accents permis), chiffres, espaces, tirets. Majuscules et accents ne comptent pas pour l'unicité. Il se change dans Paramètres, record et place suivent.
+- Pseudo unique sur tout le jeu, de 2 à 16 caractères : lettres latines (accents, œ, æ, ß et ø permis), chiffres, espaces, tirets. Majuscules et accents ne comptent pas pour l'unicité. Il se change dans Paramètres, record et place suivent.
 - Deux classements : celui de la soirée (pour le lot) et le général, permanent. À égalité, le premier à avoir fait le temps passe devant.
 - Écran Classement : les 10 premiers, podium or, argent et bronze, puis ta place exacte si tu n'es pas dedans. Jamais de défilement : sur un petit écran, on enlève des lignes par le bas (3 au moins).
 - Quand une soirée est annoncée mais pas commencée, l'écran Classement montre les onglets Soirée et Général et s'ouvre sur Général. L'onglet Soirée donne son nom et « Prochaine soirée lundi 02/11 à 20h00 » (plus sur l'accueil).
 - Une seule soirée à la fois, créée à l'avance dans l'admin pour être annoncée dans le jeu.
+- Les parties commencées avant la fin comptent encore 5 min après. Le gagnant n'est annoncé (« Bravo X ! », succès Tartine d'or) qu'après ces 5 min.
 - Les téléphones relisent le classement toutes les 10 s (30 s sur l'accueil), et plus du tout écran éteint. Le serveur le garde 10 s en mémoire, le général 60 s pendant une soirée : jusqu'à 20 s de retard (70 s pour le général). Ta place après une partie est à jour tout de suite.
 - En base : `profiles` (joueurs et record général), `entries` (record par soirée), `runs` (parties), `events` (soirées).
 
@@ -77,7 +79,10 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Signalés dans l'admin : record de 90 s ou plus, et partie ralentie (plus de 15 % et 15 s de temps réel en trop).
 - Faille connue : un faux score plausible (vers 60 s) passe inaperçu. Parade possible : rejouer la partie à partir des gestes (voir « À faire »).
 - Jetons des joueurs, identifiants des téléphones, connexions et invitations admin : rangés hachés (SHA-256). Une copie de la base ne permet pas de se faire passer pour quelqu'un.
-- Limites : 150 inscriptions par minute et par adresse IP (tout le lieu partage souvent la même sur le wifi), 30 tentatives admin par minute et par adresse IP (clé comprise), 10 débuts de partie par 10 s et 5 changements de pseudo par minute, par joueur.
+- Limites : 20 inscriptions par minute et par téléphone, 600 par minute et par adresse IP (tout le lieu partage souvent la même sur le wifi). Une inscription au pseudo invalide ne compte pas.
+- Admin : 30 échecs par minute et par adresse IP. Une bonne clé ou une bonne invitation passe toujours : elles sont bien trop longues pour être devinées, et un invité malveillant ne peut pas bloquer la connexion des admins.
+- 10 débuts de partie par 10 s et 5 changements de pseudo par minute, par joueur.
+- Un joueur retiré ne monte plus, ni au général ni dans le classement de la soirée.
 - En-têtes de sécurité (`public/_headers`) : pas de script externe, pas d'affichage dans le cadre d'un autre site.
 
 ## Admin
@@ -85,16 +90,17 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Accès : Paramètres, onglet Admin, sur un téléphone connecté. Ou `/admin`, ou 5 appuis rapides sur « Collectif Tartine Sauvage ».
 - Premier accès avec la clé admin (`cle-admin.txt`) : elle crée un compte propriétaire et reste la clé de secours.
 - Le propriétaire invite : prénom et rôle, puis un lien à usage unique valable 48 h. Dans l'appli installée, on colle le lien dans « Lien d'invitation reçu ».
-- Rôles : propriétaire (soirées, joueurs, équipe) et admin (soirées, joueurs). Chaque téléphone connecté peut être retiré, sauf le dernier propriétaire.
+- Rôles : propriétaire (soirées, joueurs, équipe) et admin (soirées, joueurs). Chaque téléphone connecté peut être retiré, sauf le dernier propriétaire. Le retirer annule aussi les invitations qu'il a créées et pas encore utilisées. Une connexion inutilisée pendant 30 jours expire.
 - Tableau de bord : soirée (créer, renommer, changer début et fin), classements soirée et général, bandeau rouge des records à vérifier, « Retirer » un joueur de tous les classements, écoute des bruitages.
+- Les nouveaux pseudos des 15 dernières minutes apparaissent dans la liste même sans partie : on peut retirer un pseudo déplacé affiché sur l'écran géant.
 
 ## Écran géant
 
 - `/ecran`, en paysage : top 10 de la soirée (du général hors soirée) à gauche, QR code et nombre de joueurs à droite.
-- En haut : compte à rebours de fin ou de début, ou « Bravo X ! » après la soirée.
+- En haut : compte à rebours de fin ou de début. Après la soirée, « Résultats dans » pendant les 5 min où les dernières parties comptent encore, puis « Bravo X ! ».
 - Fil en direct : nouveaux records et nouveaux pseudos des 15 dernières minutes (`GET /api/feed`).
-- Panneau « Nouveau n°1 » en grand pendant 6 s quand le 1er change.
-- « Plein écran » empêche la mise en veille. La page se recharge seule après une mise en ligne.
+- Panneau « Nouveau n°1 » en grand pendant 6 s quand un joueur bat le temps du 1er (pas quand le 1er est retiré).
+- « Plein écran » empêche la mise en veille. Après une mise en ligne, la page se recharge seule, sauf en plein écran : elle attend qu'on en sorte, pour ne pas perdre le plein écran pendant la soirée.
 
 ## Son
 
@@ -121,7 +127,9 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 
 - Installable : bouton Installer sur Android, Partager puis « Sur l'écran d'accueil » sur iPhone. Le jeu s'ouvre sans réseau s'il a déjà été ouvert une fois.
 - Chaque `npm run deploy` crée une version. Le jeu se recharge seul quand elle change, jamais en pleine partie. Le serveur refuse l'inscription et le début de partie d'une ancienne version.
-- Une partie ne compte que si le réseau passe au départ. À la fin, l'envoi du score réessaie pendant 2 min (« Envoi en attente… »), même si on ferme le jeu.
+- Une partie ne compte que si le réseau passe au départ. À la fin, l'envoi du score réessaie pendant 2 min (« Envoi en attente… »), même si on ferme le jeu ou si le serveur a une erreur passagère.
+- Téléphone verrouillé ou appli quittée en pleine partie : la partie se met en pause, « Touche pour reprendre ». Le temps de pause compte dans le temps réel vu par le serveur (voir « partie ralentie »).
+- Le cache hors ligne (`sw.js`) est renouvelé à chaque version.
 
 ## Check-list d'une soirée
 

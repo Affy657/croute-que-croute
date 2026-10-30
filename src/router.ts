@@ -1,4 +1,4 @@
-import { fail } from "./http";
+import { fail, tooFast } from "./http";
 import { adminAuth, type AdminAuth } from "./routes/admin";
 
 export interface Ctx {
@@ -33,6 +33,7 @@ export async function dispatch(routes: Route[], req: Request, env: Env) {
     const ctx: Ctx = { req, env, params };
     if (access !== "public") {
       const auth = await adminAuth(req, env);
+      if (auth === "slow") return tooFast();
       if (!auth) return fail(401, "Connexion admin expirée ou retirée.");
       if (access === "owner" && auth.role !== "owner") return fail(403, "Réservé au propriétaire.");
       ctx.auth = auth;

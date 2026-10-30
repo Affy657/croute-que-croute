@@ -1,11 +1,23 @@
-import { FW, FH, HIT_R, NEAR, OUT, X_MIN, X_MAX, Y_MIN, Y_MAX, clamp } from "./field.js";
+import { FW, FH, M, HIT_R, NEAR, OUT, X_MIN, X_MAX, Y_MIN, Y_MAX, clamp } from "./field.js";
 import { ATTACKS, pickAttack } from "./attacks.js";
 import { moveProjectile, sprinkleRare, gapTo } from "./projectiles.js";
 import { solve } from "./solver.js";
 
-const TRIES = 5, REACT = 0.1;
+const TRIES = 5, REACT = 0.1, SWEEP = 6;
 export const GAP_START = 1.25, GAP_SLOPE = 0.016, GAP_MIN = 0.42;
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+
+function clearAt(items) {
+  let end = 0;
+  for (const w of items) {
+    for (const o of w.obs) {
+      const tx = o.vx > 0 ? (FW + M - o.x) / o.vx : o.vx < 0 ? (o.x + M) / -o.vx : Infinity;
+      const ty = o.vy > 0 ? (FH + M - o.y) / o.vy : o.vy < 0 ? (o.y + M) / -o.vy : Infinity;
+      end = Math.max(end, w.at + Math.min(tx, ty));
+    }
+  }
+  return end;
+}
 
 export function createSim(rng = Math.random, { fair = true, react = REACT, only = null, t0 = 0, y = FH * 0.7 } = {}) {
   const rnd = (a, b) => a + rng() * (b - a);
@@ -46,7 +58,9 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
       state.tries = 0;
       state.streak = attack.id === state.last ? state.streak + 1 : 1;
       state.last = attack.id;
-      state.next = Math.max(GAP_MIN, GAP_START - t * GAP_SLOPE) * attack.cost * rnd(0.85, 1.15);
+      const gap = Math.max(GAP_MIN, GAP_START - t * GAP_SLOPE);
+      state.next = gap * attack.cost * rnd(0.85, 1.15);
+      if (attack.calm) state.next = Math.max(state.next, clearAt(items) - t);
       return;
     }
     state.stats.rejected++;
@@ -86,13 +100,22 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
     }
   }
 
+  function slide(mx, my, events) {
+    const tt = state.toast, parts = Math.max(1, Math.ceil(Math.hypot(mx, my) / SWEEP));
+    for (let i = 1; i <= parts; i++) {
+      tt.x = clamp(tt.x + mx / parts, X_MIN, X_MAX);
+      tt.y = clamp(tt.y + my / parts, Y_MIN, Y_MAX);
+      if (i < parts) collide(events);
+      if (state.dead) return;
+    }
+  }
+
   function step(dt, mx, my) {
     const events = [];
     if (state.dead) return events;
     state.t += dt;
-    const tt = state.toast;
-    tt.x = clamp(tt.x + mx, X_MIN, X_MAX);
-    tt.y = clamp(tt.y + my, Y_MIN, Y_MAX);
+    slide(mx, my, events);
+    if (state.dead) return events;
     moveObs(dt);
     launch();
     state.next -= dt;

@@ -51,8 +51,22 @@ function load() {
 let data = load(), fresh = [], run = null;
 const listeners = [];
 
+const union = (a, b) => [...new Set([...a, ...b])];
+
+function merge(mine, stored) {
+  return {
+    ...mine,
+    ...stored,
+    got: { ...mine.got, ...stored.got },
+    attacks: union(mine.attacks, stored.attacks),
+    events: union(mine.events, stored.events),
+    runs: Math.max(mine.runs, stored.runs),
+    seen: Math.max(mine.seen || 0, stored.seen || 0)
+  };
+}
+
 function change(fn) {
-  data = load();
+  data = merge(data, load());
   const changed = fn(data);
   if (changed !== false) store.set(KEYS.achievements, JSON.stringify(data));
   return changed !== false;
@@ -66,7 +80,7 @@ if (!data.seen) {
 }
 
 window.addEventListener("storage", (e) => {
-  if (e.key === KEYS.achievements) data = load();
+  if (e.key === KEYS.achievements) data = merge(data, load());
 });
 
 function unlock(id) {
@@ -139,13 +153,14 @@ export function runEnd(score, killer) {
   if (killer && killer.spread === "dog") unlock("woof");
 }
 
-export function afterSubmit(r, scope) {
-  if (r && !r.error && scope === "event" && r.eventRank && r.eventRank <= TOP) unlock("top10");
+export function afterSubmit(r) {
+  if (r && !r.error && r.eventRank && r.eventRank <= TOP) unlock("top10");
 }
 
 export function onBoard(b) {
   if (b && b.me) countRuns(Math.max(data.runs, b.me.runs || 0));
-  if (b && b.event && b.event.status === "closed" && b.me && !b.me.banned && b.me.eventRank === 1) unlock("eventWin");
+  const final = b && b.event && b.event.status === "closed" && b.now >= (b.event.finalAt || b.event.closesAt);
+  if (final && b.me && !b.me.banned && b.me.eventRank === 1) unlock("eventWin");
 }
 
 function line(className, text) {
