@@ -23,6 +23,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Effets : le chrono flashe en jaune toutes les 10 s, les couverts rapides (dès 380 px/s) laissent une traînée, et le fond passe du bleu nuit au violet vers 40 s puis au rouge sombre à 80 s, au rythme de la vitesse des couverts (`HEAT` dans `palette.js`).
 - Mort : le jeu se fige 0,3 s, puis l'éclaboussure. Sous « Tartinée ! », l'arme qui t'a eu (« par un hachoir », « par un couteau au dentifrice ») : `by` dans `PROJECTILES`, `with` dans `SPREADS`.
 - Garnitures : 9 tartinades dessinées sur la tartine (`TOPPINGS` dans `sprites.js`) : confiture, pâte à tartiner, miel et son abeille, ketchup en zigzag, dentifrice rayé, œuf au plat, sardine entière, slime qui a un œil, pâtée pour chien tartinée avec son odeur et sa mouche. Beurre au départ. 1 attaque à couteaux sur 10 a un couteau garni : le frôler ou se faire tuer par lui débloque sa garniture (pas en entraînement). Une garniture gagnée est mise tout de suite. Dès la première, toucher la tartine de l'accueil ouvre des flèches pour changer (une astuce le dit tant qu'on ne l'a pas fait). Gardées sur le téléphone (`cv-garnitures`, `cv-garniture`, `cv-garniture-astuce`), purement visuel. En local, `?garnitures=toutes` dans l'adresse les débloque toutes.
+- Accessoires : 4 dessinés (`HATS` et `sideBoosters` dans `sprites.js`, noms dans `GEAR` de `palette.js`) : boosters sur les côtés comme l'affiche, chapeau de sorcière, bonnet de Noël, chapeau de pirate. Chacun est la récompense d'un succès (champ `gear`) : Dix tartines → bonnet, Croustillante → sorcière, Une minute de gloire → boosters, Dans le top → pirate. Un accessoire gagné est mis tout de suite, même en pleine partie. Choix dans les flèches de la tartine de l'accueil (2e ligne, « Sans accessoire » possible). Gardé sur le téléphone (`cv-accessoire`), purement visuel. En local, `?accessoires=tous` les débloque tous le temps de la page.
 - Fin de partie : « Encore 1,21 s pour passer X », X étant le joueur juste devant (soirée pendant une soirée, général sinon). Rien si tu es 1er, sans pseudo ou au-delà du 1 000e du général.
 - Entraînement : bouton « S'entraîner » sur chaque attaque d'Infos. Seulement cette attaque, à la vitesse de son heure d'arrivée. Ne compte ni au classement, ni pour les succès, ni pour le record.
 
@@ -106,6 +107,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - 22 succès en 5 familles (temps de cuisson, frôlés et découvertes, garnitures, assiduité et soirées, secrets) : liste et conditions dans `achievements.js`.
 - Un secret pas encore trouvé montre « ??? » et un indice (`hint`).
 - Badge « Nouveau » sur les succès gagnés depuis la dernière visite de l'écran (`seen` dans `cv-succes`).
+- Un succès qui donne un accessoire l'écrit sous sa condition (« Débloque : … »).
 - Garnitures : 1, 4 puis toutes gagnées. Le secret « Ouaf » : se faire tartiner par un couteau à la pâtée pour chien.
 - Gardés sur le téléphone (`cv-succes`), sans effet sur le classement. Perdus en changeant de téléphone ou de navigateur. Sur iPhone, Safari et l'appli installée ne partagent pas leurs succès.
 - Le nombre de parties prend le plus grand entre le compteur du téléphone et celui du serveur.
@@ -156,7 +158,7 @@ Après :
 | `migrations/` | Schéma de la base |
 | `scripts/` | Mise en ligne, icônes, QR codes |
 | `test/` | Robot d'équité, tests de l'API |
-| `maquettes/` | Images de travail : pistes de redesign de la tartine (pas retenues), planche des garnitures |
+| `maquettes/` | Images de travail : pistes de redesign de la tartine (pas retenues), planches des garnitures et des accessoires |
 
 | Commande | À quoi ça sert |
 |---|---|
@@ -199,7 +201,7 @@ Après :
 - Suites d'attaques calées sur la musique, ou tirées parmi des enchaînements déjà écrits qui reviennent : analyser d'abord le morceau pour caler au moins les montées et les drops.
 - Images ou objets à collectionner (le maximator qui tourne), partage du score en story Insta.
 - Montrer les fonctionnalités petit à petit, pour ne pas surcharger les premières parties. Déjà fait pour les garnitures (flèches cachées tant qu'aucune n'est gagnée), à étendre au reste (succès, classement de soirée, infos).
-- Accessoires sur la tartine : petit chapeau de Noël, un truc d'Halloween, deuxième paire de boosters sur les côtés comme sur l'affiche. Moyen de les débloquer à trouver.
+- D'autres accessoires (couronne, lunettes, casque d'astronaute…), à débloquer aussi avec des succès.
 - Pas retenues pour l'instant : thème de soirée choisi par l'admin, tartine du designer ou redessinée (Adrien garde la tartine actuelle, pistes dans `maquettes/`), étoiles au rythme de la musique, son d'annonce par attaque, couche de tension, podium de fin de soirée sur l'écran géant.
 
 ## Bon à savoir

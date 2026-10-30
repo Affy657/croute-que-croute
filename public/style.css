@@ -300,7 +300,20 @@ h2.page-title {
   left: calc(50% + var(--reach));
 }
 
-.pick::before {
+.pick-sm {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--ink-dim);
+  border-radius: 50%;
+  background: var(--veil);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.pick::before,
+.pick-sm::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -312,15 +325,18 @@ h2.page-title {
   transform: translateX(2px) rotate(45deg);
 }
 
-.pick.next::before {
+.pick.next::before,
+.pick-sm.next::before {
   transform: translateX(-2px) rotate(-135deg);
 }
 
-.pick:active {
+.pick:active,
+.pick-sm:active {
   transform: scale(0.92);
 }
 
-.pick:focus-visible {
+.pick:focus-visible,
+.pick-sm:focus-visible {
   outline: 3px solid var(--ink);
   outline-offset: 3px;
 }
@@ -340,6 +356,27 @@ h2.page-title {
 
 .pick-count {
   color: var(--ink-dim);
+}
+
+.gear-row {
+  position: absolute;
+  top: calc(var(--drop) + 24px);
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.gear-name {
+  width: 210px;
+  margin: 0;
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
 }
 
 .pick-name.hint {

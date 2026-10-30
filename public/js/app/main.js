@@ -10,7 +10,8 @@ import { createInput } from "./input.js";
 import { burst, rain, bounce } from "./party.js";
 import * as ach from "./achievements.js";
 import { chosen, unlockTopping, chooseTopping, onTopping, stepTopping } from "./toppings.js";
-import { SPREADS } from "../shared/palette.js";
+import { chosenGear, chooseGear, onGear, stepGear } from "./gear.js";
+import { SPREADS, GEAR } from "../shared/palette.js";
 import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./catalog.js";
 import { renderSettings, suggestInstall, leaveSettings } from "./settings.js";
 import { onInstallChange } from "./install.js";
@@ -34,7 +35,7 @@ let sim = createSim();
 const S = {
   mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, train: null, t0: 0,
   newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general",
-  toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35, scars: [], spread: chosen() }, gotToppings: [], menuY: FH * 0.55, menuAt: 0
+  toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35, scars: [], spread: chosen(), gear: chosenGear() }, gotToppings: [], menuY: FH * 0.55, menuAt: 0
 };
 let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, lastShown = "";
 let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
@@ -319,11 +320,13 @@ function openSettings() {
 }
 
 function renderOverAch() {
-  const got = S.train ? [] : [...ach.runUnlocked().map((a) => a.name), ...S.gotToppings.map((k) => "Garniture " + SPREADS[k].name)];
+  const got = S.train ? [] : [...ach.runUnlocked().map((a) => a.name), ...S.gotToppings.map((k) => "Garniture " + SPREADS[k].name), ...ach.runUnlocked().filter((a) => a.gear).map(gearLabel)];
   ui.overAch.hidden = !got.length;
   ui.overAch.textContent = "★ " + got.join(", ");
   ui.overAchBtn.textContent = achLabel();
 }
+
+const gearLabel = (a) => "Accessoire " + GEAR[a.gear].name;
 
 function goHome() {
   if (S.mode !== "over") return;
@@ -477,6 +480,8 @@ document.addEventListener("pointerdown", (e) => {
 });
 ui.pickPrev.addEventListener("click", () => stepTopping(-1));
 ui.pickNext.addEventListener("click", () => stepTopping(1));
+ui.gearPrev.addEventListener("click", () => stepGear(-1));
+ui.gearNext.addEventListener("click", () => stepGear(1));
 ui.overAch.addEventListener("click", openAch);
 ui.achBack.addEventListener("click", closeAch);
 ui.settingsBtn.addEventListener("click", openSettings);
@@ -544,9 +549,16 @@ onTopping((kind) => {
   S.toast.spread = kind;
   renderPicker();
 });
+onGear((kind) => {
+  S.toast.gear = kind;
+  renderPicker();
+});
 ach.onUnlock((a) => {
-  if (S.mode === "play") toastAch(a);
-  else if (S.mode === "over") renderOverAch();
+  if (a.gear) chooseGear(a.gear);
+  if (S.mode === "play") {
+    toastAch(a);
+    if (a.gear) toastAch({ name: gearLabel(a) });
+  } else if (S.mode === "over") renderOverAch();
   else if (!ui.menu.hidden) renderMenu();
 });
 api.on("update", () => {

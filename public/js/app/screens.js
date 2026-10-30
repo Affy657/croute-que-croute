@@ -3,12 +3,14 @@ import { net, serverNow, registered, isOpen, openEvent, recentEvent, upcomingEve
 import { prefs, musicAvailable } from "./audio.js";
 import { progress } from "./achievements.js";
 import { PROJECTILES } from "../game/projectiles.js";
-import { SPREADS } from "../shared/palette.js";
+import { GEAR, SPREADS } from "../shared/palette.js";
 import { owned, chosen, hintSeen, seeHint } from "./toppings.js";
+import { gearOwned, chosenGear } from "./gear.js";
 
 const $ = (id) => document.getElementById(id);
 const BOARD_TOP = 10, PODIUM = 3;
 const HINT_TEXT = "Touche ta tartine pour changer de garniture";
+const HINT_GEAR = "Touche ta tartine pour changer d'accessoire";
 
 export const ui = {
   menu: $("menu"), over: $("over"), board: $("board"), hud: $("hud"), time: $("time"), hudBest: $("hudBest"),
@@ -28,6 +30,7 @@ export const ui = {
   ach: $("ach"), achCount: $("achCount"), achList: $("achList"), achBack: $("achBack"), achToast: $("achToast"), overAch: $("overAch"), musicVol: $("musicVol"), sfxVol: $("sfxVol"),
   renameCard: $("renameCard"), renameForm: $("renameForm"), newPseudo: $("newPseudo"), renameNote: $("renameNote"),
   picker: $("picker"), pickToast: $("pickToast"), pickLabel: $("pickLabel"), pickPrev: $("pickPrev"), pickNext: $("pickNext"), pickName: $("pickName"), pickCount: $("pickCount"),
+  gearRow: $("gearRow"), gearPrev: $("gearPrev"), gearNext: $("gearNext"), gearName: $("gearName"), gearCount: $("gearCount"),
   installPop: $("installPop"), installPopText: $("installPopText"), installYes: $("installYes"), installLater: $("installLater")
 };
 
@@ -132,14 +135,18 @@ export function openPicker(open) {
 }
 
 export function renderPicker() {
-  const list = owned(), hint = !pickerOpen && !hintSeen();
-  ui.picker.hidden = needJoin() || list.length < 2;
+  const list = owned(), gears = gearOwned(), spreads = list.length > 1, hint = !pickerOpen && !hintSeen();
+  ui.picker.hidden = needJoin() || (!spreads && !gears.length);
   ui.pickToast.setAttribute("aria-expanded", String(pickerOpen));
-  ui.pickPrev.hidden = ui.pickNext.hidden = !pickerOpen;
-  ui.pickLabel.hidden = !pickerOpen && !hint;
+  ui.pickPrev.hidden = ui.pickNext.hidden = !pickerOpen || !spreads;
+  ui.pickLabel.hidden = hint ? false : !pickerOpen || !spreads;
   ui.pickLabel.classList.toggle("hint", hint);
-  ui.pickName.textContent = hint ? HINT_TEXT : SPREADS[chosen()].name;
+  ui.pickName.textContent = hint ? (spreads ? HINT_TEXT : HINT_GEAR) : SPREADS[chosen()].name;
   ui.pickCount.textContent = hint ? "" : list.length + "/" + Object.keys(SPREADS).length;
+  ui.gearRow.hidden = !pickerOpen || !gears.length;
+  const gear = chosenGear();
+  ui.gearName.textContent = gear ? GEAR[gear].name : "Sans accessoire";
+  ui.gearCount.textContent = gears.length + "/" + Object.keys(GEAR).length;
 }
 
 function boardRow(rank, pseudo, best, me) {

@@ -12,6 +12,7 @@ export const KEYS = {
   toppings: "cv-garnitures",
   topping: "cv-garniture",
   toppingHint: "cv-garniture-astuce",
+  gear: "cv-accessoire",
   pendingScores: "cv-score-attente",
   lastReload: "cv-reload"
 };
