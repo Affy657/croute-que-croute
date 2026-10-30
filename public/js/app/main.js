@@ -133,8 +133,8 @@ function start(train = null) {
   if (S.mode !== "menu" && S.mode !== "over") return false;
   if (S.mode === "over" && ui.again.disabled) return false;
   if (api.net.updatePending && api.applyUpdate()) return false;
-  const t0 = train ? train.from : 0;
-  sim = createSim(Math.random, train ? { only: train.id, t0 } : undefined);
+  const t0 = train ? train.from : 0, y = S.mode === "menu" ? S.toast.y : S.menuY;
+  sim = createSim(Math.random, train ? { only: train.id, t0, y } : { y });
   Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.isOpen() ? "event" : "general" });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0, scars: [] });
   scene.clear();
@@ -171,7 +171,10 @@ function avoidHud() {
   scene.avoid({ left: mid - half, right: mid + half, bottom: Math.max(t.bottom, b.bottom) + HUD_PAD });
 }
 
-window.addEventListener("resize", () => { if (S.mode === "play") avoidHud(); });
+window.addEventListener("resize", () => {
+  if (S.mode === "play") avoidHud();
+  if (boardOpen) renderBoard();
+});
 
 function cheer() {
   const mine = S.submit, prev = S.prevRank;

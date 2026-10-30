@@ -4,7 +4,7 @@ import { drawTrail, drawProjectile, drawWarn, drawToast } from "./sprites.js";
 import { BODIES } from "./planets.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
-const POP_LIFE = 0.7, PUCK_R = 30, GRAB_S = 0.6, FIELD_FADE = 5;
+const POP_LIFE = 0.7, PUCK_R = 30, PUCK_LIFT = 110, GRAB_S = 0.6, FIELD_FADE = 5;
 const SKY_SPEED = 20, SKY_GAP = 0.5, SKY_TOP = 0.3, SKY_LOOP = SKY_GAP * BODIES.length;
 const HEAT_EASE = 2, HEAT_LOW = 0.45, HEAT_FIELD = 0.85;
 const HINT = "Pose ton doigt où tu veux";
@@ -191,7 +191,7 @@ export function createScene(canvas, overlay) {
         fx.stroke();
       }
     } else {
-      const x = W / 2, y = H - PUCK_R - 70;
+      const x = W / 2, y = H - PUCK_R - PUCK_LIFT;
       drawPuck(x, y, reduceMotion ? 0 : Math.sin(clock * 3) * 12, 0.3 + 0.15 * Math.sin(clock * 4));
       fx.globalAlpha = 0.85;
       fx.font = '13px Bungee, "Arial Black", sans-serif';

@@ -153,18 +153,31 @@ export function renderBoard() {
   shownScope = scope;
   ui.boardEvent.textContent = scope === "event" ? b.event.name : "Tous les temps";
   boardCountdown();
-  const top = b ? (scope === "event" ? b.eventTop : b.top).slice(0, BOARD_TOP) : [];
+  const top = b ? (scope === "event" ? b.eventTop : b.top) : [];
+  const mine = standing(scope), me = b && b.me;
+  let n = Math.min(top.length, BOARD_TOP);
+  ui.boardList.hidden = false;
+  let count = fillBoard(top.slice(0, n), mine, me);
+  while (n > PODIUM && overflows(ui.boardList)) count = fillBoard(top.slice(0, --n), mine, me);
+  ui.boardList.hidden = count === 0;
+  setText(ui.boardEmpty, count ? "" : b ? "Aucun score pour l'instant" : "Hors ligne");
+}
+
+const overflows = (list) => list.clientHeight > 0 && list.scrollHeight > list.clientHeight + 1;
+
+function fillBoard(top, mine, me) {
   const rows = top.map((r) => boardRow(r.rank, r.pseudo, r.best, r.me));
-  const mine = standing(scope);
-  if (b && b.me && mine.rank && !top.some((r) => r.me)) {
-    const gap = document.createElement("li");
-    gap.className = "gap";
-    gap.textContent = "…";
-    rows.push(gap, boardRow(mine.rank, b.me.pseudo, mine.best, true));
+  if (me && mine.rank && !top.some((r) => r.me)) {
+    if (mine.rank > top.length + 1) {
+      const gap = document.createElement("li");
+      gap.className = "gap";
+      gap.textContent = "…";
+      rows.push(gap);
+    }
+    rows.push(boardRow(mine.rank, me.pseudo, mine.best, true));
   }
   ui.boardList.replaceChildren(...rows);
-  ui.boardList.hidden = rows.length === 0;
-  setText(ui.boardEmpty, rows.length ? "" : b ? "Aucun score pour l'instant" : "Hors ligne");
+  return rows.length;
 }
 
 export function achLabel() {

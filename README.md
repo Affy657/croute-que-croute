@@ -14,6 +14,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 
 - On scanne le QR code, on choisit un pseudo, on joue autant qu'on veut. Sans pseudo, la partie ne compte pas au classement.
 - Le doigt glisse n'importe où : la tartine suit le mouvement, 1,8 fois plus loin que le doigt, pour que le doigt ne la cache pas.
+- La partie démarre avec la tartine là où elle volait sur l'accueil. Sur téléphone, un rond pulse en bas (`PUCK_LIFT` dans `scene.js`) pour montrer où poser le doigt.
 - Rien n'arrive par le bas (le doigt cacherait les attaques). Les attaques de côté partent des 60 % du haut.
 - Chaque attaque est annoncée 0,45 à 0,9 s avant par une pastille au bord de l'écran, jamais posée sur le chrono.
 - La difficulté monte jusqu'à 80 s, puis plus rien ne change.
@@ -59,7 +60,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Pas de compte : le téléphone garde un jeton et son profil pour toujours. Le même téléphone qui retape son pseudo retrouve son compte.
 - Pseudo unique sur tout le jeu, de 2 à 16 caractères : lettres latines (accents permis), chiffres, espaces, tirets. Majuscules et accents ne comptent pas pour l'unicité. Il se change dans Paramètres, record et place suivent.
 - Deux classements : celui de la soirée (pour le lot) et le général, permanent. À égalité, le premier à avoir fait le temps passe devant.
-- Écran Classement : les 10 premiers, podium or, argent et bronze. Si tu n'es pas dans les 10, ta place exacte est épinglée en bas de la liste.
+- Écran Classement : les 10 premiers, podium or, argent et bronze, puis ta place exacte si tu n'es pas dedans. Jamais de défilement : sur un petit écran, on enlève des lignes par le bas (3 au moins).
 - Une seule soirée à la fois, créée à l'avance dans l'admin pour être annoncée dans le jeu.
 - Les téléphones relisent le classement toutes les 10 s (30 s sur l'accueil), et plus du tout écran éteint. Le serveur le garde 10 s en mémoire, le général 60 s pendant une soirée : jusqu'à 20 s de retard (70 s pour le général). Ta place après une partie est à jour tout de suite.
 - En base : `profiles` (joueurs et record général), `entries` (record par soirée), `runs` (parties), `events` (soirées).
