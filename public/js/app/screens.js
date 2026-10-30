@@ -3,9 +3,9 @@ import { net, serverNow, registered, isOpen, openEvent, recentEvent, upcomingEve
 import { prefs, musicAvailable } from "./audio.js";
 import { progress } from "./achievements.js";
 import { PROJECTILES } from "../game/projectiles.js";
-import { GEAR, SPREADS } from "../shared/palette.js";
+import { GEAR, SLOTS, SPREADS } from "../shared/palette.js";
 import { owned, chosen, hintSeen, seeHint } from "./toppings.js";
-import { gearOwned, chosenGear } from "./gear.js";
+import { gearOwned, gearTotal, chosenGear } from "./gear.js";
 
 const $ = (id) => document.getElementById(id);
 const BOARD_TOP = 10, PODIUM = 3;
@@ -30,7 +30,7 @@ export const ui = {
   ach: $("ach"), achCount: $("achCount"), achList: $("achList"), achBack: $("achBack"), achToast: $("achToast"), holdHint: $("holdHint"), overAch: $("overAch"), musicVol: $("musicVol"), sfxVol: $("sfxVol"),
   renameCard: $("renameCard"), renameForm: $("renameForm"), newPseudo: $("newPseudo"), renameNote: $("renameNote"),
   picker: $("picker"), pickToast: $("pickToast"), pickLabel: $("pickLabel"), pickPrev: $("pickPrev"), pickNext: $("pickNext"), pickName: $("pickName"), pickCount: $("pickCount"),
-  gearRow: $("gearRow"), gearPrev: $("gearPrev"), gearNext: $("gearNext"), gearName: $("gearName"), gearCount: $("gearCount"),
+  gearRows: $("gearRows"),
   installPop: $("installPop"), installPopText: $("installPopText"), installYes: $("installYes"), installLater: $("installLater")
 };
 
@@ -135,18 +135,22 @@ export function openPicker(open) {
 }
 
 export function renderPicker() {
-  const list = owned(), gears = gearOwned(), spreads = list.length > 1, hint = !pickerOpen && !hintSeen();
-  ui.picker.hidden = needJoin() || (!spreads && !gears.length);
+  const list = owned(), gears = Object.keys(SLOTS).some((s) => gearOwned(s).length), spreads = list.length > 1, hint = !pickerOpen && !hintSeen();
+  ui.picker.hidden = needJoin() || (!spreads && !gears);
   ui.pickToast.setAttribute("aria-expanded", String(pickerOpen));
   ui.pickPrev.hidden = ui.pickNext.hidden = !pickerOpen || !spreads;
   ui.pickLabel.hidden = hint ? false : !pickerOpen || !spreads;
   ui.pickLabel.classList.toggle("hint", hint);
   ui.pickName.textContent = hint ? (spreads ? HINT_TEXT : HINT_GEAR) : SPREADS[chosen()].name;
   ui.pickCount.textContent = hint ? "" : list.length + "/" + Object.keys(SPREADS).length;
-  ui.gearRow.hidden = !pickerOpen || !gears.length;
-  const gear = chosenGear();
-  ui.gearName.textContent = gear ? GEAR[gear].name : "Sans accessoire";
-  ui.gearCount.textContent = gears.length + "/" + Object.keys(GEAR).length;
+  ui.gearRows.hidden = !pickerOpen;
+  ui.menu.classList.toggle("dressing", pickerOpen && gears);
+  for (const row of ui.gearRows.children) {
+    const slot = row.dataset.slot, kind = chosenGear(slot), n = gearOwned(slot).length, [name, count] = row.querySelectorAll("span");
+    row.hidden = !n;
+    name.textContent = kind ? GEAR[kind].name : SLOTS[slot];
+    count.textContent = n + "/" + gearTotal(slot);
+  }
 }
 
 function boardRow(rank, pseudo, best, me) {

@@ -3,7 +3,7 @@ import { randomToken, sha256, matchesSecret } from "../security";
 import { cleanPseudo, pseudoKey, cleanClientId } from "../validate";
 import {
   events, openEventNow, eventById, findProfile, entryBest, generalRanking, generalCount, generalRank, eventRanking, renameCached, rankIn, rivalIn,
-  promoteGeneral, promoteEvent,
+  promoteGeneral, promoteEvent, forgetCaches,
   type EventRow, type Profile, type Ranked,
 } from "../db";
 import type { Ctx } from "../router";
@@ -237,6 +237,16 @@ export async function finishRun({ req, env, params }: Ctx) {
     .bind(now, score, device, run.id)
     .run();
   if (!saved.meta.changes) return json(await standing(env, me, eventId, keptMobile(me), keptPc(me), await mine(), false));
+  if (device === "pc" && me.best > 0 && !(await env.DB.prepare("SELECT 1 FROM runs WHERE player_id = ? AND device = 'mobile' LIMIT 1").bind(me.id).first())) {
+    await env.DB.batch([
+      env.DB.prepare("UPDATE profiles SET pc_best = best, pc_best_at = best_at, pc_best_elapsed = best_elapsed WHERE id = ? AND best > pc_best").bind(me.id),
+      env.DB.prepare("UPDATE profiles SET best = 0, best_at = NULL, best_elapsed = NULL WHERE id = ?").bind(me.id),
+      env.DB.prepare("UPDATE runs SET device = 'pc' WHERE player_id = ? AND device IS NULL").bind(me.id),
+    ]);
+    if (me.best > me.pc_best) Object.assign(me, { pc_best: me.best, pc_best_at: me.best_at });
+    Object.assign(me, { best: 0, best_at: null });
+    forgetCaches();
+  }
   const statements = [
     env.DB.prepare("UPDATE profiles SET run_count = run_count + 1 WHERE id = ?").bind(me.id),
     device === "pc"

@@ -13,6 +13,8 @@ export const KEYS = {
   topping: "cv-garniture",
   toppingHint: "cv-garniture-astuce",
   gear: "cv-accessoire",
+  side: "cv-cotes",
+  bread: "cv-pain",
   pendingScores: "cv-score-attente",
   lastReload: "cv-reload",
   quality: "cv-qualite"
