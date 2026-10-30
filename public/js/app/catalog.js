@@ -1,4 +1,4 @@
-import { FW, FH, OUT, HIT_R } from "../game/field.js";
+import { FW, FH, OUT, HIT_R, SPEED_UNTIL } from "../game/field.js";
 import { PROJECTILES, moveProjectile } from "../game/projectiles.js";
 import { ATTACKS } from "../game/attacks.js";
 import { GAP_START, GAP_SLOPE, GAP_MIN } from "../game/sim.js";
@@ -128,6 +128,7 @@ function progressionCard() {
   for (const a of ATTACKS.filter((x) => !x.lab)) steps.push([a.from, a.from ? "arrivée : " + a.name : a.name + " dès le début"]);
   for (const a of ATTACKS.filter((x) => !x.lab && x.growsUntil)) steps.push([a.growsUntil, a.growth]);
   steps.push([GAP_END, "les attaques s'enchaînent au rythme le plus rapide"]);
+  steps.push([SPEED_UNTIL, "les couverts atteignent leur vitesse maximale"]);
   steps.sort((x, y) => x[0] - y[0]);
   const section = el("section", "card");
   const list = el("ol", "timeline");
@@ -204,7 +205,7 @@ export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
   const list = el("ul", "rules");
   for (const text of [
     "On peut toujours s'en sortir : chaque attaque est testée avant d'être lancée, même si tu réagis un dixième de seconde après l'alerte.",
-    `Les couverts accélèrent sans fin. Les attaques s'enchaînent de plus en plus vite jusqu'à ${Math.round(GAP_END)} s.`,
+    `Les attaques s'enchaînent de plus en plus vite jusqu'à ${Math.round(GAP_END)} s, et les couverts accélèrent jusqu'à ${SPEED_UNTIL} s.`,
     "Une attaque ne sort jamais plus de 3 fois d'affilée, et celle qui vient de sortir revient moins souvent. Les grosses figures (croix, murs en série, couloir, double pluie) ne sortent jamais deux fois de suite.",
     "Dans les aperçus, la tartine ne bouge pas.",
     "« S'entraîner » lance une partie avec seulement cette attaque, qui démarre à sa vitesse d'arrivée puis accélère. Elle ne compte ni pour le classement ni pour les succès."

@@ -5,13 +5,14 @@ const CELL = 12, SDT = 1 / 30, SUB = 4, HORIZON = 3.5, HORIZON_LONG = 4.5, MARGI
 const COLS = Math.floor(FW / CELL), ROWS = Math.floor(FH / CELL), CELLS = COLS * ROWS;
 const I0 = Math.ceil(X_MIN / CELL - 0.5), I1 = Math.floor(X_MAX / CELL - 0.5);
 const J0 = Math.ceil(Y_MIN / CELL - 0.5), J1 = Math.floor(Y_MAX / CELL - 0.5);
+const LO = new Float64Array(ROWS), HI = new Float64Array(ROWS);
 
 const cellOf = (x, y) =>
   clamp(Math.round(y / CELL - 0.5), J0, J1) * COLS + clamp(Math.round(x / CELL - 0.5), I0, I1);
 
 const centerOf = (c) => ({ x: ((c % COLS) + 0.5) * CELL, y: (Math.floor(c / COLS) + 0.5) * CELL });
 
-const span = (i0, i1) => ((2 ** (i1 + 1) - 1) ^ (2 ** i0 - 1)) >>> 0;
+const span = (i0, i1) => ((0xffffffff >>> (31 - i1)) & (0xffffffff << i0)) >>> 0;
 
 const lowBit = (v) => 31 - Math.clz32(v & -v);
 
@@ -21,10 +22,13 @@ function mover(o, t0) {
   const spin = !!o.spin;
   const tx = o.vx > 0 ? (FW + OUT - o.x) / o.vx : o.vx < 0 ? (-OUT - o.x) / o.vx : Infinity;
   const ty = o.vy > 0 ? (FH + OUT - o.y) / o.vy : o.vy < 0 ? (-OUT - o.y) / o.vy : Infinity;
+  const cos = Math.cos(o.a), sin = Math.sin(o.a);
   return {
-    x: o.x, y: o.y, vx: o.vx, vy: o.vy, a: o.a, cos: Math.cos(o.a), sin: Math.sin(o.a),
+    x: o.x, y: o.y, vx: o.vx, vy: o.vy, a: o.a, cos, sin,
     h: spin ? 0 : o.len / 2 - o.rad,
     r: (spin ? PROJECTILES[o.kind].spinReach : PROJECTILES[o.kind].reach) + HIT_R + MARGIN,
+    along: Math.abs(cos * o.vy - sin * o.vx) < 1e-6 * (Math.abs(o.vx) + Math.abs(o.vy) + 1),
+    ahead: cos * o.vx + sin * o.vy >= 0 ? 1 : -1,
     t0, t1: t0 + Math.min(tx, ty)
   };
 }
@@ -41,15 +45,8 @@ function addMovers(list, o, t0) {
   addMovers(list, { ...o, x: o.x + o.vx * tb, y: o.y + o.vy * tb, vx: -o.vx, a: Math.atan2(o.vy, -o.vx), bounces: o.bounces - 1 }, t0 + tb);
 }
 
-function mark(m, tau, blocked, area, rows) {
-  if (tau < m.t0 || tau > m.t1) return;
-  const d = tau - m.t0;
-  const cx = m.x + m.vx * d, cy = m.y + m.vy * d;
-  const reachOut = m.h + m.r;
-  if (cx + reachOut < (area.i0 - 0.5) * CELL || cx - reachOut > (area.i1 + 1.5) * CELL) return;
-  if (cy + reachOut < (area.j0 - 0.5) * CELL || cy - reachOut > (area.j1 + 1.5) * CELL) return;
-  const tx = m.cos, ty = m.sin, r = m.r, r2 = r * r, len = 2 * m.h;
-  const ax = cx - tx * m.h, ay = cy - ty * m.h, bx = cx + tx * m.h, by = cy + ty * m.h;
+function capsule(ax, ay, bx, by, tx, ty, len, r, area) {
+  const r2 = r * r;
   const j0 = Math.max(area.j0, Math.floor((Math.min(ay, by) - r) / CELL));
   const j1 = Math.min(area.j1, Math.floor((Math.max(ay, by) + r) / CELL));
   for (let j = j0; j <= j1; j++) {
@@ -89,45 +86,71 @@ function mark(m, tau, blocked, area, rows) {
         if (ax + hi > xr) xr = ax + hi;
       }
     }
-    if (xl >= xr) continue;
-    const i0 = Math.max(area.i0, Math.ceil(xl / CELL - 0.5));
-    const i1 = Math.min(area.i1, Math.floor(xr / CELL - 0.5));
-    if (i0 > i1) continue;
-    if (rows) rows[j] |= span(i0, i1);
-    else blocked.fill(1, j * COLS + i0, j * COLS + i1 + 1);
+    if (xl < LO[j]) LO[j] = xl;
+    if (xr > HI[j]) HI[j] = xr;
   }
+}
+
+function segment(ax, ay, bx, by, r, area) {
+  const len = Math.hypot(bx - ax, by - ay);
+  if (len > 1e-9) capsule(ax, ay, bx, by, (bx - ax) / len, (by - ay) / len, len, r, area);
+  else capsule(ax, ay, ax, ay, 1, 0, 0, r, area);
+}
+
+function cover(m, d0, d1, area, write) {
+  const x0 = m.x + m.vx * d0, y0 = m.y + m.vy * d0, x1 = m.x + m.vx * d1, y1 = m.y + m.vy * d1;
+  const reachOut = m.h + m.r;
+  if (Math.max(x0, x1) + reachOut < (area.i0 - 0.5) * CELL || Math.min(x0, x1) - reachOut > (area.i1 + 1.5) * CELL) return;
+  if (Math.max(y0, y1) + reachOut < (area.j0 - 0.5) * CELL || Math.min(y0, y1) - reachOut > (area.j1 + 1.5) * CELL) return;
+  const j0 = Math.max(area.j0, Math.floor((Math.min(y0, y1) - reachOut) / CELL));
+  const j1 = Math.min(area.j1, Math.floor((Math.max(y0, y1) + reachOut) / CELL));
+  if (j0 > j1) return;
+  LO.fill(Infinity, j0, j1 + 1);
+  HI.fill(-Infinity, j0, j1 + 1);
+  const hx = m.cos * m.h, hy = m.sin * m.h, r = m.r;
+  if (d0 === d1) capsule(x0 - hx, y0 - hy, x0 + hx, y0 + hy, m.cos, m.sin, 2 * m.h, r, area);
+  else if (!m.h) segment(x0, y0, x1, y1, r, area);
+  else if (m.along) segment(x0 - m.ahead * hx, y0 - m.ahead * hy, x1 + m.ahead * hx, y1 + m.ahead * hy, r, area);
+  else {
+    segment(x0 - hx, y0 - hy, x0 + hx, y0 + hy, r, area);
+    segment(x1 - hx, y1 - hy, x1 + hx, y1 + hy, r, area);
+    segment(x0 - hx, y0 - hy, x1 - hx, y1 - hy, r, area);
+    segment(x0 + hx, y0 + hy, x1 + hx, y1 + hy, r, area);
+  }
+  for (let j = j0; j <= j1; j++) {
+    if (LO[j] >= HI[j]) continue;
+    const i0 = Math.max(area.i0, Math.ceil(LO[j] / CELL - 0.5));
+    const i1 = Math.min(area.i1, Math.floor(HI[j] / CELL - 0.5));
+    if (i0 <= i1) write(j, i0, i1);
+  }
+}
+
+function sweep(m, ta, tb, area, write) {
+  ta = Math.max(ta, m.t0);
+  tb = Math.min(tb, m.t1);
+  if (ta <= tb) cover(m, ta - m.t0, tb - m.t0, area, write);
+}
+
+function mark(m, tau, area, write) {
+  if (tau >= m.t0 && tau <= m.t1) cover(m, tau - m.t0, tau - m.t0, area, write);
 }
 
 function survives(movers, t, steps, still, start) {
   let reach = new Uint32Array(ROWS), next = new Uint32Array(ROWS);
   const blocked = new Uint32Array(ROWS), wide = new Uint32Array(ROWS);
-  let edge = new Uint32Array(ROWS), fresh = new Uint32Array(ROWS);
+  const write = (j, i0, i1) => { blocked[j] |= span(i0, i1); };
   reach[Math.floor(start / COLS)] = 2 ** (start % COLS);
   const box = { i0: start % COLS, i1: start % COLS, j0: Math.floor(start / COLS), j1: Math.floor(start / COLS) };
   for (let k = 1; k <= steps; k++) {
-    const tA = t + (k - 1) * SDT;
+    const tA = t + (k - 1) * SDT, tB = tA + SDT;
     const frozen = k <= still;
     const grow = frozen ? 0 : 1;
     const area = {
       i0: Math.max(I0, box.i0 - grow), i1: Math.min(I1, box.i1 + grow),
       j0: Math.max(J0, box.j0 - grow), j1: Math.min(J1, box.j1 + grow)
     };
-    const wider = { i0: Math.max(I0, area.i0 - 1), i1: Math.min(I1, area.i1 + 1), j0: Math.max(J0, area.j0 - 1), j1: Math.min(J1, area.j1 + 1) };
-    const live = movers.filter((m) => m.t1 >= tA && m.t0 <= tA + SDT * 1.001);
-    if (k > 1) blocked.set(edge);
-    else {
-      blocked.fill(0);
-      for (const m of live) mark(m, tA, null, area, blocked);
-    }
-    for (let s = 1; s < SUB; s++) {
-      const tau = tA + (s * SDT) / SUB;
-      for (const m of live) mark(m, tau, null, area, blocked);
-    }
-    const tB = tA + SDT;
-    fresh.fill(0);
-    for (const m of live) mark(m, tB, null, wider, fresh);
-    for (let j = 0; j < ROWS; j++) blocked[j] |= fresh[j];
-    [edge, fresh] = [fresh, edge];
+    blocked.fill(0);
+    for (const m of movers) if (m.t1 >= tA && m.t0 <= tB) sweep(m, tA, tB, area, write);
     const cols = span(area.i0, area.i1);
     for (let j = box.j0; j <= box.j1; j++) {
       const src = reach[j] & ~blocked[j];
@@ -157,6 +180,7 @@ function survives(movers, t, steps, still, start) {
 function pathOf(movers, t, steps, still, start) {
   let reach = new Uint8Array(CELLS), next = new Uint8Array(CELLS);
   const blocked = new Uint8Array(CELLS);
+  const write = (j, i0, i1) => blocked.fill(1, j * COLS + i0, j * COLS + i1 + 1);
   const prev = [];
   reach[start] = 1;
   for (let k = 1; k <= steps; k++) {
@@ -165,7 +189,7 @@ function pathOf(movers, t, steps, still, start) {
     const frozen = k <= still;
     for (let s = 0; s <= SUB; s++) {
       const tau = tA + (s * SDT) / SUB;
-      for (const m of movers) mark(m, tau, blocked, FULL, null);
+      for (const m of movers) mark(m, tau, FULL, write);
     }
     next.fill(0);
     let any = false;
