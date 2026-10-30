@@ -30,16 +30,16 @@ for (let g = 0; g < GAMES; g++) {
     const items = s.warns.filter((w) => !before.has(w));
     spawns.push({ t: s.t, id: s.last, first: Math.min(...items.map((w) => w.at)), last: Math.max(...items.map((w) => w.at)), gone: leave(items) });
   }
-  for (let i = 0; i + 1 < spawns.length; i++) {
-    const a = spawns[i], b = spawns[i + 1];
-    rows.push({ t: a.t, calm: calm.has(a.id), quiet: b.first - a.last, stay: a.gone - a.last, spacing: b.first - a.first });
+  for (let i = 1; i + 1 < spawns.length; i++) {
+    const p = spawns[i - 1], a = spawns[i], b = spawns[i + 1];
+    rows.push({ t: a.t, calm: calm.has(a.id), before: a.first - p.last, quiet: b.first - a.last, stay: a.gone - a.last, spacing: b.first - a.first });
   }
 }
 
 console.log(`${DIR} : ${GAMES} parties du robot parfait. Après une attaque calme (murs en série) :`);
-console.log("Tranche".padEnd(12) + "Séries".padStart(8) + "Vide après".padStart(14) + "Dernier mur à l'écran".padStart(24) + "Écart normal".padStart(15));
+console.log("Tranche".padEnd(12) + "Séries".padStart(8) + "Vide avant".padStart(14) + "Vide après".padStart(14) + "Dernier mur à l'écran".padStart(24) + "Écart normal".padStart(15));
 for (const [lo, hi] of BANDS) {
   const c = rows.filter((r) => r.calm && r.t >= lo && r.t < hi), n = rows.filter((r) => !r.calm && r.t >= lo && r.t < hi);
-  console.log(`${lo}-${hi} s`.padEnd(12) + String(c.length).padStart(8) + `${fmt(median(c.map((r) => r.quiet)), 2)} s`.padStart(14) +
+  console.log(`${lo}-${hi} s`.padEnd(12) + String(c.length).padStart(8) + `${fmt(median(c.map((r) => r.before)), 2)} s`.padStart(14) + `${fmt(median(c.map((r) => r.quiet)), 2)} s`.padStart(14) +
     `${fmt(median(c.map((r) => r.stay)), 2)} s`.padStart(24) + `${fmt(median(n.map((r) => r.spacing)), 2)} s`.padStart(15));
 }

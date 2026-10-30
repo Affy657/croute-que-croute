@@ -180,7 +180,7 @@ function bread({ t, toast, pick }) {
 export const ATTACKS = [
   { id: "aimed", name: "Couteau visé", from: 0, weight: 2.5, cost: 1, speed: 230, make: aimed, growsUntil: 25, growth: "le couteau visé peut tourner sur lui-même",
     info: "Un couteau lancé du haut ou d'un côté vers la tartine. Bouger pendant l'annonce suffit. Dès 25 s, une fois sur trois il tourne sur lui-même." },
-  { id: "rain", name: "Pluie de fourchettes", from: 4, weight: 1.4, cost: 1.5, speed: 190, make: rain, growsUntil: 60, growth: "pluies au maximum (8 fourchettes)",
+  { id: "rain", name: "Pluie de fourchettes", from: 3, weight: 1.4, cost: 1.5, speed: 190, make: rain, growsUntil: 60, growth: "pluies au maximum (8 fourchettes)",
     info: "4 fourchettes (jusqu'à 8) tombent du haut l'une après l'autre, un peu en biais." },
   { id: "cleaver", name: "Hachoir", from: 8, weight: 0.9, cost: 1.3, speed: 300, make: cleaver, growsUntil: 55, growth: "3 hachoirs à la suite",
     info: "Un hachoir tombe tout droit et très vite au-dessus de la tartine, annoncé 0,9 s avant. Quitter sa colonne. Dès 30 s, un deuxième suit dans une colonne voisine, un troisième dès 55 s." },
@@ -192,7 +192,7 @@ export const ATTACKS = [
     info: "3 à 5 couteaux ouverts en cône depuis un même point, centrés sur la tartine. Il faut sortir du cône par le côté." },
   { id: "whisk", name: "Fouet", lab: true, from: 4, weight: 0.7, cost: 1.3, speed: 100, make: whisk,
     info: "Un fouet qui tourne sur lui-même descend lentement vers la tartine et occupe une grosse zone." },
-  { id: "walls", name: "Murs en série", kin: "wall", shuns: ["rolling"], solo: true, calm: true, from: 28, weight: 0.6, cost: 4, speed: 150, make: wallSeries, growsUntil: 60, growth: "3 murs en série",
+  { id: "walls", name: "Murs en série", kin: "wall", shuns: ["rolling"], solo: true, calm: true, from: 28, weight: 0.6, cost: 1, speed: 150, make: wallSeries, growsUntil: 60, growth: "3 murs en série",
     info: "2 murs d'affilée (3 dès 60 s), toujours du même côté ou du haut, chacun avec son trou. Chaque mur est annoncé juste avant d'arriver. La série joue seule : rien d'autre n'est lancé pendant." },
   { id: "cross", name: "Croix", solo: true, from: 32, weight: 0.7, cost: 1.6, speed: 190, make: cross,
     info: "4 couteaux en même temps depuis les deux coins du haut et les deux côtés, tous vers la tartine. S'écarter du point visé." },
