@@ -333,7 +333,7 @@ export function drawWarn(ctx, w, clock, now, C = PALETTE, avoid = null) {
   ctx.restore();
 }
 
-function toastPath(ctx, w, h) {
+export function toastPath(ctx, w, h) {
   ctx.beginPath();
   ctx.moveTo(-w / 2 + 6, h / 2);
   ctx.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - 6);
