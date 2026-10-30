@@ -702,9 +702,13 @@ export const BODIES = [
   { draw: pancake, x: 0.78, r: 0.12 },
   { draw: green, x: 0.22, r: 0.1 },
   { draw: speakers, x: 0.8, r: 0.11 },
-  { draw: stage, x: 0.24, r: 0.05 },
+  { draw: rock, x: 0.24, r: 0.05 }
+];
+
+export const RARE = [
   { draw: cheese, x: 0.78, r: 0.1 },
-  { draw: toaster, x: 0.22, r: 0.1 }
+  { draw: toaster, x: 0.22, r: 0.1 },
+  { draw: stage, x: 0.24, r: 0.05 }
 ];
 
 const SANS = "Arial, Helvetica, sans-serif", SERIF = "Georgia, 'Times New Roman', serif";

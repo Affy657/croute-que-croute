@@ -1,7 +1,7 @@
 import { FW, FH, clamp } from "../game/field.js";
 import { PALETTE, HEAT } from "../shared/palette.js";
 import { drawTrail, drawProjectile, drawWarn, drawToast } from "./sprites.js";
-import { BODIES, CAN_KINDS, drawCan } from "./planets.js";
+import { BODIES, RARE, CAN_KINDS, drawCan } from "./planets.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const POP_LIFE = 0.7, PUCK_R = 30, PUCK_LIFT = 110, GRAB_S = 0.6, FIELD_FADE = 5;
@@ -11,6 +11,8 @@ const HINT = "Pose ton doigt où tu veux";
 const COMET_S = 9, COMET_SIZE = 0.13, COMET_TAIL = 0.35, COMET_ALPHA = 0.7;
 const OFTEN = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("etoiles") === "souvent";
 const COMET_FIRST = OFTEN ? [1, 2] : [30, 180], COMET_GAP = OFTEN ? [4, 6] : [120, 240];
+const ODD = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("planetes") === "souvent";
+const RARE_FIRST = ODD ? [1, 2] : [30, 180], RARE_GAP = ODD ? [1, 2] : [120, 240], RARE_OUT = 1.4;
 const HEAT_RGB = HEAT.map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
 
 function heatColor(k, low = 1) {
@@ -28,6 +30,7 @@ export function createScene(canvas, overlay) {
   let hudBox = null;
   let stars = [], sky = 0, shake = 0, parts = [], pops = [], fieldA = 0, heat = 0;
   let comet = null, cometIn = rnd(...COMET_FIRST);
+  let rare = null, rareIn = rnd(...RARE_FIRST), rareLast = null;
 
   function resize() {
     view.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -51,7 +54,13 @@ export function createScene(canvas, overlay) {
       s.y += (18 + 150 * s.z) * warp * dt;
       if (s.y > view.H + 2) { s.y = -2; s.x = Math.random() * view.W; }
     }
-    sky = (sky + (SKY_SPEED * warp * dt) / view.H) % SKY_LOOP;
+    const step = (SKY_SPEED * warp * dt) / view.H;
+    sky = (sky + step) % SKY_LOOP;
+    if (rare && (rare.y += step) > RARE_OUT) rare = null;
+    if ((rareIn -= dt) <= 0 && !rare) {
+      rare = newRare();
+      rareIn = rnd(...RARE_GAP);
+    }
     if (comet) {
       comet.k += dt / COMET_S;
       if (comet.k >= 1) comet = null;
@@ -95,16 +104,28 @@ export function createScene(canvas, overlay) {
     pops = [];
   }
 
+  const skyY = (i) => ((((sky - i * SKY_GAP) % SKY_LOOP) + SKY_LOOP) % SKY_LOOP) - SKY_TOP;
+
+  function newRare() {
+    const pool = RARE.filter((b) => b !== rareLast), b = pool[Math.floor(Math.random() * pool.length)];
+    const u = Math.min(view.W, view.H), y = -(b.r * u * 1.2) / view.H;
+    const room = (left) => Math.min(...BODIES.flatMap((o, i) => (o.x < 0.5 === left ? [Math.abs(skyY(i) - y), Math.abs(skyY(i) - SKY_LOOP - y)] : [])));
+    const left = room(true) >= room(false);
+    rareLast = b;
+    return { b, y, x: left ? Math.min(b.x, 1 - b.x) : Math.max(b.x, 1 - b.x) };
+  }
+
   function drawSky(clock) {
     const { W, H } = view, u = Math.min(W, H);
-    BODIES.forEach((b, i) => {
-      const y = (((((sky - i * SKY_GAP) % SKY_LOOP) + SKY_LOOP) % SKY_LOOP) - SKY_TOP) * H;
+    const draw = (b, x, y) => {
       if (y < -u * 0.3 || y > H + u * 0.3) return;
       ctx.save();
-      ctx.translate(W * b.x, y);
+      ctx.translate(W * x, y);
       b.draw(ctx, b.r * u, reduceMotion ? 0 : clock);
       ctx.restore();
-    });
+    };
+    BODIES.forEach((b, i) => draw(b, b.x, skyY(i) * H));
+    if (rare) draw(rare.b, rare.x, rare.y * H);
   }
 
   function newComet() {
