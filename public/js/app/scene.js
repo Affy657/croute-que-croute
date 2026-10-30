@@ -10,7 +10,7 @@ const HEAT_EASE = 0.7, HEAT_LOW = 0.45, HEAT_FIELD = 0.85;
 const HINT = "Pose ton doigt où tu veux";
 const COMET_S = 7, COMET_SIZE = 0.2, COMET_TAIL = 0.55, COMET_ALPHA = 0.8;
 const OFTEN = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("etoiles") === "souvent";
-const COMET_FIRST = OFTEN ? [1, 2] : [25, 80], COMET_GAP = OFTEN ? [4, 6] : [60, 150];
+const COMET_FIRST = OFTEN ? [1, 2] : [120, 300], COMET_GAP = OFTEN ? [4, 6] : [300, 600];
 const HEAT_RGB = HEAT.map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
 
 function heatColor(k, low = 1) {
@@ -134,6 +134,7 @@ export function createScene(canvas, overlay) {
       ctx.lineTo(tx, ty);
       ctx.stroke();
     }
+    ctx.globalAlpha = 1;
     ctx.translate(x, y);
     ctx.rotate(c.a0 + c.spin * c.k * COMET_S);
     drawCan(ctx, c.kind, u * COMET_SIZE);
