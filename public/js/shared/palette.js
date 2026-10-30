@@ -45,8 +45,14 @@ export const SKY = {
   },
   moons: { light: "#5fa85a", dark: "#143320", spot: "#2c6435" },
   rock: { light: "#bf6a2c", dark: "#341910", spot: "#713617" },
-  toaster: { light: "#a3aabd", dark: "#262a3b", shine: "rgba(255, 255, 255, 0.3)", slot: "#14121f", crust: "#a65a22", crumb: "#d1aa6a", lever: "#2a2540" },
-  cheese: { light: "#e8c65c", dark: "#4a3510", hole: "#7a5614", floor: "#c39a3a", cut: "#f0d684", mouse: "#a29bb2", ear: "#d98a9a" }
+  toaster: {
+    sky: "#2c2650", skyLight: "#928bc2", horizon: "#d9d3f2", ground: "#1f1a35", groundLight: "#5c5487", rim: "rgba(13, 11, 36, 0.6)", shine: "#ffffff",
+    slot: "#14121f", glow: "#ffa04a", glowDark: "#8a2412", crust: "#9a4f1c", crumb: "#ecc27a", toasted: "#c47d36", bakelite: "#1a1424", bakeliteLight: "#4a3f63"
+  },
+  cheese: {
+    light: "#ffe98f", mid: "#f7c843", dark: "#c98b1c", shade: "rgba(13, 11, 36, 0.5)",
+    hole: "#e6aa30", holeDark: "#a86c16", holeLight: "#fbd766", cut: "#fff2b8", mouse: "#a29bb2", ear: "#d98a9a"
+  }
 };
 
 export const SPREADS = {

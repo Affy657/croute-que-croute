@@ -301,17 +301,56 @@ function rock(ctx, r) {
   dots(ctx, r, R.spot, [[0.3, 0.2, 0.25], [-0.35, 0.35, 0.18], [-0.1, -0.45, 0.14]]);
 }
 
-const POP_S = 6, POP_UP = 0.6, SLOTS = [[0.08, -0.72, 0.1], [-0.08, -0.52, 0]];
+const POP_S = 6, POP_UP = 0.7, SLOTS = [[0.08, -0.74, 0.12, 1], [-0.08, -0.55, 0, -1]];
 
 function popped(clock, delay) {
   const k = (((clock - delay) % POP_S) + POP_S) % POP_S;
   return k < POP_UP ? Math.sin((k / POP_UP) * Math.PI) : 0;
 }
 
-function bread(ctx, x, y, w) {
+function chrome(ctx, r) {
+  const T = SKY.toaster;
+  clipped(ctx, r, () => {
+    const sky = ctx.createLinearGradient(0, -r, 0, r * 0.15);
+    sky.addColorStop(0, T.sky);
+    sky.addColorStop(0.7, T.skyLight);
+    sky.addColorStop(1, T.horizon);
+    ctx.fillStyle = sky;
+    ctx.fillRect(-r, -r, 2 * r, 2 * r);
+    const ground = ctx.createLinearGradient(0, r * 0.08, 0, r);
+    ground.addColorStop(0, T.ground);
+    ground.addColorStop(1, T.groundLight);
+    ctx.fillStyle = ground;
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.98, r * 1.6, r * 0.9, 0, 0, TAU);
+    ctx.fill();
+    const edge = ctx.createRadialGradient(-r * 0.15, -r * 0.15, r * 0.55, 0, 0, r);
+    edge.addColorStop(0, SKY.lit);
+    edge.addColorStop(1, T.rim);
+    ctx.fillStyle = edge;
+    ctx.fillRect(-r, -r, 2 * r, 2 * r);
+    ctx.fillStyle = T.shine;
+    ctx.save();
+    ctx.translate(-r * 0.45, -r * 0.42);
+    ctx.rotate(-0.7);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.2, r * 0.07, 0, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+    disc(ctx, -r * 0.22, -r * 0.62, r * 0.035);
+  });
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = ink(r);
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, TAU);
+  ctx.stroke();
+}
+
+function bread(ctx, x, y, w, a) {
   const T = SKY.toaster, k = w / 40;
   ctx.save();
   ctx.translate(x, y);
+  ctx.rotate(a);
   ctx.scale(k, k);
   ctx.lineWidth /= k;
   toastPath(ctx, 40, 42);
@@ -321,88 +360,135 @@ function bread(ctx, x, y, w) {
   ctx.translate(0, 2);
   ctx.scale(0.78, 0.78);
   toastPath(ctx, 40, 42);
-  ctx.fillStyle = T.crumb;
+  const g = ctx.createRadialGradient(-8, -10, 2, 0, 0, 30);
+  g.addColorStop(0, T.crumb);
+  g.addColorStop(1, T.toasted);
+  ctx.fillStyle = g;
   ctx.fill();
   ctx.restore();
+}
+
+function slot(ctx, x, y, w, r) {
+  const T = SKY.toaster, g = ctx.createRadialGradient(x, y, 0, x, y, w);
+  g.addColorStop(0, T.glow);
+  g.addColorStop(1, T.glowDark);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.ellipse(x, y, w, r * 0.06, 0, 0, TAU);
+  ctx.fill();
+  ctx.strokeStyle = T.slot;
+  ctx.lineWidth = ink(r);
+  ctx.stroke();
 }
 
 function toaster(ctx, r, clock) {
   const T = SKY.toaster, w = r * 0.56, hop = popped(clock, 0);
-  ball(ctx, r, T.light, T.dark);
-  ctx.save();
-  ctx.strokeStyle = T.shine;
-  ctx.lineCap = "round";
-  ctx.lineWidth = r * 0.09;
-  ctx.beginPath();
-  ctx.arc(0, 0, r * 0.76, Math.PI * 1.02, Math.PI * 1.3);
-  ctx.stroke();
-  ctx.restore();
-  onSphere(ctx, r, 0.84, 0.1, () => {
+  chrome(ctx, r);
+  onSphere(ctx, r, 0.86, 0.12, () => {
     ctx.fillStyle = T.slot;
     ctx.beginPath();
-    rr(ctx, -r * 0.05, -r * 0.24, r * 0.1, r * 0.48, r * 0.05);
+    rr(ctx, -r * 0.05, -r * 0.26, r * 0.1, r * 0.52, r * 0.05);
     ctx.fill();
   });
-  tone(ctx, r);
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = ink(r);
-  for (const [x, y, delay] of SLOTS) {
-    ctx.fillStyle = T.slot;
+  onSphere(ctx, r, 0.32, 0.5, (light) => {
+    ctx.fillStyle = T.horizon;
+    disc(ctx, 0, 0, r * 0.15);
+    ctx.fillStyle = T.bakelite;
+    disc(ctx, 0, 0, r * 0.11);
+    ctx.strokeStyle = T.shine;
+    ctx.lineCap = "round";
+    ctx.lineWidth = r * 0.03;
     ctx.beginPath();
-    ctx.ellipse(x * r, y * r, w * 0.62, r * 0.05, 0, 0, TAU);
-    ctx.fill();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(light + 2.2) * r * 0.08, Math.sin(light + 2.2) * r * 0.08);
+    ctx.stroke();
+  });
+  for (const [x, y, delay, turn] of SLOTS) {
+    const up = popped(clock, delay);
+    slot(ctx, x * r, y * r, w * 0.64, r);
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = ink(r);
     ctx.save();
     ctx.beginPath();
-    ctx.rect(-r, -r * 3, 2 * r, r * (3 + y));
+    ctx.rect(-r * 2, -r * 4, 4 * r, r * (4 + y));
     ctx.clip();
-    bread(ctx, x * r, (y - 0.02 - 0.45 * popped(clock, delay)) * r, w);
+    bread(ctx, x * r, (y - 0.04 - 0.55 * up) * r, w, turn * 0.22 * up);
     ctx.restore();
   }
-  ctx.fillStyle = T.lever;
+  ctx.fillStyle = T.bakelite;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = ink(r);
   ctx.beginPath();
-  rr(ctx, r * 0.84, r * (0.2 - 0.3 * hop) - r * 0.06, r * 0.3, r * 0.12, r * 0.06);
+  rr(ctx, r * 0.84, r * (0.24 - 0.32 * hop) - r * 0.07, r * 0.32, r * 0.14, r * 0.07);
   ctx.fill();
   ctx.stroke();
-}
-
-const HOLES = [[-0.05, -0.2, 0.18], [0.45, -0.45, 0.12], [0.2, 0.3, 0.16], [-0.35, 0.5, 0.13], [0.6, 0.35, 0.11], [-0.62, 0.05, 0.09]];
-const BITE = { a: -2.15, d: 1.1, s: 0.38, teeth: 5 };
-
-function hole(ctx, s, light) {
-  const C = SKY.cheese;
-  ctx.save();
-  ctx.fillStyle = C.floor;
+  ctx.fillStyle = T.bakeliteLight;
   ctx.beginPath();
-  ctx.arc(0, 0, s, 0, TAU);
+  rr(ctx, r * 0.92, r * (0.24 - 0.32 * hop) - r * 0.045, r * 0.18, r * 0.035, r * 0.02);
   ctx.fill();
-  ctx.clip();
-  ctx.fillStyle = C.hole;
-  disc(ctx, Math.cos(light) * s * 0.25, Math.sin(light) * s * 0.25, s);
-  ctx.restore();
 }
 
-function biteEdge(ctx, r) {
-  const { a, d, s, teeth } = BITE, D = d * r, br = s * r, cx = Math.cos(a) * D, cy = Math.sin(a) * D;
-  const psi = Math.acos((br * br + D * D - r * r) / (2 * br * D)), bulge = br * 0.25;
-  const at = (t) => [cx + Math.cos(t) * br, cy + Math.sin(t) * br];
-  for (let i = 0; i < teeth; i++) {
-    const t1 = a + Math.PI + psi - ((i + 1) / teeth) * 2 * psi, tm = t1 + psi / teeth;
+const NOTCHES = [
+  { a: -2.15, d: 1.1, s: 0.38, teeth: 5 },
+  { a: 0.3, d: 1.02, s: 0.17 },
+  { a: 1.5, d: 1.04, s: 0.13 },
+  { a: 2.7, d: 1.02, s: 0.15 }
+];
+const HOLES = [[-0.05, -0.28, 0.17], [0.42, -0.45, 0.11], [0.2, 0.25, 0.15], [-0.4, 0.42, 0.12], [-0.62, -0.08, 0.1], [-0.12, 0.72, 0.07], [0.58, 0.05, 0.07], [0.1, -0.02, 0.05]];
+const PORES = [[0.3, -0.12, 0.025], [-0.25, 0.12, 0.02], [0.45, 0.48, 0.025], [-0.55, 0.62, 0.02], [0.12, -0.7, 0.02], [0.3, 0.62, 0.018], [-0.3, -0.05, 0.018]];
+
+function notch(n, r) {
+  const D = n.d * r, br = n.s * r;
+  return {
+    ...n, br, cx: Math.cos(n.a) * D, cy: Math.sin(n.a) * D,
+    phi: Math.acos((r * r + D * D - br * br) / (2 * r * D)),
+    psi: Math.acos((br * br + D * D - r * r) / (2 * br * D))
+  };
+}
+
+function notchEdge(ctx, n) {
+  const from = n.a + Math.PI + n.psi;
+  if (!n.teeth) {
+    ctx.arc(n.cx, n.cy, n.br, from, n.a + Math.PI - n.psi, true);
+    return;
+  }
+  const bulge = n.br * 0.25, at = (t) => [n.cx + Math.cos(t) * n.br, n.cy + Math.sin(t) * n.br];
+  for (let i = 0; i < n.teeth; i++) {
+    const t1 = from - ((i + 1) / n.teeth) * 2 * n.psi, tm = t1 + n.psi / n.teeth;
     const [x1, y1] = at(t1), [mx, my] = at(tm);
     ctx.quadraticCurveTo(mx + Math.cos(tm) * bulge, my + Math.sin(tm) * bulge, x1, y1);
   }
 }
 
-function bitten(ctx, r) {
-  const { a, d, s } = BITE, D = d * r, br = s * r;
-  const phi = Math.acos((r * r + D * D - br * br) / (2 * r * D));
+function wheel(ctx, list, r) {
   ctx.beginPath();
-  ctx.arc(0, 0, r, a + phi, a - phi + TAU);
-  biteEdge(ctx, r);
+  list.forEach((n, i) => {
+    const next = list[(i + 1) % list.length], start = n.a + n.phi;
+    let end = next.a - next.phi;
+    if (end < start) end += TAU;
+    ctx.arc(0, 0, r, start, end);
+    notchEdge(ctx, next);
+  });
   ctx.closePath();
 }
 
+function hole(ctx, s, light) {
+  const C = SKY.cheese, lx = Math.cos(light) * s, ly = Math.sin(light) * s;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0, 0, s, 0, TAU);
+  ctx.clip();
+  const g = ctx.createLinearGradient(lx, ly, -lx, -ly);
+  g.addColorStop(0, C.holeDark);
+  g.addColorStop(0.6, C.hole);
+  g.addColorStop(1, C.holeLight);
+  ctx.fillStyle = g;
+  ctx.fillRect(-s, -s, 2 * s, 2 * s);
+  ctx.restore();
+}
+
 function mouse(ctx, r) {
-  const C = SKY.cheese, s = r * 0.34, at = BITE.a + 0.66;
+  const C = SKY.cheese, s = r * 0.34, at = NOTCHES[0].a + 0.66;
   ctx.save();
   ctx.translate(Math.cos(at) * r, Math.sin(at) * r);
   ctx.rotate(at + Math.PI / 2);
@@ -451,29 +537,37 @@ function mouse(ctx, r) {
 }
 
 function cheese(ctx, r) {
-  const C = SKY.cheese, { a, d, s } = BITE;
+  const C = SKY.cheese, list = NOTCHES.map((n) => notch(n, r));
   ctx.save();
-  bitten(ctx, r);
+  wheel(ctx, list, r);
   ctx.clip();
-  ball(ctx, r, C.light, C.dark);
-  for (const [x, y, size] of HOLES) onSphere(ctx, r, x, y, (light) => hole(ctx, size * r, light));
-  const t = a + Math.PI + Math.acos((s * s + d * d - 1) / (2 * s * d));
-  ctx.strokeStyle = C.cut;
-  ctx.lineWidth = r * 0.07;
-  ctx.beginPath();
-  ctx.moveTo((Math.cos(a) * d + Math.cos(t) * s) * r, (Math.sin(a) * d + Math.sin(t) * s) * r);
-  biteEdge(ctx, r);
-  ctx.stroke();
-  const g = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r);
-  g.addColorStop(0, SKY.lit);
-  g.addColorStop(1, SKY.shade);
+  const g = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.05, 0, 0, r * 1.05);
+  g.addColorStop(0, C.light);
+  g.addColorStop(0.5, C.mid);
+  g.addColorStop(1, C.dark);
   ctx.fillStyle = g;
+  ctx.fillRect(-r, -r, 2 * r, 2 * r);
+  for (const [x, y, s] of HOLES) onSphere(ctx, r, x, y, (light) => hole(ctx, s * r, light));
+  for (const [x, y, s] of PORES) onSphere(ctx, r, x, y, (light) => hole(ctx, s * r, light));
+  for (const n of list) {
+    const from = n.a + Math.PI + n.psi;
+    ctx.strokeStyle = n.teeth ? C.cut : C.holeDark;
+    ctx.lineWidth = r * (n.teeth ? 0.07 : 0.1);
+    ctx.beginPath();
+    ctx.moveTo(n.cx + Math.cos(from) * n.br, n.cy + Math.sin(from) * n.br);
+    notchEdge(ctx, n);
+    ctx.stroke();
+  }
+  const shade = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.5, 0, 0, r * 1.05);
+  shade.addColorStop(0, SKY.lit);
+  shade.addColorStop(1, C.shade);
+  ctx.fillStyle = shade;
   ctx.fillRect(-r, -r, 2 * r, 2 * r);
   ctx.restore();
   ctx.strokeStyle = INK;
   ctx.lineWidth = ink(r);
   ctx.lineJoin = "round";
-  bitten(ctx, r);
+  wheel(ctx, list, r);
   ctx.stroke();
   mouse(ctx, r);
 }
@@ -485,7 +579,7 @@ export const BODIES = [
   { draw: green, x: 0.22, r: 0.1 },
   { draw: speakers, x: 0.8, r: 0.11 },
   { draw: rock, x: 0.24, r: 0.05 },
-  { draw: cheese, x: 0.78, r: 0.09 },
+  { draw: cheese, x: 0.78, r: 0.1 },
   { draw: toaster, x: 0.22, r: 0.1 }
 ];
 
