@@ -201,6 +201,7 @@ Après :
 - Remplacer ou compléter la musique avec des morceaux des collègues DJ.
 - Faire monter le morceau par un ami DJ : coupes et transitions propres, fin qui boucle. Les coupes faites dans le code en attendant sont approximatives.
 - Reprendre les couleurs des affiches : fichiers du designer dans `affiches/`. Les affiches sont aplaties : demander les éléments séparés.
+- Changement d'appareil : le profil est lié au téléphone (identifiant gardé dans le navigateur). Un joueur qui change d'appareil, ou qui vide son navigateur, ne peut pas reprendre son pseudo et doit recréer un compte. À explorer : un vrai compte (e-mail ou mot de passe), ou plus léger, un code de transfert affiché dans les paramètres, à taper ou scanner sur le nouvel appareil.
 - À décider : rejouer les meilleures parties pour confirmer leur temps (graine donnée par le serveur, gestes enregistrés). Bloquerait la triche par faux score.
 
 ## Idées pour plus tard
