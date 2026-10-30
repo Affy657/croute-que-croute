@@ -27,7 +27,7 @@ export const ACHIEVEMENTS = [
   { id: "topAll", family: "topping", name: "Tout le frigo", desc: "Gagner les " + EXTRAS + " garnitures", gear: "chef" },
   { id: "runs10", family: "loyal", name: "Dix tartines", desc: "Jouer 10 parties" },
   { id: "runs50", family: "loyal", name: "Boulangerie", desc: "Jouer 50 parties", gear: "brioche" },
-  { id: "runs100", family: "loyal", name: "Accro à la croûte", desc: "Jouer 100 parties" },
+  { id: "runs100", family: "loyal", name: "Accro à la croûte", desc: "Jouer 100 parties", gear: "crustless" },
   { id: "xmas", family: "loyal", name: "Joyeux Noël", desc: "Jouer en décembre", gear: "santa" },
   { id: "events3", family: "loyal", name: "Fidèle du Space", desc: "Jouer à 3 soirées", gear: "astronaut" },
   { id: "top10", family: "loyal", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée", gear: "pirate" },

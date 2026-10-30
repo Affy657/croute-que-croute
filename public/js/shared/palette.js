@@ -37,7 +37,8 @@ export const GEAR = {
   cutlery: { slot: "side", name: "Couteau et fourchette" },
   toasted: { slot: "bread", name: "Pain grillé", crust: "#8f4b1a", crumb: "#dc9a52" },
   burnt: { slot: "bread", name: "Pain carbonisé", crust: "#4b3226", crumb: "#6a4a38" },
-  brioche: { slot: "bread", name: "Brioche", crust: "#b9581b", crumb: "#ffdb8c" }
+  brioche: { slot: "bread", name: "Brioche", crust: "#b9581b", crumb: "#ffdb8c" },
+  crustless: { slot: "bread", name: "Sans croûte", crust: "#f6c983", crumb: "#f6c983" }
 };
 
 export const HEAT = ["#0d0b24", "#381496", "#6c1630"];

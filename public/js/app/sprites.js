@@ -829,6 +829,43 @@ const BREADS = {
   }
 };
 
+const teeth = ([x, y, r, a]) =>
+  [-1, 0, 1].map((k) => [x - Math.sin(a) * k * r * 0.75 + Math.cos(a) * Math.abs(k) * r * 0.25, y + Math.cos(a) * k * r * 0.75 + Math.sin(a) * Math.abs(k) * r * 0.25, r * (k ? 0.5 : 0.62)]);
+
+const BITES = {
+  crustless: {
+    bites: [[-21, 7, 6, Math.PI], [21, -1, 5.5, 0], [4, 22, 6, Math.PI / 2], [-11, -25, 6, -1.75]].flatMap(teeth),
+    crumbs: [[-27, 12, 1.1], [-26, 2, 0.8], [8, 28.5, 1], [25, 5, 0.9]]
+  }
+};
+
+function biteClip(ctx, w, h, bites) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(-w, -h, 2 * w, 2 * h);
+  for (const [x, y, r] of bites) {
+    ctx.moveTo(x + r, y);
+    ctx.arc(x, y, r, 0, TAU);
+  }
+  ctx.clip("evenodd");
+}
+
+function biteEdges(ctx, w, h, { bites, crumbs }, C) {
+  ctx.save();
+  toastPath(ctx, w, h);
+  ctx.clip();
+  ctx.lineWidth = 4.4;
+  ctx.strokeStyle = C.void;
+  for (const [x, y, r] of bites) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, TAU);
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.restore();
+  dots(ctx, C.crust, crumbs);
+}
+
 const HATS = {
   ninja(ctx, C) {
     ctx.strokeStyle = C.void;
@@ -1134,13 +1171,14 @@ function hat(ctx, kind, C) {
 }
 
 export function drawToast(ctx, t, splat, C = PALETTE) {
-  const w = 40, h = 42, bread = GEAR[t.bread];
+  const w = 40, h = 42, bread = GEAR[t.bread], bitten = BITES[t.bread];
   ctx.save();
   ctx.translate(t.x, t.y);
   ctx.rotate(splat ? 0.5 : t.tilt);
   ctx.lineJoin = "round";
   if (!splat) thrusters(ctx, t, w, h, C);
   if (!splat && SIDES[t.side]) SIDES[t.side](ctx, t, C);
+  if (bitten) biteClip(ctx, w, h, bitten.bites);
   toastPath(ctx, w, h);
   ctx.fillStyle = bread ? bread.crust : C.crust;
   ctx.fill();
@@ -1162,6 +1200,7 @@ export function drawToast(ctx, t, splat, C = PALETTE) {
     ctx.fill();
   }
   ctx.globalAlpha = 1;
+  if (bitten) biteEdges(ctx, w, h, bitten, C);
   if (BREADS[t.bread]) BREADS[t.bread](ctx, w, h, C);
   topping(ctx, t.spread, C);
   if (t.scars && t.scars.length) scars(ctx, t.scars, w, h, C);
