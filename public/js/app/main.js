@@ -9,13 +9,13 @@ import { createScene } from "./scene.js";
 import { createInput } from "./input.js";
 import { burst, rain, bounce } from "./party.js";
 import * as ach from "./achievements.js";
-import { chosen, unlockTopping, onTopping, stepTopping } from "./toppings.js";
+import { chosen, unlockTopping, chooseTopping, onTopping, stepTopping } from "./toppings.js";
 import { SPREADS } from "../shared/palette.js";
 import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./catalog.js";
 import { renderSettings, suggestInstall, leaveSettings } from "./settings.js";
 import { onInstallChange } from "./install.js";
 import {
-  ui, show, setText, setDigits, tickCountdowns, renderMenu, renderPicker, renderBoard, renderOver, renderOverStats, renderRival, renderKiller,
+  ui, show, setText, setDigits, tickCountdowns, renderMenu, renderPicker, openPicker, pickerIsOpen, renderBoard, renderOver, renderOverStats, renderRival, renderKiller,
   renderHud, renderControls, renderAll, setBoardScope, achLabel
 } from "./screens.js";
 
@@ -56,6 +56,7 @@ function scar(e) {
 function gainTopping(kind) {
   if (S.train || !kind || !unlockTopping(kind)) return;
   S.gotToppings.push(kind);
+  chooseTopping(kind);
   if (S.mode === "play") toastAch({ name: "Garniture " + SPREADS[kind].name });
 }
 
@@ -469,6 +470,10 @@ ui.infoBtn.addEventListener("click", openInfo);
 ui.infoBack.addEventListener("click", closeInfo);
 ui.closeBtn.addEventListener("click", () => (settingsOpen ? closeSettings() : achOpen ? closeAch() : closeInfo()));
 ui.menuAch.addEventListener("click", openAch);
+ui.pickToast.addEventListener("click", () => openPicker(!pickerIsOpen()));
+document.addEventListener("pointerdown", (e) => {
+  if (pickerIsOpen() && !ui.picker.contains(e.target)) openPicker(false);
+});
 ui.pickPrev.addEventListener("click", () => stepTopping(-1));
 ui.pickNext.addEventListener("click", () => stepTopping(1));
 ui.overAch.addEventListener("click", openAch);

@@ -11,6 +11,7 @@ export const KEYS = {
   achievements: "cv-succes",
   toppings: "cv-garnitures",
   topping: "cv-garniture",
+  toppingHint: "cv-garniture-astuce",
   pendingScores: "cv-score-attente",
   lastReload: "cv-reload"
 };

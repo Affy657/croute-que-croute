@@ -106,7 +106,7 @@ function corridor(g) {
 
 function fan({ t, toast, pick }) {
   const p = pick([{ x: -M, y: -M }, { x: FW + M, y: -M }, { x: FW / 2, y: -M }, { x: -M, y: FH * 0.4 }, { x: FW + M, y: FH * 0.4 }]);
-  const n = t >= 54 ? 5 : 4;
+  const n = t >= 54 ? 5 : t >= 38 ? 4 : 3;
   const spread = 0.9;
   const v = 200 * speedMul(t);
   const base = Math.atan2(toast.y - p.y, toast.x - p.x);
@@ -172,15 +172,15 @@ export const ATTACKS = [
     info: "3 fourchettes (jusqu'à 8) tombent du haut l'une après l'autre, un peu en biais." },
   { id: "cleaver", name: "Hachoir", from: 8, weight: 0.9, cost: 1.3, speed: 300, make: cleaver, growsUntil: 55, growth: "3 hachoirs à la suite",
     info: "Un hachoir tombe tout droit et très vite au-dessus de la tartine, annoncé 0,9 s avant. Quitter sa colonne. Dès 30 s, un deuxième suit dans une colonne voisine, un troisième dès 55 s." },
-  { id: "wall", name: "Mur", from: 14, weight: 1.1, cost: 1.7, speed: 150, make: wall,
+  { id: "wall", name: "Mur", from: 12, weight: 1.1, cost: 1.7, speed: 150, make: wall,
     info: "Une rangée serrée avec un seul trou, par le haut ou par un côté. Les pastilles d'annonce montrent déjà le trou." },
-  { id: "rolling", name: "Rouleau à pâtisserie", from: 18, weight: 0.8, cost: 1.6, speed: 110, make: rolling, growsUntil: 60, growth: "3 rouleaux à la suite",
+  { id: "rolling", name: "Rouleau à pâtisserie", from: 16, weight: 0.8, cost: 1.6, speed: 110, make: rolling, growsUntil: 60, growth: "3 rouleaux à la suite",
     info: "Un gros rouleau debout traverse lentement l'écran par un côté : passer au-dessus ou en dessous. 2 rouleaux à la suite dès 36 s, 3 dès 60 s." },
-  { id: "fan", name: "Éventail", from: 24, weight: 1.1, cost: 1.5, speed: 200, make: fan, growsUntil: 54, growth: "éventails au maximum (5 couteaux)",
-    info: "4 à 5 couteaux ouverts en cône depuis un même point, centrés sur la tartine. Il faut sortir du cône par le côté." },
+  { id: "fan", name: "Éventail", from: 22, weight: 1.1, cost: 1.5, speed: 200, make: fan, growsUntil: 54, growth: "éventails au maximum (5 couteaux)",
+    info: "3 à 5 couteaux ouverts en cône depuis un même point, centrés sur la tartine. Il faut sortir du cône par le côté." },
   { id: "whisk", name: "Fouet", lab: true, from: 4, weight: 0.7, cost: 1.3, speed: 100, make: whisk,
     info: "Un fouet qui tourne sur lui-même descend lentement vers la tartine et occupe une grosse zone." },
-  { id: "cross", name: "Croix", solo: true, from: 32, weight: 0.7, cost: 1.6, speed: 190, make: cross,
+  { id: "cross", name: "Croix", solo: true, from: 30, weight: 0.7, cost: 1.6, speed: 190, make: cross,
     info: "4 couteaux en même temps depuis les deux coins du haut et les deux côtés, tous vers la tartine. S'écarter du point visé." },
   { id: "bread", name: "Couteau à pain", from: 38, weight: 0.7, cost: 1.2, speed: 240, make: bread,
     info: "Lancé d'un coin du haut, il rebondit sur le bord opposé puis file vers la tartine. Suivre la pointe de la pastille et anticiper le rebond." },

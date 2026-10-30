@@ -4,10 +4,11 @@ import { prefs, musicAvailable } from "./audio.js";
 import { progress } from "./achievements.js";
 import { PROJECTILES } from "../game/projectiles.js";
 import { SPREADS } from "../shared/palette.js";
-import { owned, chosen } from "./toppings.js";
+import { owned, chosen, hintSeen, seeHint } from "./toppings.js";
 
 const $ = (id) => document.getElementById(id);
 const BOARD_TOP = 10, PODIUM = 3;
+const HINT_TEXT = "Touche ta tartine pour changer de garniture";
 
 export const ui = {
   menu: $("menu"), over: $("over"), board: $("board"), hud: $("hud"), time: $("time"), hudBest: $("hudBest"),
@@ -26,7 +27,7 @@ export const ui = {
   qr: $("qr"), qrHost: $("qrHost"), qrBack: $("qrBack"),
   ach: $("ach"), achCount: $("achCount"), achList: $("achList"), achBack: $("achBack"), achToast: $("achToast"), overAch: $("overAch"), musicVol: $("musicVol"), sfxVol: $("sfxVol"),
   renameCard: $("renameCard"), renameForm: $("renameForm"), newPseudo: $("newPseudo"), renameNote: $("renameNote"),
-  picker: $("picker"), pickPrev: $("pickPrev"), pickNext: $("pickNext"), pickName: $("pickName"), pickCount: $("pickCount"),
+  picker: $("picker"), pickToast: $("pickToast"), pickLabel: $("pickLabel"), pickPrev: $("pickPrev"), pickNext: $("pickNext"), pickName: $("pickName"), pickCount: $("pickCount"),
   installPop: $("installPop"), installPopText: $("installPopText"), installYes: $("installYes"), installLater: $("installLater")
 };
 
@@ -120,11 +121,25 @@ export function renderMenu() {
   renderPicker();
 }
 
+let pickerOpen = false;
+
+export const pickerIsOpen = () => pickerOpen;
+
+export function openPicker(open) {
+  pickerOpen = open;
+  if (open) seeHint();
+  renderPicker();
+}
+
 export function renderPicker() {
-  const list = owned();
+  const list = owned(), hint = !pickerOpen && !hintSeen();
   ui.picker.hidden = needJoin() || list.length < 2;
-  ui.pickName.textContent = SPREADS[chosen()].name;
-  ui.pickCount.textContent = list.length + "/" + Object.keys(SPREADS).length;
+  ui.pickToast.setAttribute("aria-expanded", String(pickerOpen));
+  ui.pickPrev.hidden = ui.pickNext.hidden = !pickerOpen;
+  ui.pickLabel.hidden = !pickerOpen && !hint;
+  ui.pickLabel.classList.toggle("hint", hint);
+  ui.pickName.textContent = hint ? HINT_TEXT : SPREADS[chosen()].name;
+  ui.pickCount.textContent = hint ? "" : list.length + "/" + Object.keys(SPREADS).length;
 }
 
 function boardRow(rank, pseudo, best, me) {
