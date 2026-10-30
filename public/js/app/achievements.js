@@ -15,8 +15,8 @@ const TOPPINGS = [[1, "top1"], [FRIDGE, "top4"], [EXTRAS, "topAll"]];
 export const ACHIEVEMENTS = [
   { id: "t10", family: "time", name: "Premiers pas", desc: "Tenir 10 s" },
   { id: "t30", family: "time", name: "Croustillante", desc: "Tenir 30 s", gear: "witch" },
-  { id: "t60", family: "time", name: "Une minute de gloire", desc: "Tenir 60 s", gear: "boosters" },
-  { id: "t90", family: "time", name: "Dorée à point", desc: "Tenir 90 s" },
+  { id: "t60", family: "time", name: "Une minute de gloire", desc: "Tenir 60 s" },
+  { id: "t90", family: "time", name: "Dorée à point", desc: "Tenir 90 s", gear: "boosters" },
   { id: "t120", family: "time", name: "Bien grillée", desc: "Tenir 120 s" },
   { id: "t150", family: "time", name: "Tartine de légende", desc: "Tenir 150 s" },
   { id: "near5", family: "play", name: "Ça passe", desc: "5 frôlés dans une partie" },
