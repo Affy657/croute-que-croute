@@ -203,7 +203,7 @@ export const ATTACKS = [
   { id: "corridor", name: "Couloir", lab: true, solo: true, from: 46, weight: 0.6, cost: 2.2, speed: 150, make: corridor,
     info: "Un mur par un côté, puis un autre par l'autre côté juste après, chacun avec son trou (plus grand que pour un mur seul). Passer d'un trou à l'autre." },
   { id: "downpour", name: "Double pluie", solo: true, from: 54, weight: 0.6, cost: 1.8, speed: 190, make: downpour,
-    info: "5 à 9 fourchettes tombent tout droit en rafale, une fois à gauche, une fois à droite." }
+    info: "8 fourchettes (9 dès 60 s) tombent tout droit en rafale, une fois à gauche, une fois à droite." }
 ];
 
 export function pickAttack(t, rng, last = null, streak = 0, busy = false, active = new Set()) {

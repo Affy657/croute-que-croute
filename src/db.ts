@@ -146,6 +146,13 @@ export function forgetCaches() {
   rankingCache.clear();
 }
 
+export function renameCached(id: string, pseudo: string) {
+  for (const hit of rankingCache.values()) {
+    if (!Array.isArray(hit.value)) continue;
+    for (const row of hit.value as Ranked[]) if (row.id === id) row.pseudo = pseudo;
+  }
+}
+
 export function rankIn(list: Ranked[], playerId: string) {
   const i = list.findIndex((r) => r.id === playerId);
   return i < 0 ? null : i + 1;

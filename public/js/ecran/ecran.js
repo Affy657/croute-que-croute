@@ -1,9 +1,9 @@
 import { fmtCs, clock } from "../shared/format.js";
 import { rain, bounce } from "../app/party.js";
 
-const POLL_MS = 10000, ROWS = 10, FEED_ROWS = 4, IDLE_MS = 3000, SOON_MS = 24 * 3600 * 1000, CROWN_MS = 6000;
+const POLL_MS = 10000, FETCH_MS = 8000, ROWS = 10, FEED_ROWS = 4, IDLE_MS = 3000, SOON_MS = 24 * 3600 * 1000, CROWN_MS = 6000;
 const $ = (id) => document.getElementById(id);
-let board = null, offset = 0, shown = null, idleTimer = null, lock = null, seen = null, crownTimer = null;
+let board = null, offset = 0, shown = null, idleTimer = null, lock = null, seen = null, crownTimer = null, busy = false, stale = false;
 
 const now = () => Date.now() + offset;
 
@@ -52,7 +52,7 @@ function render() {
       if (!shown.bests.has(r.best)) rows[i].classList.add("up");
     });
     const first = top[0];
-    if (first && shown.first && first.pseudo !== shown.first.pseudo && first.best !== shown.first.best) {
+    if (first && shown.first && first.pseudo !== shown.first.pseudo && first.best > shown.first.best) {
       bounce(rows[0]);
       crown(first);
       rain();
@@ -78,6 +78,7 @@ function tick() {
   if (!board) return;
   const el = $("countdown"), v = view(), t = now(), next = board.next;
   if (v.ev && v.ev.status === "open") setCountdown("Fin dans ", v.ev.closesAt - t);
+  else if (v.ev && t < v.ev.finalAt) setCountdown("Résultats dans ", v.ev.finalAt - t);
   else if (next && next.opensAt - t < SOON_MS) setCountdown("Début dans ", next.opensAt - t);
   else if (next) {
     el.textContent = "Prochaine soirée " + when(next.opensAt);
@@ -110,17 +111,30 @@ function renderFeed(items) {
   $("feed").replaceChildren(...rows);
 }
 
+async function grab(path) {
+  const signal = AbortSignal.timeout ? AbortSignal.timeout(FETCH_MS) : undefined;
+  const res = await fetch(path, { cache: "no-store", signal });
+  if (!res.ok) throw new Error(path);
+  return res.json();
+}
+
+function reloadSoon() {
+  stale = true;
+  if (!document.fullscreenElement) location.reload();
+}
+
 async function refresh() {
-  try {
-    const [res, live] = await Promise.all([fetch("/api/board", { cache: "no-store" }), fetch("/api/feed", { cache: "no-store" })]);
-    if (!res.ok) return;
-    const next = await res.json();
-    if (board && next.version !== board.version) location.reload();
-    board = next;
+  if (busy) return;
+  busy = true;
+  const [next, live] = await Promise.allSettled([grab("/api/board"), grab("/api/feed")]);
+  busy = false;
+  if (next.status === "fulfilled" && (!board || next.value.now >= board.now)) {
+    if (board && next.value.version !== board.version) reloadSoon();
+    board = next.value;
     offset = board.now - Date.now();
     render();
-    if (live.ok) renderFeed((await live.json()).items);
-  } catch (e) {}
+  }
+  if (live.status === "fulfilled") renderFeed(live.value.items);
 }
 
 async function keepAwake() {
@@ -143,12 +157,16 @@ $("fullBtn").addEventListener("click", () => {
   keepAwake();
   if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
 });
-document.addEventListener("fullscreenchange", () => { $("fullBtn").hidden = !!document.fullscreenElement; });
+document.addEventListener("fullscreenchange", () => {
+  $("fullBtn").hidden = !!document.fullscreenElement;
+  if (stale && !document.fullscreenElement) location.reload();
+});
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && lock === null && document.fullscreenElement) keepAwake();
+  if (!document.hidden && lock === null) keepAwake();
 });
 document.addEventListener("pointermove", wake);
 wake();
+keepAwake();
 refresh();
 setInterval(refresh, POLL_MS);
 setInterval(tick, 1000);

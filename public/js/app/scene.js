@@ -33,7 +33,7 @@ export function createScene(canvas, overlay) {
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const view = { W: 0, H: 0, dpr: 1, scale: 1, ox: 0, oy: 0 };
   let hudBox = null;
-  let stars = [], sky = 0, shake = 0, parts = [], pops = [], fieldA = 0, heat = 0;
+  let stars = [], sky = 0, shake = 0, parts = [], pops = [], fieldA = 0, heat = 0, heatKey = "", heatFill = null;
   let comet = null, cometIn = rnd(...COMET_FIRST);
   let rare = ODD ? pickRare(null) : null, rareY = -Infinity;
 
@@ -159,10 +159,14 @@ export function createScene(canvas, overlay) {
     const { W, H, dpr } = view;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (heat > 0.005) {
-      const g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, heatColor(heat));
-      g.addColorStop(1, heatColor(heat, HEAT_LOW));
-      ctx.fillStyle = g;
+      const key = H + ":" + Math.round(heat * 200);
+      if (key !== heatKey) {
+        heatKey = key;
+        heatFill = ctx.createLinearGradient(0, 0, 0, H);
+        heatFill.addColorStop(0, heatColor(heat));
+        heatFill.addColorStop(1, heatColor(heat, HEAT_LOW));
+      }
+      ctx.fillStyle = heatFill;
     } else {
       ctx.fillStyle = C.void;
     }

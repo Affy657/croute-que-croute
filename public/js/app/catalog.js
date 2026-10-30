@@ -210,7 +210,7 @@ export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
     "Tout accélère avec le temps, jusqu'à 2,6 fois plus vite à 80 s.",
     "Une attaque ne sort jamais plus de 3 fois d'affilée, et celle qui vient de sortir revient moins souvent. Les grosses figures (croix, couloir, double pluie) ne sortent jamais deux fois de suite.",
     "Dans les aperçus, la tartine ne bouge pas.",
-    "« S'entraîner » lance une partie avec seulement cette attaque, à sa vitesse d'arrivée. Elle ne compte ni pour le classement ni pour les succès."
+    "« S'entraîner » lance une partie avec seulement cette attaque, qui démarre à sa vitesse d'arrivée puis accélère. Elle ne compte ni pour le classement ni pour les succès."
   ]) list.append(el("li", null, text));
   rules.append(el("h2", null, "Règles"), list);
   const cards = ATTACKS.filter((a) => showLab || !a.lab).map((attack) => {

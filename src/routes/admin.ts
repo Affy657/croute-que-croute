@@ -6,6 +6,8 @@ import type { Ctx } from "../router";
 
 const INVITE_MS = 48 * 3600 * 1000;
 const SEEN_MS = 5 * 60 * 1000;
+const SESSION_MS = 30 * 24 * 3600 * 1000;
+const JOINED_MS = 15 * 60 * 1000;
 const SUSPECT_MS = 15000, SUSPECT_RATIO = 1.15, SUSPECT_HIGH = 9000;
 
 export interface AdminAuth {
@@ -34,6 +36,8 @@ interface PlayerAdminRow {
 const keyMatches = async (env: Env, key: unknown) =>
   !!env.ADMIN_KEY && typeof key === "string" && key.length > 0 && (await safeEqual(key, env.ADMIN_KEY));
 
+const throttled = async (req: Request, env: Env) => !(await allowed(env.ADMIN_LIMIT, "admin:" + clientIp(req)));
+
 async function createSession(env: Env, name: string, role: string) {
   const token = randomToken();
   const now = Date.now();
@@ -43,19 +47,19 @@ async function createSession(env: Env, name: string, role: string) {
   return json({ token, admin: { name, role } }, 201);
 }
 
-export async function adminAuth(req: Request, env: Env): Promise<AdminAuth | null> {
+export async function adminAuth(req: Request, env: Env): Promise<AdminAuth | "slow" | null> {
   const key = req.headers.get("x-admin-key");
   if (key) {
-    if (!(await allowed(env.ADMIN_LIMIT, "admin:" + clientIp(req))) || !(await keyMatches(env, key))) return null;
-    return { id: null, name: "Clé admin", role: "owner" };
+    if (await keyMatches(env, key)) return { id: null, name: "Clé admin", role: "owner" };
+    return (await throttled(req, env)) ? "slow" : null;
   }
   const token = bearer(req);
   if (!token) return null;
   const row = await env.DB.prepare("SELECT id, name, role, last_seen, revoked FROM admins WHERE token_hash = ?")
     .bind(await sha256(token))
     .first<AdminRow>();
-  if (!row || row.revoked) return null;
   const now = Date.now();
+  if (!row || row.revoked || now - row.last_seen > SESSION_MS) return null;
   if (now - row.last_seen > SEEN_MS) {
     await env.DB.prepare("UPDATE admins SET last_seen = ? WHERE id = ?").bind(now, row.id).run();
   }
@@ -63,23 +67,21 @@ export async function adminAuth(req: Request, env: Env): Promise<AdminAuth | nul
 }
 
 export async function login({ req, env }: Ctx) {
-  if (!(await allowed(env.ADMIN_LIMIT, "admin:" + clientIp(req)))) return tooFast();
   const body = await readJson(req);
-  if (!(await keyMatches(env, body.key))) return fail(401, "Clé admin incorrecte.");
+  if (!(await keyMatches(env, body.key))) return (await throttled(req, env)) ? tooFast() : fail(401, "Clé admin incorrecte.");
   const name = cleanName(body.name);
   if (!name) return fail(400, "Prénom de 1 à 30 caractères.");
   return createSession(env, name, "owner");
 }
 
 export async function accept({ req, env }: Ctx) {
-  if (!(await allowed(env.ADMIN_LIMIT, "admin:" + clientIp(req)))) return tooFast();
   const invite = (await readJson(req)).invite;
   if (typeof invite !== "string" || !invite) return fail(400, "Invitation invalide.");
   const hash = await sha256(invite);
   const row = await env.DB.prepare("SELECT name, role, expires_at, used_at FROM admin_invites WHERE token_hash = ?")
     .bind(hash)
     .first<{ name: string; role: string; expires_at: number; used_at: number | null }>();
-  if (!row) return fail(404, "Invitation inconnue.");
+  if (!row) return (await throttled(req, env)) ? tooFast() : fail(404, "Invitation inconnue.");
   if (row.used_at) return fail(410, "Invitation déjà utilisée.");
   if (Date.now() > row.expires_at) return fail(410, "Invitation expirée, demande un nouveau lien.");
   const res = await env.DB.prepare("UPDATE admin_invites SET used_at = ? WHERE token_hash = ? AND used_at IS NULL")
@@ -113,26 +115,38 @@ export async function players({ req, env }: Ctx) {
   const now = Date.now();
   const general = new URL(req.url).searchParams.get("scope") === "general";
   const event = (await pendingEvent(env, now)) ?? (await lastEvent(env));
-  let rows: PlayerAdminRow[] = [];
+  const cols = "id, pseudo, best, banned, run_count, best_elapsed FROM profiles";
+  const joined = env.DB.prepare(
+    `SELECT ${cols} INDEXED BY profiles_joined WHERE created_at > ? AND best = 0 AND banned = 0 ORDER BY created_at DESC LIMIT 50`,
+  ).bind(now - JOINED_MS);
+  let rows: PlayerAdminRow[] = [], fresh: PlayerAdminRow[] = [];
   if (general) {
-    rows = (await env.DB.prepare(
-      `SELECT id, pseudo, best, banned, run_count, best_elapsed FROM profiles
-       WHERE best > 0 OR banned = 1
-       ORDER BY banned ASC, best DESC, best_at ASC LIMIT 300`,
-    ).all<PlayerAdminRow>()).results;
+    const [ranked, out, recent] = await env.DB.batch<PlayerAdminRow>([
+      env.DB.prepare(`SELECT ${cols} WHERE banned = 0 AND best > 0 ORDER BY best DESC, best_at ASC LIMIT 300`),
+      env.DB.prepare(`SELECT ${cols} WHERE banned = 1 ORDER BY best DESC, best_at ASC LIMIT 300`),
+      joined,
+    ]);
+    rows = [...ranked.results, ...out.results];
+    fresh = recent.results;
   } else if (event) {
-    rows = (await env.DB.prepare(
-      `SELECT p.id, p.pseudo, e.best, p.banned, e.run_count, e.best_elapsed FROM entries e JOIN profiles p ON p.id = e.player_id
-       WHERE e.event_id = ?
-       ORDER BY p.banned ASC, e.best DESC, e.best_at ASC`,
-    )
-      .bind(event.id)
-      .all<PlayerAdminRow>()).results;
+    const [entries, recent] = await env.DB.batch<PlayerAdminRow>([
+      env.DB.prepare(
+        `SELECT p.id, p.pseudo, e.best, p.banned, e.run_count, e.best_elapsed FROM entries e JOIN profiles p ON p.id = e.player_id
+         WHERE e.event_id = ?
+         ORDER BY p.banned ASC, e.best DESC, e.best_at ASC`,
+      ).bind(event.id),
+      joined,
+    ]);
+    rows = entries.results;
+    const listed = new Set(rows.map((p) => p.id));
+    fresh = recent.results.filter((p) => !listed.has(p.id));
   }
+  const firstOut = rows.findIndex((p) => p.banned);
+  const shown = firstOut < 0 ? [...rows, ...fresh] : [...rows.slice(0, firstOut), ...fresh, ...rows.slice(firstOut)];
   return json({
     scope: general ? "general" : "event",
     event: event ? eventJson(event, now) : null,
-    players: rows.map((p) => ({ id: p.id, pseudo: p.pseudo, best: p.best, banned: p.banned, runs: p.run_count, suspect: suspect(p) })),
+    players: shown.map((p) => ({ id: p.id, pseudo: p.pseudo, best: p.best, banned: p.banned, runs: p.run_count, suspect: suspect(p) })),
     stats: { players: rows.length, runs: rows.reduce((n, p) => n + p.run_count, 0) },
   });
 }
@@ -153,12 +167,15 @@ export async function createEvent({ req, env }: Ctx) {
   if (!name) return fail(400, NAME_ERROR);
   if (closesAt === null || closesAt <= now) return fail(400, "L'heure de fin doit être dans le futur.");
   if (closesAt <= opensAt) return fail(400, "La fin doit être après le début.");
-  if (await pendingEvent(env, now)) {
-    return fail(409, "Une soirée est déjà en cours ou prévue. Modifie-la, ou avance sa fin à maintenant.");
-  }
-  await env.DB.prepare("INSERT INTO events (name, opens_at, closes_at, created_at) VALUES (?, ?, ?, ?)")
+  const created = await env.DB.prepare(
+    `INSERT INTO events (name, opens_at, closes_at, created_at)
+     SELECT ?1, ?2, ?3, ?4 WHERE NOT EXISTS (SELECT 1 FROM events WHERE closes_at > ?4)`,
+  )
     .bind(name, opensAt, closesAt, now)
     .run();
+  if (!created.meta.changes) {
+    return fail(409, "Une soirée est déjà en cours ou prévue. Modifie-la, ou avance sa fin à maintenant.");
+  }
   forgetCaches();
   return json({ ok: true }, 201);
 }
@@ -218,7 +235,10 @@ export async function revoke({ env, params }: Ctx) {
   )
     .bind(params[0])
     .run();
-  if (res.meta.changes) return json({ ok: true });
+  if (res.meta.changes) {
+    await env.DB.prepare("UPDATE admin_invites SET expires_at = 0 WHERE created_by = ? AND used_at IS NULL").bind(params[0]).run();
+    return json({ ok: true });
+  }
   const target = await env.DB.prepare("SELECT 1 FROM admins WHERE id = ? AND revoked = 0").bind(params[0]).first();
   return target ? fail(409, "Impossible de retirer le dernier propriétaire.") : fail(404, "Admin inconnu.");
 }

@@ -246,12 +246,13 @@ export function drawTrail(ctx, o, C = PALETTE) {
   ctx.save();
   ctx.lineWidth = 3.5;
   ctx.lineCap = "round";
+  const bx = o.x - ux * back, by = o.y - uy * back;
+  const g = ctx.createLinearGradient(bx, by, bx - ux * len, by - uy * len);
+  g.addColorStop(0, C.trail);
+  g.addColorStop(1, C["trail-end"]);
+  ctx.strokeStyle = g;
   for (const k of lanes) {
-    const x = o.x - ux * back - uy * k, y = o.y - uy * back + ux * k;
-    const g = ctx.createLinearGradient(x, y, x - ux * len, y - uy * len);
-    g.addColorStop(0, C.trail);
-    g.addColorStop(1, C["trail-end"]);
-    ctx.strokeStyle = g;
+    const x = bx - uy * k, y = by + ux * k;
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(x - ux * len, y - uy * len);
@@ -429,6 +430,13 @@ function line(ctx, points) {
   ctx.beginPath();
   points.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
 }
+
+const DOG_RIM = Array.from({ length: 120 }, (_, i) => {
+  const a = (i / 120) * TAU, c = Math.cos(a), sn = Math.sin(a);
+  const f = 1 + 0.035 * Math.sin(a * 9 + 1.3) + 0.02 * Math.sin(a * 17 + 0.5);
+  return [Math.sign(c) * Math.abs(c) ** 0.65 * 12.4 * f, 2.6 + Math.sign(sn) * Math.abs(sn) ** 0.65 * 12.6 * f];
+});
+const DOG_BACK = DOG_RIM.map(([x, y]) => [x + 0.4, y + 0.9]), DOG_FRONT = DOG_RIM;
 
 const TOPPINGS = {
   butter(ctx, C) {
@@ -623,17 +631,12 @@ const TOPPINGS = {
     dots(ctx, C.void, [[4.9, -0.2, 1.5]]);
   },
   dog(ctx, C) {
-    const layer = (dx, dy) => line(ctx, Array.from({ length: 120 }, (_, i) => {
-      const a = (i / 120) * TAU, c = Math.cos(a), sn = Math.sin(a);
-      const f = 1 + 0.035 * Math.sin(a * 9 + 1.3) + 0.02 * Math.sin(a * 17 + 0.5);
-      return [dx + Math.sign(c) * Math.abs(c) ** 0.65 * 12.4 * f, dy + 2.6 + Math.sign(sn) * Math.abs(sn) ** 0.65 * 12.6 * f];
-    }));
     ctx.fillStyle = "#4a2611";
-    layer(0.4, 0.9);
+    line(ctx, DOG_BACK);
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = "#74421f";
-    layer(0, 0);
+    line(ctx, DOG_FRONT);
     ctx.closePath();
     ctx.fill();
     ctx.save();

@@ -1,4 +1,4 @@
-const CACHE = "croute-v19";
+const CACHE = "croute-" + (new URL(self.location.href).searchParams.get("v") || "v19");
 const SHELL = [
   "/", "/style.css", "/catalog.css", "/manifest.webmanifest", "/icons/icon-192.png", "/qr.svg",
   "/js/version.js", "/js/shared/store.js", "/js/shared/format.js", "/js/shared/palette.js",
@@ -28,8 +28,10 @@ self.addEventListener("fetch", (event) => {
   if (FONTS.includes(url.origin)) {
     event.respondWith(
       caches.match(req).then((hit) => hit || fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((cache) => cache.put(req, copy));
+        if (res.ok || res.type === "opaque") {
+          const copy = res.clone();
+          caches.open(CACHE).then((cache) => cache.put(req, copy));
+        }
         return res;
       }))
     );
@@ -40,7 +42,7 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/music/") || url.pathname.startsWith("/admin")) return;
 
   event.respondWith(
-    fetch(req, { cache: "no-store" })
+    fetch(req, { cache: "no-cache" })
       .then((res) => {
         if (res.ok) {
           const copy = res.clone();
@@ -48,6 +50,6 @@ self.addEventListener("fetch", (event) => {
         }
         return res;
       })
-      .catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || caches.match("/")))
+      .catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || (req.mode === "navigate" ? caches.match("/") : Response.error())))
   );
 });
