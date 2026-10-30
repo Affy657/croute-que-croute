@@ -1,10 +1,12 @@
 const SENS = 1.8;
 
+export const guessDevice = () => (window.matchMedia("(pointer: coarse)").matches ? "mobile" : "pc");
+
 export function createInput(canvas, { active, scale }) {
   const pend = { x: 0, y: 0 };
   const finger = { held: false, touch: false, x: 0, y: 0, at: 0 };
   const spare = new Map();
-  let drag = null, mouse = null, poked = false;
+  let drag = null, mouse = null, poked = false, used = null;
 
   const begin = (e) => {
     drag = { id: e.pointerId, lx: e.clientX, ly: e.clientY };
@@ -45,6 +47,7 @@ export function createInput(canvas, { active, scale }) {
     const k = SENS / scale();
     if (e.pointerType === "mouse" && !drag) {
       if (active() && mouse) {
+        used = "pc";
         pend.x += (e.clientX - mouse.x) * k;
         pend.y += (e.clientY - mouse.y) * k;
       }
@@ -52,6 +55,7 @@ export function createInput(canvas, { active, scale }) {
       return;
     }
     if (!drag || e.pointerId !== drag.id || !active()) return;
+    if (used !== "pc") used = e.pointerType === "mouse" ? "pc" : "mobile";
     pend.x += (e.clientX - drag.lx) * k;
     pend.y += (e.clientY - drag.ly) * k;
     drag.lx = finger.x = e.clientX;
@@ -68,6 +72,7 @@ export function createInput(canvas, { active, scale }) {
   return {
     begin,
     finger,
+    device: () => used || guessDevice(),
     reset() {
       drag = null;
       poked = false;
@@ -78,6 +83,9 @@ export function createInput(canvas, { active, scale }) {
     },
     pending: () => pend.x !== 0 || pend.y !== 0,
     poked: () => poked,
+    fresh() {
+      used = null;
+    },
     take() {
       const d = { x: pend.x, y: pend.y };
       poked = false;

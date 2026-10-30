@@ -1,12 +1,13 @@
 import { VERSION } from "../version.js";
 import { store, session, KEYS } from "../shared/store.js";
+import { guessDevice } from "./input.js";
 
 const RELOAD_GAP = 15000;
 const SEND_TRIES = 3, SEND_GAP_MS = 1500, WAIT_GAP_MS = 5000, WAIT_MS = 120000, SEND_TIMEOUT_MS = 8000;
 
 export const net = { token: store.get(KEYS.playerToken), board: null, offset: 0, online: true, updatePending: false };
 let localBest = parseInt(store.get(KEYS.localBest) || "0", 10) || 0;
-let boardAsked = 0, boardShown = 0;
+let boardAsked = 0, boardShown = 0, lastDevice = null;
 const listeners = { board: [], update: [], result: [] };
 
 export const on = (name, fn) => listeners[name].push(fn);
@@ -53,19 +54,23 @@ export function upcomingEvent() {
 
 export const canCompete = () => registered() && !net.board.me.banned;
 
-export function standing(scope = isOpen() ? "event" : "general") {
+export const setDevice = (device) => { lastDevice = device; };
+export const onPc = () => (lastDevice || guessDevice()) === "pc";
+export const myScope = () => (onPc() ? "pc" : isOpen() ? "event" : "general");
+
+export function standing(scope = myScope()) {
   if (!registered()) return { best: localBest, rank: null, count: 0 };
   const { me } = net.board;
-  return scope === "event"
-    ? { best: me.eventBest || 0, rank: me.eventRank, count: net.board.eventCount, rival: me.eventRival }
-    : { best: me.best, rank: me.rank, count: net.board.count, rival: me.rival };
+  if (scope === "event") return { best: me.eventBest || 0, rank: me.eventRank, count: net.board.eventCount, rival: me.eventRival };
+  if (scope === "pc") return { best: me.pcBest || 0, rank: me.pcRank, count: net.board.pcCount, rival: me.pcRival };
+  return { best: me.best, rank: me.rank, count: net.board.count, rival: me.rival };
 }
 
 export const knownBest = () => standing().best;
 
-export function leader(scope = isOpen() ? "event" : "general") {
+export function leader(scope = myScope()) {
   const b = net.board;
-  return (b && (scope === "event" ? b.eventTop || [] : b.top)[0]) || null;
+  return (b && (scope === "event" ? b.eventTop || [] : scope === "pc" ? b.pcTop || [] : b.top)[0]) || null;
 }
 
 export function saveLocalBest(score) {
@@ -136,16 +141,16 @@ function pendingScores() {
 const keepPending = (list) => store.set(KEYS.pendingScores, list.length ? JSON.stringify(list) : null);
 const clearPending = (runId) => keepPending(pendingScores().filter((p) => p.runId !== runId));
 
-function markPending(runId, score, at) {
+function markPending(runId, score, device, at) {
   const list = pendingScores();
-  if (!list.some((p) => p.runId === runId)) keepPending([...list, { runId, score, at }]);
+  if (!list.some((p) => p.runId === runId)) keepPending([...list, { runId, score, device, at }]);
 }
 
 function applyResult(r) {
   const me = net.board && net.board.me;
   if (me) {
-    Object.assign(me, { best: r.best, rank: r.rank, rival: r.rival });
-    net.board.count = r.count;
+    Object.assign(me, { best: r.best, rank: r.rank, rival: r.rival, pcBest: r.pcBest, pcRank: r.pcRank, pcRival: r.pcRival });
+    Object.assign(net.board, { count: r.count, pcCount: r.pcCount });
     if (r.eventBest !== null) {
       Object.assign(me, { eventBest: r.eventBest, eventRank: r.eventRank, eventRival: r.eventRival });
       net.board.eventCount = r.eventCount;
@@ -154,11 +159,11 @@ function applyResult(r) {
   refreshBoard();
 }
 
-async function send(runId, score, onWait, since = Date.now()) {
-  markPending(runId, score, since);
+async function send(runId, score, device, onWait, since = Date.now()) {
+  markPending(runId, score, device, since);
   for (let i = 0; ; i++) {
     try {
-      const r = await call("POST", "/api/runs/" + runId, { score }, SEND_TIMEOUT_MS);
+      const r = await call("POST", "/api/runs/" + runId, { score, device }, SEND_TIMEOUT_MS);
       clearPending(runId);
       applyResult(r);
       emit("result", r);
@@ -178,17 +183,17 @@ async function send(runId, score, onWait, since = Date.now()) {
   }
 }
 
-export async function submitScore(score, pending, onWait) {
+export async function submitScore(score, device, pending, onWait) {
   const run = await pending;
   if (run.error) return run;
-  return send(run.runId, score, onWait);
+  return send(run.runId, score, device, onWait);
 }
 
 export function resumePending() {
   const now = Date.now();
   const list = pendingScores().filter((p) => now - p.at < WAIT_MS);
   keepPending(list);
-  for (const p of list) send(p.runId, p.score, null, p.at);
+  for (const p of list) send(p.runId, p.score, p.device, null, p.at);
 }
 
 export function requestUpdate() {

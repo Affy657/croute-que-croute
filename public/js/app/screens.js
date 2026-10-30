@@ -1,5 +1,5 @@
 import { fmtCs, ord, clock } from "../shared/format.js";
-import { net, serverNow, registered, isOpen, openEvent, recentEvent, upcomingEvent, standing, knownBest } from "./api.js";
+import { net, serverNow, registered, isOpen, openEvent, recentEvent, upcomingEvent, standing, knownBest, onPc } from "./api.js";
 import { prefs, musicAvailable } from "./audio.js";
 import { progress } from "./achievements.js";
 import { PROJECTILES } from "../game/projectiles.js";
@@ -116,6 +116,7 @@ export function renderMenu() {
   const recent = recentEvent();
   if (!b && !net.online) info = "Hors ligne";
   else if (me && me.banned) info = "Retiré du classement";
+  else if (b && isOpen() && onPc()) info = "Sur PC : hors classement de la soirée";
   else if (b && !isOpen() && recent && b.eventTop[0]) info = "Bravo " + b.eventTop[0].pseudo + " !";
   setText(ui.menuInfo, info);
   ui.menuAch.textContent = achLabel();
@@ -169,14 +170,17 @@ export function renderBoard() {
   const b = net.board;
   const live = !!(b && b.event && (isOpen() || recentEvent())), next = !live && upcomingEvent();
   const eventBoard = live || !!next;
-  const scope = eventBoard ? boardScope || (isOpen() ? "event" : "general") : "general";
+  let scope = boardScope || (onPc() ? "pc" : isOpen() ? "event" : "general");
+  if (scope === "event" && !eventBoard) scope = "general";
   const soon = scope === "event" && !live;
-  ui.boardTabs.hidden = !eventBoard;
-  for (const tab of ui.boardTabs.children) tab.setAttribute("aria-selected", String(tab.dataset.scope === scope));
+  for (const tab of ui.boardTabs.children) {
+    tab.hidden = tab.dataset.scope === "event" && !eventBoard;
+    tab.setAttribute("aria-selected", String(tab.dataset.scope === scope));
+  }
   shownScope = scope;
   ui.boardEvent.textContent = scope === "event" ? (live ? b.event : next).name : "Tous les temps";
   boardCountdown();
-  const top = b && !soon ? (scope === "event" ? b.eventTop : b.top) : [];
+  const top = b && !soon ? (scope === "event" ? b.eventTop : scope === "pc" ? b.pcTop || [] : b.top) : [];
   const mine = soon ? { rank: null } : standing(scope), me = b && b.me;
   let n = Math.min(top.length, BOARD_TOP);
   ui.boardList.hidden = false;

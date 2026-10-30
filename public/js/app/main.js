@@ -85,6 +85,10 @@ function die(killer) {
   S.dieT = 0;
   S.freeze = FREEZE_S;
   S.toast.thrust = 0;
+  const device = input.device();
+  api.setDevice(device);
+  if (device === "pc") S.scope = "pc";
+  else if (S.scope === "pc") S.scope = api.isOpen() ? "event" : "general";
   input.reset();
   S.score = Math.floor(elapsed() * 100);
   audio.musicRunEnd();
@@ -100,7 +104,7 @@ function die(killer) {
   S.newBest = S.score > before.best;
   S.prevRank = before.rank;
   api.saveLocalBest(S.score);
-  const sub = S.run ? api.submitScore(S.score, S.run, () => {
+  const sub = S.run ? api.submitScore(S.score, device, S.run, () => {
     if (S.submit === sub && S.mode === "over") setText(ui.overNote, "Envoi en attente…");
   }) : null;
   S.submit = sub;
@@ -138,7 +142,7 @@ function start(train = null) {
   if (api.net.updatePending && api.applyUpdate()) return false;
   const t0 = train ? train.from : 0, y = S.mode === "menu" ? S.toast.y : S.menuY;
   sim = createSim(Math.random, train ? { only: train.id, t0, y } : { y });
-  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.isOpen() ? "event" : "general", held: false });
+  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.myScope(), held: false });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0, scars: [] });
   scene.clear();
   S.run = train ? null : api.startRun();
@@ -147,6 +151,7 @@ function start(train = null) {
   const lead = api.leader(S.scope);
   S.goal = train ? { best: 0, lead: 0, reached: 0 } : { best: api.standing(S.scope).best, lead: S.run && lead && !lead.me ? lead.best : 0, reached: 0 };
   input.reset();
+  input.fresh();
   lastShown = "";
   show("play");
   renderControls(true);
@@ -184,8 +189,7 @@ function cheer() {
   const timeout = new Promise((ok) => setTimeout(() => ok(null), CHEER_WAIT_MS));
   Promise.race([mine || Promise.resolve(null), timeout]).then((r) => {
     if (S.submit !== mine || S.mode !== "over") return;
-    const event = S.scope === "event";
-    const first = r && !r.error && (event ? r.eventImproved && r.eventRank === 1 : r.improved && r.rank === 1) && prev !== 1;
+    const first = r && !r.error && prev !== 1 && (S.scope === "event" ? r.eventImproved && r.eventRank === 1 : S.scope === "pc" ? r.pcImproved && r.pcRank === 1 : r.improved && r.rank === 1);
     audio.playSfx(first ? "first" : "record");
     if (!first) return;
     ui.newBest.textContent = "N°1 !";

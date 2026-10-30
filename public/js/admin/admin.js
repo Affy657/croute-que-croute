@@ -34,7 +34,7 @@ function ago(ms) {
   return "vu il y a " + Math.floor(min / 1440) + " j";
 }
 
-const SUSPECT_LABELS = { high: "à vérifier : score très haut", slow: "à vérifier : partie ralentie ou mise en pause" };
+const SUSPECT_LABELS = { high: "à vérifier : loin devant le 2e", slow: "à vérifier : partie ralentie ou mise en pause" };
 
 function say(el, text, error) {
   el.textContent = text || "";
@@ -154,7 +154,7 @@ function renderPlayers() {
 
 async function load() {
   try {
-    data = await call("GET", "/api/admin/players" + (scope === "general" ? "?scope=general" : ""));
+    data = await call("GET", "/api/admin/players" + (scope === "event" ? "" : "?scope=" + scope));
     for (const b of document.querySelectorAll(".scope")) b.setAttribute("aria-selected", String(b.dataset.scope === scope));
     say($("playersMsg"), "");
     renderEvent();

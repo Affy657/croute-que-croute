@@ -119,6 +119,24 @@ check("joueur retiré absent des deux classements", r.data.me.rank === null && r
 r = await call("GET", "/api/admin/players?scope=general", { key: KEY });
 check("admin : classement général disponible", r.status === 200 && r.data.scope === "general" && r.data.players.some((p) => p.pseudo === pseudo), r.data.scope);
 
+const pcPseudo = "PC" + hex(6);
+r = await call("POST", "/api/join", { body: { pseudo: pcPseudo, clientId: hex(32) } });
+const pcToken = r.data.token;
+r = await call("POST", "/api/runs", { token: pcToken });
+const pcRun = r.data.runId;
+await wait(1500);
+r = await call("POST", `/api/runs/${pcRun}`, { token: pcToken, body: { score: 100, device: "pc" } });
+check("partie sur PC : record PC, hors soirée", r.status === 200 && r.data.pcBest === 100 && r.data.pcImproved && r.data.best === 0 && r.data.eventBest === null, r.data);
+r = await call("GET", "/api/board", { token: pcToken });
+check("partie sur PC : seulement au classement PC", r.data.pcTop.some((x) => x.me) && !r.data.top.some((x) => x.me) && !r.data.eventTop.some((x) => x.me) && r.data.me.pcRank > 0, r.data.me);
+r = await call("POST", "/api/runs", { token: pcToken });
+const phoneRun = r.data.runId;
+await wait(1000);
+r = await call("POST", `/api/runs/${phoneRun}`, { token: pcToken, body: { score: 50, device: "mobile" } });
+check("partie sur téléphone : mobile et soirée, record PC gardé", r.data.best === 50 && r.data.eventBest === 50 && r.data.pcBest === 100, r.data);
+r = await call("GET", "/api/admin/players?scope=pc", { key: KEY });
+check("admin : classement PC disponible", r.status === 200 && r.data.scope === "pc" && r.data.players.some((p) => p.pseudo === pcPseudo && p.best === 100), r.data.scope);
+
 console.log(results.join("\n"));
 console.log(results.filter((l) => l.startsWith("FAIL")).length + " échec(s) sur " + results.length);
 process.exit(results.some((l) => l.startsWith("FAIL")) ? 1 : 0);

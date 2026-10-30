@@ -127,18 +127,19 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 
 - Pas de compte : le téléphone garde un jeton et son profil pour toujours. Le même téléphone qui retape son pseudo retrouve son compte.
 - Pseudo unique sur tout le jeu, de 2 à 16 caractères : lettres latines (accents, œ, æ, ß et ø permis), chiffres, espaces, tirets. Majuscules et accents ne comptent pas pour l'unicité. Il se change dans Paramètres, record et place suivent.
-- Deux classements : celui de la soirée (pour le lot) et le général, permanent. À égalité, le premier à avoir fait le temps passe devant.
+- Trois classements : celui de la soirée (pour le lot), et deux généraux permanents, Mobile et PC. À égalité, le premier à avoir fait le temps passe devant.
+- Mobile ou PC (30/10/2026, des joueurs sur PC faisaient des scores bien meilleurs) : chaque partie enregistre l'appareil d'après ce qui a vraiment bougé la tartine, la souris (PC) ou le doigt (Mobile). Sans geste, le jeu suppose d'après l'écran (tactile ou non). Une partie sur PC compte seulement au général PC : jamais pour la soirée, ni pour ses succès « Dans le top » et « Tartine d'or ». L'accueil d'un PC le dit pendant une soirée. Les records d'avant le 30/10/2026 sont tous rangés en Mobile (Adrien pense tout remettre à zéro avant la soirée). Limite : un tricheur décidé peut faire passer son PC pour un téléphone dans son navigateur.
 - Écran Classement : les 10 premiers, podium or, argent et bronze, puis ta place exacte si tu n'es pas dedans. Jamais de défilement : sur un petit écran, on enlève des lignes par le bas (3 au moins).
-- Quand une soirée est annoncée mais pas commencée, l'écran Classement montre les onglets Soirée et Général et s'ouvre sur Général. L'onglet Soirée donne son nom et « Prochaine soirée lundi 02/11 à 20h00 » (plus sur l'accueil).
+- L'écran Classement a les onglets Soirée (quand une soirée est annoncée, en cours ou vient de finir), Mobile et PC. Il s'ouvre sur la soirée en cours, sinon sur Mobile, et toujours sur PC depuis un PC. Quand une soirée est annoncée mais pas commencée, l'onglet Soirée donne son nom et « Prochaine soirée lundi 02/11 à 20h00 » (plus sur l'accueil).
 - Une seule soirée à la fois, créée à l'avance dans l'admin pour être annoncée dans le jeu.
 - Les parties commencées avant la fin comptent encore 5 min après. Le gagnant n'est annoncé (« Bravo X ! », succès Tartine d'or) qu'après ces 5 min.
 - Les téléphones relisent le classement toutes les 10 s (30 s sur l'accueil), et plus du tout écran éteint. Le serveur le garde 10 s en mémoire, le général 60 s pendant une soirée : jusqu'à 20 s de retard (70 s pour le général). Ta place après une partie est à jour tout de suite.
-- En base : `profiles` (joueurs et record général), `entries` (record par soirée), `runs` (parties), `events` (soirées).
+- En base : `profiles` (joueurs, record Mobile `best` et record PC `pc_best`), `entries` (record par soirée), `runs` (parties, avec `device`), `events` (soirées).
 
 ## Triche et sécurité
 
 - Le serveur refuse un score plus long que le temps réellement écoulé (5 s de marge) ou au-delà de 15 min. Un score renvoyé deux fois ne compte qu'une fois.
-- Signalés dans l'admin : record de 90 s ou plus, et partie ralentie ou mise en pause (plus de 15 % et 15 s de temps réel en trop).
+- Signalés dans l'admin : le 1er d'un classement quand il dépasse le 2e de plus de 30 % (et fait au moins 60 s), et une partie ralentie ou mise en pause (plus de 15 % et 15 s de temps réel en trop). Avant le 30/10/2026 : tout record de 90 s ou plus, devenu banal avec la nouvelle courbe. L'admin a les onglets Soirée, Mobile et PC.
 - Faille connue : un faux score plausible (vers 60 s) passe inaperçu. Parade possible : rejouer la partie à partir des gestes (voir « À faire »).
 - Jetons des joueurs, identifiants des téléphones, connexions et invitations admin : rangés hachés (SHA-256). Une copie de la base ne permet pas de se faire passer pour quelqu'un.
 - Limites : 20 inscriptions par minute et par téléphone, 600 par minute et par adresse IP (tout le lieu partage souvent la même sur le wifi). Une inscription au pseudo invalide ne compte pas.
@@ -181,6 +182,8 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 - Un secret pas encore trouvé montre « ??? » et un indice (`hint`).
 - Badge « Nouveau » sur les succès gagnés depuis la dernière visite de l'écran (`seen` dans `cv-succes`).
 - Un succès qui donne un accessoire l'écrit sous sa condition (« Débloque : … »).
+- Temps de cuisson : 10, 30, 60, 90, 120 et 150 s (« Tartine de légende », la vitesse maximale). Avant le 30/10/2026 : 10, 20, 30, 45, 60 et 80 s, devenus trop faciles avec la nouvelle courbe. Les succès 20, 45 et 80 s déjà gagnés disparaissent du compte.
+- Secret « En détente » : rester 3 s sans bouger (5 s avant le 30/10/2026 : un joueur immobile survivait 5 s dans 0 % des cas, 3 s dans 5 à 15 %).
 - Garnitures : 1, 4 puis toutes gagnées. Le secret « Ouaf » : se faire tartiner par un couteau à la pâtée pour chien.
 - Gardés sur le téléphone (`cv-succes`), sans effet sur le classement. Perdus en changeant de téléphone ou de navigateur. Sur iPhone, Safari et l'appli installée ne partagent pas leurs succès.
 - Le nombre de parties prend le plus grand entre le compteur du téléphone et celui du serveur.
@@ -269,8 +272,6 @@ Après :
 - Compléter Infos avec toutes les dernières nouveautés, pour en faire un wiki du jeu où tout se trouve : comment débloquer les garnitures et les accessoires, les succès, les planètes et canettes rares, les classements et les soirées, etc.
 - Changement d'appareil : le profil est lié au téléphone (identifiant gardé dans le navigateur). Un joueur qui change d'appareil, ou qui vide son navigateur, ne peut pas reprendre son pseudo et doit recréer un compte. À explorer : un vrai compte (e-mail ou mot de passe), ou plus léger, un code de transfert affiché dans les paramètres, à taper ou scanner sur le nouvel appareil.
 - À décider : rejouer les meilleures parties pour confirmer leur temps (graine donnée par le serveur, gestes enregistrés). Bloquerait la triche par faux score.
-- Mobile ou PC : des joueurs sur PC (souris) font des scores bien meilleurs que sur téléphone. Enregistrer l'appareil de chaque partie, pour ne pas fausser les analyses de difficulté et ne pas récompenser une soirée gagnée sur PC (noté le 30/10/2026).
-- Signalement « score très haut » à revoir (`SUSPECT_HIGH` dans `src/routes/admin.ts`, 90 s) : depuis la courbe du 30/10/2026, dépasser 90 s est devenu courant.
 
 ## Idées pour plus tard
 
