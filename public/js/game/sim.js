@@ -3,17 +3,17 @@ import { ATTACKS, pickAttack } from "./attacks.js";
 import { moveProjectile, sprinkleRare, gapTo } from "./projectiles.js";
 import { solve } from "./solver.js";
 
-const TRIES = 5, REACT = 0.1, SWEEP = 6, MOVE_MAX = 10 * (FW + FH);
+const TRIES = 5, REACT = 0.1, SWEEP = 6, MOVE_MAX = 10 * (FW + FH), CALM_PASS = 0.4;
 export const GAP_START = 1.25, GAP_SLOPE = 0.016, GAP_MIN = 0.42;
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
-function clearAt(items) {
+function passAt(items) {
   let end = 0;
   for (const w of items) {
     for (const o of w.obs) {
       const tx = o.vx > 0 ? (FW + M - o.x) / o.vx : o.vx < 0 ? (o.x + M) / -o.vx : Infinity;
       const ty = o.vy > 0 ? (FH + M - o.y) / o.vy : o.vy < 0 ? (o.y + M) / -o.vy : Infinity;
-      end = Math.max(end, w.at + Math.min(tx, ty));
+      end = Math.max(end, w.at + CALM_PASS * Math.min(tx, ty));
     }
   }
   return end;
@@ -66,7 +66,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
       state.last = attack.id;
       const gap = Math.max(GAP_MIN, GAP_START - t * GAP_SLOPE);
       state.next = gap * attack.cost * rnd(0.85, 1.15);
-      if (attack.calm) state.next = Math.max(state.next, clearAt(items) - t);
+      if (attack.calm) state.next = Math.max(state.next, passAt(items) - t);
       return;
     }
     state.stats.rejected++;
