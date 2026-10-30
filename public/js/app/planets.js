@@ -302,110 +302,156 @@ function rock(ctx, r) {
 }
 
 const BEAT = 0.42;
-const GRAIN = [[-0.11, -0.05, -0.36, 0.025], [-0.03, -0.03, -0.18, -0.015], [0.09, -0.06, -0.33, -0.02]];
+const GRAIN = [[-0.22, -0.05, -0.36, 0.04], [0.3, -0.06, -0.3, -0.03]];
 
-function limb(ctx, from, to, s, line) {
+function limb(ctx, from, to, width, line) {
   ctx.beginPath();
   ctx.moveTo(...from);
   ctx.lineTo(...to);
   ctx.strokeStyle = INK;
-  ctx.lineWidth = s * 0.05 + line * 2;
+  ctx.lineWidth = width + line * 2;
   ctx.stroke();
-  ctx.strokeStyle = SKY.tung.wood;
-  ctx.lineWidth = s * 0.05;
+  ctx.strokeStyle = SKY.tung.skin;
+  ctx.lineWidth = width;
   ctx.stroke();
 }
 
-function knob(ctx, x, y, rx, ry, line) {
-  ctx.fillStyle = SKY.tung.wood;
+function foot(ctx, x, y, dir, s, line) {
+  ctx.fillStyle = SKY.tung.skin;
   ctx.strokeStyle = INK;
   ctx.lineWidth = line;
   ctx.beginPath();
-  ctx.ellipse(x, y, rx, ry, 0, 0, TAU);
+  ctx.ellipse(x + dir * s * 0.05, y, s * 0.08, s * 0.03, 0, 0, TAU);
+  for (let i = 0; i < 3; i++) {
+    const tx = x + dir * s * (0.115 - i * 0.02), ty = y - s * 0.012 + i * s * 0.004;
+    ctx.moveTo(tx + s * 0.014, ty);
+    ctx.arc(tx, ty, s * 0.014, 0, TAU);
+  }
   ctx.fill();
   ctx.stroke();
+  ctx.fill();
 }
 
 function bat(ctx, s) {
-  const B = SKY.tung, g = ctx.createLinearGradient(-s * 0.06, 0, s * 0.06, 0);
+  const B = SKY.tung, g = ctx.createLinearGradient(-s * 0.05, 0, s * 0.05, 0);
   g.addColorStop(0, B.bat);
   g.addColorStop(1, B.batDark);
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.moveTo(-s * 0.022, s * 0.04);
-  ctx.lineTo(-s * 0.06, -s * 0.48);
-  ctx.arc(0, -s * 0.48, s * 0.06, Math.PI, 0);
-  ctx.lineTo(s * 0.022, s * 0.04);
+  ctx.moveTo(-s * 0.016, s * 0.03);
+  ctx.lineTo(-s * 0.05, -s * 0.44);
+  ctx.arc(0, -s * 0.44, s * 0.05, Math.PI, 0);
+  ctx.lineTo(s * 0.016, s * 0.03);
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
 }
 
+function face(ctx, w, h, line) {
+  const B = SKY.tung, ey = -h * 0.78;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = line;
+  for (const side of [-1, 1]) {
+    const ex = side * w * 0.25;
+    ctx.fillStyle = B.eye;
+    ctx.beginPath();
+    ctx.arc(ex, ey, w * 0.2, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = B.iris;
+    disc(ctx, ex + w * 0.02, ey + w * 0.01, w * 0.12);
+    ctx.fillStyle = INK;
+    disc(ctx, ex + w * 0.02, ey + w * 0.01, w * 0.065);
+    ctx.fillStyle = B.eye;
+    disc(ctx, ex - w * 0.02, ey - w * 0.03, w * 0.025);
+    ctx.strokeStyle = B.dark;
+    ctx.lineWidth = line * 1.4;
+    ctx.beginPath();
+    ctx.arc(ex, ey + w * 0.03, w * 0.24, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = line;
+  }
+  const g = ctx.createLinearGradient(-w * 0.12, 0, w * 0.12, 0);
+  g.addColorStop(0, B.light);
+  g.addColorStop(1, B.dark);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-w * 0.04, -h * 0.76);
+  ctx.quadraticCurveTo(-w * 0.07, -h * 0.66, -w * 0.12, -h * 0.6);
+  ctx.quadraticCurveTo(-w * 0.13, -h * 0.55, -w * 0.04, -h * 0.555);
+  ctx.quadraticCurveTo(0, -h * 0.54, w * 0.05, -h * 0.555);
+  ctx.quadraticCurveTo(w * 0.12, -h * 0.56, w * 0.09, -h * 0.61);
+  ctx.quadraticCurveTo(w * 0.05, -h * 0.67, w * 0.04, -h * 0.76);
+  ctx.fill();
+  ctx.strokeStyle = B.dark;
+  ctx.stroke();
+  ctx.strokeStyle = B.lip;
+  ctx.lineWidth = line * 1.4;
+  ctx.beginPath();
+  ctx.moveTo(-w * 0.26, -h * 0.49);
+  ctx.quadraticCurveTo(0, -h * 0.41, w * 0.3, -h * 0.51);
+  ctx.stroke();
+  ctx.strokeStyle = B.light;
+  ctx.lineWidth = line;
+  ctx.beginPath();
+  ctx.moveTo(-w * 0.14, -h * 0.43);
+  ctx.quadraticCurveTo(0, -h * 0.4, w * 0.16, -h * 0.44);
+  ctx.stroke();
+}
+
 function tung(ctx, s, clock) {
   const B = SKY.tung, k = clock / BEAT, beat = Math.floor(k), f = k - beat, hit = ((beat % 4) + 4) % 4 < 3;
-  const hop = hit ? Math.sin(f * Math.PI) : 0, line = Math.max(1.2, s * 0.025);
-  const swing = hit ? 0.3 + 1.9 * (1 - f) * (1 - f) : 0.3 + 0.25 * Math.sin(f * Math.PI);
-  const sway = Math.sin((clock / BEAT) * (Math.PI / 2)) * 0.1, wave = Math.sin((clock / BEAT) * Math.PI);
-  const w = s * 0.36, h = s * 0.78, lift = beat % 2 ? 1 : -1, rise = s * 0.22 + hop * s * 0.06;
+  const hop = hit ? Math.sin(f * Math.PI) : 0, line = Math.max(1, s * 0.016);
+  const swing = hit ? -0.5 - 2.1 * (1 - f) * (1 - f) : -0.5 - 0.25 * Math.sin(f * Math.PI);
+  const sway = Math.sin((clock / BEAT) * (Math.PI / 2)) * 0.08, wave = Math.sin((clock / BEAT) * Math.PI);
+  const w = s * 0.26, h = s * 0.6, legs = s * 0.3, rise = legs + hop * s * 0.05, lift = beat % 2 ? 1 : -1, end = w * 0.17;
   ctx.save();
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   for (const side of [-1, 1]) {
-    const up = side === lift ? hop * s * 0.08 : 0;
-    limb(ctx, [side * s * 0.08, -rise - s * 0.02], [side * s * 0.12, -up - s * 0.02], s, line);
-    knob(ctx, side * s * 0.15, -up - s * 0.015, s * 0.055, s * 0.028, line);
+    const up = side === lift ? hop * s * 0.07 : 0;
+    limb(ctx, [side * w * 0.24, -rise + end * 0.5], [side * w * 0.3, -up - s * 0.025], s * 0.04, line);
+    foot(ctx, side * w * 0.3, -up - s * 0.02, side, s, line);
   }
   ctx.translate(0, -rise);
   ctx.rotate(sway);
-  const shoulder = -h * 0.5, left = [-w / 2 - s * 0.16, shoulder - s * (0.08 + 0.12 * wave)];
-  limb(ctx, [-w / 2 + s * 0.03, shoulder], left, s, line);
-  knob(ctx, ...left, s * 0.038, s * 0.038, line);
+  const shoulder = -h * 0.58, free = [w / 2 + s * 0.11, shoulder + s * (0.06 - 0.16 * wave)], hand = [-w / 2 - s * 0.05, -h * 0.2];
   const g = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
   g.addColorStop(0, B.light);
-  g.addColorStop(0.45, B.wood);
+  g.addColorStop(0.4, B.wood);
   g.addColorStop(1, B.dark);
   ctx.fillStyle = g;
   ctx.strokeStyle = INK;
   ctx.lineWidth = line;
   ctx.beginPath();
-  rr(ctx, -w / 2, -h, w, h, w * 0.28);
+  ctx.moveTo(-w / 2, -h);
+  ctx.lineTo(-w / 2, 0);
+  ctx.ellipse(0, 0, w / 2, end, 0, Math.PI, 0, true);
+  ctx.lineTo(w / 2, -h);
+  ctx.closePath();
   ctx.fill();
   ctx.stroke();
   ctx.strokeStyle = B.grain;
   for (const [x, y0, y1, bend] of GRAIN) {
     ctx.beginPath();
-    ctx.moveTo(x * s, y0 * s);
-    ctx.quadraticCurveTo((x + bend) * s, ((y0 + y1) / 2) * s, x * s, y1 * s);
+    ctx.moveTo(x * w, y0 * h);
+    ctx.quadraticCurveTo((x + bend) * w, ((y0 + y1) / 2) * h, x * w, y1 * h);
     ctx.stroke();
   }
-  ctx.beginPath();
-  ctx.ellipse(s * 0.06, -h * 0.16, s * 0.03, s * 0.045, 0, 0, TAU);
-  ctx.stroke();
+  ctx.fillStyle = B.top;
   ctx.strokeStyle = INK;
-  for (const side of [-1, 1]) {
-    ctx.fillStyle = B.eye;
-    ctx.beginPath();
-    ctx.arc(side * s * 0.075, -h * 0.74, s * 0.065, 0, TAU);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = INK;
-    ctx.beginPath();
-    ctx.arc(side * s * 0.075 + s * 0.01, -h * 0.74, s * 0.032, 0, TAU);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(side * s * 0.035, -h * 0.74 - s * 0.09);
-    ctx.lineTo(side * s * 0.12, -h * 0.74 - s * 0.1 - hop * s * 0.02);
-    ctx.stroke();
-  }
-  ctx.fillStyle = B.nose;
   ctx.beginPath();
-  ctx.ellipse(0, -h * 0.62, s * 0.025, s * 0.035, 0, 0, TAU);
+  ctx.ellipse(0, -h, w / 2, end, 0, 0, TAU);
   ctx.fill();
-  ctx.beginPath();
-  ctx.arc(0, -h * 0.57, s * 0.06, 0.25 * Math.PI, 0.75 * Math.PI);
   ctx.stroke();
-  const hand = [w / 2 + s * 0.13, shoulder + s * 0.1];
-  limb(ctx, [w / 2 - s * 0.03, shoulder], hand, s, line);
+  ctx.strokeStyle = B.ring;
+  ctx.beginPath();
+  ctx.ellipse(0, -h, w * 0.3, end * 0.55, 0, 0, TAU);
+  ctx.stroke();
+  face(ctx, w, h, line);
+  limb(ctx, [w / 2 - s * 0.01, shoulder], free, s * 0.034, line);
+  limb(ctx, [-w / 2 + s * 0.01, shoulder], hand, s * 0.034, line);
   ctx.save();
   ctx.translate(...hand);
   ctx.rotate(swing);
@@ -413,7 +459,14 @@ function tung(ctx, s, clock) {
   ctx.lineWidth = line;
   bat(ctx, s);
   ctx.restore();
-  knob(ctx, ...hand, s * 0.038, s * 0.038, line);
+  ctx.fillStyle = B.skin;
+  ctx.strokeStyle = INK;
+  for (const [x, y] of [hand, free]) {
+    ctx.beginPath();
+    ctx.arc(x, y, s * 0.03, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -421,7 +474,7 @@ function stage(ctx, r, clock) {
   rock(ctx, r);
   ctx.save();
   ctx.translate(0, -r * 0.95);
-  tung(ctx, r * 2.5, clock);
+  tung(ctx, r * 3.4, clock);
   ctx.restore();
 }
 

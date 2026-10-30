@@ -45,7 +45,7 @@ export const SKY = {
   },
   moons: { light: "#5fa85a", dark: "#143320", spot: "#2c6435" },
   rock: { light: "#bf6a2c", dark: "#341910", spot: "#713617" },
-  tung: { light: "#e6bd85", wood: "#bf8a4c", dark: "#6b4421", grain: "#7d5129", bat: "#f0d3a0", batDark: "#b58a52", eye: "#fff6e0", nose: "#8a5a2e" },
+  tung: { light: "#f3ac52", wood: "#d9822b", dark: "#a35618", grain: "#c06f2a", top: "#f5c27a", ring: "#c9802f", skin: "#e29a52", bat: "#c98444", batDark: "#7a4218", eye: "#fff6e0", iris: "#6b3a14", lip: "#5a2a0c" },
   toaster: {
     sky: "#2c2650", skyLight: "#928bc2", horizon: "#d9d3f2", ground: "#1f1a35", groundLight: "#5c5487", rim: "rgba(13, 11, 36, 0.6)", shine: "#ffffff",
     slot: "#14121f", glow: "#ffa04a", glowDark: "#8a2412", crust: "#9a4f1c", crumb: "#ecc27a", toasted: "#c47d36", bakelite: "#1a1424", bakeliteLight: "#4a3f63"
