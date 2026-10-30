@@ -58,6 +58,7 @@ function gainTopping(kind) {
   S.gotToppings.push(kind);
   chooseTopping(kind);
   if (S.mode === "play") toastAch({ name: "Garniture " + SPREADS[kind].name });
+  ach.countToppings();
 }
 
 const ON_SIM = {
@@ -93,7 +94,7 @@ function die(killer) {
     S.submit = null;
     return;
   }
-  ach.runEnd(S.score);
+  ach.runEnd(S.score, S.killer);
   const before = api.standing(S.scope);
   S.newBest = S.score > before.best;
   S.prevRank = before.rank;
