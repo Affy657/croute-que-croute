@@ -416,7 +416,7 @@ function update(dt) {
     return;
   }
   if (S.held) {
-    if (!input.finger.held && !input.pending()) return;
+    if (!input.poked() && !input.pending()) return;
     S.held = false;
     input.take();
     ui.holdHint.hidden = true;

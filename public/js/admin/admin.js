@@ -34,7 +34,7 @@ function ago(ms) {
   return "vu il y a " + Math.floor(min / 1440) + " j";
 }
 
-const SUSPECT_LABELS = { high: "à vérifier : score très haut", slow: "à vérifier : partie ralentie" };
+const SUSPECT_LABELS = { high: "à vérifier : score très haut", slow: "à vérifier : partie ralentie ou mise en pause" };
 
 function say(el, text, error) {
   el.textContent = text || "";

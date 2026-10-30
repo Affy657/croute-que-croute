@@ -206,8 +206,8 @@ export const ATTACKS = [
     info: "8 fourchettes (9 dès 60 s) tombent tout droit en rafale, une fois à gauche, une fois à droite." }
 ];
 
-export function pickAttack(t, rng, last = null, streak = 0, busy = false, active = new Set()) {
-  const open = ATTACKS.filter((a) => !a.lab && t > a.from && !(busy && a.calm) && !(a.shuns && a.shuns.some((id) => active.has(id))));
+export function pickAttack(t, rng, last = null, streak = 0, active = new Set()) {
+  const open = ATTACKS.filter((a) => !a.lab && t > a.from && !(a.shuns && a.shuns.some((id) => active.has(id))));
   const prev = ATTACKS.find((a) => a.id === last), kin = prev && prev.kin;
   const allowed = open.filter((a) => (a.id !== last || (!a.solo && streak < MAX_STREAK)) && !(kin && a.kin === kin && a.id !== last));
   const pool = allowed.length ? allowed : open;
