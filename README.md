@@ -40,13 +40,14 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 | Croix | 30 s | 4 couteaux en même temps vers la tartine |
 | Murs en série | 36 s | 2 murs d'affilée du même côté ou du haut (3 dès 60 s), trous d'environ 120 px. Chaque mur n'est annoncé que juste avant d'arriver. Joue seul |
 | Couteau à pain | 38 s | Rebondit une fois sur un bord |
-| Couloir | 46 s | Deux murs décalés, chacun avec son trou |
+| Pluie en biais | 48 s | 7 puis 8 fourchettes en diagonale, qui balaient l'écran d'un côté à l'autre |
 | Double pluie | 54 s | 5 à 9 fourchettes, à gauche et à droite en alternance |
 
 - Vitesse des couverts : × (1 + t / 50), plafond × 2,6 à 80 s. Délai entre deux attaques : 1,25 s moins 0,016 × t, 0,42 s au plus court (dès 52 s).
-- Jamais plus de 3 fois la même attaque d'affilée. Croix, murs en série, couloir et double pluie ne sortent jamais deux fois de suite. Les murs en série ne partent que si aucune annonce n'est en cours, et laissent un long répit derrière eux.
+- Jamais plus de 3 fois la même attaque d'affilée. Croix, murs en série et double pluie ne sortent jamais deux fois de suite. Jamais de mur juste après des murs en série, ni l'inverse (même `kin`). Pas de mur ni de murs en série tant qu'un rouleau est annoncé ou à l'écran, et l'inverse (`shuns`) : un rouleau dans le trou d'un mur le bouchait presque. Les murs en série ne partent que si aucune annonce n'est en cours, et laissent un long répit derrière eux.
 - 1 attaque à couteaux sur 10 a un couteau garni (voir Garnitures).
 - Fouet mis de côté (jugé trop facile) : `lab: true` dans `attacks.js` et `projectiles.js`, visible seulement dans l'admin. Enlever `lab` pour le remettre.
+- Couloir (deux murs de deux côtés, 46 s) mis de côté de la même façon : trop proche des murs en série, on pouvait le prendre pour un bug.
 - Chances, vitesses et délais de chaque attaque : `attacks.js`. Le calendrier est dans le jeu (Infos, onglet Attaques).
 - Mesure du 28/10/2026 avec un robot « humain » (réaction 0,25 s, 320 px/s) : survie médiane 31 s, maximum 89 s. Faite avant les réglages du 29/10 (hachoirs et rouleaux multiples, murs en série, éventail réduit).
 
