@@ -1,5 +1,5 @@
 import { PALETTE, SKY } from "../shared/palette.js";
-import { rr } from "./sprites.js";
+import { rr, toastPath } from "./sprites.js";
 
 const TAU = Math.PI * 2;
 const LIGHT = -0.75 * Math.PI;
@@ -301,143 +301,180 @@ function rock(ctx, r) {
   dots(ctx, r, R.spot, [[0.3, 0.2, 0.25], [-0.35, 0.35, 0.18], [-0.1, -0.45, 0.14]]);
 }
 
-const POP_S = 6, POP_UP = 0.6;
-const CRUMBS = Array.from({ length: 64 }, (_, i) => [(i / 64) * TAU + Math.sin(i * 7.3) * 0.03, 1 + 0.05 * Math.sin(i * 3.1), 0.028 + 0.01 * Math.sin(i * 5.7)]);
+const POP_S = 6, POP_UP = 0.6, SLOTS = [[0.08, -0.72, 0.1], [-0.08, -0.52, 0]];
 
-function crumbRing(ctx, r, back) {
+function popped(clock, delay) {
+  const k = (((clock - delay) % POP_S) + POP_S) % POP_S;
+  return k < POP_UP ? Math.sin((k / POP_UP) * Math.PI) : 0;
+}
+
+function bread(ctx, x, y, w) {
+  const T = SKY.toaster, k = w / 40;
   ctx.save();
-  ctx.rotate(-0.22);
-  ctx.fillStyle = SKY.toaster.crumbs;
-  for (const [a, k, s] of CRUMBS) {
-    if (Math.sin(a) < 0 !== back) continue;
-    disc(ctx, Math.cos(a) * r * 1.55 * k, Math.sin(a) * r * 0.36 * k, s * r);
-  }
+  ctx.translate(x, y);
+  ctx.scale(k, k);
+  ctx.lineWidth /= k;
+  toastPath(ctx, 40, 42);
+  ctx.fillStyle = T.crust;
+  ctx.fill();
+  ctx.stroke();
+  ctx.translate(0, 2);
+  ctx.scale(0.78, 0.78);
+  toastPath(ctx, 40, 42);
+  ctx.fillStyle = T.crumb;
+  ctx.fill();
   ctx.restore();
 }
 
-function slice(ctx, x, y, w, h) {
-  const T = SKY.toaster;
-  ctx.fillStyle = T.crust;
-  ctx.beginPath();
-  ctx.moveTo(x - w / 2, y);
-  ctx.lineTo(x - w / 2, y - h);
-  ctx.bezierCurveTo(x - w * 0.62, y - h - w * 0.55, x - w * 0.05, y - h - w * 0.6, x, y - h - w * 0.3);
-  ctx.bezierCurveTo(x + w * 0.05, y - h - w * 0.6, x + w * 0.62, y - h - w * 0.55, x + w / 2, y - h);
-  ctx.lineTo(x + w / 2, y);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = T.crumb;
-  ctx.beginPath();
-  rr(ctx, x - w * 0.36, y - h - w * 0.15, w * 0.72, h + w * 0.15, w * 0.2);
-  ctx.fill();
-}
-
 function toaster(ctx, r, clock) {
-  const T = SKY.toaster, w = r * 1.9, h = r * 1.45, top = -h / 2;
-  crumbRing(ctx, r, true);
+  const T = SKY.toaster, w = r * 0.56, hop = popped(clock, 0);
+  ball(ctx, r, T.light, T.dark);
+  ctx.save();
+  ctx.strokeStyle = T.shine;
+  ctx.lineCap = "round";
+  ctx.lineWidth = r * 0.09;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.76, Math.PI * 1.02, Math.PI * 1.3);
+  ctx.stroke();
+  ctx.restore();
+  onSphere(ctx, r, 0.84, 0.1, () => {
+    ctx.fillStyle = T.slot;
+    ctx.beginPath();
+    rr(ctx, -r * 0.05, -r * 0.24, r * 0.1, r * 0.48, r * 0.05);
+    ctx.fill();
+  });
+  tone(ctx, r);
   ctx.strokeStyle = INK;
   ctx.lineWidth = ink(r);
-  for (const [x, delay] of [[-0.42, 0], [0.42, 0.25]]) {
-    const k = (clock + delay) % POP_S, hop = k < POP_UP ? Math.sin((k / POP_UP) * Math.PI) : 0;
-    slice(ctx, x * r, top + r * 0.3, r * 0.62, r * (0.42 + 0.6 * hop));
-  }
-  const g = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r * 1.2);
-  g.addColorStop(0, T.light);
-  g.addColorStop(1, T.dark);
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  rr(ctx, -w / 2, top, w, h, r * 0.5);
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = T.slot;
-  for (const x of [-0.42, 0.42]) {
+  for (const [x, y, delay] of SLOTS) {
+    ctx.fillStyle = T.slot;
     ctx.beginPath();
-    rr(ctx, x * r - r * 0.34, top + r * 0.06, r * 0.68, r * 0.1, r * 0.05);
+    ctx.ellipse(x * r, y * r, w * 0.62, r * 0.05, 0, 0, TAU);
     ctx.fill();
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(-r, -r * 3, 2 * r, r * (3 + y));
+    ctx.clip();
+    bread(ctx, x * r, (y - 0.02 - 0.45 * popped(clock, delay)) * r, w);
+    ctx.restore();
   }
   ctx.fillStyle = T.lever;
   ctx.beginPath();
-  rr(ctx, w / 2 - r * 0.04, -r * 0.1, r * 0.22, r * 0.13, r * 0.05);
+  rr(ctx, r * 0.84, r * (0.2 - 0.3 * hop) - r * 0.06, r * 0.3, r * 0.12, r * 0.06);
   ctx.fill();
   ctx.stroke();
-  ctx.fillStyle = T.lever;
-  disc(ctx, r * 0.55, r * 0.38, r * 0.1);
-  ctx.fillStyle = SKY.gleam;
-  ctx.beginPath();
-  rr(ctx, -w * 0.38, top + h * 0.2, w * 0.07, h * 0.55, w * 0.035);
-  ctx.fill();
-  crumbRing(ctx, r, false);
 }
 
-const HOLES = [[-0.4, -0.35, 0.2], [0.12, 0.1, 0.16], [-0.18, 0.55, 0.13], [0.5, 0.42, 0.11], [-0.62, 0.22, 0.09], [0.25, -0.45, 0.1]];
-const BITES = [[0.8, -0.58, 0.22], [0.95, -0.22, 0.15]];
+const HOLES = [[-0.05, -0.2, 0.18], [0.45, -0.45, 0.12], [0.2, 0.3, 0.16], [-0.35, 0.5, 0.13], [0.6, 0.35, 0.11], [-0.62, 0.05, 0.09]];
+const BITE = { a: -2.15, d: 1.1, s: 0.38, teeth: 5 };
 
 function hole(ctx, s, light) {
   const C = SKY.cheese;
-  ctx.fillStyle = C.hole;
-  disc(ctx, 0, 0, s);
+  ctx.save();
   ctx.fillStyle = C.floor;
-  disc(ctx, -Math.cos(light) * s * 0.25, -Math.sin(light) * s * 0.25, s * 0.75);
+  ctx.beginPath();
+  ctx.arc(0, 0, s, 0, TAU);
+  ctx.fill();
+  ctx.clip();
+  ctx.fillStyle = C.hole;
+  disc(ctx, Math.cos(light) * s * 0.25, Math.sin(light) * s * 0.25, s);
+  ctx.restore();
+}
+
+function biteEdge(ctx, r) {
+  const { a, d, s, teeth } = BITE, D = d * r, br = s * r, cx = Math.cos(a) * D, cy = Math.sin(a) * D;
+  const psi = Math.acos((br * br + D * D - r * r) / (2 * br * D)), bulge = br * 0.25;
+  const at = (t) => [cx + Math.cos(t) * br, cy + Math.sin(t) * br];
+  for (let i = 0; i < teeth; i++) {
+    const t1 = a + Math.PI + psi - ((i + 1) / teeth) * 2 * psi, tm = t1 + psi / teeth;
+    const [x1, y1] = at(t1), [mx, my] = at(tm);
+    ctx.quadraticCurveTo(mx + Math.cos(tm) * bulge, my + Math.sin(tm) * bulge, x1, y1);
+  }
+}
+
+function bitten(ctx, r) {
+  const { a, d, s } = BITE, D = d * r, br = s * r;
+  const phi = Math.acos((r * r + D * D - br * br) / (2 * r * D));
+  ctx.beginPath();
+  ctx.arc(0, 0, r, a + phi, a - phi + TAU);
+  biteEdge(ctx, r);
+  ctx.closePath();
 }
 
 function mouse(ctx, r) {
-  const C = SKY.cheese, s = r * 0.3;
+  const C = SKY.cheese, s = r * 0.34, at = BITE.a + 0.66;
   ctx.save();
-  ctx.translate(r * 1.02, -r * 0.62);
-  ctx.rotate(-0.35);
+  ctx.translate(Math.cos(at) * r, Math.sin(at) * r);
+  ctx.rotate(at + Math.PI / 2);
+  ctx.scale(-1, 1);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
   ctx.strokeStyle = INK;
-  ctx.lineWidth = ink(r) * 0.7;
-  ctx.beginPath();
-  ctx.moveTo(s * 0.5, s * 0.15);
-  ctx.quadraticCurveTo(s * 1.2, s * 0.3, s * 1.1, -s * 0.35);
-  ctx.stroke();
+  ctx.lineWidth = ink(r) * 2.4;
+  const tail = () => {
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.55, -s * 0.12);
+    ctx.bezierCurveTo(-s * 1.1, -s * 0.05, -s * 1.15, -s * 0.6, -s * 0.85, -s * 0.75);
+    ctx.stroke();
+  };
+  tail();
+  ctx.strokeStyle = C.ear;
+  ctx.lineWidth = ink(r);
+  tail();
+  ctx.strokeStyle = INK;
   ctx.fillStyle = C.mouse;
+  for (const x of [-0.3, 0.3]) {
+    ctx.beginPath();
+    ctx.ellipse(x * s, 0, s * 0.14, s * 0.08, 0, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+  }
   ctx.beginPath();
-  ctx.ellipse(0, 0, s * 0.6, s * 0.42, 0, 0, TAU);
+  ctx.moveTo(s * 0.98, -s * 0.3);
+  ctx.bezierCurveTo(s * 0.62, -s * 0.78, -s * 0.32, -s * 0.88, -s * 0.6, -s * 0.36);
+  ctx.quadraticCurveTo(-s * 0.74, -s * 0.04, -s * 0.34, -s * 0.04);
+  ctx.lineTo(s * 0.36, -s * 0.04);
+  ctx.quadraticCurveTo(s * 0.72, -s * 0.08, s * 0.98, -s * 0.3);
+  ctx.closePath();
   ctx.fill();
   ctx.stroke();
   ctx.beginPath();
-  ctx.arc(-s * 0.5, -s * 0.18, s * 0.3, 0, TAU);
+  ctx.arc(s * 0.28, -s * 0.74, s * 0.22, 0, TAU);
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = C.ear;
-  ctx.beginPath();
-  ctx.arc(-s * 0.42, -s * 0.52, s * 0.17, 0, TAU);
-  ctx.fill();
-  ctx.stroke();
+  disc(ctx, s * 0.3, -s * 0.74, s * 0.12);
+  disc(ctx, s * 0.98, -s * 0.3, s * 0.08);
   ctx.fillStyle = INK;
-  disc(ctx, -s * 0.6, -s * 0.22, s * 0.06);
-  ctx.fillStyle = C.ear;
-  disc(ctx, -s * 0.8, -s * 0.1, s * 0.07);
+  disc(ctx, s * 0.6, -s * 0.46, s * 0.07);
   ctx.restore();
 }
 
 function cheese(ctx, r) {
-  const C = SKY.cheese;
+  const C = SKY.cheese, { a, d, s } = BITE;
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(0, 0, r, 0, TAU);
-  for (const [x, y, s] of BITES) {
-    ctx.moveTo(x * r + s * r, y * r);
-    ctx.arc(x * r, y * r, s * r, 0, TAU);
-  }
-  ctx.clip("evenodd");
+  bitten(ctx, r);
+  ctx.clip();
   ball(ctx, r, C.light, C.dark);
-  clipped(ctx, r, () => {
-    for (const [x, y, s] of HOLES) onSphere(ctx, r, x, y, (light) => hole(ctx, s * r, light));
-  });
-  tone(ctx, r);
-  clipped(ctx, r, () => {
-    ctx.strokeStyle = INK;
-    ctx.lineWidth = ink(r) * 2;
-    for (const [x, y, s] of BITES) {
-      ctx.beginPath();
-      ctx.arc(x * r, y * r, s * r, 0, TAU);
-      ctx.stroke();
-    }
-  });
+  for (const [x, y, size] of HOLES) onSphere(ctx, r, x, y, (light) => hole(ctx, size * r, light));
+  const t = a + Math.PI + Math.acos((s * s + d * d - 1) / (2 * s * d));
+  ctx.strokeStyle = C.cut;
+  ctx.lineWidth = r * 0.07;
+  ctx.beginPath();
+  ctx.moveTo((Math.cos(a) * d + Math.cos(t) * s) * r, (Math.sin(a) * d + Math.sin(t) * s) * r);
+  biteEdge(ctx, r);
+  ctx.stroke();
+  const g = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r);
+  g.addColorStop(0, SKY.lit);
+  g.addColorStop(1, SKY.shade);
+  ctx.fillStyle = g;
+  ctx.fillRect(-r, -r, 2 * r, 2 * r);
   ctx.restore();
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = ink(r);
+  ctx.lineJoin = "round";
+  bitten(ctx, r);
+  ctx.stroke();
   mouse(ctx, r);
 }
 
