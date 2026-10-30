@@ -21,7 +21,17 @@ interface RunRow {
   started_at: number;
   finished_at: number | null;
   score: number | null;
+  device: string | null;
 }
+
+interface Mark {
+  best: number;
+  at: number | null;
+  improved: boolean;
+}
+
+const keptMobile = (me: Profile): Mark => ({ best: me.best, at: me.best_at, improved: false });
+const keptPc = (me: Profile): Mark => ({ best: me.pc_best, at: me.pc_best_at, improved: false });
 
 const eventInfo = (e: EventRow | null, status: string) =>
   e ? { name: e.name, opensAt: e.opens_at, closesAt: e.closes_at, finalAt: e.closes_at + GRACE_MS, status } : null;
@@ -32,13 +42,15 @@ const topOf = (list: Ranked[], me: Profile | null) =>
 export async function board({ req, env }: Ctx) {
   const now = Date.now();
   const [view, me] = await Promise.all([events(env, now), findProfile(req, env)]);
-  const general = await generalRanking(env, !!view.open);
+  const [general, pc] = await Promise.all([generalRanking(env, !!view.open), generalRanking(env, !!view.open, "pc")]);
   const shown = view.open ?? view.recent;
-  const [eventList, eventMine, count, rank] = await Promise.all([
+  const [eventList, eventMine, count, rank, pcCount, pcRank] = await Promise.all([
     shown ? eventRanking(env, shown.id) : null,
     shown && me ? entryBest(env, shown.id, me.id) : 0,
     generalCount(env, general),
     me && !me.banned ? generalRank(env, general, me.id, me.best, me.best_at) : null,
+    generalCount(env, pc, false, "pc"),
+    me && !me.banned ? generalRank(env, pc, me.id, me.pc_best, me.pc_best_at, "pc") : null,
   ]);
   return json({
     now,
@@ -47,6 +59,8 @@ export async function board({ req, env }: Ctx) {
     next: eventInfo(view.next, "upcoming"),
     top: topOf(general, me),
     count,
+    pcTop: topOf(pc, me),
+    pcCount,
     eventTop: eventList ? topOf(eventList, me) : [],
     eventCount: eventList ? eventList.length : 0,
     me: me
@@ -56,6 +70,9 @@ export async function board({ req, env }: Ctx) {
           runs: me.run_count,
           rank,
           rival: me.banned ? null : rivalIn(general, me.id),
+          pcBest: me.pc_best,
+          pcRank,
+          pcRival: me.banned ? null : rivalIn(pc, me.id),
           eventBest: eventMine,
           eventRank: me.banned || !eventList ? null : rankIn(eventList, me.id),
           eventRival: me.banned || !eventList ? null : rivalIn(eventList, me.id),
@@ -161,25 +178,32 @@ export async function startRun({ req, env }: Ctx) {
   return json({ runId, event: !!event }, 201);
 }
 
-async function standing(
-  env: Env, me: Profile, eventId: number | null, best: number, bestAt: number | null, improved: boolean, eventBest: number, eventImproved: boolean,
-) {
-  if (improved) promoteGeneral({ id: me.id, pseudo: me.pseudo, best });
+async function standing(env: Env, me: Profile, eventId: number | null, mobile: Mark, pc: Mark, eventBest: number, eventImproved: boolean) {
+  if (mobile.improved) promoteGeneral({ id: me.id, pseudo: me.pseudo, best: mobile.best });
+  if (pc.improved) promoteGeneral({ id: me.id, pseudo: me.pseudo, best: pc.best }, "pc");
   if (eventId && eventImproved) promoteEvent(eventId, { id: me.id, pseudo: me.pseudo, best: eventBest });
-  const [general, eventList] = await Promise.all([
+  const [general, pcList, eventList] = await Promise.all([
     generalRanking(env, !!eventId),
+    generalRanking(env, !!eventId, "pc"),
     eventId ? eventRanking(env, eventId) : Promise.resolve(null),
   ]);
-  const [rank, count] = await Promise.all([
-    me.banned ? null : generalRank(env, general, me.id, best, bestAt),
-    generalCount(env, general, improved && !me.best),
+  const [rank, count, pcRank, pcCount] = await Promise.all([
+    me.banned ? null : generalRank(env, general, me.id, mobile.best, mobile.at),
+    generalCount(env, general, mobile.improved && !me.best),
+    me.banned ? null : generalRank(env, pcList, me.id, pc.best, pc.at, "pc"),
+    generalCount(env, pcList, pc.improved && !me.pc_best, "pc"),
   ]);
   return {
-    best,
-    improved,
+    best: mobile.best,
+    improved: mobile.improved,
     rank,
     rival: me.banned ? null : rivalIn(general, me.id),
     count,
+    pcBest: pc.best,
+    pcImproved: pc.improved,
+    pcRank,
+    pcRival: me.banned ? null : rivalIn(pcList, me.id),
+    pcCount,
     eventBest: eventId ? eventBest : null,
     eventImproved,
     eventRank: me.banned || !eventList ? null : rankIn(eventList, me.id),
@@ -192,29 +216,34 @@ export async function finishRun({ req, env, params }: Ctx) {
   const now = Date.now();
   const me = await findProfile(req, env);
   if (!me) return fail(401, "Joueur inconnu.");
-  const run = await env.DB.prepare("SELECT id, event_id, started_at, finished_at, score FROM runs WHERE id = ? AND player_id = ?")
+  const run = await env.DB.prepare("SELECT id, event_id, started_at, finished_at, score, device FROM runs WHERE id = ? AND player_id = ?")
     .bind(params[0], me.id)
     .first<RunRow>();
   if (!run) return fail(404, "Partie inconnue.");
-  const score = (await readJson(req)).score;
+  const body = await readJson(req);
+  const score = body.score;
   if (typeof score !== "number" || !Number.isInteger(score) || score < 0 || score > MAX_SCORE) return fail(400, "Score invalide.");
-  const event = run.event_id ? await eventById(env, run.event_id) : null;
+  const device = (run.finished_at ? run.device : body.device) === "pc" ? "pc" : "mobile";
+  const event = run.event_id && device === "mobile" ? await eventById(env, run.event_id) : null;
   const eventId = event && now <= event.closes_at + GRACE_MS ? event.id : null;
   const mine = () => (eventId ? entryBest(env, eventId, me.id) : Promise.resolve(0));
   if (run.finished_at) {
     if (run.score !== score) return fail(409, "Partie déjà enregistrée.");
-    return json(await standing(env, me, eventId, me.best, me.best_at, false, await mine(), false));
+    return json(await standing(env, me, eventId, keptMobile(me), keptPc(me), await mine(), false));
   }
   const elapsed = now - run.started_at;
   if (score * 10 > elapsed + SLACK_MS) return fail(422, "Score refusé.");
-  const saved = await env.DB.prepare("UPDATE runs SET finished_at = ?, score = ? WHERE id = ? AND finished_at IS NULL")
-    .bind(now, score, run.id)
+  const saved = await env.DB.prepare("UPDATE runs SET finished_at = ?, score = ?, device = ? WHERE id = ? AND finished_at IS NULL")
+    .bind(now, score, device, run.id)
     .run();
-  if (!saved.meta.changes) return json(await standing(env, me, eventId, me.best, me.best_at, false, await mine(), false));
+  if (!saved.meta.changes) return json(await standing(env, me, eventId, keptMobile(me), keptPc(me), await mine(), false));
   const statements = [
     env.DB.prepare("UPDATE profiles SET run_count = run_count + 1 WHERE id = ?").bind(me.id),
-    env.DB.prepare("UPDATE profiles SET best = ?1, best_at = ?2, best_elapsed = ?3 WHERE id = ?4 AND best < ?1 AND banned = 0")
-      .bind(score, now, elapsed, me.id),
+    device === "pc"
+      ? env.DB.prepare("UPDATE profiles SET pc_best = ?1, pc_best_at = ?2, pc_best_elapsed = ?3 WHERE id = ?4 AND pc_best < ?1 AND banned = 0")
+          .bind(score, now, elapsed, me.id)
+      : env.DB.prepare("UPDATE profiles SET best = ?1, best_at = ?2, best_elapsed = ?3 WHERE id = ?4 AND best < ?1 AND banned = 0")
+          .bind(score, now, elapsed, me.id),
   ];
   if (eventId) {
     statements.push(
@@ -233,5 +262,7 @@ export async function finishRun({ req, env, params }: Ctx) {
   const improved = !me.banned && results[1].meta.changes > 0;
   const eventImproved = !!eventId && !me.banned && results[3].meta.changes > 0;
   const eventBest = eventImproved ? score : await mine();
-  return json(await standing(env, me, eventId, improved ? score : me.best, improved ? now : me.best_at, improved, eventBest, eventImproved));
+  const mark = { best: score, at: now, improved: true };
+  const mobile = improved && device === "mobile" ? mark : keptMobile(me), pc = improved && device === "pc" ? mark : keptPc(me);
+  return json(await standing(env, me, eventId, mobile, pc, eventBest, eventImproved));
 }

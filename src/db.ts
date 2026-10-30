@@ -13,9 +13,13 @@ export interface Profile {
   pseudo: string;
   best: number;
   best_at: number | null;
+  pc_best: number;
+  pc_best_at: number | null;
   banned: number;
   run_count: number;
 }
+
+export type Board = "general" | "pc";
 
 export interface Ranked {
   id: string;
@@ -35,7 +39,8 @@ export const RECENT_MS = 12 * 3600 * 1000;
 const GENERAL_LIMIT = 1000;
 const OLD_TOKEN_LENGTH = 48;
 const EVENT_COLS = "id, name, opens_at, closes_at";
-const ABOVE = "banned = 0 AND best > 0 AND (best > ?1 OR (best = ?1 AND best_at < ?2))";
+const COLS: Record<Board, { best: string; at: string }> = { general: { best: "best", at: "best_at" }, pc: { best: "pc_best", at: "pc_best_at" } };
+const above = ({ best, at }: { best: string; at: string }) => `banned = 0 AND ${best} > 0 AND (${best} > ?1 OR (${best} = ?1 AND ${at} < ?2))`;
 
 let eventsCache: { at: number; rows: EventRow[] } | null = null;
 const rankingCache = new Map<string, { at: number; value: unknown }>();
@@ -73,7 +78,7 @@ export async function findProfile(req: Request, env: Env) {
   const token = bearer(req);
   if (!token) return null;
   const hash = await sha256(token);
-  const me = await env.DB.prepare("SELECT id, pseudo, best, best_at, banned, run_count, token FROM profiles WHERE token IN (?1, ?2)")
+  const me = await env.DB.prepare("SELECT id, pseudo, best, best_at, pc_best, pc_best_at, banned, run_count, token FROM profiles WHERE token IN (?1, ?2)")
     .bind(hash, token.length === OLD_TOKEN_LENGTH ? token : hash)
     .first<Profile & { token: string }>();
   if (me && me.token.length !== HASH_LENGTH) await env.DB.prepare("UPDATE profiles SET token = ? WHERE id = ?").bind(hash, me.id).run();
@@ -97,25 +102,27 @@ function cached<T>(key: string, maxAge: number, load: () => Promise<T>): Promise
   });
 }
 
-export const generalRanking = (env: Env, during = false) =>
-  cached("general", during ? EVENT_GENERAL_MS : CACHE_MS, async () =>
+export const generalRanking = (env: Env, during = false, board: Board = "general") => {
+  const { best, at } = COLS[board];
+  return cached(board, during ? EVENT_GENERAL_MS : CACHE_MS, async () =>
     (await env.DB.prepare(
-      "SELECT id, pseudo, best FROM profiles WHERE banned = 0 AND best > 0 ORDER BY best DESC, best_at ASC LIMIT ?",
+      `SELECT id, pseudo, ${best} AS best FROM profiles WHERE banned = 0 AND ${best} > 0 ORDER BY ${best} DESC, ${at} ASC LIMIT ?`,
     )
       .bind(GENERAL_LIMIT)
       .all<Ranked>()).results);
+};
 
-export const generalCount = (env: Env, list: Ranked[], fresh = false) =>
+export const generalCount = (env: Env, list: Ranked[], fresh = false, board: Board = "general") =>
   list.length < GENERAL_LIMIT
     ? Promise.resolve(list.length)
-    : cached("count", fresh ? 0 : CACHE_MS, async () =>
-        (await env.DB.prepare("SELECT COUNT(*) AS n FROM profiles WHERE banned = 0 AND best > 0").first<{ n: number }>())!.n);
+    : cached("count:" + board, fresh ? 0 : CACHE_MS, async () =>
+        (await env.DB.prepare(`SELECT COUNT(*) AS n FROM profiles WHERE banned = 0 AND ${COLS[board].best} > 0`).first<{ n: number }>())!.n);
 
-export async function generalRank(env: Env, list: Ranked[], playerId: string, best: number, bestAt: number | null) {
+export async function generalRank(env: Env, list: Ranked[], playerId: string, best: number, bestAt: number | null, board: Board = "general") {
   const rank = rankIn(list, playerId);
   if (rank || best <= 0 || list.length < GENERAL_LIMIT) return rank;
-  const above = await env.DB.prepare(`SELECT COUNT(*) AS n FROM profiles WHERE ${ABOVE}`).bind(best, bestAt ?? 0).first<{ n: number }>();
-  return above!.n + 1;
+  const n = await env.DB.prepare(`SELECT COUNT(*) AS n FROM profiles WHERE ${above(COLS[board])}`).bind(best, bestAt ?? 0).first<{ n: number }>();
+  return n!.n + 1;
 }
 
 export const eventRanking = (env: Env, eventId: number) =>
@@ -137,7 +144,7 @@ function promote(key: string, row: Ranked, limit: number) {
   hit.value = list.slice(0, limit);
 }
 
-export const promoteGeneral = (row: Ranked) => promote("general", row, GENERAL_LIMIT);
+export const promoteGeneral = (row: Ranked, board: Board = "general") => promote(board, row, GENERAL_LIMIT);
 
 export const promoteEvent = (eventId: number, row: Ranked) => promote("event:" + eventId, row, Infinity);
 

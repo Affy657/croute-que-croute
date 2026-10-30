@@ -4,21 +4,21 @@ import { SPREADS, GEAR } from "../shared/palette.js";
 import { owned } from "./toppings.js";
 
 const FAMILIES = [["time", "Temps de cuisson"], ["play", "Frôlés et découvertes"], ["topping", "Garnitures"], ["loyal", "Assiduité et soirées"], ["secret", "Secrets"]];
-const TIMES = [[10, "t10"], [20, "t20"], [30, "t30"], [45, "t45"], [60, "t60"], [80, "t80"]];
+const TIMES = [[10, "t10"], [30, "t30"], [60, "t60"], [90, "t90"], [120, "t120"], [150, "t150"]];
 const NEARS = [[5, "near5"], [20, "near20"]];
 const RUNS = [[10, "runs10"], [50, "runs50"], [100, "runs100"]];
-const STILL_S = 5, EXPRESS_CS = 200, EVENTS = 3, TOP = 10, FRIDGE = 4;
+const STILL_S = 3, EXPRESS_CS = 200, EVENTS = 3, TOP = 10, FRIDGE = 4;
 const LIVE = ATTACKS.filter((a) => !a.lab);
 const EXTRAS = Object.keys(SPREADS).length - 1;
 const TOPPINGS = [[1, "top1"], [FRIDGE, "top4"], [EXTRAS, "topAll"]];
 
 export const ACHIEVEMENTS = [
   { id: "t10", family: "time", name: "Premiers pas", desc: "Tenir 10 s" },
-  { id: "t20", family: "time", name: "Bien beurrée", desc: "Tenir 20 s" },
   { id: "t30", family: "time", name: "Croustillante", desc: "Tenir 30 s", gear: "witch" },
-  { id: "t45", family: "time", name: "Dorée à point", desc: "Tenir 45 s" },
   { id: "t60", family: "time", name: "Une minute de gloire", desc: "Tenir 60 s", gear: "boosters" },
-  { id: "t80", family: "time", name: "Tartine de légende", desc: "Tenir 80 s" },
+  { id: "t90", family: "time", name: "Dorée à point", desc: "Tenir 90 s" },
+  { id: "t120", family: "time", name: "Bien grillée", desc: "Tenir 120 s" },
+  { id: "t150", family: "time", name: "Tartine de légende", desc: "Tenir 150 s" },
   { id: "near5", family: "play", name: "Ça passe", desc: "5 frôlés dans une partie" },
   { id: "near20", family: "play", name: "Ça passe crème", desc: "20 frôlés dans une partie" },
   { id: "allAttacks", family: "play", name: "Tout vu", desc: "Voir les " + LIVE.length + " attaques" },
@@ -32,7 +32,7 @@ export const ACHIEVEMENTS = [
   { id: "top10", family: "loyal", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée", gear: "pirate" },
   { id: "eventWin", family: "loyal", name: "Tartine d'or", desc: "Finir 1er d'une soirée" },
   { id: "express", family: "secret", name: "Tartinée express", desc: "Se faire tartiner en moins de 2 s", hint: "il y a des records qu'on ne cherche pas." },
-  { id: "zen", family: "secret", name: "En détente", desc: "Rester 5 s sans bouger", hint: "le meilleur coup, c'est parfois de ne rien faire." },
+  { id: "zen", family: "secret", name: "En détente", desc: "Rester " + STILL_S + " s sans bouger", hint: "le meilleur coup, c'est parfois de ne rien faire." },
   { id: "round", family: "secret", name: "Chiffre rond", desc: "Finir pile sur une seconde ronde", hint: "les comptes ronds font les bons amis." },
   { id: "woof", family: "secret", name: "Ouaf", desc: "Se faire tartiner par un couteau à la pâtée pour chien", hint: "ça sent un peu le chien." }
 ];

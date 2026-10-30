@@ -8,7 +8,7 @@ const INVITE_MS = 48 * 3600 * 1000;
 const SEEN_MS = 5 * 60 * 1000;
 const SESSION_MS = 30 * 24 * 3600 * 1000;
 const JOINED_MS = 15 * 60 * 1000;
-const SUSPECT_MS = 15000, SUSPECT_RATIO = 1.15, SUSPECT_HIGH = 9000;
+const SUSPECT_MS = 15000, SUSPECT_RATIO = 1.15, SUSPECT_MIN = 6000, SUSPECT_LEAD = 1.3;
 
 export interface AdminAuth {
   id: string | null;
@@ -98,9 +98,14 @@ export async function logout({ env, auth }: Ctx) {
   return json({ ok: true });
 }
 
-function suspect(p: PlayerAdminRow) {
+function farAhead(rows: PlayerAdminRow[]) {
+  const [first, second] = rows.filter((p) => !p.banned && p.best > 0);
+  return first && second && first.best >= SUSPECT_MIN && first.best > second.best * SUSPECT_LEAD ? first.id : null;
+}
+
+function suspect(p: PlayerAdminRow, ahead: string | null) {
   if (!p.best) return null;
-  if (p.best >= SUSPECT_HIGH) return "high";
+  if (p.id === ahead) return "high";
   if (p.best_elapsed !== null && p.best_elapsed > p.best * 10 * SUSPECT_RATIO + SUSPECT_MS) return "slow";
   return null;
 }
@@ -113,17 +118,20 @@ const time = (raw: unknown) => (typeof raw === "number" && Number.isFinite(raw) 
 
 export async function players({ req, env }: Ctx) {
   const now = Date.now();
-  const general = new URL(req.url).searchParams.get("scope") === "general";
+  const asked = new URL(req.url).searchParams.get("scope");
+  const board = asked === "general" || asked === "pc" ? asked : null;
+  const general = !!board;
   const event = (await pendingEvent(env, now)) ?? (await lastEvent(env));
-  const cols = "id, pseudo, best, banned, run_count, best_elapsed FROM profiles";
+  const [best, at, elapsed] = board === "pc" ? ["pc_best", "pc_best_at", "pc_best_elapsed"] : ["best", "best_at", "best_elapsed"];
+  const cols = `id, pseudo, ${best} AS best, banned, run_count, ${elapsed} AS best_elapsed FROM profiles`;
   const joined = env.DB.prepare(
-    `SELECT ${cols} INDEXED BY profiles_joined WHERE created_at > ? AND best = 0 AND banned = 0 ORDER BY created_at DESC LIMIT 50`,
+    `SELECT ${cols} INDEXED BY profiles_joined WHERE created_at > ? AND best = 0 AND pc_best = 0 AND banned = 0 ORDER BY created_at DESC LIMIT 50`,
   ).bind(now - JOINED_MS);
   let rows: PlayerAdminRow[] = [], fresh: PlayerAdminRow[] = [];
   if (general) {
     const [ranked, out, recent] = await env.DB.batch<PlayerAdminRow>([
-      env.DB.prepare(`SELECT ${cols} WHERE banned = 0 AND best > 0 ORDER BY best DESC, best_at ASC LIMIT 300`),
-      env.DB.prepare(`SELECT ${cols} WHERE banned = 1 ORDER BY best DESC, best_at ASC LIMIT 300`),
+      env.DB.prepare(`SELECT ${cols} WHERE banned = 0 AND ${best} > 0 ORDER BY ${best} DESC, ${at} ASC LIMIT 300`),
+      env.DB.prepare(`SELECT ${cols} WHERE banned = 1 ORDER BY ${best} DESC, ${at} ASC LIMIT 300`),
       joined,
     ]);
     rows = [...ranked.results, ...out.results];
@@ -143,10 +151,11 @@ export async function players({ req, env }: Ctx) {
   }
   const firstOut = rows.findIndex((p) => p.banned);
   const shown = firstOut < 0 ? [...rows, ...fresh] : [...rows.slice(0, firstOut), ...fresh, ...rows.slice(firstOut)];
+  const ahead = farAhead(rows);
   return json({
-    scope: general ? "general" : "event",
+    scope: board ?? "event",
     event: event ? eventJson(event, now) : null,
-    players: shown.map((p) => ({ id: p.id, pseudo: p.pseudo, best: p.best, banned: p.banned, runs: p.run_count, suspect: suspect(p) })),
+    players: shown.map((p) => ({ id: p.id, pseudo: p.pseudo, best: p.best, banned: p.banned, runs: p.run_count, suspect: suspect(p, ahead) })),
     stats: { players: rows.length, runs: rows.reduce((n, p) => n + p.run_count, 0) },
   });
 }
