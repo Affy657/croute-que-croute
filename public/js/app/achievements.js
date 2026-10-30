@@ -31,10 +31,10 @@ export const ACHIEVEMENTS = [
   { id: "events3", family: "loyal", name: "Fidèle du Space", desc: "Jouer à 3 soirées", joke: "Le Space devrait te faire une carte de fidélité." },
   { id: "top10", family: "loyal", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée", joke: "Dix sur dix. Enfin, dans les dix." },
   { id: "eventWin", family: "loyal", name: "Tartine d'or", desc: "Finir 1er d'une soirée", joke: "Tu gagnes le droit d'en parler toute la semaine." },
-  { id: "express", family: "secret", name: "Tartinée express", desc: "Se faire tartiner en moins de 2 s", joke: "Record du monde. À l'envers.", hint: "il y a des records qu'on ne cherche pas." },
-  { id: "zen", family: "secret", name: "En détente", desc: "Rester 5 s sans bouger", joke: "Respire. Tout va bien. Pour l'instant.", hint: "le meilleur coup, c'est parfois de ne rien faire." },
-  { id: "round", family: "secret", name: "Chiffre rond", desc: "Finir pile sur une seconde ronde", joke: "Le hasard fait bien les choses. Le couteau aussi.", hint: "les comptes ronds font les bons amis." },
-  { id: "woof", family: "secret", name: "Ouaf", desc: "Se faire tartiner par un couteau à la pâtée pour chien", joke: "Ouaf ouaf. Traduction : bien fait.", hint: "ça sent un peu le chien." }
+  { id: "express", family: "secret", name: "Tartinée express", desc: "Se faire tartiner en moins de 2 s", hint: "il y a des records qu'on ne cherche pas." },
+  { id: "zen", family: "secret", name: "En détente", desc: "Rester 5 s sans bouger", hint: "le meilleur coup, c'est parfois de ne rien faire." },
+  { id: "round", family: "secret", name: "Chiffre rond", desc: "Finir pile sur une seconde ronde", hint: "les comptes ronds font les bons amis." },
+  { id: "woof", family: "secret", name: "Ouaf", desc: "Se faire tartiner par un couteau à la pâtée pour chien", hint: "ça sent un peu le chien." }
 ];
 const BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
 
@@ -170,7 +170,7 @@ function item(a, since) {
     name.append(" ", tag);
   }
   text.append(name, line("sub", hidden ? "Indice : " + a.hint : a.desc));
-  if (at) text.append(line("ach-joke", "« " + a.joke + " »"));
+  if (at && a.joke) text.append(line("ach-joke", "« " + a.joke + " »"));
   row.append(star, text);
   return row;
 }

@@ -113,7 +113,7 @@ export function renderWeapons(root, { showLab = false } = {}) {
   const groups = [
     weaponGroup("Taille réelle", `Comme dans le jeu sur cet écran (échelle × ${scale.toFixed(2).replace(".", ",")}). En pointillés jaunes : la zone de touche.`,
       [toastCard(scale), ...kinds.filter((k) => !PROJECTILES[k].lab).map((k) => weaponCard(k, null, null, scale))]),
-    weaponGroup("Variantes rares", "1 attaque à couteaux sur 8 : un seul de ses couteaux change de tartinade. Pur visuel, la zone de touche ne change pas.",
+    weaponGroup("Variantes rares", "1 attaque à couteaux sur 10 : un seul de ses couteaux change de tartinade. Pur visuel, la zone de touche ne change pas.",
       Object.keys(SPREADS).filter((sp) => sp !== "butter").map((sp) => weaponCard("knife", sp, "rare", scale)))
   ];
   if (showLab && lab.length) {

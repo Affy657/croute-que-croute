@@ -1,6 +1,6 @@
 import { FW, segDist2 } from "./field.js";
 
-const RARE_CHANCE = 1 / 8;
+const RARE_CHANCE = 1 / 10;
 const RARE_SPREADS = ["jam", "choco", "honey", "ketchup", "toothpaste", "egg", "sardine", "slime", "dog"];
 
 export const PROJECTILES = {
