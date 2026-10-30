@@ -1126,7 +1126,7 @@ const HATS = {
   }
 };
 
-function hat(ctx, kind, C) {
+export function hat(ctx, kind, C) {
   if (!HATS[kind]) return;
   ctx.save();
   HATS[kind](ctx, C);

@@ -67,6 +67,19 @@ export const SKY = {
   cheese: {
     light: "#ffe98f", mid: "#f7c843", dark: "#c98b1c", shade: "rgba(13, 11, 36, 0.5)",
     hole: "#e6aa30", holeDark: "#a86c16", holeLight: "#fbd766", cut: "#fff2b8", mouse: "#a29bb2", ear: "#d98a9a"
+  },
+  wall: { light: "#3f9aa6", dark: "#0f2a3a", spot: "#2c7480", box: "#2a2244", boxLight: "#5a4f86", wave: "#7fe0e8" },
+  pumpkin: { light: "#ffb54d", mid: "#f07a12", dark: "#9c3f08", rib: "#b8520c", stem: "#6b7a2a", glow: "#ffe27a", deep: "#ff8a1a", stick: "#8a5a2e", straw: "#e0b35a" },
+  bauble: { light: "#ff5a64", dark: "#6e0c1f", gold: "#f2c14e", goldDark: "#a87a1c", thread: "rgba(242, 193, 78, 0)", snow: "#ffffff" },
+  sleepy: { light: "#bccaf2", dark: "#3a4590", spot: "#8f9cdc", cheek: "#f28aa8", bubble: "rgba(190, 230, 255, 0.55)" },
+  island: {
+    light: "#5fd0e8", dark: "#0b3d78", foam: "#d9f6ff", sand: "#f2d38a", sandDark: "#c79a52",
+    trunk: "#a8713c", trunkDark: "#6b4421", leaf: "#58b84a", nut: "#6b4421", chest: "#8a4f22", band: "#d9a83a", gold: "#ffd84a"
+  },
+  astro: { suit: "#eef1f7", cord: "rgba(213, 219, 232, 0.6)" },
+  melies: {
+    light: "#f8f1dc", dark: "#8c7c5c", spot: "#cdbf98", feature: "#5c4a36", eye: "#fffdf4", goo: "#fff6dc",
+    rocketLight: "#eef1f6", rocketDark: "#7b8291", window: "#2f3a5a"
   }
 };
 
