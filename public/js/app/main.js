@@ -1,5 +1,5 @@
 import { createSim } from "../game/sim.js";
-import { FW, FH, STEP, clamp, speedMul, SPEED_MAX } from "../game/field.js";
+import { FW, FH, STEP, clamp, speedMul, SPEED_START, SPEED_MAX } from "../game/field.js";
 import { fmtCs } from "../shared/format.js";
 import { store, KEYS } from "../shared/store.js";
 import { VERSION } from "../version.js";
@@ -387,7 +387,7 @@ function placePicker() {
 
 function update(dt) {
   S.clock += dt;
-  const hot = S.mode === "menu" ? 0 : (speedMul(sim.state.t) - 1) / (SPEED_MAX - 1);
+  const hot = S.mode === "menu" ? 0 : (speedMul(sim.state.t) - SPEED_START) / (SPEED_MAX - SPEED_START);
   scene.update(dt, S.mode === "play" ? 1 + (speedMul(sim.state.t) - 1) * 1.6 : 0.5, playing(), hot);
   const tt = S.toast;
   if (S.mode === "menu") {

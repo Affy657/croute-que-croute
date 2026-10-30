@@ -40,7 +40,7 @@ function rainOf({ t, rnd }, n, gap) {
   return items;
 }
 
-const rainSize = (t) => 3 + Math.min(5, Math.floor(t / 12));
+const rainSize = (t) => Math.min(8, 4 + Math.floor(t / 15));
 
 const rain = (g) => rainOf(g, rainSize(g.t), 0.14);
 
@@ -105,7 +105,7 @@ function wallSeries(g) {
     const wall = side === "top" ? topWall(g, at, v, SERIES_HOLE, gc) : sideWall(g, side, at, v, SERIES_HOLE, gc);
     if (i) for (const w of wall) w.notice = SERIES_NOTICE;
     items.push(...wall);
-    gc = side === "top" ? rnd(70, FW - 70) : clamp(gc + rnd(-SERIES_SHIFT, SERIES_SHIFT), 100, FH * 0.62);
+    gc = side === "top" ? clamp(gc + rnd(-SERIES_SHIFT, SERIES_SHIFT), 70, FW - 70) : clamp(gc + rnd(-SERIES_SHIFT, SERIES_SHIFT), 100, FH * 0.62);
   }
   return items;
 }
@@ -181,7 +181,7 @@ export const ATTACKS = [
   { id: "aimed", name: "Couteau visé", from: 0, weight: 2.5, cost: 1, speed: 230, make: aimed, growsUntil: 25, growth: "le couteau visé peut tourner sur lui-même",
     info: "Un couteau lancé du haut ou d'un côté vers la tartine. Bouger pendant l'annonce suffit. Dès 25 s, une fois sur trois il tourne sur lui-même." },
   { id: "rain", name: "Pluie de fourchettes", from: 4, weight: 1.4, cost: 1.5, speed: 190, make: rain, growsUntil: 60, growth: "pluies au maximum (8 fourchettes)",
-    info: "3 fourchettes (jusqu'à 8) tombent du haut l'une après l'autre, un peu en biais." },
+    info: "4 fourchettes (jusqu'à 8) tombent du haut l'une après l'autre, un peu en biais." },
   { id: "cleaver", name: "Hachoir", from: 8, weight: 0.9, cost: 1.3, speed: 300, make: cleaver, growsUntil: 55, growth: "3 hachoirs à la suite",
     info: "Un hachoir tombe tout droit et très vite au-dessus de la tartine, annoncé 0,9 s avant. Quitter sa colonne. Dès 30 s, un deuxième suit dans une colonne voisine, un troisième dès 55 s." },
   { id: "wall", name: "Mur", kin: "wall", shuns: ["rolling"], from: 12, weight: 1.1, cost: 1.7, speed: 150, make: wall,
@@ -199,7 +199,7 @@ export const ATTACKS = [
   { id: "bread", name: "Couteau à pain", from: 38, weight: 0.7, cost: 1.2, speed: 240, make: bread,
     info: "Lancé d'un coin du haut, il rebondit sur le bord opposé puis file vers la tartine. Suivre la pointe de la pastille et anticiper le rebond." },
   { id: "slant", name: "Pluie en biais", from: 45, weight: 0.8, cost: 1.5, speed: 190, make: slant, growsUntil: 60, growth: "pluie en biais au maximum (8 fourchettes)",
-    info: "6 à 8 fourchettes tombent en biais l'une après l'autre, en balayant l'écran d'un côté à l'autre." },
+    info: "7 à 8 fourchettes tombent en biais l'une après l'autre, en balayant l'écran d'un côté à l'autre." },
   { id: "corridor", name: "Couloir", lab: true, solo: true, from: 46, weight: 0.6, cost: 2.2, speed: 150, make: corridor,
     info: "Un mur par un côté, puis un autre par l'autre côté juste après, chacun avec son trou (plus grand que pour un mur seul). Passer d'un trou à l'autre." },
   { id: "downpour", name: "Double pluie", solo: true, from: 54, weight: 0.6, cost: 1.8, speed: 190, make: downpour,
