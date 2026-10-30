@@ -707,7 +707,7 @@ export const BODIES = [
 
 export const RARE = [
   { draw: stage, x: 0.24, r: 0.05 },
-  { draw: cheese, x: 0.78, r: 0.1 },
+  { draw: cheese, x: 0.22, r: 0.1 },
   { draw: toaster, x: 0.22, r: 0.1 }
 ];
 
