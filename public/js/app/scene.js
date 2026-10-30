@@ -35,7 +35,7 @@ export function createScene(canvas, overlay) {
   let hudBox = null;
   let stars = [], sky = 0, shake = 0, parts = [], pops = [], fieldA = 0, heat = 0;
   let comet = null, cometIn = rnd(...COMET_FIRST);
-  let rare = pickRare(null), rareY = -Infinity;
+  let rare = ODD ? pickRare(null) : null, rareY = -Infinity;
 
   function resize() {
     view.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -112,7 +112,7 @@ export function createScene(canvas, overlay) {
   function drawSky(clock) {
     const { W, H } = view, u = Math.min(W, H);
     PASSES.forEach((slot, i) => {
-      const b = slot || rare, y = skyY(i) * H;
+      const b = slot || rare || BODIES[BODIES.length - 1], y = skyY(i) * H;
       if (y < -u * 0.3 || y > H + u * 0.3) return;
       ctx.save();
       ctx.translate(W * b.x, y);
