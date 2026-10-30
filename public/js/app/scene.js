@@ -4,7 +4,7 @@ import { drawTrail, drawProjectile, drawWarn, drawToast } from "./sprites.js";
 import { BODIES } from "./planets.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
-const POP_LIFE = 0.7, PUCK_R = 30, GRAB_S = 0.6, FIELD_FADE = 5;
+const POP_LIFE = 0.7, PUCK_R = 30, PUCK_LIFT = 110, GRAB_S = 0.6, FIELD_FADE = 5;
 const SKY_SPEED = 20, SKY_GAP = 0.5, SKY_TOP = 0.3, SKY_LOOP = SKY_GAP * BODIES.length;
 const HEAT_EASE = 2, HEAT_LOW = 0.45, HEAT_FIELD = 0.85;
 const HINT = "Pose ton doigt où tu veux";
@@ -191,7 +191,7 @@ export function createScene(canvas, overlay) {
         fx.stroke();
       }
     } else {
-      const x = W / 2, y = H - PUCK_R - 70;
+      const x = W / 2, y = H - PUCK_R - PUCK_LIFT;
       drawPuck(x, y, reduceMotion ? 0 : Math.sin(clock * 3) * 12, 0.3 + 0.15 * Math.sin(clock * 4));
       fx.globalAlpha = 0.85;
       fx.font = '13px Bungee, "Arial Black", sans-serif';
@@ -219,18 +219,16 @@ export function createScene(canvas, overlay) {
     fx.restore();
   }
 
-  function render({ clock, world, toast, splat, finger, zoom }) {
+  function render({ clock, world, toast, splat, finger, dying }) {
     const { dpr, scale, ox, oy } = view;
-    const k = zoom && !reduceMotion ? zoom.k : 1;
-    const zx = k === 1 ? 0 : scale * zoom.x * (1 - k), zy = k === 1 ? 0 : scale * zoom.y * (1 - k);
     drawBackground(clock);
     const sx = shake ? rnd(-shake, shake) : 0;
     const sy = shake ? rnd(-shake, shake) : 0;
     fx.setTransform(1, 0, 0, 1, 0, 0);
     fx.clearRect(0, 0, overlay.width, overlay.height);
     drawFinger(finger, clock);
-    if (fieldA > 0 && !zoom) drawWarns(world, clock, sx, sy);
-    ctx.setTransform(dpr * scale * k, 0, 0, dpr * scale * k, dpr * (ox + sx + zx), dpr * (oy + sy + zy));
+    if (fieldA > 0 && !dying) drawWarns(world, clock, sx, sy);
+    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * (oy + sy));
     if (fieldA > 0) {
       ctx.globalAlpha = fieldA * (1 - HEAT_FIELD * heat);
       ctx.fillStyle = C.field;

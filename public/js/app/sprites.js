@@ -297,7 +297,7 @@ export function drawWarn(ctx, w, clock, now, C = PALETTE, avoid = null) {
   const r = BADGE_R;
   const x = clamp(w.x, r + 3, FW - r - 3);
   let y = clamp(w.y, r + 3, FH - r - 3);
-  if (avoid && x + r > avoid.x0 && x - r < avoid.x1 && y - r < avoid.y1) y = avoid.y1 + r + ARROW;
+  if (avoid && x + r > avoid.x0 && x - r < avoid.x1 && y - r < avoid.y1) y = avoid.y1 + r;
   const done = clamp((now - w.born) / (w.at - w.born), 0, 1);
   const o = w.obs[0];
   ctx.save();

@@ -7,13 +7,13 @@ const TRIES = 5, REACT = 0.1;
 export const GAP_START = 1.25, GAP_SLOPE = 0.016, GAP_MIN = 0.42;
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
-export function createSim(rng = Math.random, { fair = true, react = REACT, only = null, t0 = 0 } = {}) {
+export function createSim(rng = Math.random, { fair = true, react = REACT, only = null, t0 = 0, y = FH * 0.7 } = {}) {
   const rnd = (a, b) => a + rng() * (b - a);
   const pick = (arr) => arr[Math.floor(rng() * arr.length)];
   const forced = only && ATTACKS.find((a) => a.id === only);
   const state = {
     t: t0, next: 0.9, tries: 0, near: 0, dead: false, last: null, streak: 0,
-    toast: { x: FW / 2, y: FH * 0.7 },
+    toast: { x: FW / 2, y },
     obs: [], warns: [],
     stats: { spawned: 0, rejected: 0, impossible: 0, solves: 0, solveMs: 0, solveMax: 0 }
   };

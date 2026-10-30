@@ -61,41 +61,6 @@
   color: var(--ink-dim);
 }
 
-.catalog .toppings {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
-  gap: 8px;
-}
-
-.catalog .topping {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 4px;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  background: var(--row);
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-.catalog .topping.picked {
-  border-color: var(--mustard);
-}
-
-.catalog .topping.locked {
-  color: var(--ink-dim);
-  cursor: default;
-}
-
-.catalog .thumb {
-  width: 64px;
-  height: 64px;
-}
-
 .catalog .gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

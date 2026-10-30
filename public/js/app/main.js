@@ -9,18 +9,18 @@ import { createScene } from "./scene.js";
 import { createInput } from "./input.js";
 import { burst, rain, bounce } from "./party.js";
 import * as ach from "./achievements.js";
-import { chosen, unlockTopping, onTopping, renderToppings } from "./toppings.js";
+import { chosen, unlockTopping, onTopping, stepTopping } from "./toppings.js";
 import { SPREADS } from "../shared/palette.js";
 import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./catalog.js";
 import { renderSettings, suggestInstall, leaveSettings } from "./settings.js";
 import { onInstallChange } from "./install.js";
 import {
-  ui, show, setText, setDigits, tickCountdowns, renderMenu, renderBoard, renderOver, renderOverStats, renderRival, renderKiller,
+  ui, show, setText, setDigits, tickCountdowns, renderMenu, renderPicker, renderBoard, renderOver, renderOverStats, renderRival, renderKiller,
   renderHud, renderControls, renderAll, setBoardScope, achLabel
 } from "./screens.js";
 
-const ACH_TOAST_MS = 2600, MENU_PLACE_S = 0.5, MENU_LIFT = 6;
-const DIE_S = 0.75, FREEZE_S = 0.3, KILL_ZOOM = 0.22, ZOOM_BACK_S = 0.25, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
+const ACH_TOAST_MS = 2600, MENU_PLACE_S = 0.5, MENU_LIFT = 6, PICK_REACH = 46, PICK_DROP = 54;
+const DIE_S = 0.75, FREEZE_S = 0.3, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
 const BOARD_POLL_MS = 10000, MENU_POLL_MS = 30000;
 const ADMIN_TAPS = 5, ADMIN_TAP_MS = 3000;
 const CHAIN_S = 1.5, CHAIN_STEPS = 6, LAP_CS = 1000;
@@ -133,8 +133,8 @@ function start(train = null) {
   if (S.mode !== "menu" && S.mode !== "over") return false;
   if (S.mode === "over" && ui.again.disabled) return false;
   if (api.net.updatePending && api.applyUpdate()) return false;
-  const t0 = train ? train.from : 0;
-  sim = createSim(Math.random, train ? { only: train.id, t0 } : undefined);
+  const t0 = train ? train.from : 0, y = S.mode === "menu" ? S.toast.y : S.menuY;
+  sim = createSim(Math.random, train ? { only: train.id, t0, y } : { y });
   Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.isOpen() ? "event" : "general" });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0, scars: [] });
   scene.clear();
@@ -171,7 +171,10 @@ function avoidHud() {
   scene.avoid({ left: mid - half, right: mid + half, bottom: Math.max(t.bottom, b.bottom) + HUD_PAD });
 }
 
-window.addEventListener("resize", () => { if (S.mode === "play") avoidHud(); });
+window.addEventListener("resize", () => {
+  if (S.mode === "play") avoidHud();
+  if (boardOpen) renderBoard();
+});
 
 function cheer() {
   const mine = S.submit, prev = S.prevRank;
@@ -350,7 +353,6 @@ function openAch() {
   show("ach");
   renderControls(false);
   ach.renderAchievements(ui.achList, ui.achCount);
-  ui.achList.prepend(renderToppings());
   ui.ach.scrollTop = 0;
 }
 
@@ -372,6 +374,13 @@ function menuToastY() {
   return clamp((mid - oy) / scale - MENU_LIFT, FH * 0.25, FH * 0.55);
 }
 
+function placePicker() {
+  const { scale, oy } = scene.view;
+  ui.picker.style.top = oy + scale * S.menuY + "px";
+  ui.picker.style.setProperty("--reach", scale * PICK_REACH + "px");
+  ui.picker.style.setProperty("--drop", scale * PICK_DROP + "px");
+}
+
 function update(dt) {
   S.clock += dt;
   const hot = S.mode === "menu" ? 0 : (speedMul(sim.state.t) - 1) / (SPEED_MAX - 1);
@@ -382,6 +391,7 @@ function update(dt) {
     if (S.clock >= S.menuAt && !ui.menu.hidden) {
       S.menuAt = S.clock + MENU_PLACE_S;
       S.menuY = menuToastY();
+      placePicker();
     }
     tt.y = S.menuY + Math.sin(S.clock * 2.2) * 7;
     tt.tilt = Math.sin(S.clock * 1.3) * 0.08;
@@ -414,12 +424,6 @@ function update(dt) {
   for (const e of events) ON_SIM[e.type](e);
 }
 
-function killZoom() {
-  if (S.mode !== "dying") return null;
-  const k = S.freeze > 0 ? 1 - (S.freeze / FREEZE_S) ** 2 : Math.max(0, 1 - S.dieT / ZOOM_BACK_S);
-  return { x: S.toast.x, y: S.toast.y, k: 1 + KILL_ZOOM * k };
-}
-
 let last = performance.now(), acc = 0;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
@@ -429,7 +433,7 @@ function frame(now) {
     update(STEP);
     acc -= STEP;
   }
-  scene.render({ clock: S.clock, world: sim.state, toast: S.mode === "over" ? null : S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null, zoom: killZoom() });
+  scene.render({ clock: S.clock, world: sim.state, toast: S.mode === "over" ? null : S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null, dying: S.mode === "dying" });
   if (playing()) {
     const cs = Math.floor(elapsed() * 100), s = fmtCs(cs);
     if (s !== lastShown) {
@@ -465,6 +469,8 @@ ui.infoBtn.addEventListener("click", openInfo);
 ui.infoBack.addEventListener("click", closeInfo);
 ui.closeBtn.addEventListener("click", () => (settingsOpen ? closeSettings() : achOpen ? closeAch() : closeInfo()));
 ui.menuAch.addEventListener("click", openAch);
+ui.pickPrev.addEventListener("click", () => stepTopping(-1));
+ui.pickNext.addEventListener("click", () => stepTopping(1));
 ui.overAch.addEventListener("click", openAch);
 ui.achBack.addEventListener("click", closeAch);
 ui.settingsBtn.addEventListener("click", openSettings);
@@ -528,7 +534,10 @@ document.addEventListener("visibilitychange", () => {
 
 api.on("board", renderAll);
 api.on("board", () => ach.onBoard(api.net.board));
-onTopping((kind) => { S.toast.spread = kind; });
+onTopping((kind) => {
+  S.toast.spread = kind;
+  renderPicker();
+});
 ach.onUnlock((a) => {
   if (S.mode === "play") toastAch(a);
   else if (S.mode === "over") renderOverAch();

@@ -253,6 +253,75 @@ h2.page-title {
   font-size: clamp(0.85rem, 4.3vw, 1rem);
 }
 
+.picker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+}
+
+.pick {
+  position: absolute;
+  top: -24px;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--ink-dim);
+  border-radius: 50%;
+  background: var(--veil);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.pick.prev {
+  right: calc(50% + var(--reach));
+}
+
+.pick.next {
+  left: calc(50% + var(--reach));
+}
+
+.pick::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 11px;
+  height: 11px;
+  border-left: 3px solid var(--mustard);
+  border-bottom: 3px solid var(--mustard);
+  transform: translateX(2px) rotate(45deg);
+}
+
+.pick.next::before {
+  transform: translateX(-2px) rotate(-135deg);
+}
+
+.pick:active {
+  transform: scale(0.92);
+}
+
+.pick:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.pick-name {
+  position: absolute;
+  top: var(--drop);
+  left: 0;
+  right: 0;
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  pointer-events: none;
+}
+
+.pick-count {
+  color: var(--ink-dim);
+}
+
 .cta {
   font-family: var(--font-display);
   font-size: clamp(1.3rem, 3.8vh, 1.6rem);
@@ -775,6 +844,54 @@ a.ghost {
 .board-list li.me {
   background: var(--mustard);
   color: var(--void);
+}
+
+.board-list li.podium .pos {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  color: var(--void);
+}
+
+.board-list li.p1 .pos {
+  background: var(--mustard);
+}
+
+.board-list li.p2 .pos {
+  background: #d5dbe8;
+}
+
+.board-list li.p3 .pos {
+  background: #d9802f;
+}
+
+.board-list li.p1 {
+  padding: 0.85rem 0.8rem;
+  box-shadow: inset 0 0 0 2px var(--mustard);
+}
+
+.board-list li.p1 .name,
+.board-list li.p1 .val {
+  font-size: 1.1rem;
+}
+
+.board-list li.p2 {
+  box-shadow: inset 0 0 0 2px #d5dbe8;
+}
+
+.board-list li.p3 {
+  box-shadow: inset 0 0 0 2px #d9802f;
+}
+
+.board-list li.me.podium .pos {
+  box-shadow: 0 0 0 2px var(--void);
+}
+
+.board-list li.gap + li.me {
+  position: sticky;
+  bottom: 0;
 }
 
 .board-list li.gap {
