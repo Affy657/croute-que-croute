@@ -5,36 +5,38 @@ import { owned } from "./toppings.js";
 
 const FAMILIES = [["time", "Temps de cuisson"], ["play", "Frôlés et découvertes"], ["topping", "Garnitures"], ["loyal", "Assiduité et soirées"], ["secret", "Secrets"]];
 const TIMES = [[10, "t10"], [30, "t30"], [60, "t60"], [90, "t90"], [120, "t120"], [150, "t150"]];
-const NEARS = [[5, "near5"], [20, "near20"]];
+const NEARS = [[20, "near20"]];
 const RUNS = [[10, "runs10"], [50, "runs50"], [100, "runs100"]];
-const STILL_S = 3, EXPRESS_CS = 200, EVENTS = 3, TOP = 10, FRIDGE = 4;
+const STILL_S = 3, COMBO = 5, NIGHT_UNTIL_H = 3, DECEMBER = 11, EXPRESS_CS = 200, EVENTS = 3, TOP = 10, FRIDGE = 4;
 const LIVE = ATTACKS.filter((a) => !a.lab);
 const EXTRAS = Object.keys(SPREADS).length - 1;
 const TOPPINGS = [[1, "top1"], [FRIDGE, "top4"], [EXTRAS, "topAll"]];
 
 export const ACHIEVEMENTS = [
   { id: "t10", family: "time", name: "Premiers pas", desc: "Tenir 10 s" },
-  { id: "t30", family: "time", name: "Croustillante", desc: "Tenir 30 s", gear: "witch" },
+  { id: "t30", family: "time", name: "Croustillante", desc: "Tenir 30 s" },
   { id: "t60", family: "time", name: "Une minute de gloire", desc: "Tenir 60 s" },
   { id: "t90", family: "time", name: "Dorée à point", desc: "Tenir 90 s", gear: "boosters" },
-  { id: "t120", family: "time", name: "Bien grillée", desc: "Tenir 120 s" },
-  { id: "t150", family: "time", name: "Tartine de légende", desc: "Tenir 150 s" },
-  { id: "near5", family: "play", name: "Ça passe", desc: "5 frôlés dans une partie" },
+  { id: "t120", family: "time", name: "Bien grillée", desc: "Tenir 120 s", gear: "toasted" },
+  { id: "t150", family: "time", name: "Tartine de légende", desc: "Tenir 150 s", gear: "burnt" },
+  { id: "combo5", family: "play", name: "Insaisissable", desc: "Faire un frôlé x" + COMBO, gear: "ninja" },
   { id: "near20", family: "play", name: "Ça passe crème", desc: "20 frôlés dans une partie" },
-  { id: "allAttacks", family: "play", name: "Tout vu", desc: "Voir les " + LIVE.length + " attaques" },
+  { id: "allAttacks", family: "play", name: "Tout vu", desc: "Voir les " + LIVE.length + " attaques", gear: "cutlery" },
   { id: "top1", family: "topping", name: "Ça change du beurre", desc: "Gagner une garniture" },
   { id: "top4", family: "topping", name: "Le frigo est plein", desc: "Gagner " + FRIDGE + " garnitures" },
-  { id: "topAll", family: "topping", name: "Tout le frigo", desc: "Gagner les " + EXTRAS + " garnitures" },
-  { id: "runs10", family: "loyal", name: "Dix tartines", desc: "Jouer 10 parties", gear: "santa" },
-  { id: "runs50", family: "loyal", name: "Boulangerie", desc: "Jouer 50 parties" },
+  { id: "topAll", family: "topping", name: "Tout le frigo", desc: "Gagner les " + EXTRAS + " garnitures", gear: "chef" },
+  { id: "runs10", family: "loyal", name: "Dix tartines", desc: "Jouer 10 parties" },
+  { id: "runs50", family: "loyal", name: "Boulangerie", desc: "Jouer 50 parties", gear: "brioche" },
   { id: "runs100", family: "loyal", name: "Accro à la croûte", desc: "Jouer 100 parties" },
-  { id: "events3", family: "loyal", name: "Fidèle du Space", desc: "Jouer à 3 soirées" },
+  { id: "xmas", family: "loyal", name: "Joyeux Noël", desc: "Jouer en décembre", gear: "santa" },
+  { id: "events3", family: "loyal", name: "Fidèle du Space", desc: "Jouer à 3 soirées", gear: "astronaut" },
   { id: "top10", family: "loyal", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée", gear: "pirate" },
-  { id: "eventWin", family: "loyal", name: "Tartine d'or", desc: "Finir 1er d'une soirée" },
-  { id: "express", family: "secret", name: "Tartinée express", desc: "Se faire tartiner en moins de 2 s", hint: "il y a des records qu'on ne cherche pas." },
-  { id: "zen", family: "secret", name: "En détente", desc: "Rester " + STILL_S + " s sans bouger", hint: "le meilleur coup, c'est parfois de ne rien faire." },
+  { id: "eventWin", family: "loyal", name: "Tartine d'or", desc: "Finir 1er d'une soirée", gear: "crown" },
+  { id: "express", family: "secret", name: "Tartinée express", desc: "Se faire tartiner en moins de 2 s", hint: "il y a des records qu'on ne cherche pas.", gear: "halo" },
+  { id: "zen", family: "secret", name: "En détente", desc: "Rester " + STILL_S + " s sans bouger", hint: "le meilleur coup, c'est parfois de ne rien faire.", gear: "nightcap" },
   { id: "round", family: "secret", name: "Chiffre rond", desc: "Finir pile sur une seconde ronde", hint: "les comptes ronds font les bons amis." },
-  { id: "woof", family: "secret", name: "Ouaf", desc: "Se faire tartiner par un couteau à la pâtée pour chien", hint: "ça sent un peu le chien." }
+  { id: "woof", family: "secret", name: "Ouaf", desc: "Se faire tartiner par un couteau à la pâtée pour chien", hint: "ça sent un peu le chien.", gear: "dog" },
+  { id: "night", family: "secret", name: "Tartine de minuit", desc: "Jouer entre minuit et " + NIGHT_UNTIL_H + " h", hint: "les sorcières sortent la nuit.", gear: "witch" }
 ];
 const BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
 
@@ -120,6 +122,13 @@ export function runStart(eventKey) {
     });
   }
   if (data.events.length >= EVENTS) unlock("events3");
+  const now = new Date();
+  if (now.getHours() < NIGHT_UNTIL_H) unlock("night");
+  if (now.getMonth() === DECEMBER) unlock("xmas");
+}
+
+export function runCombo(chain) {
+  if (run && chain >= COMBO) unlock("combo5");
 }
 
 export function runTick(state, moved, dt) {

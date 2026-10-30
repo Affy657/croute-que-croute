@@ -20,11 +20,24 @@ export const PALETTE = {
   "trail-end": "rgba(255, 246, 224, 0)"
 };
 
+export const SLOTS = { head: "Sans chapeau", side: "Rien sur les côtés", bread: "Pain de mie" };
+
 export const GEAR = {
-  boosters: { name: "Boosters" },
-  witch: { name: "Chapeau de sorcière" },
-  santa: { name: "Bonnet de Noël" },
-  pirate: { name: "Chapeau de pirate" }
+  witch: { slot: "head", name: "Chapeau de sorcière" },
+  santa: { slot: "head", name: "Bonnet de Noël" },
+  pirate: { slot: "head", name: "Chapeau de pirate" },
+  ninja: { slot: "head", name: "Bandeau de ninja" },
+  crown: { slot: "head", name: "Couronne" },
+  chef: { slot: "head", name: "Toque de chef" },
+  astronaut: { slot: "head", name: "Casque d'astronaute" },
+  halo: { slot: "head", name: "Auréole" },
+  nightcap: { slot: "head", name: "Bonnet de nuit" },
+  dog: { slot: "head", name: "Oreilles de chien" },
+  boosters: { slot: "side", name: "Boosters" },
+  cutlery: { slot: "side", name: "Couteau et fourchette" },
+  toasted: { slot: "bread", name: "Pain grillé", crust: "#8f4b1a", crumb: "#dc9a52" },
+  burnt: { slot: "bread", name: "Pain carbonisé", crust: "#4b3226", crumb: "#6a4a38" },
+  brioche: { slot: "bread", name: "Brioche", crust: "#b9581b", crumb: "#ffdb8c" }
 };
 
 export const HEAT = ["#0d0b24", "#381496", "#6c1630"];

@@ -62,10 +62,22 @@
     <button id="pickPrev" class="pick prev" type="button" aria-label="Garniture précédente" hidden></button>
     <button id="pickNext" class="pick next" type="button" aria-label="Garniture suivante" hidden></button>
     <p id="pickLabel" class="pick-name"><span id="pickName"></span> <span id="pickCount" class="pick-count"></span></p>
-    <div id="gearRow" class="gear-row" hidden>
-      <button id="gearPrev" class="pick-sm prev" type="button" aria-label="Accessoire précédent"></button>
-      <p class="gear-name"><span id="gearName"></span> <span id="gearCount" class="pick-count"></span></p>
-      <button id="gearNext" class="pick-sm next" type="button" aria-label="Accessoire suivant"></button>
+    <div id="gearRows" class="gear-rows" hidden>
+      <div class="gear-row" data-slot="head" hidden>
+        <button class="pick-sm prev" type="button" data-step="-1" aria-label="Chapeau précédent"></button>
+        <p class="gear-name"><span></span> <span class="pick-count"></span></p>
+        <button class="pick-sm next" type="button" data-step="1" aria-label="Chapeau suivant"></button>
+      </div>
+      <div class="gear-row" data-slot="side" hidden>
+        <button class="pick-sm prev" type="button" data-step="-1" aria-label="Accessoire précédent"></button>
+        <p class="gear-name"><span></span> <span class="pick-count"></span></p>
+        <button class="pick-sm next" type="button" data-step="1" aria-label="Accessoire suivant"></button>
+      </div>
+      <div class="gear-row" data-slot="bread" hidden>
+        <button class="pick-sm prev" type="button" data-step="-1" aria-label="Pain précédent"></button>
+        <p class="gear-name"><span></span> <span class="pick-count"></span></p>
+        <button class="pick-sm next" type="button" data-step="1" aria-label="Pain suivant"></button>
+      </div>
     </div>
   </div>
 </section>
