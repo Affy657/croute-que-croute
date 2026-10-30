@@ -353,10 +353,10 @@ export function drawCan(ctx, kind, s) {
   ctx.strokeStyle = INK;
   ctx.lineWidth = Math.max(1, s * 0.012);
   ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
   ctx.font = K.size * s + 'px Bungee, "Arial Black", sans-serif';
   if (K.vertical) ctx.rotate(-Math.PI / 2);
-  const max = K.vertical ? h - e * 4 : w * 0.88, y = K.vertical ? 0 : e * 0.4;
+  const m = ctx.measureText(K.label);
+  const max = K.vertical ? h - e * 4 : w * 0.88, y = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2 + (K.vertical ? 0 : e * 0.4);
   ctx.strokeText(K.label, 0, y, max);
   ctx.fillText(K.label, 0, y, max);
   ctx.restore();

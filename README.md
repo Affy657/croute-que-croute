@@ -161,7 +161,7 @@ Après :
 | `migrations/` | Schéma de la base |
 | `scripts/` | Mise en ligne, icônes, QR codes |
 | `test/` | Robot d'équité, tests de l'API |
-| `maquettes/` | Images de travail : pistes de redesign de la tartine (pas retenues), planches des garnitures et des accessoires |
+| `maquettes/` | Images de travail : pistes de redesign de la tartine (pas retenues), planches des garnitures, des accessoires et des canettes |
 
 | Commande | À quoi ça sert |
 |---|---|
