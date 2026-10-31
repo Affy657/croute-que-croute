@@ -206,8 +206,8 @@ function boom(ctx, r, clock) {
   for (let i = 0; i < 3; i++) {
     const k = (beat + i) / 3;
     ctx.globalAlpha = alpha * 0.75 * Math.sin(k * Math.PI);
-    ctx.lineWidth = Math.max(1.5, r * 0.055 * (1 - 0.4 * k));
-    for (const [mid, span] of [[0.05, 0.6], [-2.55, 0.5]]) {
+    for (const [mid, span, w] of [[-2.45, 0.85, 1.25], [0.05, 0.42, 0.8]]) {
+      ctx.lineWidth = Math.max(1.5, r * 0.055 * w * (1 - 0.4 * k));
       ctx.beginPath();
       ctx.arc(0, 0, r * (1.1 + 0.6 * k), mid - span * (1 - 0.3 * k), mid + span * (1 - 0.3 * k));
       ctx.stroke();
