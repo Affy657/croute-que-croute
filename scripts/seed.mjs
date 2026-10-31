@@ -110,7 +110,7 @@ for (const p of players) {
   const best = { mobile: null, pc: null }, entries = new Map();
   p.runs.sort((a, b) => a.at - b.at).forEach((r, k) => {
     const at = Math.round(r.at), elapsed = r.score * 10 + 400, event = inEvent(at, r.pc), device = r.pc ? "pc" : "mobile";
-    rows.runs.push([`seed-run-${p.id}-${k}`, p.id, event ? event.id : null, at - elapsed, at, r.score, device]);
+    rows.runs.push([`seed-run-${p.id}-${k}`, p.id, event ? event.id : null, at - elapsed, at, r.score, device, 1 + Math.floor(rng() ** 2 * (2 + r.score / 800))]);
     const b = best[device];
     if (!b || r.score > b.score) best[device] = { score: r.score, at, elapsed };
     if (!event) return;
@@ -141,7 +141,7 @@ const script = [
   `DELETE FROM events WHERE id IN (${SEED_EVENTS});`,
   ...insert("events", "id, name, opens_at, closes_at, created_at", events.map((e) => [e.id, e.name, e.opens, e.closes, e.opens - DAY])),
   ...insert("profiles", "id, pseudo, pseudo_key, token, client_id, best, best_at, best_elapsed, run_count, banned, created_at, pc_best, pc_best_at, pc_best_elapsed, look", rows.profiles),
-  ...insert("runs", "id, player_id, event_id, started_at, finished_at, score, device", rows.runs),
+  ...insert("runs", "id, player_id, event_id, started_at, finished_at, score, device, combo", rows.runs),
   ...insert("entries", "event_id, player_id, best, best_at, best_elapsed, run_count", rows.entries)
 ].join("\n");
 

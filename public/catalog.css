@@ -290,7 +290,7 @@
   color: var(--ink-dim);
 }
 
-.catalog .spark-lane i.best {
+.catalog .spark-col.last i {
   background: var(--jam);
 }
 

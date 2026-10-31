@@ -13,7 +13,7 @@ const SLACK_MS = 5000;
 const MAX_SCORE = 15 * 60 * 100;
 const TOP = 50;
 const FEED_MS = 15 * 60 * 1000, FEED_SIZE = 6;
-const CARD_MS = 10000, CARD_RUNS = 10, EXPRESS_CS = 200, SIX_SEVEN_CS = 6700, EVENT_TOP = 10;
+const CARD_MS = 10000, CARD_RECORDS = 10, EXPRESS_CS = 200, SIX_SEVEN_CS = 6700, EVENT_TOP = 10, MAX_COMBO = 99;
 const BAD_PSEUDO = "Pseudo de 2 à 16 caractères : lettres, chiffres, espaces, tirets.";
 
 interface RunRow {
@@ -213,26 +213,27 @@ async function loadCard(env: Env, id: string) {
   if (!p || p.banned) return null;
   const view = await events(env);
   const [general, pc] = await Promise.all([generalRanking(env, !!view.open), generalRanking(env, !!view.open, "pc")]);
-  const [rank, count, pcRank, pcCount, totals, recent, played, top] = await Promise.all([
+  const [rank, count, pcRank, pcCount, totals, steps, played, top] = await Promise.all([
     p.best > 0 ? generalRank(env, general, p.id, p.best, p.best_at) : null,
     generalCount(env, general),
     p.pc_best > 0 ? generalRank(env, pc, p.id, p.pc_best, p.pc_best_at, "pc") : null,
     generalCount(env, pc, false, "pc"),
     env.DB.prepare(
       `SELECT SUM(score) AS total, MAX(finished_at) AS last, MIN(score) AS low,
-         MAX(score > 0 AND score % 100 = 0) AS round, MAX(score >= ?2 AND score < ?2 + 100) AS six
+         MAX(score > 0 AND score % 100 = 0) AS round, MAX(score >= ?2 AND score < ?2 + 100) AS six, MAX(combo) AS combo
        FROM runs WHERE player_id = ?1 AND finished_at IS NOT NULL`,
     )
       .bind(p.id, SIX_SEVEN_CS)
-      .first<{ total: number | null; last: number | null; low: number | null; round: number | null; six: number | null }>(),
+      .first<{ total: number | null; last: number | null; low: number | null; round: number | null; six: number | null; combo: number | null }>(),
     env.DB.prepare(
-      `SELECT score, device, at FROM (
-         SELECT score, device, finished_at AS at, ROW_NUMBER() OVER (PARTITION BY device IS 'pc' ORDER BY finished_at DESC) AS n
-         FROM runs WHERE player_id = ?1 AND finished_at IS NOT NULL
-       ) WHERE n <= ?2 ORDER BY at ASC`,
+      `SELECT score, pc, at FROM (
+         SELECT score, device IS 'pc' AS pc, finished_at AS at,
+           MAX(score) OVER (PARTITION BY device IS 'pc' ORDER BY finished_at ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS before
+         FROM runs WHERE player_id = ? AND finished_at IS NOT NULL AND invalid = 0 AND score > 0
+       ) WHERE before IS NULL OR score > before ORDER BY at ASC`,
     )
-      .bind(p.id, CARD_RUNS)
-      .all<{ score: number; device: string | null; at: number }>(),
+      .bind(p.id)
+      .all<{ score: number; pc: number; at: number }>(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM entries WHERE player_id = ? AND run_count > 0").bind(p.id).first<{ n: number }>(),
     env.DB.prepare(
       `SELECT ev.name, ev.closes_at AS closesAt, 1 + (
@@ -246,8 +247,8 @@ async function loadCard(env: Env, id: string) {
       .all<{ name: string; closesAt: number; place: number }>(),
   ]);
   const now = Date.now(), places = top.results;
-  const closed = (e: { closesAt: number }) => now > e.closesAt + GRACE_MS;
-  const bestPlace = places.find((e) => e.place === places[0].place && closed(e)) ?? places[0];
+  const records = (pc: boolean) =>
+    steps.results.filter((r) => !!r.pc === pc && r.score <= (pc ? p.pc_best : p.best)).slice(-CARD_RECORDS).map((r) => ({ score: r.score, pc, at: r.at }));
   return {
     pseudo: p.pseudo,
     joinedAt: p.created_at,
@@ -260,16 +261,17 @@ async function loadCard(env: Env, id: string) {
     pcCount,
     runs: p.run_count,
     played: totals?.total ?? 0,
-    recent: recent.results.map((r) => ({ score: r.score, pc: r.device === "pc", at: r.at })),
+    records: [...records(false), ...records(true)].sort((a, b) => a.at - b.at),
+    combo: totals?.combo ?? 0,
     events: played?.n ?? 0,
-    eventBest: bestPlace ? { name: bestPlace.name, place: bestPlace.place, live: !closed(bestPlace) } : null,
+    eventBest: places[0] ? { name: places[0].name, place: places[0].place } : null,
     look: p.look ? JSON.parse(p.look) : null,
     feats: {
       express: totals?.low != null && totals.low < EXPRESS_CS,
       round: !!totals?.round,
       sixSeven: !!totals?.six,
       top10: places.some((e) => e.place <= EVENT_TOP),
-      eventWin: places.some((e) => e.place === 1 && closed(e)),
+      eventWin: places.some((e) => e.place === 1 && now > e.closesAt + GRACE_MS),
     },
   };
 }
@@ -325,6 +327,7 @@ export async function finishRun({ req, env, params }: Ctx) {
   const score = body.score;
   if (typeof score !== "number" || !Number.isInteger(score) || score < 0 || score > MAX_SCORE) return fail(400, "Score invalide.");
   const device = (run.finished_at ? run.device : body.device) === "pc" ? "pc" : "mobile";
+  const combo = typeof body.combo === "number" && Number.isInteger(body.combo) && body.combo >= 0 && body.combo <= MAX_COMBO ? body.combo : null;
   const event = run.event_id && device === "mobile" ? await eventById(env, run.event_id) : null;
   const eventId = event && now <= event.closes_at + GRACE_MS ? event.id : null;
   const mine = () => (eventId ? entryBest(env, eventId, me.id) : Promise.resolve(0));
@@ -334,8 +337,8 @@ export async function finishRun({ req, env, params }: Ctx) {
   }
   const elapsed = now - run.started_at;
   if (score * 10 > elapsed + SLACK_MS) return fail(422, "Score refusé.");
-  const saved = await env.DB.prepare("UPDATE runs SET finished_at = ?, score = ?, device = ? WHERE id = ? AND finished_at IS NULL")
-    .bind(now, score, device, run.id)
+  const saved = await env.DB.prepare("UPDATE runs SET finished_at = ?, score = ?, device = ?, combo = ? WHERE id = ? AND finished_at IS NULL")
+    .bind(now, score, device, combo, run.id)
     .run();
   if (!saved.meta.changes) return json(await standing(env, me, eventId, keptMobile(me), keptPc(me), await mine(), false));
   if (device === "pc" && me.best > 0 && !(await env.DB.prepare("SELECT 1 FROM runs WHERE player_id = ? AND device = 'mobile' LIMIT 1").bind(me.id).first())) {

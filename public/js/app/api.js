@@ -152,9 +152,9 @@ function pendingScores() {
 const keepPending = (list) => store.set(KEYS.pendingScores, list.length ? JSON.stringify(list) : null);
 const clearPending = (runId) => keepPending(pendingScores().filter((p) => p.runId !== runId));
 
-function markPending(runId, score, device, at) {
+function markPending(runId, score, device, combo, at) {
   const list = pendingScores();
-  if (!list.some((p) => p.runId === runId)) keepPending([...list, { runId, score, device, at }]);
+  if (!list.some((p) => p.runId === runId)) keepPending([...list, { runId, score, device, combo, at }]);
 }
 
 function applyResult(r) {
@@ -170,11 +170,11 @@ function applyResult(r) {
   refreshBoard();
 }
 
-async function send(runId, score, device, onWait, since = Date.now()) {
-  markPending(runId, score, device, since);
+async function send(runId, score, device, combo, onWait, since = Date.now()) {
+  markPending(runId, score, device, combo, since);
   for (let i = 0; ; i++) {
     try {
-      const r = await call("POST", "/api/runs/" + runId, { score, device }, SEND_TIMEOUT_MS);
+      const r = await call("POST", "/api/runs/" + runId, { score, device, combo }, SEND_TIMEOUT_MS);
       clearPending(runId);
       applyResult(r);
       emit("result", r);
@@ -194,17 +194,17 @@ async function send(runId, score, device, onWait, since = Date.now()) {
   }
 }
 
-export async function submitScore(score, device, pending, onWait) {
+export async function submitScore(score, device, combo, pending, onWait) {
   const run = await pending;
   if (run.error) return run;
-  return send(run.runId, score, device, onWait);
+  return send(run.runId, score, device, combo, onWait);
 }
 
 export function resumePending() {
   const now = Date.now();
   const list = pendingScores().filter((p) => now - p.at < WAIT_MS);
   keepPending(list);
-  for (const p of list) send(p.runId, p.score, p.device, null, p.at);
+  for (const p of list) send(p.runId, p.score, p.device, p.combo, null, p.at);
 }
 
 export function requestUpdate() {

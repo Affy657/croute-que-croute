@@ -34,7 +34,7 @@ const canvas = document.getElementById("cv");
 const scene = createScene(canvas, document.getElementById("fx"));
 let sim = createSim();
 const S = {
-  mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, train: null, t0: 0,
+  mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null, chain: 0, combo: 0, nearAt: -Infinity, train: null, t0: 0,
   newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general", held: false,
   toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35, scars: [], spread: chosen(), ...outfit() }, gotToppings: [], menuY: FH * 0.55, menuAt: 0
 };
@@ -71,6 +71,7 @@ const ON_SIM = {
     const t = sim.state.t;
     S.chain = t - S.nearAt < CHAIN_S ? S.chain + 1 : 1;
     S.nearAt = t;
+    S.combo = Math.max(S.combo, S.chain);
     ach.runCombo(S.chain);
     const step = Math.min(S.chain - 1, CHAIN_STEPS);
     scene.pop(S.toast.x, S.toast.y - 32, S.chain > 1 ? "Frôlé x" + S.chain : "Frôlé !", { key: "near", size: 14 + step * 1.5 });
@@ -107,7 +108,7 @@ function die(killer) {
   S.newBest = S.score > before.best;
   S.prevRank = before.rank;
   api.saveLocalBest(S.score);
-  const sub = S.run ? api.submitScore(S.score, device, S.run, () => {
+  const sub = S.run ? api.submitScore(S.score, device, S.combo, S.run, () => {
     if (S.submit === sub && S.mode === "over") setText(ui.overNote, "Envoi en attente…");
   }) : null;
   S.submit = sub;
@@ -146,7 +147,7 @@ function start(train = null) {
   const t0 = train ? train.from : 0, y = S.mode === "menu" ? S.toast.y : S.menuY;
   const immortal = () => testing.invincible;
   sim = createSim(Math.random, train ? { only: train.id, t0, y, immortal } : { y, immortal });
-  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.myScope(), held: false });
+  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, combo: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.myScope(), held: false });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0, scars: [] });
   scene.clear();
   S.run = train ? null : api.startRun({ look: myLook() });
