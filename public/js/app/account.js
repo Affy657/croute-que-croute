@@ -120,7 +120,7 @@ async function checkMerge(code) {
 
 async function confirmMerge() {
   if (!merging) return;
-  ui.mergeYes.disabled = true;
+  ui.mergeYes.disabled = ui.mergeNo.disabled = true;
   try {
     const r = await linkWith(merging, true);
     ui.mergeForm.hidden = true;
@@ -130,7 +130,7 @@ async function confirmMerge() {
   } catch (e) {
     resetMerge(e.status ? e.message : OFFLINE);
   } finally {
-    ui.mergeYes.disabled = false;
+    ui.mergeYes.disabled = ui.mergeNo.disabled = false;
   }
 }
 
@@ -141,7 +141,7 @@ function askOut(on, note = "") {
 }
 
 async function confirmOut() {
-  ui.outYes.disabled = true;
+  ui.outYes.disabled = ui.outNo.disabled = true;
   try {
     const { removed } = await logoutOthers();
     const s = removed > 1 ? "s" : "";
@@ -149,8 +149,15 @@ async function confirmOut() {
   } catch (e) {
     askOut(false, e.status ? e.message : OFFLINE);
   } finally {
-    ui.outYes.disabled = false;
+    ui.outYes.disabled = ui.outNo.disabled = false;
   }
+}
+
+export function resetAccount() {
+  resetMerge();
+  ui.mergeForm.hidden = true;
+  ui.mergeInput.value = "";
+  askOut(false);
 }
 
 function pickUp() {
