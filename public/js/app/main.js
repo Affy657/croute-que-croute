@@ -16,7 +16,7 @@ import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./c
 import { renderSettings, suggestInstall, leaveSettings, testing, setInvincible } from "./settings.js";
 import { onInstallChange } from "./install.js";
 import { openCard, closeCard, drawCard, myLook, shareLook } from "./profile.js";
-import { linkFromUrl } from "./account.js";
+import { initAccount } from "./account.js";
 import {
   ui, show, setText, setDigits, tickCountdowns, renderMenu, renderPicker, openPicker, pickerIsOpen, renderBoard, renderOver, renderOverStats, renderRival, renderKiller,
   renderHud, renderControls, renderAll, setBoardScope, achLabel
@@ -661,7 +661,7 @@ setInterval(() => {
 
 showMenu();
 api.refreshBoard();
-linkFromUrl();
+initAccount(openSettings);
 api.resumePending();
 audio.initAudio();
 requestAnimationFrame(frame);

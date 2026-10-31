@@ -1,9 +1,12 @@
 import { clock } from "../shared/format.js";
 import { ui, show, setText, renderControls, setLinking } from "./screens.js";
-import { net, serverNow, linkWith, newLinkCode } from "./api.js";
+import { net, on, registered, serverNow, linkWith, newLinkCode } from "./api.js";
+import { renderSettings } from "./settings.js";
 
 const TICK_MS = 1000, QUIET = 4, OFFLINE = "Pas de réseau, réessaie.";
-let timer = null, until = Infinity, asked = 0;
+let timer = null, until = Infinity, asked = 0, merging = null, waiting = null, opener = () => {};
+
+const quoted = (name) => "« " + name + " »";
 
 const color = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const spaced = (code) => code.slice(0, 4) + " " + code.slice(4);
@@ -82,17 +85,82 @@ async function connect(code) {
   }
 }
 
-export function linkFromUrl() {
+function resetMerge(note = "") {
+  merging = null;
+  ui.mergeAsk.hidden = true;
+  setText(ui.mergeNote, note);
+}
+
+async function checkMerge(code) {
+  resetMerge();
+  ui.mergeForm.hidden = false;
+  ui.mergeInput.value = code;
+  try {
+    await linkWith(code);
+  } catch (e) {
+    const m = e.data && e.data.merge;
+    if (!m) return setText(ui.mergeNote, e.status ? e.message : OFFLINE);
+    merging = code;
+    setText(ui.mergeNote, `Réunir ${quoted(m.from)} avec ${quoted(m.into)} ? Tes records, parties et succès passent sur ${quoted(m.into)}, et le pseudo ${quoted(m.from)} sera libéré.`);
+    ui.mergeAsk.hidden = false;
+  }
+}
+
+async function confirmMerge() {
+  if (!merging) return;
+  ui.mergeYes.disabled = true;
+  try {
+    const r = await linkWith(merging, true);
+    ui.mergeForm.hidden = true;
+    ui.mergeInput.value = "";
+    renderSettings();
+    resetMerge(`Comptes réunis : tu joues en ${quoted(r.pseudo)}.`);
+  } catch (e) {
+    resetMerge(e.status ? e.message : OFFLINE);
+  } finally {
+    ui.mergeYes.disabled = false;
+  }
+}
+
+function pickUp() {
+  if (!waiting || !registered()) return;
+  const code = waiting;
+  waiting = null;
+  opener();
+  checkMerge(code);
+}
+
+function linkFromUrl() {
   const m = location.hash.match(/^#lier=([A-Za-z0-9-]{1,12})$/);
   if (!m) return;
   history.replaceState(null, "", location.pathname + location.search);
-  if (net.token) return;
+  if (net.token) {
+    waiting = m[1];
+    return pickUp();
+  }
   ui.linkInput.value = m[1];
   setLinking(true);
   connect(m[1]);
 }
 
+export function initAccount(openSettings) {
+  opener = openSettings;
+  linkFromUrl();
+}
+
 ui.linkBtn.addEventListener("click", openLink);
+ui.mergeBtn.addEventListener("click", () => {
+  resetMerge();
+  ui.mergeForm.hidden = !ui.mergeForm.hidden;
+  if (!ui.mergeForm.hidden) ui.mergeInput.focus();
+});
+ui.mergeForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  checkMerge(ui.mergeInput.value);
+});
+ui.mergeYes.addEventListener("click", confirmMerge);
+ui.mergeNo.addEventListener("click", () => resetMerge());
+on("board", pickUp);
 ui.linkBack.addEventListener("click", closeLink);
 ui.haveAccount.addEventListener("click", () => {
   setText(ui.linkError, "");
