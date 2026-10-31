@@ -2,9 +2,10 @@ import { clock } from "../shared/format.js";
 import { ui, show, setText, renderControls, setLinking } from "./screens.js";
 import { net, on, registered, serverNow, linkWith, newLinkCode } from "./api.js";
 import { renderSettings } from "./settings.js";
+import { resync } from "./profile.js";
 
-const TICK_MS = 1000, QUIET = 4, OFFLINE = "Pas de réseau, réessaie.";
-let timer = null, until = Infinity, asked = 0, merging = null, waiting = null, opener = () => {};
+const TICK_MS = 1000, RETRY_MS = 20000, QUIET = 4, OFFLINE = "Pas de réseau, réessaie.";
+let timer = null, until = Infinity, live = false, asked = 0, merging = null, waiting = null, opener = () => {};
 
 const quoted = (name) => "« " + name + " »";
 
@@ -26,16 +27,23 @@ function drawQr(qr) {
 async function fetchCode() {
   const mine = ++asked;
   until = Infinity;
-  setText(ui.linkFail, "");
   try {
     const r = await newLinkCode();
     if (mine !== asked) return;
+    setText(ui.linkFail, "");
     drawQr(r.qr);
     ui.linkCode.textContent = spaced(r.code);
     until = r.expiresAt;
+    live = true;
     tick();
   } catch (e) {
-    if (mine === asked) setText(ui.linkFail, e.status ? e.message : OFFLINE);
+    if (mine !== asked) return;
+    setText(ui.linkFail, e.status ? e.message : OFFLINE);
+    drawQr(null);
+    ui.linkCode.textContent = "";
+    until = serverNow() + RETRY_MS;
+    live = false;
+    tick();
   }
 }
 
@@ -43,7 +51,7 @@ function tick() {
   if (ui.link.hidden) return stop();
   const left = until - serverNow();
   if (left <= 0) return fetchCode();
-  ui.linkTime.textContent = Number.isFinite(left) ? "Valable " + clock(left) : "";
+  ui.linkTime.textContent = live && Number.isFinite(left) ? "Valable " + clock(left) : "";
 }
 
 function stop() {
@@ -58,6 +66,8 @@ function openLink() {
   drawQr(null);
   ui.linkCode.textContent = "";
   ui.linkTime.textContent = "";
+  setText(ui.linkFail, "");
+  live = false;
   clearInterval(timer);
   timer = setInterval(tick, TICK_MS);
   fetchCode();
@@ -67,6 +77,7 @@ function closeLink() {
   stop();
   show("settings");
   renderControls(false);
+  resync();
 }
 
 async function connect(code) {
@@ -139,8 +150,8 @@ function linkFromUrl() {
     return pickUp();
   }
   ui.linkInput.value = m[1];
+  setText(ui.linkError, "");
   setLinking(true);
-  connect(m[1]);
 }
 
 export function initAccount(openSettings) {

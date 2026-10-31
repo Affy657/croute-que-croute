@@ -215,6 +215,14 @@ check("admin : classement PC disponible", r.status === 200 && r.data.scope === "
   await call("POST", `/api/admin/players/${(await call("GET", "/api/board", { token: tokC })).data.me.id}/ban`, { key: KEY, body: { banned: true } });
   r = await call("POST", "/api/link", { token: tokA, body: { code: (await call("POST", "/api/me/link", { token: tokC })).data.code, merge: true } });
   check("fusion avec un compte retiré refusée", r.status === 403, r);
+  const [tokD, tokG, tokE] = [await joinAs("Dd" + hex(5)), await joinAs("Gg" + hex(5)), await joinAs("Ee" + hex(5))];
+  for (const tok of [tokD, tokG, tokE]) {
+    await play(tok, 300, "mobile");
+    await wait(20);
+  }
+  await call("POST", "/api/link", { token: tokD, body: { code: (await call("POST", "/api/me/link", { token: tokE })).data.code, merge: true } });
+  const [merged, other] = await Promise.all([call("GET", "/api/board", { token: tokE }), call("GET", "/api/board", { token: tokG })]);
+  check("fusion à égalité : le record le plus ancien garde sa place", merged.data.me.rank < other.data.me.rank && merged.data.me.eventRank < other.data.me.eventRank, [merged.data.me, other.data.me]);
 }
 
 console.log(results.join("\n"));
