@@ -14,7 +14,7 @@ const COMET_S = 9, COMET_TAIL = 0.35, COMET_ALPHA = 0.7;
 const OFTEN = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("etoiles") === "souvent";
 const COMET_FIRST = OFTEN ? [1, 2] : [30, 180], COMET_GAP = OFTEN ? [4, 6] : [120, 240];
 const ODD = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("planetes") === "souvent";
-const QUALITY = [2, 1.5, 1.25, 1], SLOW_MS = 20, SAMPLE = 90, SETTLE = 60, GAP_MS = 250;
+const QUALITY = [2, 1.5, 1.25, 1], REDRAW_S = [1 / 30, 1 / 20, 1 / 20, 1 / 15], SLOW_MS = 20, SAMPLE = 90, SETTLE = 60, GAP_MS = 250;
 const HEAT_RGB = HEAT.map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
 
 function dealer(list, gap = 1) {
@@ -38,7 +38,7 @@ function heatColor(k, low = 1) {
 }
 
 export function createScene(canvas, overlay) {
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d", { alpha: false });
   const fx = overlay.getContext("2d");
   const C = PALETTE;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -47,7 +47,7 @@ export function createScene(canvas, overlay) {
   let stars = [], sky = 0, shake = 0, parts = [], pops = [], fieldA = 0, heat = 0, heatKey = "", heatFill = null;
   let comet = null, cometIn = rnd(...COMET_FIRST);
   const deal = Object.fromEntries(Object.entries(BODIES).map(([kind, list]) => [kind, dealer(list, kind === "normal" ? 2 : 1)]));
-  const nextPasser = dealer(Object.keys(PASSERS)), slots = [], slotY = [], pick = (i) => deal[ODD ? "rare" : TOUR[i]]();
+  const nextPasser = dealer(Object.keys(PASSERS)), slots = [], slotY = [], arts = [], pick = (i) => deal[ODD ? "rare" : TOUR[i]]();
   let quality = Math.min(QUALITY.length - 1, Number(store.get(KEYS.quality)) || 0), frames = [], settle = SETTLE, fxDirty = true;
 
   function resize() {
@@ -142,16 +142,35 @@ export function createScene(canvas, overlay) {
     return ((((sky - i * SKY_GAP) % SKY_LOOP) + SKY_LOOP) % SKY_LOOP) - SKY_TOP;
   }
 
+  function art(i, b, r, clock) {
+    const { dpr } = view, size = Math.ceil(2 * r * b.reach * dpr);
+    let a = arts[i];
+    if (!a || a.size !== size) {
+      const cv = document.createElement("canvas");
+      cv.width = cv.height = size;
+      a = arts[i] = { cv, g: cv.getContext("2d"), size, body: null, r: 0, at: 0 };
+    }
+    const moving = !reduceMotion && b.draw.length > 2;
+    if (a.body !== b || a.r !== r || (moving && Math.abs(clock - a.at) >= REDRAW_S[quality])) {
+      Object.assign(a, { body: b, r, at: clock });
+      a.g.setTransform(1, 0, 0, 1, 0, 0);
+      a.g.clearRect(0, 0, size, size);
+      a.g.setTransform(dpr, 0, 0, dpr, size / 2, size / 2);
+      b.draw(a.g, r, moving ? clock : 0);
+    }
+    return a.cv;
+  }
+
   function drawSky(clock) {
-    const { W, H } = view, u = Math.min(W, H);
+    const { W, H, dpr } = view, u = Math.min(W, H);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     slots.forEach((b, i) => {
       const y = skyY(i) * H;
       if (y < -u * 0.3 || y > H + u * 0.3) return;
-      ctx.save();
-      ctx.translate(W * SIDES[i % 2], y);
-      b.draw(ctx, b.r * u, reduceMotion ? 0 : clock);
-      ctx.restore();
+      const img = art(i, b, b.r * u, clock);
+      ctx.drawImage(img, Math.round(W * SIDES[i % 2] * dpr - img.width / 2), Math.round(y * dpr - img.height / 2));
     });
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   function newComet() {

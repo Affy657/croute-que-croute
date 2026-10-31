@@ -171,6 +171,18 @@
       <label class="slider"><span>Musique</span><input id="musicVol" type="range" min="0" max="100" step="5"></label>
       <label class="slider"><span>Bruitages</span><input id="sfxVol" type="range" min="0" max="100" step="5"></label>
     </section>
+    <section class="card">
+      <h2>Contrôles</h2>
+      <label class="slider"><span>Sensibilité</span><input id="sensVol" type="range" min="8" max="28" step="1"></label>
+      <div id="mouseRow" class="slider" hidden>
+        <span>Souris</span>
+        <div id="mouseTabs" class="board-tabs" role="tablist" aria-label="Souris">
+          <button type="button" role="tab" data-aim="0" aria-selected="true">Glisser</button>
+          <button type="button" role="tab" data-aim="1" aria-selected="false">Viser</button>
+        </div>
+      </div>
+      <p id="mouseHint" class="sub" hidden></p>
+    </section>
     <section id="installCard" class="card">
       <h2>Installer le jeu</h2>
       <p id="installHint" class="sub"></p>

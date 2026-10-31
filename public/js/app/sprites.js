@@ -784,7 +784,47 @@ function sideCutlery(ctx, t, C) {
   }
 }
 
-const SIDES = { boosters: sideBoosters, cutlery: sideCutlery };
+const SIX_SEVEN_HZ = 2.2;
+
+function palm(ctx, x, y, side, C) {
+  const p = (dx, dy) => [x + side * dx, y + dy];
+  ctx.fillStyle = C.ink;
+  ctx.beginPath();
+  ctx.moveTo(...p(-5.5, 1));
+  ctx.quadraticCurveTo(...p(-5, 5), ...p(1, 5));
+  ctx.quadraticCurveTo(...p(7.5, 5), ...p(8.5, -1.5));
+  ctx.quadraticCurveTo(...p(8.6, -4), ...p(6.6, -3.4));
+  ctx.quadraticCurveTo(...p(5.4, -0.6), ...p(1, -0.6));
+  ctx.quadraticCurveTo(...p(-1.6, -0.6), ...p(-2.6, -3.4));
+  ctx.quadraticCurveTo(...p(-3.6, -6.4), ...p(-5.4, -5.2));
+  ctx.quadraticCurveTo(...p(-6.8, -3.6), ...p(-5.5, 1));
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+function sideSixSeven(ctx, t, C) {
+  const k = Math.sin((performance.now() / 1000) * Math.PI * 2 * SIX_SEVEN_HZ);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const side of [-1, 1]) {
+    const x = side * 29, y = 3 - side * k * 5;
+    ctx.beginPath();
+    ctx.moveTo(side * 16, 5);
+    ctx.quadraticCurveTo(side * 22, (y + 13) / 2 + 5, x - side * 4, y + 3);
+    ctx.strokeStyle = C.void;
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    ctx.strokeStyle = C.ink;
+    ctx.lineWidth = 2.6;
+    ctx.stroke();
+    ctx.strokeStyle = C.void;
+    ctx.lineWidth = 1.6;
+    palm(ctx, x, y, side, C);
+  }
+}
+
+const SIDES = { boosters: sideBoosters, cutlery: sideCutlery, sixseven: sideSixSeven };
 
 function crumbClip(ctx, w, h) {
   ctx.save();
