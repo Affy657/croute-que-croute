@@ -291,6 +291,7 @@ Après :
 - Compléter Infos avec toutes les dernières nouveautés, pour en faire un wiki du jeu où tout se trouve : comment débloquer les garnitures et les accessoires, les succès, les planètes et canettes rares, les classements et les soirées, etc.
 - Changement d'appareil : le profil est lié au téléphone (identifiant gardé dans le navigateur). Un joueur qui change d'appareil, ou qui vide son navigateur, ne peut pas reprendre son pseudo et doit recréer un compte. À explorer : un vrai compte (e-mail ou mot de passe), ou plus léger, un code de transfert affiché dans les paramètres, à taper ou scanner sur le nouvel appareil.
 - À décider : rejouer les meilleures parties pour confirmer leur temps (graine donnée par le serveur, gestes enregistrés). Bloquerait la triche par faux score.
+- Peaufiner la difficulté des attaques qui s'enchaînent (demande d'Adrien, 31/10/2026). Certains enchaînements sont trop faciles, d'autres trop durs, donc le score dépend encore trop de la chance. À faire : repérer les deux cas (mesurer les morts et les esquives sans effort par paire d'attaques qui se suivent, avec le robot « humain » de l'équilibrage), puis ajouter des règles d'enchaînement pour les équilibrer, comme celles qui existent déjà (pas de mur juste après des murs en série, pas de mur pendant un rouleau, voir Attaques).
 
 ## Idées pour plus tard
 
