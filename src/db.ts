@@ -1,5 +1,5 @@
 import { bearer } from "./http";
-import { sha256, HASH_LENGTH } from "./security";
+import { sha256 } from "./security";
 
 export interface EventRow {
   id: number;
@@ -38,7 +38,6 @@ const EVENT_GENERAL_MS = 60000;
 export const RECENT_MS = 12 * 3600 * 1000;
 const GENERAL_LIMIT = 1000;
 const CACHE_KEEP = 300;
-const OLD_TOKEN_LENGTH = 48;
 const EVENT_COLS = "id, name, opens_at, closes_at";
 const COLS: Record<Board, { best: string; at: string }> = { general: { best: "best", at: "best_at" }, pc: { best: "pc_best", at: "pc_best_at" } };
 const above = ({ best, at }: { best: string; at: string }) => `banned = 0 AND ${best} > 0 AND (${best} > ?1 OR (${best} = ?1 AND ${at} < ?2))`;
@@ -78,12 +77,12 @@ export const eventById = (env: Env, id: number) =>
 export async function findProfile(req: Request, env: Env) {
   const token = bearer(req);
   if (!token) return null;
-  const hash = await sha256(token);
-  const me = await env.DB.prepare("SELECT id, pseudo, best, best_at, pc_best, pc_best_at, banned, run_count, token FROM profiles WHERE token IN (?1, ?2)")
-    .bind(hash, token.length === OLD_TOKEN_LENGTH ? token : hash)
-    .first<Profile & { token: string }>();
-  if (me && me.token.length !== HASH_LENGTH) await env.DB.prepare("UPDATE profiles SET token = ? WHERE id = ?").bind(hash, me.id).run();
-  return me;
+  return env.DB.prepare(
+    `SELECT p.id, p.pseudo, p.best, p.best_at, p.pc_best, p.pc_best_at, p.banned, p.run_count
+     FROM sessions s JOIN profiles p ON p.id = s.player_id WHERE s.token_hash = ?`,
+  )
+    .bind(await sha256(token))
+    .first<Profile>();
 }
 
 export async function entryMark(env: Env, eventId: number, playerId: string) {

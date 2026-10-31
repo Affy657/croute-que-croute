@@ -41,3 +41,41 @@ export function cleanLook(raw: unknown): string | null {
     own: Object.fromEntries(LOOK_SLOTS.map((s) => [s, lookCount(own[s])])),
   });
 }
+
+export interface Progress {
+  got: Record<string, number>;
+  attacks: string[];
+  toppings: string[];
+}
+
+const PROGRESS_ID = /^[A-Za-z0-9]{1,24}$/;
+const PROGRESS_MAX = 100;
+const PROGRESS_AT_MAX = 1e14;
+
+const progressIds = (raw: unknown) =>
+  Array.isArray(raw) ? [...new Set(raw.filter((v): v is string => typeof v === "string" && PROGRESS_ID.test(v)))].slice(0, PROGRESS_MAX) : [];
+
+export function cleanProgress(raw: unknown): Progress | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const got = r.got && typeof r.got === "object" ? Object.entries(r.got as Record<string, unknown>) : [];
+  return {
+    got: Object.fromEntries(
+      got
+        .filter((e): e is [string, number] => PROGRESS_ID.test(e[0]) && typeof e[1] === "number" && Number.isInteger(e[1]) && e[1] > 0 && e[1] < PROGRESS_AT_MAX)
+        .slice(0, PROGRESS_MAX),
+    ),
+    attacks: progressIds(r.attacks),
+    toppings: progressIds(r.toppings),
+  };
+}
+
+export function mergeProgress(a: Progress, b: Progress): Progress {
+  const got = new Map(Object.entries(a.got));
+  for (const [id, at] of Object.entries(b.got)) got.set(id, Math.min(got.get(id) ?? at, at));
+  return {
+    got: Object.fromEntries([...got].slice(0, PROGRESS_MAX)),
+    attacks: progressIds([...a.attacks, ...b.attacks]),
+    toppings: progressIds([...a.toppings, ...b.toppings]),
+  };
+}

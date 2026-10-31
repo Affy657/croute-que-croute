@@ -112,6 +112,16 @@ check("classements général et soirée : le joueur y est", r.status === 200 && 
   check("retour à l'ancien pseudo, libre à nouveau", r.status === 200 && r.data.pseudo === pseudo, r);
 }
 
+{
+  const look = { spread: "butter", ach: 1, own: {} };
+  await call("PUT", "/api/me/look", { token, body: { look, progress: { got: { t10: 2000, "mauvais-id": 5 }, attacks: ["rain"], toppings: ["jam"] } } });
+  r = await call("PUT", "/api/me/look", { token, body: { look, progress: { got: { t10: 1000, t30: 3000 }, attacks: ["wall", 5, "rain"], toppings: [] } } });
+  const p = r.data && r.data.progress;
+  check("progression gardée sur le serveur et réunie", r.status === 200 && p && p.got.t10 === 1000 && p.got.t30 === 3000 && !("mauvais-id" in p.got) && p.attacks.join() === "rain,wall" && p.toppings.join() === "jam", r.data);
+  r = await call("PUT", "/api/me/look", { token, body: { look } });
+  check("tenue seule toujours acceptée", r.status === 200 && r.data.ok && r.data.progress === undefined, r.data);
+}
+
 r = await call("GET", "/api/admin/players", { key: KEY });
 const row = r.data.players.find((p) => p.pseudo === pseudo);
 check("admin : nombre de parties terminées", row && row.runs === 1 && row.suspect === null, row);
