@@ -20,6 +20,7 @@ export const ui = {
   linkForm: $("linkForm"), linkInput: $("linkInput"), linkError: $("linkError"), newAccount: $("newAccount"),
   linkCard: $("linkCard"), linkBtn: $("linkBtn"), link: $("link"), linkQr: $("linkQr"), linkCode: $("linkCode"), linkTime: $("linkTime"), linkFail: $("linkFail"), linkBack: $("linkBack"),
   mergeBtn: $("mergeBtn"), mergeForm: $("mergeForm"), mergeInput: $("mergeInput"), mergeNote: $("mergeNote"), mergeAsk: $("mergeAsk"), mergeYes: $("mergeYes"), mergeNo: $("mergeNo"),
+  outRow: $("outRow"), outBtn: $("outBtn"), outNote: $("outNote"), outAsk: $("outAsk"), outYes: $("outYes"), outNo: $("outNo"),
   menuActions: $("menuActions"), play: $("play"), menuBoard: $("menuBoard"), menuAch: $("menuAch"), menuCountdown: $("menuCountdown"), settingsBtn: $("settingsBtn"),
   final: $("final"), overBy: $("overBy"), newBest: $("newBest"), overNote: $("overNote"), overRival: $("overRival"),
   overStats: $("overStats"), overBestBox: $("overBestBox"), overBest: $("overBest"), overRankBox: $("overRankBox"), overRank: $("overRank"),
