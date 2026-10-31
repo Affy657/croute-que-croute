@@ -105,8 +105,8 @@ function green(ctx, r) {
   ringed(ctx, r, G.light, G.dark, G.ring, 0.3, G.band);
 }
 
-function speaker(ctx, s, light) {
-  const S = SKY.speakers, lx = Math.cos(light) * s, ly = Math.sin(light) * s;
+function speaker(ctx, s, light, S = SKY.speakers) {
+  const lx = Math.cos(light) * s, ly = Math.sin(light) * s;
   ctx.strokeStyle = INK;
   ctx.lineWidth = Math.max(1, s * 0.12);
   ctx.fillStyle = S.box;
@@ -154,8 +154,8 @@ function waves(ctx, r, clock) {
   ctx.restore();
 }
 
-function land(ctx, r, parts) {
-  const S = SKY.speakers, edge = ink(r) * 1.2;
+function land(ctx, r, parts, S = SKY.speakers) {
+  const edge = ink(r) * 1.2;
   ctx.fillStyle = S.landEdge;
   for (const [x, y, s] of parts) disc(ctx, x * r, y * r, s * r + edge);
   ctx.fillStyle = S.land;
@@ -173,6 +173,44 @@ function speakers(ctx, r, clock) {
     onSphere(ctx, r, x, y, (light) => speaker(ctx, s * r, light));
   }
   tone(ctx, r);
+}
+
+const DUNES = [
+  { x: -0.52, y: 0.32, parts: [[0, 0, 0.3], [0.25, 0.1, 0.2], [-0.15, -0.2, 0.18], [0.1, 0.3, 0.14]] },
+  { x: 0.55, y: 0.05, parts: [[0, 0, 0.26], [0.1, -0.25, 0.2], [-0.2, 0.15, 0.15]] },
+  { x: -0.2, y: -0.7, parts: [[0, 0, 0.2], [0.22, 0.04, 0.14], [-0.18, 0.06, 0.12]] },
+  { x: 0.25, y: 0.72, parts: [[0, 0, 0.16], [-0.15, -0.05, 0.1]] }
+];
+const WOOFERS = [[-0.24, -0.2, 0.3], [0.5, -0.45, 0.17], [0.36, 0.4, 0.21], [-0.55, 0.45, 0.14], [0.66, 0.02, 0.1]];
+
+function boom(ctx, r, clock) {
+  const alpha = ctx.globalAlpha, beat = (clock / BEAT) % 1;
+  ctx.save();
+  ctx.strokeStyle = SKY.bass.wave;
+  for (let i = 0; i < 3; i++) {
+    const k = (beat + i) / 3;
+    ctx.globalAlpha = alpha * 0.6 * Math.sin(k * Math.PI);
+    ctx.lineWidth = Math.max(1.5, r * 0.06 * (1 - 0.5 * k));
+    ctx.beginPath();
+    ctx.arc(0, 0, r * (1.02 + 0.8 * k), 0, TAU);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function bass(ctx, r, clock) {
+  const S = SKY.bass, pump = (1 - ((clock / BEAT) % 1)) ** 3, k = 1 + 0.025 * pump;
+  boom(ctx, r, clock);
+  ctx.save();
+  ctx.scale(k, k);
+  ctx.fillStyle = S.base;
+  disc(ctx, 0, 0, r);
+  clipped(ctx, r, () => {
+    for (const l of DUNES) onSphere(ctx, r, l.x, l.y, () => land(ctx, r, l.parts, S));
+  });
+  for (const [x, y, s] of WOOFERS) onSphere(ctx, r, x, y, (light) => speaker(ctx, s * r * (1 + 0.08 * pump), light, S));
+  tone(ctx, r);
+  ctx.restore();
 }
 
 function crater(ctx, s, light) {
@@ -749,123 +787,6 @@ function toastie(ctx, w, head) {
   ctx.restore();
 }
 
-const WALL_ROWS = [["bass", 1], ["mid", 0.74], ["horn", 0.5]];
-
-function blast(ctx, r, y, clock) {
-  ctx.save();
-  ctx.strokeStyle = SKY.wall.wave;
-  ctx.lineCap = "round";
-  ctx.lineWidth = Math.max(1.5, r * 0.05);
-  const alpha = ctx.globalAlpha, beat = (clock / BEAT) % 1;
-  for (let i = 0; i < 2; i++) {
-    const k = (beat + i) / 2;
-    ctx.globalAlpha = alpha * 0.6 * (1 - k);
-    for (const mid of [0, Math.PI]) {
-      ctx.beginPath();
-      ctx.arc(0, y, r * (0.95 + 0.7 * k), mid - 0.5, mid + 0.5);
-      ctx.stroke();
-    }
-  }
-  ctx.restore();
-}
-
-function woofer(ctx, s, pump) {
-  const W = SKY.wall;
-  ctx.fillStyle = W.surround;
-  ctx.beginPath();
-  ctx.arc(0, 0, s, 0, TAU);
-  ctx.fill();
-  ctx.stroke();
-  const g = ctx.createRadialGradient(-s * 0.25, -s * 0.25, s * 0.05, 0, 0, s * 0.82);
-  g.addColorStop(0, W.coneLight);
-  g.addColorStop(1, W.cone);
-  ctx.fillStyle = g;
-  disc(ctx, 0, 0, s * 0.8);
-  ctx.fillStyle = W.cap;
-  ctx.beginPath();
-  ctx.arc(0, 0, s * (0.3 + 0.1 * pump), 0, TAU);
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = W.shine;
-  disc(ctx, -s * 0.1, -s * 0.12, s * 0.1);
-}
-
-function horn(ctx, w, h) {
-  const W = SKY.wall, ox = w * 0.38, oy = h * 0.3, ix = w * 0.07, iy = h * 0.07;
-  ctx.fillStyle = W.cone;
-  ctx.beginPath();
-  rr(ctx, -ox, -oy, ox * 2, oy * 2, h * 0.06);
-  ctx.fill();
-  ctx.strokeStyle = W.surround;
-  ctx.beginPath();
-  for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
-    ctx.moveTo(sx * ox, sy * oy);
-    ctx.lineTo(sx * ix, sy * iy);
-  }
-  ctx.rect(-ox, -oy, ox * 2, oy * 2);
-  ctx.stroke();
-  ctx.fillStyle = INK;
-  ctx.fillRect(-ix, -iy, ix * 2, iy * 2);
-}
-
-function cabinet(ctx, x, y, w, h, kind, pump, line) {
-  const W = SKY.wall;
-  ctx.fillStyle = W.box;
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = line;
-  ctx.beginPath();
-  rr(ctx, x - w / 2, y - h, w, h, w * 0.08);
-  ctx.fill();
-  ctx.stroke();
-  ctx.strokeStyle = W.edge;
-  ctx.lineWidth = line * 0.7;
-  ctx.beginPath();
-  rr(ctx, x - w / 2 + line * 1.4, y - h + line * 1.4, w - line * 2.8, h - line * 2.8, w * 0.05);
-  ctx.stroke();
-  ctx.save();
-  ctx.translate(x, y - h / 2);
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = line * 0.8;
-  if (kind === "bass") woofer(ctx, w * 0.36, pump);
-  else if (kind === "mid") {
-    for (const dx of [-0.23, 0.23]) {
-      ctx.save();
-      ctx.translate(dx * w, 0);
-      woofer(ctx, w * 0.19, pump);
-      ctx.restore();
-    }
-  } else horn(ctx, w, h);
-  ctx.restore();
-}
-
-function wall(ctx, r, clock) {
-  const W = SKY.wall, b = r * 0.38, base = -r * 0.6, pump = (1 - ((clock / BEAT) % 1)) ** 3, line = ink(r);
-  const mid = base - (b * WALL_ROWS.reduce((s, [, h]) => s + h, 0)) / 2;
-  const glow = ctx.createRadialGradient(0, mid, r * 0.1, 0, mid, r * 1.5);
-  glow.addColorStop(0, W.glow);
-  glow.addColorStop(1, W.glowOut);
-  ctx.save();
-  ctx.globalAlpha *= 0.55 + 0.45 * pump;
-  ctx.fillStyle = glow;
-  disc(ctx, 0, mid, r * 1.5);
-  ctx.restore();
-  blast(ctx, r, mid, clock);
-  ball(ctx, r, W.light, W.dark);
-  dots(ctx, r, W.spot, [[0.4, 0.38, 0.18], [-0.52, 0.3, 0.13], [0.05, 0.68, 0.1], [-0.12, 0.12, 0.07]]);
-  clipped(ctx, r, () => {
-    ctx.fillStyle = SKY.shade;
-    ctx.beginPath();
-    ctx.ellipse(0, base + r * 0.04, b * 2.3, r * 0.14, 0, 0, TAU);
-    ctx.fill();
-  });
-  tone(ctx, r);
-  let y = base;
-  for (const [kind, h] of WALL_ROWS) {
-    for (let i = 0; i < 4; i++) cabinet(ctx, (i - 1.5) * b, y, b, h * b, kind, pump, line);
-    y -= h * b;
-  }
-}
-
 const RIBS = [[-0.58, 0.44], [0.58, 0.44], [-0.3, 0.5], [0.3, 0.5], [0, 0.52]];
 const CUTS = [[[-0.56, -0.02], [-0.16, -0.06], [-0.4, -0.32]], [[0.56, -0.02], [0.16, -0.06], [0.4, -0.32]], [[-0.08, 0.14], [0.08, 0.14], [0, 0]]];
 
@@ -1086,220 +1007,6 @@ function bauble(ctx, r, clock) {
   }
 }
 
-function sleepy(ctx, r, clock) {
-  const Z = SKY.sleepy, b = Math.sin(clock * 1.6), cap = r * 0.0394;
-  ctx.save();
-  ctx.scale(1 - 0.012 * b, 1 + 0.025 * b);
-  ball(ctx, r, Z.light, Z.dark);
-  dots(ctx, r, Z.spot, [[0.55, 0.55, 0.12], [-0.62, 0.48, 0.09], [0.72, -0.08, 0.08], [-0.25, 0.76, 0.07]]);
-  ctx.save();
-  ctx.globalAlpha *= 0.55;
-  dots(ctx, r, Z.cheek, [[-0.5, 0.2, 0.13], [0.5, 0.2, 0.13]]);
-  ctx.restore();
-  ctx.strokeStyle = INK;
-  ctx.lineCap = "round";
-  ctx.lineWidth = Math.max(1.5, r * 0.065);
-  for (const side of [-1, 1]) {
-    ctx.beginPath();
-    ctx.arc(side * r * 0.33, -r * 0.04, r * 0.15, 0.15 * Math.PI, 0.85 * Math.PI);
-    ctx.stroke();
-    ctx.save();
-    ctx.lineWidth *= 0.5;
-    ctx.beginPath();
-    for (const a of [0.32, 0.5, 0.68]) {
-      const x = side * r * 0.33 + Math.cos(a * Math.PI) * r * 0.15, y = -r * 0.04 + Math.sin(a * Math.PI) * r * 0.15;
-      ctx.moveTo(x, y);
-      ctx.lineTo(x + Math.cos(a * Math.PI) * r * 0.05, y + Math.sin(a * Math.PI) * r * 0.05);
-    }
-    ctx.stroke();
-    ctx.restore();
-  }
-  ctx.fillStyle = INK;
-  ctx.beginPath();
-  ctx.ellipse(r * 0.02, r * 0.4, r * 0.07, r * 0.05 * (1.2 + 0.4 * b), 0, 0, TAU);
-  ctx.fill();
-  tone(ctx, r);
-  const bubble = r * (0.04 + 0.12 * Math.max(0, b)), bx = r * 0.16 + bubble * 0.7;
-  ctx.fillStyle = Z.bubble;
-  disc(ctx, bx, r * 0.2, bubble);
-  ctx.strokeStyle = PALETTE.ink;
-  ctx.lineWidth = Math.max(1, r * 0.025);
-  ctx.beginPath();
-  ctx.arc(bx, r * 0.2, bubble * 0.7, -2.6, -1.8);
-  ctx.stroke();
-  ctx.translate(0, r * 0.02);
-  ctx.rotate(-0.12);
-  ctx.scale(cap, cap);
-  hat(ctx, "nightcap", PALETTE);
-  ctx.restore();
-  ctx.lineJoin = "round";
-  for (let i = 0; i < 3; i++) {
-    const p = (clock * 0.3 + i / 3) % 1, s = r * (0.08 + 0.1 * p);
-    ctx.save();
-    ctx.globalAlpha *= Math.sin(p * Math.PI);
-    ctx.translate(-r * (0.7 + 0.45 * p), -r * (0.75 + 0.75 * p));
-    ctx.rotate(-0.2);
-    ctx.beginPath();
-    ctx.moveTo(-s, -s);
-    ctx.lineTo(s, -s);
-    ctx.lineTo(-s, s);
-    ctx.lineTo(s, s);
-    ctx.strokeStyle = INK;
-    ctx.lineWidth = s * 0.5 + ink(r) * 2;
-    ctx.stroke();
-    ctx.strokeStyle = PALETTE.ink;
-    ctx.lineWidth = s * 0.5;
-    ctx.stroke();
-    ctx.restore();
-  }
-}
-
-const FRONDS = [-2.9, -2.4, -1.9, -1.35, -0.85, -0.3];
-const CRESTS = [[-0.45, 0.1], [0.35, 0.35], [-0.1, 0.62], [0.55, -0.15], [-0.62, -0.3], [0.1, 0.05]];
-
-function frond(ctx, x, y, a, L) {
-  const tx = x + Math.cos(a) * L, ty = y + Math.sin(a) * L + L * 0.4 * Math.abs(Math.cos(a));
-  const mx = (x + tx) / 2, my = (y + ty) / 2 - L * 0.15, nx = -Math.sin(a) * L * 0.25, ny = Math.cos(a) * L * 0.25;
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.quadraticCurveTo(mx + nx, my + ny, tx, ty);
-  ctx.quadraticCurveTo(mx - nx, my - ny, x, y);
-  ctx.fill();
-  ctx.stroke();
-}
-
-function chest(ctx, x, y, w, clock) {
-  const I = SKY.island, h = w * 0.6, k = (clock % 2.5) / 2.5;
-  ctx.fillStyle = I.chest;
-  ctx.beginPath();
-  ctx.moveTo(x - w / 2, y - h);
-  ctx.lineTo(x - w * 0.4, y - h * 1.8);
-  ctx.lineTo(x + w * 0.4, y - h * 1.8);
-  ctx.lineTo(x + w / 2, y - h);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = I.gold;
-  ctx.beginPath();
-  ctx.ellipse(x, y - h, w * 0.44, h * 0.32, 0, Math.PI, 0);
-  ctx.fill();
-  ctx.fillStyle = I.chest;
-  ctx.beginPath();
-  rr(ctx, x - w / 2, y - h, w, h, w * 0.08);
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = I.band;
-  ctx.fillRect(x - w * 0.06, y - h, w * 0.12, h * 0.5);
-  if (k < 0.3) {
-    ctx.fillStyle = PALETTE.ink;
-    starPath(ctx, x + w * 0.15, y - h * 1.45, w * 0.3 * Math.sin((k / 0.3) * Math.PI), 0.25, 4, 0);
-    ctx.fill();
-  }
-}
-
-function island(ctx, r, clock) {
-  const I = SKY.island, line = ink(r), crown = [r * 0.1, -r * 1.7];
-  const a1 = -Math.PI / 2 - 0.62, a2 = -Math.PI / 2 + 0.56;
-  const p1 = [Math.cos(a1) * r, Math.sin(a1) * r], p2 = [Math.cos(a2) * r, Math.sin(a2) * r];
-  const hill = () => {
-    ctx.moveTo(...p1);
-    ctx.bezierCurveTo(-r * 0.42, -r * 1.14, r * 0.36, -r * 1.16, ...p2);
-  };
-  ball(ctx, r, I.light, I.dark);
-  clipped(ctx, r, () => {
-    ctx.strokeStyle = I.foam;
-    ctx.lineCap = "round";
-    ctx.lineWidth = Math.max(1, r * 0.045);
-    for (const [x, y] of CRESTS) {
-      ctx.beginPath();
-      ctx.arc(x * r + Math.sin(clock * 1.2 + x * 5) * r * 0.04, y * r, r * 0.08, 1.15 * Math.PI, 1.85 * Math.PI);
-      ctx.stroke();
-    }
-  });
-  tone(ctx, r);
-  clipped(ctx, r, () => {
-    ctx.strokeStyle = I.foam;
-    ctx.lineWidth = r * (0.09 + 0.02 * Math.sin(clock * 1.5));
-    ctx.beginPath();
-    ctx.moveTo(...p1);
-    ctx.quadraticCurveTo(0, -r * 0.6, ...p2);
-    ctx.stroke();
-  });
-  const sand = ctx.createLinearGradient(0, -r * 1.12, 0, -r * 0.66);
-  sand.addColorStop(0, I.sand);
-  sand.addColorStop(1, I.sandDark);
-  ctx.fillStyle = sand;
-  ctx.beginPath();
-  hill();
-  ctx.quadraticCurveTo(0, -r * 0.6, ...p1);
-  ctx.fill();
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = line;
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  hill();
-  ctx.stroke();
-  dots(ctx, 1, I.sandDark, [[-r * 0.25, -r * 0.88, r * 0.025], [r * 0.16, -r * 0.8, r * 0.02], [-r * 0.04, -r * 0.74, r * 0.02], [r * 0.34, -r * 0.9, r * 0.018]]);
-  ctx.beginPath();
-  ctx.moveTo(-r * 0.12, -r * 1.03);
-  ctx.quadraticCurveTo(-r * 0.16, -r * 1.42, ...crown);
-  ctx.lineWidth = r * 0.13 + line * 2;
-  ctx.stroke();
-  ctx.strokeStyle = I.trunk;
-  ctx.lineWidth = r * 0.13;
-  ctx.stroke();
-  ctx.setLineDash([r * 0.05, r * 0.09]);
-  ctx.lineCap = "butt";
-  ctx.strokeStyle = I.trunkDark;
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = I.leaf;
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = line;
-  ctx.lineJoin = "round";
-  FRONDS.forEach((a, i) => frond(ctx, crown[0], crown[1], a + Math.sin(clock * 1.4 + i) * 0.07, r * 0.7));
-  dots(ctx, 1, I.nut, [[crown[0] - r * 0.06, crown[1] + r * 0.07, r * 0.07], [crown[0] + r * 0.06, crown[1] + r * 0.08, r * 0.07]]);
-  chest(ctx, r * 0.28, -r * 1.0, r * 0.3, clock);
-}
-
-function spaceToast(ctx, r, clock) {
-  const A = SKY.astro, w = r * 1.25, k = w / 40, a = -0.75 + Math.sin(clock * 7) * 0.45;
-  const hx = 14 + Math.cos(a) * 24, hy = 21 + Math.sin(a) * 24;
-  ctx.save();
-  ctx.translate(0, Math.sin(clock * 0.8) * r * 0.08);
-  ctx.rotate(Math.sin(clock * 0.45) * 0.3);
-  ctx.save();
-  ctx.scale(k, k);
-  ctx.lineCap = "round";
-  ctx.strokeStyle = A.cord;
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.moveTo(-14, 24);
-  ctx.bezierCurveTo(-30, 44, -48, 18, -66, 42);
-  ctx.stroke();
-  ctx.restore();
-  toastie(ctx, w, "astronaut");
-  ctx.scale(k, k);
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  ctx.moveTo(14, 22);
-  ctx.lineTo(hx, hy);
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 9.5;
-  ctx.stroke();
-  ctx.strokeStyle = A.suit;
-  ctx.lineWidth = 6;
-  ctx.stroke();
-  ctx.fillStyle = A.suit;
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.arc(hx, hy, 4.6, 0, TAU);
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
-}
-
 const SPLAT = [[0, 0, 0.17], [-0.15, 0.05, 0.08], [0.15, 0.04, 0.07], [0.02, -0.16, 0.07], [-0.17, -0.1, 0.06], [0.13, -0.12, 0.05]];
 const DRIPS = [[-0.08, 0.3, 0.07], [0.06, 0.4, 0.08], [-0.17, 0.18, 0.05]];
 const PUFFS = [[-0.8, 0.72, 0.24], [-0.52, 0.9, 0.24], [-0.2, 1.0, 0.2], [0.18, 1.0, 0.18], [0.5, 0.88, 0.24], [0.82, 0.64, 0.2]];
@@ -1478,10 +1185,10 @@ function melies(ctx, r, clock) {
 
 export const BODIES = {
   normal: [{ draw: purple, r: 0.13 }, { draw: moons, r: 0.045 }, { draw: green, r: 0.1 }, { draw: rock, r: 0.05 }],
-  wild: [{ draw: pancake, r: 0.12 }, { draw: speakers, r: 0.11 }, { draw: wall, r: 0.1 }],
+  wild: [{ draw: pancake, r: 0.12 }, { draw: speakers, r: 0.11 }, { draw: bass, r: 0.11 }],
   rare: [
-    { draw: stage, r: 0.05 }, { draw: cheese, r: 0.1 }, { draw: toaster, r: 0.1 }, { draw: pumpkin, r: 0.09 }, { draw: bauble, r: 0.085 },
-    { draw: sleepy, r: 0.09 }, { draw: island, r: 0.08 }, { draw: spaceToast, r: 0.065 }, { draw: melies, r: 0.1 }
+    { draw: stage, r: 0.05 }, { draw: cheese, r: 0.1 }, { draw: toaster, r: 0.1 },
+    { draw: pumpkin, r: 0.09 }, { draw: bauble, r: 0.085 }, { draw: melies, r: 0.1 }
   ]
 };
 
