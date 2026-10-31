@@ -54,6 +54,73 @@ body {
   z-index: 40;
 }
 
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.2rem;
+  background: var(--void);
+  transition: opacity 0.3s ease 0.2s;
+}
+
+.loader.done {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loader-toast {
+  width: min(34vw, 132px);
+  overflow: visible;
+  animation: loader-bob 1.6s ease-in-out infinite;
+}
+
+.loader-flame {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: loader-flame 0.16s ease-in-out infinite alternate;
+}
+
+.loader-flame.late {
+  animation-delay: -0.08s;
+}
+
+.loader-bar {
+  width: min(56vw, 220px);
+  height: 8px;
+  border-radius: 99px;
+  background: var(--row);
+  overflow: hidden;
+}
+
+.loader-bar span {
+  display: block;
+  width: calc(var(--load, 0.08) * 100%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--mustard);
+  transition: width 0.25s ease-out;
+}
+
+@keyframes loader-bob {
+  0%, 100% { transform: translateY(-6px) rotate(-3deg); }
+  50% { transform: translateY(6px) rotate(3deg); }
+}
+
+@keyframes loader-flame {
+  from { transform: scaleY(0.7); }
+  to { transform: scaleY(1.15); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader-toast, .loader-flame {
+    animation: none;
+  }
+}
+
 .cheer {
   animation: cheer 0.7s ease-out;
 }
@@ -952,8 +1019,13 @@ a.ghost {
 }
 
 .board-list li.me {
+  position: sticky;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
   background: var(--mustard);
   color: var(--void);
+  box-shadow: 0 0 0 0.35rem var(--void);
 }
 
 .board-list li.podium .pos {
@@ -997,11 +1069,6 @@ a.ghost {
 
 .board-list li.me.podium .pos {
   box-shadow: 0 0 0 2px var(--void);
-}
-
-.board-list li.gap + li.me {
-  position: sticky;
-  bottom: 0;
 }
 
 .board-list li.gap {

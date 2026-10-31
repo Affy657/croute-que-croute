@@ -9,6 +9,8 @@ import { MUSIC_CREDIT, SFX_CREDIT } from "./audio.js";
 const SAMPLE_T = 60, PREVIEW_SCALE = 0.5, PREVIEW_MAX_S = 6, PREVIEW_PAUSE_S = 0.6;
 const TOAST = { x: FW / 2, y: FH * 0.62, tilt: 0, thrust: 0.35 };
 const TOAST_W = 52, CARD_H = 72;
+const CREW_URL = "https://www.instagram.com/collectif_tartine_sauvage/";
+const DEV = { name: "Adrien Morand", url: "https://www.linkedin.com/in/adrien-morand/" };
 const gameScale = () => Math.min(window.innerWidth / FW, window.innerHeight / FH);
 const GAP_END = (GAP_START - GAP_MIN) / GAP_SLOPE;
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -257,6 +259,8 @@ function credit(title, text, href, label) {
 
 export function renderCredits(root) {
   root.replaceChildren(
+    credit("Collectif", "Tartine Sauvage, qui organise les soirées Space Tartinade", CREW_URL, "Suivre sur Instagram"),
+    credit("Développeur", DEV.name, DEV.url, "Voir sur LinkedIn"),
     credit("Musique", `${MUSIC_CREDIT.title}, de ${MUSIC_CREDIT.artist}`, MUSIC_CREDIT.url, "Écouter sur Spotify"),
     credit("Bruitages", `Sons de la banque ${SFX_CREDIT.name}`, SFX_CREDIT.url, `Voir ${SFX_CREDIT.name}`)
   );

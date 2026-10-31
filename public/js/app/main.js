@@ -17,6 +17,7 @@ import { renderSettings, suggestInstall, leaveSettings, testing, setInvincible }
 import { onInstallChange } from "./install.js";
 import { openCard, closeCard, drawCard, myLook, shareLook } from "./profile.js";
 import { initAccount } from "./account.js";
+import { finishLoading } from "./loader.js";
 import {
   ui, show, setText, setDigits, tickCountdowns, renderMenu, renderPicker, openPicker, pickerIsOpen, renderBoard, renderOver, renderOverStats, renderRival, renderKiller,
   renderHud, renderControls, renderAll, setBoardScope, achLabel
@@ -295,7 +296,9 @@ function closeBoardCard() {
   renderControls(false);
   renderBoard();
   const row = ui.boardList.querySelector(`li[data-id="${CSS.escape(id)}"]`);
-  if (row) row.focus({ preventScroll: true });
+  if (!row) return;
+  row.focus({ preventScroll: true });
+  row.scrollIntoView({ block: "nearest" });
 }
 
 function closeBoard() {
@@ -660,6 +663,7 @@ setInterval(() => {
 }
 
 showMenu();
+finishLoading(new Promise((ok) => api.on("board", ok)));
 api.refreshBoard();
 initAccount(openSettings);
 api.resumePending();
