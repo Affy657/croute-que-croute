@@ -290,10 +290,6 @@
   color: var(--ink-dim);
 }
 
-.catalog .spark-col.last i {
-  background: var(--jam);
-}
-
 .catalog .spark-col.last span {
   padding: 0 5px;
   border-radius: 6px;
