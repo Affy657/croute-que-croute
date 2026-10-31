@@ -1,6 +1,6 @@
 import { fmtCs, ord } from "../shared/format.js";
 import { SLOTS, SPREADS } from "../shared/palette.js";
-import { call, canCompete } from "./api.js";
+import { call, canCompete, net } from "./api.js";
 import { drawToast } from "./sprites.js";
 import { outfit, gearOwned, gearTotal } from "./gear.js";
 import { chosen, owned, toppingList, addToppings } from "./toppings.js";
@@ -23,7 +23,7 @@ export function shareLook() {
   clearTimeout(timer);
   timer = setTimeout(() => {
     if (!canCompete()) return;
-    const body = { look: myLook(), progress: { ...forSync(), toppings: toppingList() } }, key = JSON.stringify(body);
+    const body = { look: myLook(), progress: { ...forSync(), toppings: toppingList() } }, key = net.board.me.id + JSON.stringify(body);
     if (key === sent) return;
     sent = key;
     call("PUT", "/api/me/look", body).then((r) => {
@@ -32,6 +32,11 @@ export function shareLook() {
       addToppings(r.progress.toppings);
     }).catch(() => { if (sent === key) sent = null; });
   }, SEND_MS);
+}
+
+export function resync() {
+  sent = null;
+  shareLook();
 }
 
 function el(tag, cls, text) {

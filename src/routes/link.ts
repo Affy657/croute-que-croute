@@ -7,16 +7,17 @@ import type { Ctx } from "../router";
 
 const LINK_MS = 10 * 60 * 1000;
 const UNKNOWN = "Code inconnu ou expiré.";
-const better = (col: string, best: string) => `${col} = CASE WHEN b.${best} > a.${best} THEN b.${col} ELSE a.${col} END`;
+const wins = (b: string, a: string, best: string, at: string) => `${b}.${best} > ${a}.${best} OR (${b}.${best} = ${a}.${best} AND ${b}.${at} < ${a}.${at})`;
+const better = (col: string, best: string, at: string) => `${col} = CASE WHEN ${wins("b", "a", best, at)} THEN b.${col} ELSE a.${col} END`;
 const MERGE_PROFILE = `UPDATE profiles AS a SET
-  ${["best", "best_at", "best_elapsed"].map((c) => better(c, "best")).join(", ")},
-  ${["pc_best", "pc_best_at", "pc_best_elapsed"].map((c) => better(c, "pc_best")).join(", ")},
+  ${["best", "best_at", "best_elapsed"].map((c) => better(c, "best", "best_at")).join(", ")},
+  ${["pc_best", "pc_best_at", "pc_best_elapsed"].map((c) => better(c, "pc_best", "pc_best_at")).join(", ")},
   run_count = a.run_count + b.run_count, created_at = MIN(a.created_at, b.created_at), progress = ?3
   FROM profiles AS b WHERE a.id = ?1 AND b.id = ?2`;
 const MERGE_ENTRIES = `INSERT INTO entries (event_id, player_id, best, best_at, best_elapsed, run_count)
   SELECT event_id, ?1, best, best_at, best_elapsed, run_count FROM entries WHERE player_id = ?2
   ON CONFLICT (event_id, player_id) DO UPDATE SET
-  ${["best", "best_at", "best_elapsed"].map((c) => `${c} = CASE WHEN excluded.best > entries.best THEN excluded.${c} ELSE entries.${c} END`).join(", ")},
+  ${["best", "best_at", "best_elapsed"].map((c) => `${c} = CASE WHEN ${wins("excluded", "entries", "best", "best_at")} THEN excluded.${c} ELSE entries.${c} END`).join(", ")},
   run_count = entries.run_count + excluded.run_count`;
 
 function qrOf(text: string) {

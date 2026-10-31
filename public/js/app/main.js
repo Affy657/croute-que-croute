@@ -43,7 +43,7 @@ let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, la
 let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
 let settingsOpen = false, settingsFrom = "menu";
 let achOpen = false, achFrom = "menu", achTimer = null;
-let cardOpen = false, historyAsked = false;
+let cardOpen = false, historyFor = null;
 
 const playing = () => S.mode === "play" || S.mode === "dying";
 const elapsed = () => sim.state.t - S.t0;
@@ -607,9 +607,9 @@ api.on("board", renderAll);
 api.on("board", shareLook);
 api.on("board", () => {
   const me = api.net.board && api.net.board.me;
-  if (historyAsked || !me || !me.id || me.banned) return;
-  historyAsked = true;
-  api.call("GET", "/api/players/" + encodeURIComponent(me.id)).then(ach.onHistory).catch((e) => { if (!e.status) historyAsked = false; });
+  if (!me || !me.id || me.banned || historyFor === me.id) return;
+  historyFor = me.id;
+  api.call("GET", "/api/players/" + encodeURIComponent(me.id)).then(ach.onHistory).catch((e) => { if (!e.status && historyFor === me.id) historyFor = null; });
 });
 api.on("result", ach.afterSubmit);
 api.on("board", () => ach.onBoard(api.net.board));
