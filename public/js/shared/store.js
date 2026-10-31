@@ -11,7 +11,6 @@ export const KEYS = {
   achievements: "cv-succes",
   toppings: "cv-garnitures",
   topping: "cv-garniture",
-  toppingHint: "cv-garniture-astuce",
   outfitSeen: "cv-tenue-vue",
   gear: "cv-accessoire",
   side: "cv-cotes",

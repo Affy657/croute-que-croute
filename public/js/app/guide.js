@@ -64,7 +64,7 @@ function toppings() {
     bullets(
       "Une attaque à couteaux sur 10 cache un couteau garni. Frôle-le ou fais-toi tartiner par lui : sa garniture est à toi.",
       "Ça ne marche pas en entraînement.",
-      "Touche ta tartine sur l'accueil pour changer de garniture."
+      "Touche « Skins » sur l'accueil pour changer de garniture."
     ),
     gallery(kinds.map((k) => item(toastArt({ spread: k }, 1.2), SPREADS[k].name, null, unlocked(k))))
   ));
@@ -75,7 +75,7 @@ function gear() {
   return fold("Accessoires", count(kinds.filter(gearUnlocked).length, kinds.length), () => body(
     bullets(
       "Chaque accessoire se gagne avec un succès.",
-      "Touche ta tartine sur l'accueil : une ligne de flèches par emplacement."
+      "Touche « Skins » sur l'accueil : une ligne de flèches par emplacement."
     ),
     ...SHELVES.flatMap(([slot, title]) => [
       el("h3", null, title),
