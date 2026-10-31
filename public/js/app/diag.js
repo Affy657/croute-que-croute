@@ -1,37 +1,52 @@
 import { traceAudio, audioParts, prefs } from "./audio.js";
 import { LOCAL } from "../shared/local.js";
+import { VERSION } from "../version.js";
 import { copy } from "./settings.js";
 
-const SEND_MS = 1500, SAMPLE_MS = 250, KEEP = 3000, LOUD = 0.004, SLIP = 0.15;
-const MEDIA = ["play", "playing", "pause", "waiting", "stalled", "seeking", "seeked", "ended", "error", "emptied", "ratechange", "volumechange", "canplaythrough"];
+const SEND_MS = 1500, SAMPLE_MS = 250, KEEP = 3000, LOUD = 0.004;
+const STRAY_MS = 1000, MUTE_MS = 3000, REPORTS = 4, REPORT_LINES = 150, RUN_REPORTS = 2;
+const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const lines = [], queue = [], t0 = performance.now();
-let panel = null, state = null, watched = null, analyser = null, samples = null, loud = null, last = null;
+let mode = null, state = null, analyser = null, tapped = null, samples = null, loud = null, strayAt = 0, muteAt = 0, runAt = 0, sent = 0, runs = 0, resyncs = 0;
 
 const stamp = () => ((performance.now() - t0) / 1000).toFixed(2).padStart(7);
-const fix = (n) => (Number.isFinite(n) ? n.toFixed(2) : String(n));
 
 function log(text) {
   const line = stamp() + "  " + text;
   lines.push(line);
   if (lines.length > KEEP) lines.shift();
-  queue.push(line);
+  if (mode === "live") queue.push(line);
+  if (text.startsWith("recalage")) resyncs++;
+  if (text.startsWith("partie commence")) {
+    runAt = performance.now();
+    resyncs = 0;
+  }
+  if (text.startsWith("partie finie")) runEnded();
+  if (/^contexte (figé|bloqué)|refusé/.test(text)) report(text);
 }
 
 function send() {
-  if (!LOCAL || !queue.length) return;
+  if (mode !== "live" || !LOCAL || !queue.length) return;
   fetch("/api/diag", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ lines: queue.splice(0) }), keepalive: true }).catch(() => {});
 }
 
-function watch(el) {
-  watched = el;
-  for (const name of MEDIA) {
-    el.addEventListener(name, () => log(`élément ${name} t=${fix(el.currentTime)} muet=${el.muted} vol=${fix(el.volume)}${name === "error" && el.error ? " code=" + el.error.code : ""}`));
-  }
+function report(kind) {
+  if (mode !== "report" || sent >= REPORTS) return;
+  sent++;
+  const standalone = navigator.standalone || matchMedia("(display-mode: standalone)").matches;
+  const body = { kind, version: VERSION, standalone: !!standalone, ua: navigator.userAgent, lines: lines.slice(-REPORT_LINES) };
+  fetch("/api/diag", { method: "POST", headers: { "content-type": "application/json", "x-app-version": VERSION }, body: JSON.stringify(body), keepalive: true }).catch(() => {});
+}
+
+function runEnded() {
+  const secs = ((performance.now() - runAt) / 1000).toFixed(1);
+  if (runs++ < RUN_REPORTS) report(`partie de ${secs} s, ${resyncs} recalage(s)`);
 }
 
 function level(parts) {
-  if (!parts.musicGain) return null;
-  if (!analyser) {
+  if (!parts.musicGain || parts.ctx.state === "closed") return null;
+  if (tapped !== parts.musicGain) {
+    tapped = parts.musicGain;
     analyser = parts.ctx.createAnalyser();
     analyser.fftSize = 1024;
     samples = new Float32Array(analyser.fftSize);
@@ -46,30 +61,36 @@ function level(parts) {
 }
 
 function sample() {
-  const parts = audioParts(), { el, ctx } = parts, now = performance.now();
-  if (el && el !== watched) watch(el);
-  const rms = level(parts);
-  const on = rms !== null && rms > LOUD;
+  const parts = audioParts(), now = performance.now(), rms = level(parts), on = rms !== null && rms > LOUD;
   if (rms !== null && on !== loud) {
     loud = on;
-    log(on ? `SON AUDIBLE (niveau ${rms.toFixed(3)})` : "silence dans le circuit");
+    log(on ? `son audible (niveau ${rms.toFixed(3)})` : "silence");
   }
-  if (el && last && !el.paused && !el.seeking && last.playing) {
-    const moved = el.currentTime - last.t, wall = (now - last.at) / 1000;
-    if (Math.abs(moved - wall) > SLIP) log(`à-coup : musique ${fix(moved)} s pour ${fix(wall)} s réelles`);
+  const stray = on && !parts.running && !parts.preview && !parts.tail;
+  strayAt = stray ? strayAt || now : 0;
+  if (stray && now - strayAt > STRAY_MS && strayAt > 0) {
+    strayAt = -Infinity;
+    log("ANOMALIE : musique hors partie");
+    report("musique hors partie");
   }
-  if (ctx && last && ctx.state === "running" && last.ctxT === ctx.currentTime) log("contexte figé alors qu'il dit running");
-  last = el ? { t: el.currentTime, at: now, playing: !el.paused, ctxT: ctx && ctx.currentTime } : null;
+  const wanted = parts.running && parts.song && !parts.hidden && prefs.music && prefs.musicLevel > 0 && now - runAt > MUTE_MS;
+  muteAt = wanted && !on ? muteAt || now : 0;
+  if (wanted && !on && now - muteAt > MUTE_MS && muteAt > 0) {
+    muteAt = -Infinity;
+    log(`ANOMALIE : silence en partie (contexte ${parts.ctx ? parts.ctx.state : "-"})`);
+    report("silence en partie");
+  }
+  if (!state) return;
   state.textContent = [
-    `ctx ${ctx ? ctx.state : "-"}  élément ${el ? (el.paused ? "pause" : "lecture") : "-"}${el && el.muted ? " muet" : ""}  t ${el ? fix(el.currentTime) : "-"}`,
-    `niveau ${rms === null ? "?" : rms.toFixed(3)}  musique ${prefs.music ? "on" : "off"} ${Math.round(prefs.musicLevel * 100)}%  partie ${parts.running ? "oui" : "non"}${parts.fading ? "  fondu" : ""}`
+    `contexte ${parts.ctx ? parts.ctx.state : "-"}${parts.stale ? " à refaire" : ""}  musique ${parts.song ? (parts.playing ? (parts.preview ? "aperçu" : "joue") : "arrêtée") : "pas prête"}  t ${parts.heard === null ? "-" : parts.heard.toFixed(2)}`,
+    `niveau ${rms === null ? "?" : rms.toFixed(3)}  réglage ${prefs.music ? "on" : "off"} ${Math.round(prefs.musicLevel * 100)}%  partie ${parts.running ? "oui" : "non"}${parts.hidden ? "  en pause" : ""}`
   ].join("\n");
 }
 
 function header() {
   const standalone = navigator.standalone || matchMedia("(display-mode: standalone)").matches;
   log(`appareil ${navigator.userAgent}`);
-  log(`appli installée ${standalone ? "oui" : "non"}  audioSession ${navigator.audioSession ? navigator.audioSession.type : "absent"}  musique ${prefs.music ? "on" : "off"} ${Math.round(prefs.musicLevel * 100)}%`);
+  log(`version ${VERSION}  appli installée ${standalone ? "oui" : "non"}  audioSession ${navigator.audioSession ? navigator.audioSession.type : "absent"}  musique ${prefs.music ? "on" : "off"} ${Math.round(prefs.musicLevel * 100)}%`);
 }
 
 function button(text, run) {
@@ -81,7 +102,7 @@ function button(text, run) {
 }
 
 function mount() {
-  panel = document.createElement("div");
+  const panel = document.createElement("div");
   panel.className = "diag";
   state = document.createElement("pre");
   const actions = document.createElement("div");
@@ -91,10 +112,12 @@ function mount() {
   document.body.append(panel);
 }
 
-export function startDiag() {
+export function startDiag(asked) {
+  if (!asked && !IOS) return;
+  mode = asked ? "live" : "report";
   traceAudio(log);
   header();
-  mount();
+  if (asked) mount();
   for (const name of ["visibilitychange", "pagehide", "pageshow"]) {
     window.addEventListener(name, () => {
       log(`page ${name}${name === "visibilitychange" ? " cachée=" + document.hidden : ""}`);
@@ -103,5 +126,5 @@ export function startDiag() {
   }
   document.addEventListener("pointerup", (e) => log(`toucher ${e.target.id || e.target.className || e.target.tagName}`), { passive: true, capture: true });
   setInterval(sample, SAMPLE_MS);
-  setInterval(send, SEND_MS);
+  if (asked) setInterval(send, SEND_MS);
 }

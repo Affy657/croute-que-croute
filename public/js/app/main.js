@@ -679,7 +679,7 @@ api.refreshBoard();
 initAccount(openSettings);
 api.resumePending();
 if (new URLSearchParams(location.search).get("diag") === "son") session.set(KEYS.diag, "1");
-if (session.get(KEYS.diag) === "1") startDiag();
+startDiag(session.get(KEYS.diag) === "1");
 audio.initAudio();
 requestAnimationFrame(frame);
 document.documentElement.dataset.ready = "1";
