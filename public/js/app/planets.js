@@ -1094,6 +1094,173 @@ function melies(ctx, r, clock) {
   ctx.restore();
 }
 
+const SWELL = [[-0.55, 0.32, 0.5], [-0.15, 0.3, -0.4], [0.25, 0.34, 0.45], [0.62, 0.28, -0.35]];
+
+function swell(ctx, r, clock, P) {
+  ctx.strokeStyle = P.foam;
+  ctx.lineWidth = ink(r);
+  ctx.lineCap = "round";
+  ctx.globalAlpha *= 0.7;
+  for (const [y, gap, speed] of SWELL) {
+    const shift = (((clock * speed) % gap) + gap) % gap;
+    ctx.beginPath();
+    for (let x = -1.2 + shift; x < 1.2; x += gap) {
+      ctx.moveTo((x - 0.08) * r, y * r);
+      ctx.quadraticCurveTo(x * r, (y - 0.07) * r, (x + 0.08) * r, y * r);
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha /= 0.7;
+}
+
+function island(ctx, r, clock, P) {
+  ctx.save();
+  ctx.translate(r * 0.3, r * 0.42);
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = ink(r);
+  ctx.fillStyle = P.sand;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r * 0.36, r * 0.13, 0, 0, TAU);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = P.sandDark;
+  ctx.beginPath();
+  ctx.ellipse(0, r * 0.04, r * 0.3, r * 0.06, 0, 0, Math.PI);
+  ctx.fill();
+  ctx.strokeStyle = P.mark;
+  ctx.lineWidth = Math.max(1, r * 0.03);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  for (const s of [-1, 1]) {
+    ctx.moveTo(r * 0.12 - r * 0.04, -s * r * 0.03);
+    ctx.lineTo(r * 0.12 + r * 0.04, s * r * 0.03);
+  }
+  ctx.stroke();
+  const sway = Math.sin(clock * 1.3) * 0.06;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = ink(r) * 2.6;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.12, -r * 0.02);
+  ctx.quadraticCurveTo(-r * 0.16, -r * 0.24, -r * 0.06 + sway * r, -r * 0.44);
+  ctx.stroke();
+  ctx.strokeStyle = P.trunk;
+  ctx.lineWidth = ink(r) * 1.4;
+  ctx.stroke();
+  ctx.translate(-r * 0.06 + sway * r, -r * 0.44);
+  ctx.fillStyle = P.palm;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = ink(r);
+  for (const a of [-2.6, -1.9, -1.2, -0.5, 0.2]) {
+    ctx.save();
+    ctx.rotate(a + Math.PI / 2 + sway);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(r * 0.1, -r * 0.12, r * 0.24, -r * 0.02);
+    ctx.quadraticCurveTo(r * 0.1, -r * 0.03, 0, 0);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function jolly(ctx, r, x, y, s, P) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.strokeStyle = INK;
+  ctx.lineCap = "round";
+  ctx.lineWidth = r * s * 0.07;
+  ctx.beginPath();
+  for (const k of [-1, 1]) {
+    ctx.moveTo(-r * s * 0.3, -k * r * s * 0.12 + r * s * 0.2);
+    ctx.lineTo(r * s * 0.3, k * r * s * 0.12 + r * s * 0.2);
+  }
+  ctx.stroke();
+  ctx.fillStyle = INK;
+  disc(ctx, 0, -r * s * 0.05, r * s * 0.2);
+  ctx.beginPath();
+  rr(ctx, -r * s * 0.11, r * s * 0.05, r * s * 0.22, r * s * 0.13, r * s * 0.04);
+  ctx.fill();
+  ctx.fillStyle = P.sail;
+  disc(ctx, -r * s * 0.08, -r * s * 0.06, r * s * 0.055);
+  disc(ctx, r * s * 0.08, -r * s * 0.06, r * s * 0.055);
+  ctx.restore();
+}
+
+function galleon(ctx, r, clock, P) {
+  ctx.save();
+  ctx.translate(0, -r * 0.9);
+  ctx.rotate(Math.sin(clock * 1.6) * 0.07);
+  ctx.translate(0, Math.sin(clock * 2.1) * r * 0.025);
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = ink(r);
+  ctx.fillStyle = P.hullDark;
+  ctx.beginPath();
+  rr(ctx, -r * 0.03, -r * 0.82, r * 0.06, r * 0.74, r * 0.02);
+  ctx.fill();
+  ctx.stroke();
+  const flap = Math.sin(clock * 6) * r * 0.025;
+  ctx.fillStyle = P.flag;
+  ctx.beginPath();
+  ctx.moveTo(r * 0.03, -r * 0.8);
+  ctx.quadraticCurveTo(r * 0.12, -r * 0.8 + flap, r * 0.22, -r * 0.75 + flap);
+  ctx.lineTo(r * 0.03, -r * 0.7);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  const puff = Math.sin(clock * 1.1) * r * 0.03;
+  ctx.fillStyle = P.sail;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.3, -r * 0.68);
+  ctx.quadraticCurveTo(0, -r * 0.62, r * 0.3, -r * 0.68);
+  ctx.quadraticCurveTo(r * 0.36 + puff, -r * 0.46, r * 0.3, -r * 0.24);
+  ctx.quadraticCurveTo(0, -r * 0.18, -r * 0.3, -r * 0.24);
+  ctx.quadraticCurveTo(-r * 0.24 + puff, -r * 0.46, -r * 0.3, -r * 0.68);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  jolly(ctx, r, puff * 0.5, -r * 0.45, 0.5, P);
+  ctx.fillStyle = P.hull;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.52, -r * 0.2);
+  ctx.lineTo(r * 0.46, -r * 0.13);
+  ctx.lineTo(r * 0.62, -r * 0.24);
+  ctx.quadraticCurveTo(r * 0.5, r * 0.12, -r * 0.28, r * 0.1);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = P.trim;
+  ctx.lineWidth = ink(r) * 1.3;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.46, -r * 0.1);
+  ctx.lineTo(r * 0.5, -r * 0.05);
+  ctx.stroke();
+  ctx.fillStyle = INK;
+  for (const x of [-0.25, 0, 0.25]) disc(ctx, x * r, r * 0.02, r * 0.035);
+  ctx.strokeStyle = P.foam;
+  ctx.lineWidth = ink(r) * 1.4;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  for (const [x, y, k] of [[-0.42, 0.13, 1], [0.48, 0.06, -1]]) {
+    ctx.moveTo((x - 0.12 * k) * r, (y + 0.02) * r);
+    ctx.quadraticCurveTo(x * r, (y - 0.06) * r, (x + 0.1 * k) * r, (y + 0.03) * r);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function pirate(ctx, r, clock) {
+  const P = SKY.pirate;
+  ball(ctx, r, P.light, P.dark);
+  clipped(ctx, r, () => {
+    swell(ctx, r, clock, P);
+    island(ctx, r, clock, P);
+  });
+  tone(ctx, r);
+  galleon(ctx, r, clock, P);
+}
+
 export const BODIES = {
   normal: [{ draw: purple, r: 0.13, reach: 1.7 }, { draw: moons, r: 0.045, reach: 3.1 }, { draw: green, r: 0.1, reach: 1.7 }, { draw: rock, r: 0.05, reach: 1.1 }],
   wild: [
@@ -1103,7 +1270,8 @@ export const BODIES = {
   rare: [
     { draw: stage, name: "Tung Tung Tung Sahur", r: 0.05, reach: 3.9 }, { draw: cheese, name: "Lune en fromage", r: 0.1, reach: 1.5 },
     { draw: toaster, name: "Grille-pain", r: 0.1, reach: 1.9 },
-    { draw: pumpkin, name: "Citrouille", r: 0.09, reach: 2.1 }, { draw: melies, name: "Lune de Méliès", r: 0.1, reach: 1.4 }
+    { draw: pumpkin, name: "Citrouille", r: 0.09, reach: 2.1 }, { draw: melies, name: "Lune de Méliès", r: 0.1, reach: 1.4 },
+    { draw: pirate, name: "Planète pirate", r: 0.09, reach: 1.85 }
   ]
 };
 
