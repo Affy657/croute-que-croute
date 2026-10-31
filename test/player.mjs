@@ -236,6 +236,11 @@ check("admin : classement PC disponible", r.status === 200 && r.data.scope === "
   check("fusion à égalité : le record le plus ancien garde sa place", merged.data.me.rank < other.data.me.rank && merged.data.me.eventRank < other.data.me.eventRank, [merged.data.me, other.data.me]);
 }
 
+r = await call("POST", "/api/diag", { body: { kind: "test", version: "dev", standalone: false, ua: "test", lines: ["un", "deux"] } });
+check("rapport son enregistré", r.status === 200, r);
+r = await call("POST", "/api/diag", { body: { kind: "test" } });
+check("rapport son sans journal refusé", r.status === 400, r);
+
 console.log(results.join("\n"));
 console.log(results.filter((l) => l.startsWith("FAIL")).length + " échec(s) sur " + results.length);
 process.exit(results.some((l) => l.startsWith("FAIL")) ? 1 : 0);
