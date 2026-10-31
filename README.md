@@ -294,6 +294,15 @@ Après :
 - À décider : rejouer les meilleures parties pour confirmer leur temps (graine donnée par le serveur, gestes enregistrés). Bloquerait la triche par faux score.
 - Peaufiner la difficulté des attaques qui s'enchaînent (demande d'Adrien, 31/10/2026). Certains enchaînements sont trop faciles, d'autres trop durs, donc le score dépend encore trop de la chance. À faire : repérer les deux cas (mesurer les morts et les esquives sans effort par paire d'attaques qui se suivent, avec le robot « humain » de l'équilibrage), puis ajouter des règles d'enchaînement pour les équilibrer, comme celles qui existent déjà (pas de mur juste après des murs en série, pas de mur pendant un rouleau, voir Attaques).
 
+### Après le compte multi-appareils
+
+Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du compte multi-appareils finis.
+
+- Crédits (Infos) : une catégorie « Développeur » avec les contacts d'Adrien, dont son LinkedIn (adresse exacte à confirmer avec lui), et un lien vers les réseaux du collectif Tartine Sauvage, comme son Instagram (lien à demander).
+- Classement : pouvoir à nouveau le faire défiler, et voir au moins les 30 premiers. Aujourd'hui l'écran retire des lignes jusqu'à ce que tout tienne sans défiler (`renderBoard` dans `screens.js`), le serveur en envoie 50 (`TOP` dans `routes/player.ts`).
+- Revoir le design du tableau de bord admin et celui des pages Infos.
+- Skin « hitbox » pour ceux qui veulent tryharder : la texture de la tartine seulement sur la zone de touche, et une autre texture qui montre la zone de frôlé. Rendu et façon de le débloquer à imaginer.
+
 ## Idées pour plus tard
 
 - Vibration au frôlé.
