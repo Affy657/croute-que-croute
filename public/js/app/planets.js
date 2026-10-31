@@ -202,13 +202,16 @@ function boom(ctx, r, clock) {
   const alpha = ctx.globalAlpha, beat = (clock / BEAT) % 1;
   ctx.save();
   ctx.strokeStyle = SKY.bass.wave;
+  ctx.lineCap = "round";
   for (let i = 0; i < 3; i++) {
     const k = (beat + i) / 3;
-    ctx.globalAlpha = alpha * 0.6 * Math.sin(k * Math.PI);
-    ctx.lineWidth = Math.max(1.5, r * 0.06 * (1 - 0.5 * k));
-    ctx.beginPath();
-    ctx.arc(0, 0, r * (1.02 + 0.8 * k), 0, TAU);
-    ctx.stroke();
+    ctx.globalAlpha = alpha * 0.75 * Math.sin(k * Math.PI);
+    ctx.lineWidth = Math.max(1.5, r * 0.055 * (1 - 0.4 * k));
+    for (const [mid, span] of [[0.05, 0.6], [-2.55, 0.5]]) {
+      ctx.beginPath();
+      ctx.arc(0, 0, r * (1.1 + 0.6 * k), mid - span * (1 - 0.3 * k), mid + span * (1 - 0.3 * k));
+      ctx.stroke();
+    }
   }
   ctx.restore();
 }
