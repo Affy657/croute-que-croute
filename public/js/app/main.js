@@ -10,7 +10,7 @@ import { createInput } from "./input.js";
 import { burst, rain, bounce } from "./party.js";
 import * as ach from "./achievements.js";
 import { chosen, unlockTopping, chooseTopping, onTopping, stepTopping } from "./toppings.js";
-import { outfit, chooseGear, onGear, stepGear } from "./gear.js";
+import { outfit, chooseGear, chosenGear, onGear, stepGear } from "./gear.js";
 import { SPREADS, GEAR } from "../shared/palette.js";
 import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./catalog.js";
 import { renderSettings, suggestInstall, leaveSettings } from "./settings.js";
@@ -42,7 +42,7 @@ let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, la
 let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
 let settingsOpen = false, settingsFrom = "menu";
 let achOpen = false, achFrom = "menu", achTimer = null;
-let cardOpen = false;
+let cardOpen = false, historyAsked = false;
 
 const playing = () => S.mode === "play" || S.mode === "dying";
 const elapsed = () => sim.state.t - S.t0;
@@ -591,6 +591,12 @@ document.addEventListener("visibilitychange", () => {
 
 api.on("board", renderAll);
 api.on("board", shareLook);
+api.on("board", () => {
+  const me = api.net.board && api.net.board.me;
+  if (historyAsked || !me || !me.id || me.banned) return;
+  historyAsked = true;
+  api.call("GET", "/api/players/" + encodeURIComponent(me.id)).then(ach.onHistory).catch((e) => { if (!e.status) historyAsked = false; });
+});
 api.on("result", ach.afterSubmit);
 api.on("board", () => ach.onBoard(api.net.board));
 onTopping((kind) => {
@@ -603,9 +609,9 @@ onGear((slot, kind) => {
   renderPicker();
   shareLook();
 });
-ach.onUnlock((a) => {
+ach.onUnlock((a, synced) => {
   shareLook();
-  if (a.gear) chooseGear(GEAR[a.gear].slot, a.gear);
+  if (a.gear && !(synced && chosenGear(GEAR[a.gear].slot))) chooseGear(GEAR[a.gear].slot, a.gear);
   if (S.mode === "play") {
     toastAch(a);
     if (a.gear) toastAch({ name: gearLabel(a) });

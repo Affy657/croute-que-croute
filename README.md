@@ -199,7 +199,8 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 - Secret « En détente » : rester 3 s sans bouger (5 s avant le 30/10/2026 : un joueur immobile survivait 5 s dans 0 % des cas, 3 s dans 5 à 15 %).
 - Garnitures : 1, 4 puis toutes gagnées. Le secret « Ouaf » : se faire tartiner par un couteau à la pâtée pour chien.
 - Secret « Six Seven » (31/10/2026) : finir une partie à 67 s, peu importe les centièmes (de 67,00 à 67,99 s). Il donne les mains Six Seven.
-- Gardés sur le téléphone (`cv-succes`), sans effet sur le classement. Perdus en changeant de téléphone ou de navigateur. Sur iPhone, Safari et l'appli installée ne partagent pas leurs succès.
+- Gardés sur le téléphone (`cv-succes`), sans effet sur le classement. Sur iPhone, Safari et l'appli installée ne partagent pas leurs succès.
+- Rattrapage (31/10/2026) : un succès ne se gagnait que pendant la partie, donc jamais après coup. Un record fait avant l'ajout d'un palier (le 94 s d'Adrien, fait le 30/10 à 17h51, avant le succès des 90 s ajouté à 18h37) ou sur un autre téléphone ne donnait rien. Maintenant le jeu rattrape ce que le serveur sait : les temps de cuisson d'après le meilleur record (Mobile ou PC), à chaque lecture du classement, et une fois à l'ouverture, d'après la fiche du joueur, 3 soirées, top 10 et 1er d'une soirée finie, et les secrets « Tartinée express », « Chiffre rond » et « Six Seven » d'après ses parties enregistrées (`feats` de `GET /api/players/:id`, `onHistory` dans `achievements.js`). Un objet rattrapé est mis seulement si son emplacement est vide. Les autres succès (frôlés, attaques vues, garnitures, en détente, la nuit, Noël, Ouaf) restent sur le téléphone : le serveur ne les connaît pas.
 - Le nombre de parties prend le plus grand entre le compteur du téléphone et celui du serveur.
 
 ## Appli et réseau

@@ -93,7 +93,7 @@ window.addEventListener("storage", (e) => {
   if (e.key === KEYS.achievements) data = merge(data, load());
 });
 
-function unlock(id) {
+function unlock(id, synced = false) {
   if (data.got[id]) return;
   const done = change((d) => {
     if (d.got[id]) return false;
@@ -102,7 +102,7 @@ function unlock(id) {
   if (!done) return;
   const a = BY_ID[id];
   fresh.push(a);
-  for (const fn of listeners) fn(a);
+  for (const fn of listeners) fn(a, synced);
 }
 
 export const onUnlock = (fn) => listeners.push(fn);
@@ -177,8 +177,15 @@ export function afterSubmit(r) {
 
 export function onBoard(b) {
   if (b && b.me) countRuns(Math.max(data.runs, b.me.runs || 0));
+  const top = b && b.me ? Math.max(b.me.best || 0, b.me.pcBest || 0) : 0;
+  for (const [s, id] of TIMES) if (top >= s * 100) unlock(id, true);
   const final = b && b.event && b.event.status === "closed" && b.now >= (b.event.finalAt || b.event.closesAt);
   if (final && b.me && !b.me.banned && b.me.eventRank === 1) unlock("eventWin");
+}
+
+export function onHistory(c) {
+  if (c.events >= EVENTS) unlock("events3", true);
+  for (const [id, done] of Object.entries(c.feats || {})) if (done && BY_ID[id]) unlock(id, true);
 }
 
 function line(className, text) {
