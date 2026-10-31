@@ -182,6 +182,41 @@ check("partie sur téléphone : mobile et soirée, record PC gardé", r.data.bes
 r = await call("GET", "/api/admin/players?scope=pc", { key: KEY });
 check("admin : classement PC disponible", r.status === 200 && r.data.scope === "pc" && r.data.players.some((p) => p.pseudo === pcPseudo && p.best === 100), r.data.scope);
 
+{
+  const play = async (tok, score, device) => {
+    const id = (await call("POST", "/api/runs", { token: tok })).data.runId;
+    return call("POST", `/api/runs/${id}`, { token: tok, body: { score, device } });
+  };
+  const joinAs = async (name) => (await call("POST", "/api/join", { body: { pseudo: name, clientId: hex(32) } })).data.token;
+  const nameA = "Fus" + hex(5), nameB = "Ion" + hex(5), look = { spread: "butter", ach: 0, own: {} };
+  const [tokA, tokB] = [await joinAs(nameA), await joinAs(nameB)];
+  await play(tokA, 100, "mobile");
+  await play(tokB, 200, "mobile");
+  await play(tokB, 150, "pc");
+  await call("PUT", "/api/me/look", { token: tokA, body: { look, progress: { got: { t10: 5 }, attacks: [], toppings: [] } } });
+  await call("PUT", "/api/me/look", { token: tokB, body: { look, progress: { got: { t30: 7 }, attacks: ["rain"], toppings: ["jam"] } } });
+  const code = (await call("POST", "/api/me/link", { token: tokA })).data.code;
+  r = await call("POST", "/api/link", { token: tokA, body: { code } });
+  check("fusion : code de son propre compte refusé", r.status === 409 && !r.data.merge, r.data);
+  r = await call("POST", "/api/link", { token: tokB, body: { code } });
+  check("fusion : confirmation demandée avec les deux pseudos", r.status === 409 && !!r.data.merge && r.data.merge.from === nameB && r.data.merge.into === nameA, r.data);
+  r = await call("POST", "/api/link", { token: tokB, body: { code, merge: true } });
+  check("fusion : comptes réunis", r.status === 200 && r.data.merged && r.data.pseudo === nameA, r.data);
+  const [a, b] = await Promise.all([call("GET", "/api/board", { token: tokA }), call("GET", "/api/board", { token: tokB })]);
+  const me = b.data.me || {};
+  check("fusion : les deux appareils sur le même compte", !!a.data.me && a.data.me.id === me.id && me.pseudo === nameA, [a.data.me, me]);
+  check("fusion : meilleurs records, parties additionnées, soirée réunie", me.best === 200 && me.pcBest === 150 && me.runs === 3 && me.eventBest === 200, me);
+  r = await call("PUT", "/api/me/look", { token: tokA, body: { look, progress: { got: {}, attacks: [], toppings: [] } } });
+  const p = r.data.progress || { got: {}, attacks: [], toppings: [] };
+  check("fusion : succès, attaques et garnitures réunis", p.got.t10 === 5 && p.got.t30 === 7 && p.attacks.join() === "rain" && p.toppings.join() === "jam", p);
+  r = await call("POST", "/api/join", { body: { pseudo: nameB, clientId: hex(32) } });
+  check("fusion : l'ancien pseudo est libre", r.status === 201, r);
+  const tokC = await joinAs("Ban" + hex(5));
+  await call("POST", `/api/admin/players/${(await call("GET", "/api/board", { token: tokC })).data.me.id}/ban`, { key: KEY, body: { banned: true } });
+  r = await call("POST", "/api/link", { token: tokA, body: { code: (await call("POST", "/api/me/link", { token: tokC })).data.code, merge: true } });
+  check("fusion avec un compte retiré refusée", r.status === 403, r);
+}
+
 console.log(results.join("\n"));
 console.log(results.filter((l) => l.startsWith("FAIL")).length + " échec(s) sur " + results.length);
 process.exit(results.some((l) => l.startsWith("FAIL")) ? 1 : 0);

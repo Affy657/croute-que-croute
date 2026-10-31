@@ -1,11 +1,23 @@
 import { create } from "qrcode/lib/core/qrcode.js";
 import { json, fail, readJson, clientIp, outdated, updateRequired, tooFast, allowed } from "../http";
 import { randomToken, randomCode, sha256 } from "../security";
-import { cleanClientId, cleanLinkCode, LINK_CHARS, LINK_LENGTH } from "../validate";
-import { findProfile } from "../db";
+import { cleanClientId, cleanLinkCode, cleanProgress, mergeProgress, LINK_CHARS, LINK_LENGTH } from "../validate";
+import { findProfile, forgetCaches } from "../db";
 import type { Ctx } from "../router";
 
 const LINK_MS = 10 * 60 * 1000;
+const UNKNOWN = "Code inconnu ou expiré.";
+const better = (col: string, best: string) => `${col} = CASE WHEN b.${best} > a.${best} THEN b.${col} ELSE a.${col} END`;
+const MERGE_PROFILE = `UPDATE profiles AS a SET
+  ${["best", "best_at", "best_elapsed"].map((c) => better(c, "best")).join(", ")},
+  ${["pc_best", "pc_best_at", "pc_best_elapsed"].map((c) => better(c, "pc_best")).join(", ")},
+  run_count = a.run_count + b.run_count, created_at = MIN(a.created_at, b.created_at), progress = ?3
+  FROM profiles AS b WHERE a.id = ?1 AND b.id = ?2`;
+const MERGE_ENTRIES = `INSERT INTO entries (event_id, player_id, best, best_at, best_elapsed, run_count)
+  SELECT event_id, ?1, best, best_at, best_elapsed, run_count FROM entries WHERE player_id = ?2
+  ON CONFLICT (event_id, player_id) DO UPDATE SET
+  ${["best", "best_at", "best_elapsed"].map((c) => `${c} = CASE WHEN excluded.best > entries.best THEN excluded.${c} ELSE entries.${c} END`).join(", ")},
+  run_count = entries.run_count + excluded.run_count`;
 
 function qrOf(text: string) {
   const { size, data } = create(text, { errorCorrectionLevel: "M" }).modules;
@@ -25,6 +37,21 @@ export async function createLink({ req, env }: Ctx) {
   return json({ code, expiresAt, qr: qrOf(`${new URL(req.url).origin}/#lier=${code}`) }, 201);
 }
 
+async function mergeInto(env: Env, into: string, from: string) {
+  const { results } = await env.DB.prepare("SELECT id, progress FROM profiles WHERE id IN (?1, ?2)").bind(into, from).all<{ id: string; progress: string | null }>();
+  const read = (id: string) => cleanProgress(JSON.parse(results.find((r) => r.id === id)?.progress ?? "{}"))!;
+  await env.DB.batch([
+    env.DB.prepare(MERGE_PROFILE).bind(into, from, JSON.stringify(mergeProgress(read(into), read(from)))),
+    env.DB.prepare(MERGE_ENTRIES).bind(into, from),
+    env.DB.prepare("DELETE FROM entries WHERE player_id = ?").bind(from),
+    env.DB.prepare("UPDATE runs SET player_id = ?1 WHERE player_id = ?2").bind(into, from),
+    env.DB.prepare("UPDATE sessions SET player_id = ?1 WHERE player_id = ?2").bind(into, from),
+    env.DB.prepare("DELETE FROM links WHERE player_id = ?").bind(from),
+    env.DB.prepare("DELETE FROM profiles WHERE id = ?").bind(from),
+  ]);
+  forgetCaches();
+}
+
 export async function useLink({ req, env }: Ctx) {
   if (outdated(req, env)) return updateRequired();
   if (!(await allowed(env.JOIN_LIMIT, "link:" + clientIp(req)))) return tooFast();
@@ -32,13 +59,22 @@ export async function useLink({ req, env }: Ctx) {
   const code = cleanLinkCode(body.code);
   if (!code) return fail(400, "Le code fait " + LINK_LENGTH + " caractères.");
   const hash = await sha256(code), now = Date.now();
-  const link = await env.DB.prepare(
-    "SELECT l.player_id AS id, p.pseudo FROM links l JOIN profiles p ON p.id = l.player_id WHERE l.code_hash = ? AND l.expires_at > ?",
-  )
-    .bind(hash, now)
-    .first<{ id: string; pseudo: string }>();
-  if (!link || !(await env.DB.prepare("DELETE FROM links WHERE code_hash = ?").bind(hash).run()).meta.changes) {
-    return fail(404, "Code inconnu ou expiré.");
+  const [link, me] = await Promise.all([
+    env.DB.prepare(
+      "SELECT l.player_id AS id, p.pseudo, p.banned FROM links l JOIN profiles p ON p.id = l.player_id WHERE l.code_hash = ? AND l.expires_at > ?",
+    )
+      .bind(hash, now)
+      .first<{ id: string; pseudo: string; banned: number }>(),
+    findProfile(req, env),
+  ]);
+  if (!link) return fail(404, UNKNOWN);
+  if (me && me.id === link.id) return fail(409, "Cet appareil est déjà sur ce compte.");
+  if (me && (me.banned || link.banned)) return fail(403, "Impossible de réunir un compte retiré du classement.");
+  if (me && body.merge !== true) return json({ error: "Cet appareil a déjà un compte.", merge: { from: me.pseudo, into: link.pseudo } }, 409);
+  if (!(await env.DB.prepare("DELETE FROM links WHERE code_hash = ?").bind(hash).run()).meta.changes) return fail(404, UNKNOWN);
+  if (me) {
+    await mergeInto(env, link.id, me.id);
+    return json({ pseudo: link.pseudo, merged: true });
   }
   const clientId = cleanClientId(body.clientId);
   const token = randomToken();

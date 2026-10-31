@@ -196,8 +196,19 @@
     <section id="linkCard" class="card" hidden>
       <h2>Autre appareil</h2>
       <p class="sub">Joue avec ton compte sur un autre téléphone ou un PC.</p>
-      <div class="card-actions">
+      <div class="card-actions pair">
         <button id="linkBtn" class="ghost" type="button">Afficher mon code</button>
+        <button id="mergeBtn" class="ghost" type="button">J'ai un code</button>
+      </div>
+      <form id="mergeForm" class="rename" hidden>
+        <label for="mergeInput" class="sr-only">Code de ton autre appareil</label>
+        <input id="mergeInput" name="code" maxlength="9" placeholder="Code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required>
+        <button class="ghost" type="submit">Valider</button>
+      </form>
+      <p id="mergeNote" class="note" hidden></p>
+      <div id="mergeAsk" class="card-actions pair" hidden>
+        <button id="mergeYes" class="ghost" type="button">Réunir</button>
+        <button id="mergeNo" class="ghost" type="button">Annuler</button>
       </div>
     </section>
     <section class="card">

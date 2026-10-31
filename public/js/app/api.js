@@ -36,6 +36,7 @@ export async function call(method, path, body, timeoutMs) {
   if (!res.ok) {
     const err = new Error((data && data.error) || "Erreur réseau.");
     err.status = res.status;
+    err.data = data;
     if (res.status === 426) requestUpdate();
     throw err;
   }
@@ -129,10 +130,11 @@ export async function join(pseudo) {
   await refreshBoard();
 }
 
-export async function linkWith(code) {
-  const r = await call("POST", "/api/link", { code, clientId: clientId() });
-  setToken(r.token);
+export async function linkWith(code, merge = false) {
+  const r = await call("POST", "/api/link", { code, clientId: clientId(), merge });
+  if (r.token) setToken(r.token);
   await refreshBoard();
+  return r;
 }
 
 export const newLinkCode = () => call("POST", "/api/me/link");
