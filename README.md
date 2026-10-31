@@ -58,6 +58,8 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Fouet mis de côté (jugé trop facile) : `lab: true` dans `attacks.js` et `projectiles.js`, visible seulement dans l'admin. Enlever `lab` pour le remettre.
 - Couloir (deux murs de deux côtés, 46 s) mis de côté de la même façon : trop proche des murs en série, on pouvait le prendre pour un bug.
 - Chances, vitesses et délais de chaque attaque : `attacks.js`. Le calendrier est dans le jeu (Infos, onglet Attaques).
+- Infos, onglet Attaques (refait le 31/10/2026 après une critique de design ; avant, tout était ouvert et il fallait 10 écrans et demi pour le parcourir sur téléphone) : une carte repliée par attaque, avec son nom et son heure d'arrivée. Une seule s'ouvre à la fois, avec son aperçu animé (seul l'aperçu ouvert tourne), ses pastilles et « S'entraîner ». En dessous, Progression (les paliers de difficulté, sans les arrivées déjà sur les cartes) et Règles. Onglet Armes : la taille réelle avec la zone de touche, puis les variantes rares en gros plan sur la lame (`spreadCard` dans `catalog.js`).
+- Les onglets (Infos, Classement, Paramètres) font au moins 44 px de haut, la taille minimale pour un doigt.
 - Le trou des murs en série par le haut pouvait sauter d'un bord à l'autre entre deux murs : 27 morts pour 100 séries chez un débutant, contre 5 par les côtés. Limité à 140 px depuis le 30/10/2026, comme par les côtés. Depuis le 31/10/2026, chaque trou se décale aussi d'au moins 90 px (`SERIES_MOVE`), vers un côté tiré au hasard (l'autre si le bord est trop près) : les joueurs trouvaient trop facile un trou presque aligné avec le précédent. Mesuré : 0 série refusée par le solveur à 30 s et à 65 s, 0 mort pour le robot parfait.
 
 ## Équité
@@ -301,7 +303,8 @@ Après :
 
 Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du compte multi-appareils finis.
 
-- Revoir le design du tableau de bord admin et celui des pages Infos.
+- Revoir le design du tableau de bord admin.
+- Pages Infos, reste de la critique du 31/10/2026 : boutons des Crédits pleine largeur ; une seule sortie (croix ou « Retour ») pour tous les écrans de ce type ; aperçus des attaques figés quand le téléphone demande moins d'animations.
 
 ## Idées pour plus tard
 

@@ -9,6 +9,8 @@ import { MUSIC_CREDIT, SFX_CREDIT } from "./audio.js";
 const SAMPLE_T = 60, PREVIEW_SCALE = 0.5, PREVIEW_MAX_S = 6, PREVIEW_PAUSE_S = 0.6;
 const TOAST = { x: FW / 2, y: FH * 0.62, tilt: 0, thrust: 0.35 };
 const TOAST_W = 52, CARD_H = 72;
+const CLOSE_W = 120, CLOSE_ZOOM = 2.5, CLOSE_AT = 11;
+const SCROLL = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
 const CREW_URL = "https://www.instagram.com/collectif_tartine_sauvage/";
 const DEV = { name: "Adrien Morand", url: "https://www.linkedin.com/in/adrien-morand/" };
 const gameScale = () => Math.min(window.innerWidth / FW, window.innerHeight / FH);
@@ -91,6 +93,19 @@ function weaponCard(kind, spread, status, scale) {
   return card;
 }
 
+function spreadCard(spread) {
+  const { len, rad } = PROJECTILES.knife;
+  const card = el("div", "weapon");
+  const cv = canvas(CLOSE_W, CARD_H);
+  cv.className = "close-up";
+  const ctx = cv.getContext("2d");
+  const k = cv.dpr * CLOSE_ZOOM;
+  ctx.setTransform(k, 0, 0, k, (cv.dpr * CLOSE_W) / 2, (cv.dpr * CARD_H) / 2);
+  drawProjectile(ctx, { kind: "knife", len, rad, x: -CLOSE_AT, y: 0, a: 0, spread });
+  card.append(cv, el("span", "name", SPREADS[spread].name));
+  return card;
+}
+
 function toastCard(scale) {
   const card = el("div", "weapon");
   const { cv, ctx } = realCanvas(TOAST_W, scale);
@@ -115,8 +130,8 @@ export function renderWeapons(root, { showLab = false } = {}) {
   const groups = [
     weaponGroup("Taille réelle", `Comme dans le jeu sur cet écran (échelle × ${scale.toFixed(2).replace(".", ",")}). En pointillés jaunes : la zone de touche.`,
       [toastCard(scale), ...kinds.filter((k) => !PROJECTILES[k].lab).map((k) => weaponCard(k, null, null, scale))]),
-    weaponGroup("Variantes rares", "1 attaque à couteaux sur 10 : un seul de ses couteaux change de tartinade. Pur visuel, la zone de touche ne change pas.",
-      Object.keys(SPREADS).filter((sp) => sp !== "butter").map((sp) => weaponCard("knife", sp, "rare", scale)))
+    weaponGroup("Variantes rares", "1 attaque à couteaux sur 10 : un seul de ses couteaux change de tartinade. Pur visuel, la zone de touche ne change pas. Ici en gros plan.",
+      Object.keys(SPREADS).filter((sp) => sp !== "butter").map(spreadCard))
   ];
   if (showLab && lab.length) {
     groups.push(weaponGroup("Prototypes", "Pas encore dans le jeu, visibles seulement sur les téléphones admin : à voir en mouvement dans l'onglet Attaques.",
@@ -127,7 +142,6 @@ export function renderWeapons(root, { showLab = false } = {}) {
 
 function progressionCard() {
   const steps = [];
-  for (const a of ATTACKS.filter((x) => !x.lab)) steps.push([a.from, a.from ? "arrivée : " + a.name : a.name + " dès le début"]);
   for (const a of ATTACKS.filter((x) => !x.lab && x.growsUntil)) steps.push([a.growsUntil, a.growth]);
   steps.push([GAP_END, "les attaques s'enchaînent au rythme le plus rapide"]);
   steps.push([SPEED_UNTIL, "les couverts atteignent leur vitesse maximale"]);
@@ -199,25 +213,33 @@ function stat(label, value) {
   return row;
 }
 
-export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
-  const live = ATTACKS.filter((a) => !a.lab && SAMPLE_T > a.from);
-  const total = live.reduce((s, a) => s + a.weight, 0);
-  previews.length = 0;
+function rulesCard() {
   const rules = el("section", "card");
   const list = el("ul", "rules");
   for (const text of [
     "On peut toujours s'en sortir : chaque attaque est testée avant d'être lancée, même si tu réagis un dixième de seconde après l'alerte.",
-    `Les attaques s'enchaînent de plus en plus vite jusqu'à ${Math.round(GAP_END)} s, et les couverts accélèrent jusqu'à ${SPEED_UNTIL} s.`,
-    "Une attaque ne sort jamais plus de 3 fois d'affilée, et celle qui vient de sortir revient moins souvent. Les grosses figures (croix, murs en série, couloir, double pluie) ne sortent jamais deux fois de suite.",
-    "Dans les aperçus, la tartine ne bouge pas.",
-    "« S'entraîner » lance une partie avec seulement cette attaque, qui démarre à sa vitesse d'arrivée puis accélère. Elle ne compte ni pour le classement ni pour les succès."
+    "Une attaque ne sort jamais plus de 3 fois d'affilée, et celle qui vient de sortir revient moins souvent. Les grosses figures (croix, murs en série, double pluie) ne sortent jamais deux fois de suite."
   ]) list.append(el("li", null, text));
   rules.append(el("h2", null, "Règles"), list);
+  return rules;
+}
+
+function openOnly(card) {
+  if (card.open) return;
+  const scroller = card.closest(".info-screen");
+  const top = card.getBoundingClientRect().top;
+  for (const p of previews) p.card.open = false;
+  if (scroller) scroller.scrollTop += card.getBoundingClientRect().top - top;
+}
+
+export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
+  const live = ATTACKS.filter((a) => !a.lab && SAMPLE_T > a.from);
+  const total = live.reduce((s, a) => s + a.weight, 0);
+  previews.length = 0;
   const cards = ATTACKS.filter((a) => showLab || !a.lab).map((attack) => {
-    const card = el("section", "card attack");
-    const head = el("div", "attack-head");
-    head.append(el("h2", null, attack.name));
-    if (attack.lab) head.append(el("span", "badge lab", "Prototype"));
+    const card = el("details", "card attack");
+    const head = el("summary", "attack-head");
+    head.append(el("h2", null, attack.name), attack.lab ? el("span", "badge lab", "Prototype") : el("span", "attack-when", `${attack.from} s`));
     const body = el("div", "attack-body");
     const cv = canvas(FW * PREVIEW_SCALE, FH * PREVIEW_SCALE);
     const facts = el("div", "facts");
@@ -233,16 +255,22 @@ export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
       const go = el("button", "ghost train", "S'entraîner");
       go.type = "button";
       go.addEventListener("click", () => onTrain(attack));
-      text.append(go);
+      text.append(go, el("p", "train-note", "Seulement cette attaque, hors classement, succès et record."));
     }
     body.append(cv, text);
     card.append(head, body);
-    const p = { attack, cv, ctx: cv.getContext("2d") };
+    const p = { attack, card, cv, ctx: cv.getContext("2d") };
     restart(p);
+    head.addEventListener("click", () => openOnly(card));
+    card.addEventListener("toggle", () => {
+      if (!card.open) return;
+      restart(p);
+      card.scrollIntoView({ block: "nearest", behavior: SCROLL });
+    });
     previews.push(p);
     return card;
   });
-  root.replaceChildren(progressionCard(), rules, ...cards);
+  root.replaceChildren(...cards, progressionCard(), rulesCard());
 }
 
 function credit(title, text, href, label) {
@@ -277,6 +305,7 @@ export function animateAttacks(on) {
     last = now;
     clock += dt;
     for (const p of previews) {
+      if (!p.card.open) continue;
       step(p, dt);
       draw(p, clock);
     }
