@@ -4,7 +4,7 @@ import { SPREADS, GEAR } from "../shared/palette.js";
 import { owned } from "./toppings.js";
 import { LOCAL } from "../shared/local.js";
 
-const FAMILIES = [["time", "Temps de cuisson"], ["play", "Frôlés et découvertes"], ["topping", "Garnitures"], ["loyal", "Assiduité et soirées"], ["secret", "Secrets"]];
+export const FAMILIES = [["time", "Temps de cuisson"], ["play", "Frôlés et découvertes"], ["topping", "Garnitures"], ["loyal", "Assiduité et soirées"], ["secret", "Secrets"]];
 const TIMES = [[10, "t10"], [30, "t30"], [60, "t60"], [90, "t90"], [120, "t120"], [150, "t150"]];
 const NEARS = [[20, "near20"]];
 const RUNS = [[10, "runs10"], [50, "runs50"], [100, "runs100"]];

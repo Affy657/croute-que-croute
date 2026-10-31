@@ -138,6 +138,7 @@ export async function linkWith(code, merge = false) {
 }
 
 export const newLinkCode = () => call("POST", "/api/me/link");
+export const logoutOthers = () => call("DELETE", "/api/me/devices");
 
 export async function rename(pseudo) {
   await call("PATCH", "/api/me", { pseudo });

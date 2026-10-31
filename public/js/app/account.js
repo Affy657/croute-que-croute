@@ -1,10 +1,11 @@
 import { clock } from "../shared/format.js";
 import { ui, show, setText, renderControls, setLinking } from "./screens.js";
-import { net, on, registered, serverNow, linkWith, newLinkCode } from "./api.js";
+import { net, on, registered, serverNow, linkWith, newLinkCode, logoutOthers } from "./api.js";
 import { renderSettings } from "./settings.js";
 import { resync } from "./profile.js";
 
 const TICK_MS = 1000, RETRY_MS = 20000, QUIET = 4, OFFLINE = "Pas de réseau, réessaie.";
+const OUT_ASK = "Tes autres appareils sortent du compte. Pour revenir, il leur faudra un nouveau code.";
 let timer = null, until = Infinity, live = false, asked = 0, merging = null, waiting = null, opener = () => {};
 
 const quoted = (name) => "« " + name + " »";
@@ -133,6 +134,25 @@ async function confirmMerge() {
   }
 }
 
+function askOut(on, note = "") {
+  ui.outRow.hidden = on;
+  ui.outAsk.hidden = !on;
+  setText(ui.outNote, on ? OUT_ASK : note);
+}
+
+async function confirmOut() {
+  ui.outYes.disabled = true;
+  try {
+    const { removed } = await logoutOthers();
+    const s = removed > 1 ? "s" : "";
+    askOut(false, removed ? `C'est fait : ${removed} appareil${s} déconnecté${s}.` : "Aucun autre appareil n'était connecté.");
+  } catch (e) {
+    askOut(false, e.status ? e.message : OFFLINE);
+  } finally {
+    ui.outYes.disabled = false;
+  }
+}
+
 function pickUp() {
   if (!waiting || !registered()) return;
   const code = waiting;
@@ -171,6 +191,9 @@ ui.mergeForm.addEventListener("submit", (e) => {
 });
 ui.mergeYes.addEventListener("click", confirmMerge);
 ui.mergeNo.addEventListener("click", () => resetMerge());
+ui.outBtn.addEventListener("click", () => askOut(true));
+ui.outNo.addEventListener("click", () => askOut(false));
+ui.outYes.addEventListener("click", confirmOut);
 on("board", pickUp);
 ui.linkBack.addEventListener("click", closeLink);
 ui.haveAccount.addEventListener("click", () => {

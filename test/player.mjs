@@ -143,6 +143,17 @@ check("classements général et soirée : le joueur y est", r.status === 200 && 
   await call("POST", "/api/me/link", { token });
   r = await call("POST", "/api/link", { body: { code: fresh, clientId: hex(32) } });
   check("nouveau code : l'ancien ne marche plus", r.status === 404, r);
+  const pending = (await call("POST", "/api/me/link", { token: second })).data.code;
+  r = await call("DELETE", "/api/me/devices", {});
+  check("déconnexion des autres appareils sans compte refusée", r.status === 401, r);
+  r = await call("DELETE", "/api/me/devices", { token });
+  check("autres appareils déconnectés", r.status === 200 && r.data.removed === 1, r.data);
+  const [kept, out] = await Promise.all([call("GET", "/api/board", { token }), call("GET", "/api/board", { token: second })]);
+  check("cet appareil reste connecté, l'autre est sorti", !!kept.data.me && out.data.me === null, [kept.data.me, out.data.me]);
+  r = await call("POST", "/api/link", { body: { code: pending, clientId: hex(32) } });
+  check("code de l'appareil sorti refusé", r.status === 404, r);
+  r = await call("DELETE", "/api/me/devices", { token });
+  check("plus aucun autre appareil", r.status === 200 && r.data.removed === 0, r.data);
 }
 
 r = await call("GET", "/api/admin/players", { key: KEY });

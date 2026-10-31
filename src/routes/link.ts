@@ -1,5 +1,5 @@
 import { create } from "qrcode/lib/core/qrcode.js";
-import { json, fail, readJson, clientIp, outdated, updateRequired, tooFast, allowed } from "../http";
+import { json, fail, readJson, clientIp, bearer, outdated, updateRequired, tooFast, allowed } from "../http";
 import { randomToken, randomCode, sha256 } from "../security";
 import { cleanClientId, cleanLinkCode, cleanProgress, mergeProgress, LINK_CHARS, LINK_LENGTH } from "../validate";
 import { findProfile, forgetCaches } from "../db";
@@ -85,4 +85,16 @@ export async function useLink({ req, env }: Ctx) {
     env.DB.prepare("INSERT INTO sessions (token_hash, player_id, client_hash, created_at) VALUES (?, ?, ?, ?)").bind(tokenHash, link.id, clientHash, now),
   ]);
   return json({ token, pseudo: link.pseudo });
+}
+
+export async function logoutOthers({ req, env }: Ctx) {
+  if (outdated(req, env)) return updateRequired();
+  const me = await findProfile(req, env);
+  if (!me) return fail(401, "Joueur inconnu.");
+  if (!(await allowed(env.RENAME_LIMIT, "out:" + me.id))) return tooFast();
+  const [out] = await env.DB.batch([
+    env.DB.prepare("DELETE FROM sessions WHERE player_id = ?1 AND token_hash <> ?2").bind(me.id, await sha256(bearer(req))),
+    env.DB.prepare("DELETE FROM links WHERE player_id = ?").bind(me.id),
+  ]);
+  return json({ removed: out.meta.changes });
 }

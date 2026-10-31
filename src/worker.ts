@@ -13,6 +13,7 @@ const routes: Route[] = [
   { method: "PATCH", path: "/api/me", run: player.rename },
   { method: "PUT", path: "/api/me/look", run: player.saveLook },
   { method: "POST", path: "/api/me/link", run: link.createLink },
+  { method: "DELETE", path: "/api/me/devices", run: link.logoutOthers },
   { method: "POST", path: "/api/link", run: link.useLink },
   { method: "GET", path: new RegExp(`^/api/players/${ID}$`), run: player.card },
   { method: "POST", path: "/api/runs", run: player.startRun },

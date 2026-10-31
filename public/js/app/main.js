@@ -13,6 +13,7 @@ import { chosen, unlockTopping, chooseTopping, onTopping, stepTopping } from "./
 import { outfit, chooseGear, chosenGear, onGear, stepGear } from "./gear.js";
 import { SPREADS, GEAR } from "../shared/palette.js";
 import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./catalog.js";
+import { renderGuide } from "./guide.js";
 import { renderSettings, suggestInstall, leaveSettings, testing, setInvincible } from "./settings.js";
 import { onInstallChange } from "./install.js";
 import { openCard, closeCard, drawCard, myLook, shareLook } from "./profile.js";
@@ -317,6 +318,7 @@ function renderInfo() {
   const showLab = !!store.get(KEYS.adminToken);
   if (infoTab === "attacks") renderAttacks(ui.infoBody, { showLab, onTrain: train });
   else if (infoTab === "weapons") renderWeapons(ui.infoBody, { showLab });
+  else if (infoTab === "guide") renderGuide(ui.infoBody);
   else renderCredits(ui.infoBody);
   animateAttacks(infoTab === "attacks");
   ui.info.scrollTop = 0;

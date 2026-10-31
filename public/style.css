@@ -979,6 +979,10 @@ a.ghost {
   touch-action: manipulation;
 }
 
+#infoTabs button {
+  padding-inline: 0.4em;
+}
+
 .board-tabs button[aria-selected="true"] {
   background: var(--mustard);
   color: var(--void);
