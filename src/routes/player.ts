@@ -1,9 +1,9 @@
 import { json, fail, readJson, clientIp, outdated, updateRequired, tooFast, allowed } from "../http";
 import { randomToken, sha256, matchesSecret } from "../security";
-import { cleanPseudo, pseudoKey, cleanClientId } from "../validate";
+import { cleanPseudo, pseudoKey, cleanClientId, cleanLook } from "../validate";
 import {
   events, openEventNow, eventById, findProfile, entryBest, generalRanking, generalCount, generalRank, eventRanking, renameCached, rankIn, rivalIn,
-  promoteGeneral, promoteEvent, forgetCaches,
+  promoteGeneral, promoteEvent, forgetCaches, cached,
   type EventRow, type Profile, type Ranked,
 } from "../db";
 import type { Ctx } from "../router";
@@ -13,6 +13,7 @@ const SLACK_MS = 5000;
 const MAX_SCORE = 15 * 60 * 100;
 const TOP = 50;
 const FEED_MS = 15 * 60 * 1000, FEED_SIZE = 6;
+const CARD_MS = 10000, CARD_RUNS = 10;
 const BAD_PSEUDO = "Pseudo de 2 à 16 caractères : lettres, chiffres, espaces, tirets.";
 
 interface RunRow {
@@ -37,7 +38,7 @@ const eventInfo = (e: EventRow | null, status: string) =>
   e ? { name: e.name, opensAt: e.opens_at, closesAt: e.closes_at, finalAt: e.closes_at + GRACE_MS, status } : null;
 
 const topOf = (list: Ranked[], me: Profile | null) =>
-  list.slice(0, TOP).map((row, i) => ({ rank: i + 1, pseudo: row.pseudo, best: row.best, me: me?.id === row.id }));
+  list.slice(0, TOP).map((row, i) => ({ rank: i + 1, id: row.id, pseudo: row.pseudo, best: row.best, me: me?.id === row.id }));
 
 export async function board({ req, env }: Ctx) {
   const now = Date.now();
@@ -65,6 +66,7 @@ export async function board({ req, env }: Ctx) {
     eventCount: eventList ? eventList.length : 0,
     me: me
       ? {
+          id: me.id,
           pseudo: me.pseudo,
           best: me.best,
           runs: me.run_count,
@@ -172,10 +174,90 @@ export async function startRun({ req, env }: Ctx) {
   if (!(await allowed(env.RUN_LIMIT, me.id))) return tooFast();
   const event = await openEventNow(env, now);
   const runId = crypto.randomUUID();
-  await env.DB.prepare("INSERT INTO runs (id, player_id, event_id, started_at) VALUES (?, ?, ?, ?)")
-    .bind(runId, me.id, event?.id ?? null, now)
-    .run();
+  const look = cleanLook((await readJson(req)).look);
+  const insert = env.DB.prepare("INSERT INTO runs (id, player_id, event_id, started_at) VALUES (?, ?, ?, ?)").bind(runId, me.id, event?.id ?? null, now);
+  await env.DB.batch(look ? [insert, lookUpdate(env, me.id, look)] : [insert]);
   return json({ runId, event: !!event }, 201);
+}
+
+const lookUpdate = (env: Env, id: string, look: string) => env.DB.prepare("UPDATE profiles SET look = ?1 WHERE id = ?2 AND look IS NOT ?1").bind(look, id);
+
+export async function saveLook({ req, env }: Ctx) {
+  if (outdated(req, env)) return updateRequired();
+  const me = await findProfile(req, env);
+  if (!me) return fail(401, "Joueur inconnu.");
+  if (!(await allowed(env.RUN_LIMIT, "look:" + me.id))) return tooFast();
+  const look = cleanLook((await readJson(req)).look);
+  if (!look) return fail(400, "Tenue invalide.");
+  await lookUpdate(env, me.id, look).run();
+  return json({ ok: true });
+}
+
+interface CardRow {
+  id: string;
+  pseudo: string;
+  best: number;
+  best_at: number | null;
+  pc_best: number;
+  pc_best_at: number | null;
+  run_count: number;
+  banned: number;
+  created_at: number;
+  look: string | null;
+}
+
+async function loadCard(env: Env, id: string) {
+  const p = await env.DB.prepare("SELECT id, pseudo, best, best_at, pc_best, pc_best_at, run_count, banned, created_at, look FROM profiles WHERE id = ?")
+    .bind(id)
+    .first<CardRow>();
+  if (!p || p.banned) return null;
+  const view = await events(env);
+  const [general, pc] = await Promise.all([generalRanking(env, !!view.open), generalRanking(env, !!view.open, "pc")]);
+  const [rank, count, pcRank, pcCount, totals, recent, played, top] = await Promise.all([
+    p.best > 0 ? generalRank(env, general, p.id, p.best, p.best_at) : null,
+    generalCount(env, general),
+    p.pc_best > 0 ? generalRank(env, pc, p.id, p.pc_best, p.pc_best_at, "pc") : null,
+    generalCount(env, pc, false, "pc"),
+    env.DB.prepare("SELECT SUM(score) AS total, MAX(finished_at) AS last FROM runs WHERE player_id = ? AND finished_at IS NOT NULL")
+      .bind(p.id)
+      .first<{ total: number | null; last: number | null }>(),
+    env.DB.prepare("SELECT score, device, finished_at AS at FROM runs WHERE player_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT ?")
+      .bind(p.id, CARD_RUNS)
+      .all<{ score: number; device: string | null; at: number }>(),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM entries WHERE player_id = ? AND run_count > 0").bind(p.id).first<{ n: number }>(),
+    env.DB.prepare(
+      `SELECT ev.name, 1 + (
+         SELECT COUNT(*) FROM entries o JOIN profiles q ON q.id = o.player_id
+         WHERE o.event_id = e.event_id AND q.banned = 0 AND o.best > 0 AND (o.best > e.best OR (o.best = e.best AND o.best_at < e.best_at))
+       ) AS place
+       FROM entries e JOIN events ev ON ev.id = e.event_id
+       WHERE e.player_id = ? AND e.best > 0 ORDER BY place ASC, ev.opens_at DESC LIMIT 1`,
+    )
+      .bind(p.id)
+      .first<{ name: string; place: number }>(),
+  ]);
+  return {
+    pseudo: p.pseudo,
+    joinedAt: p.created_at,
+    lastAt: totals?.last ?? null,
+    best: p.best,
+    rank,
+    count,
+    pcBest: p.pc_best,
+    pcRank,
+    pcCount,
+    runs: p.run_count,
+    played: totals?.total ?? 0,
+    recent: recent.results.reverse().map((r) => ({ score: r.score, pc: r.device === "pc" })),
+    events: played?.n ?? 0,
+    eventBest: top,
+    look: p.look ? JSON.parse(p.look) : null,
+  };
+}
+
+export async function card({ env, params }: Ctx) {
+  const value = await cached("card:" + params[0], CARD_MS, () => loadCard(env, params[0]));
+  return value ? json({ now: Date.now(), ...value }) : fail(404, "Joueur introuvable.");
 }
 
 async function standing(env: Env, me: Profile, eventId: number | null, mobile: Mark, pc: Mark, eventBest: number, eventImproved: boolean) {

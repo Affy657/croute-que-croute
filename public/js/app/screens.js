@@ -30,12 +30,12 @@ export const ui = {
   ach: $("ach"), achCount: $("achCount"), achList: $("achList"), achBack: $("achBack"), achToast: $("achToast"), holdHint: $("holdHint"), overAch: $("overAch"), musicVol: $("musicVol"), sfxVol: $("sfxVol"), sensVol: $("sensVol"), mouseRow: $("mouseRow"), mouseTabs: $("mouseTabs"), mouseHint: $("mouseHint"),
   renameCard: $("renameCard"), renameForm: $("renameForm"), newPseudo: $("newPseudo"), renameNote: $("renameNote"),
   picker: $("picker"), pickToast: $("pickToast"), pickLabel: $("pickLabel"), pickPrev: $("pickPrev"), pickNext: $("pickNext"), pickName: $("pickName"), pickCount: $("pickCount"),
-  gearRows: $("gearRows"),
+  gearRows: $("gearRows"), profile: $("profile"), profileBack: $("profileBack"),
   installPop: $("installPop"), installPopText: $("installPopText"), installYes: $("installYes"), installLater: $("installLater")
 };
 
-const PAGES = ["menu", "over", "board", "hud", "info", "settings", "qr", "ach"];
-const SCREENS = { menu: ["menu"], play: ["hud"], over: ["over"], board: ["board"], info: ["info"], settings: ["settings"], qr: ["qr"], ach: ["ach"] };
+const PAGES = ["menu", "over", "board", "hud", "info", "settings", "qr", "ach", "profile"];
+const SCREENS = { menu: ["menu"], play: ["hud"], over: ["over"], board: ["board"], info: ["info"], settings: ["settings"], qr: ["qr"], ach: ["ach"], profile: ["profile"] };
 
 export function show(name) {
   for (const id of PAGES) ui[id].hidden = !SCREENS[name].includes(id);
@@ -153,9 +153,14 @@ export function renderPicker() {
   }
 }
 
-function boardRow(rank, pseudo, best, me) {
+function boardRow(rank, pseudo, best, me, id) {
   const li = document.createElement("li");
   li.className = [me ? "me" : "", rank <= PODIUM ? "podium p" + rank : ""].join(" ").trim();
+  if (id) {
+    Object.assign(li.dataset, { id, pseudo });
+    li.tabIndex = 0;
+    li.setAttribute("role", "button");
+  }
   for (const [cls, text] of [["pos", String(rank)], ["name", pseudo], ["val", fmtCs(best)]]) {
     const span = document.createElement("span");
     span.className = cls;
@@ -197,7 +202,7 @@ export function renderBoard() {
 const overflows = (list) => list.clientHeight > 0 && list.scrollHeight > list.clientHeight + 1;
 
 function fillBoard(top, mine, me) {
-  const rows = top.map((r) => boardRow(r.rank, r.pseudo, r.best, r.me));
+  const rows = top.map((r) => boardRow(r.rank, r.pseudo, r.best, r.me, r.id));
   if (me && mine.rank && !top.some((r) => r.me)) {
     if (mine.rank > top.length + 1) {
       const gap = document.createElement("li");
@@ -205,7 +210,7 @@ function fillBoard(top, mine, me) {
       gap.textContent = "…";
       rows.push(gap);
     }
-    rows.push(boardRow(mine.rank, me.pseudo, mine.best, true));
+    rows.push(boardRow(mine.rank, me.pseudo, mine.best, true, me.id));
   }
   ui.boardList.replaceChildren(...rows);
   return rows.length;
@@ -264,7 +269,7 @@ function renderToggle(button, on, available) {
 }
 
 export function renderControls(playing) {
-  const page = !ui.info.hidden || !ui.settings.hidden || !ui.qr.hidden || !ui.ach.hidden;
+  const page = !ui.info.hidden || !ui.settings.hidden || !ui.qr.hidden || !ui.ach.hidden || !ui.profile.hidden;
   ui.infoBtn.hidden = playing || page || !ui.board.hidden;
   ui.settingsBtn.hidden = ui.infoBtn.hidden;
   const quiet = playing || page;

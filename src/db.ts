@@ -92,7 +92,7 @@ export async function entryBest(env: Env, eventId: number, playerId: string) {
   return row?.best ?? 0;
 }
 
-function cached<T>(key: string, maxAge: number, load: () => Promise<T>): Promise<T> {
+export function cached<T>(key: string, maxAge: number, load: () => Promise<T>): Promise<T> {
   const now = Date.now();
   const hit = rankingCache.get(key);
   if (hit && now - hit.at < maxAge) return Promise.resolve(hit.value as T);

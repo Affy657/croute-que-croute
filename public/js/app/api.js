@@ -122,9 +122,9 @@ export async function rename(pseudo) {
   await refreshBoard();
 }
 
-export function startRun() {
+export function startRun(body) {
   if (!canCompete()) return null;
-  return call("POST", "/api/runs").catch((e) => ({
+  return call("POST", "/api/runs", body).catch((e) => ({
     error: e.status ? e.message : "Hors ligne : score non compté",
     status: e.status
   }));

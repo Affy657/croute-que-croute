@@ -218,3 +218,74 @@
   color: var(--mustard);
   text-align: right;
 }
+
+.catalog .tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.catalog .tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--row);
+}
+
+.catalog .tile:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.catalog .tile-label {
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+
+.catalog .tile-value {
+  font-family: "Bungee", "Arial Black", sans-serif;
+  font-size: 1.3rem;
+  line-height: 1.1;
+  color: var(--mustard);
+}
+
+.catalog .tile-sub {
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+  overflow-wrap: anywhere;
+}
+
+.catalog .spark {
+  display: flex;
+  gap: 6px;
+  height: 110px;
+}
+
+.catalog .spark-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.catalog .spark-lane {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.catalog .spark-lane i {
+  display: block;
+  width: 100%;
+  border-radius: 4px 4px 2px 2px;
+  background: var(--mustard);
+}
+
+.catalog .spark-col span {
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+}
