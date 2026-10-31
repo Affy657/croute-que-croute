@@ -928,6 +928,18 @@ a.ghost {
   letter-spacing: 0.04em;
 }
 
+.menu-toast {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-width: calc(100vw - 128px);
+  margin: 0 auto;
+  text-align: center;
+  pointer-events: none;
+}
+
 .try {
   padding-inline: 1.2em;
 }
