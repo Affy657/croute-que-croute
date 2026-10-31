@@ -12,7 +12,7 @@ const SOUNDS = {
   first: [{ url: "/sfx/first.mp3", gain: 1 }]
 };
 const SFX_GAP = { near: 0.08 };
-const SESSION = "playback";
+const SESSION = "ambient";
 const VOLUME = 0.6, SFX_VOLUME = 1, SFX_LATE_MS = 300, LEVEL_S = 0.02;
 const JOIN_S = 0.015, FADE_IN_S = 0.05, STOP_S = 0.15, DRIFT = 1.5, RESYNC_S = 5;
 const MUFFLE_HZ = 320, MUFFLE_Q = 6, MUFFLE_IN_S = 0.8, MUFFLE_FAR = 0.45, MUFFLE_S = 1.5, MUFFLE_FADE_S = 1;
