@@ -440,6 +440,7 @@ const DOG_RIM = Array.from({ length: 120 }, (_, i) => {
 const DOG_BACK = DOG_RIM.map(([x, y]) => [x + 0.4, y + 0.9]), DOG_FRONT = DOG_RIM;
 
 const TOPPINGS = {
+  plain() {},
   butter(ctx, C) {
     ctx.fillStyle = "rgba(255, 200, 60, 0.45)";
     wavy(ctx, 0, 4, 10, 7, 0.12, 5);

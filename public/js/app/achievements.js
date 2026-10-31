@@ -10,7 +10,7 @@ const NEARS = [[20, "near20"]];
 const RUNS = [[10, "runs10"], [50, "runs50"], [100, "runs100"]];
 const SIX_SEVEN_S = 67, STILL_S = 3, COMBO = 5, NIGHT_UNTIL_H = 3, DECEMBER = 11, EXPRESS_CS = 200, EVENTS = 3, TOP = 10, FRIDGE = 4;
 const LIVE = ATTACKS.filter((a) => !a.lab);
-const EXTRAS = Object.keys(SPREADS).length - 1;
+const EXTRAS = Object.values(SPREADS).filter((s) => !s.free).length;
 const TOPPINGS = [[1, "top1"], [FRIDGE, "top4"], [EXTRAS, "topAll"]];
 
 export const ACHIEVEMENTS = [
@@ -138,7 +138,7 @@ function countRuns(n) {
 }
 
 export function countToppings() {
-  const n = owned().length - 1;
+  const n = owned().filter((k) => !SPREADS[k].free).length;
   for (const [k, id] of TOPPINGS) if (n >= k) unlock(id);
 }
 

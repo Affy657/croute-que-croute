@@ -59,7 +59,7 @@ function nears() {
 }
 
 function toppings() {
-  const kinds = Object.keys(SPREADS).filter((k) => k !== "butter");
+  const kinds = Object.keys(SPREADS).filter((k) => !SPREADS[k].free);
   return fold("Garnitures", count(kinds.filter(unlocked).length, kinds.length), () => body(
     bullets(
       "Une attaque à couteaux sur 10 cache un couteau garni. Frôle-le ou fais-toi tartiner par lui : sa garniture est à toi.",
