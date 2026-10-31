@@ -786,20 +786,61 @@ function sideCutlery(ctx, t, C) {
 
 const SIX_SEVEN_HZ = 2.2;
 
-function palm(ctx, x, y, side, C) {
-  const p = (dx, dy) => [x + side * dx, y + dy];
-  ctx.fillStyle = C.ink;
+const DIGITS = {
+  6(ctx) {
+    ctx.moveTo(3, -13.2);
+    ctx.quadraticCurveTo(-3.8, -11.4, -3.8, -4.2);
+    ctx.arc(0, -4.2, 3.8, Math.PI, Math.PI * 3);
+  },
+  7(ctx) {
+    ctx.moveTo(-3.8, -12.8);
+    ctx.lineTo(4, -12.8);
+    ctx.lineTo(-0.6, -0.6);
+  }
+};
+
+function digit(ctx, n, x, C) {
+  ctx.save();
+  ctx.translate(x, -1.2);
   ctx.beginPath();
-  ctx.moveTo(...p(-5.5, 1));
-  ctx.quadraticCurveTo(...p(-5, 5), ...p(1, 5));
-  ctx.quadraticCurveTo(...p(7.5, 5), ...p(8.5, -1.5));
-  ctx.quadraticCurveTo(...p(8.6, -4), ...p(6.6, -3.4));
-  ctx.quadraticCurveTo(...p(5.4, -0.6), ...p(1, -0.6));
-  ctx.quadraticCurveTo(...p(-1.6, -0.6), ...p(-2.6, -3.4));
-  ctx.quadraticCurveTo(...p(-3.6, -6.4), ...p(-5.4, -5.2));
-  ctx.quadraticCurveTo(...p(-6.8, -3.6), ...p(-5.5, 1));
+  DIGITS[n](ctx);
+  ctx.strokeStyle = C.void;
+  ctx.lineWidth = 6.4;
+  ctx.stroke();
+  ctx.strokeStyle = C.mustard;
+  ctx.lineWidth = 3.4;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function palm(ctx, side, C) {
+  const p = (dx, dy) => [side * dx, dy];
+  ctx.fillStyle = C.ink;
+  ctx.strokeStyle = C.void;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(...p(-8, 1));
+  ctx.quadraticCurveTo(...p(-8.4, -3.6), ...p(-6.4, -4.4));
+  ctx.quadraticCurveTo(...p(-4.2, -4.8), ...p(-4.4, -1.6));
+  ctx.quadraticCurveTo(...p(-4.2, 0.4), ...p(-2, 0.4));
+  ctx.lineTo(...p(4.6, 0.4));
+  ctx.quadraticCurveTo(...p(5.6, 0.2), ...p(5.6, -1.6));
+  ctx.quadraticCurveTo(...p(5.4, -6.6), ...p(8.8, -6.6));
+  ctx.quadraticCurveTo(...p(12, -6.4), ...p(11.8, -2.2));
+  ctx.quadraticCurveTo(...p(11.6, 5.8), ...p(2.4, 5.8));
+  ctx.quadraticCurveTo(...p(-4, 5.8), ...p(-8, 4.6));
   ctx.closePath();
   ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(192, 113, 47, 0.6)";
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  for (const fx of [7.4, 9.2]) {
+    ctx.moveTo(...p(fx, -6.2));
+    ctx.lineTo(...p(fx + 0.3, -3.6));
+  }
+  ctx.moveTo(...p(-7, 2.6));
+  ctx.quadraticCurveTo(...p(-5.6, 1.4), ...p(-4.6, 1.6));
   ctx.stroke();
 }
 
@@ -808,19 +849,23 @@ function sideSixSeven(ctx, t, C) {
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   for (const side of [-1, 1]) {
-    const x = side * 29, y = 3 - side * k * 5;
+    const x = side * 31, y = 5 - side * k * 6;
+    const wx = x - side * 7.6, wy = y + 3;
     ctx.beginPath();
-    ctx.moveTo(side * 16, 5);
-    ctx.quadraticCurveTo(side * 22, (y + 13) / 2 + 5, x - side * 4, y + 3);
+    ctx.moveTo(side * 17, 7);
+    ctx.quadraticCurveTo(side * 21, Math.max(wy, 7) + 7, wx, wy);
     ctx.strokeStyle = C.void;
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 5.4;
     ctx.stroke();
     ctx.strokeStyle = C.ink;
-    ctx.lineWidth = 2.6;
+    ctx.lineWidth = 3;
     ctx.stroke();
-    ctx.strokeStyle = C.void;
-    ctx.lineWidth = 1.6;
-    palm(ctx, x, y, side, C);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(-k * 0.16);
+    palm(ctx, side, C);
+    digit(ctx, side < 0 ? 6 : 7, side * 0.6, C);
+    ctx.restore();
   }
 }
 
