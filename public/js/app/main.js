@@ -17,7 +17,7 @@ import { renderGuide } from "./guide.js";
 import { renderSettings, suggestInstall, leaveSettings, testing, setInvincible } from "./settings.js";
 import { onInstallChange } from "./install.js";
 import { openCard, closeCard, drawCard, myLook, shareLook } from "./profile.js";
-import { initAccount } from "./account.js";
+import { initAccount, resetAccount } from "./account.js";
 import { finishLoading } from "./loader.js";
 import {
   ui, show, setText, setDigits, tickCountdowns, renderMenu, renderPicker, openPicker, pickerIsOpen, renderBoard, renderOver, renderOverStats, renderRival, renderKiller,
@@ -351,6 +351,7 @@ function openSettings() {
   settingsFrom = S.mode === "over" ? "over" : "menu";
   show("settings");
   renderControls(false);
+  resetAccount();
   renderSettings();
   ui.settings.scrollTop = 0;
 }
