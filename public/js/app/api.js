@@ -1,9 +1,20 @@
 import { VERSION } from "../version.js";
 import { store, session, KEYS } from "../shared/store.js";
 import { guessDevice } from "./input.js";
+import { LOCAL } from "../shared/local.js";
 
 const RELOAD_GAP = 15000;
 const SEND_TRIES = 3, SEND_GAP_MS = 1500, WAIT_GAP_MS = 5000, WAIT_MS = 120000, SEND_TIMEOUT_MS = 8000;
+
+if (LOCAL) {
+  const params = new URLSearchParams(location.search), seeded = params.get("jeton");
+  if (seeded && /^[a-f0-9]{48}$/.test(seeded)) {
+    store.set(KEYS.playerToken, seeded);
+    params.delete("jeton");
+    const rest = params.toString();
+    history.replaceState(null, "", location.pathname + (rest ? "?" + rest : "") + location.hash);
+  }
+}
 
 export const net = { token: store.get(KEYS.playerToken), board: null, offset: 0, online: true, updatePending: false };
 let localBest = parseInt(store.get(KEYS.localBest) || "0", 10) || 0;

@@ -1,7 +1,7 @@
 const CACHE = "croute-" + (new URL(self.location.href).searchParams.get("v") || "v19");
 const SHELL = [
   "/", "/style.css", "/catalog.css", "/manifest.webmanifest", "/icons/icon-192.png", "/qr.svg",
-  "/js/version.js", "/js/shared/store.js", "/js/shared/format.js", "/js/shared/palette.js",
+  "/js/version.js", "/js/shared/store.js", "/js/shared/format.js", "/js/shared/palette.js", "/js/shared/local.js",
   "/js/game/field.js", "/js/game/projectiles.js", "/js/game/attacks.js", "/js/game/solver.js", "/js/game/sim.js",
   "/js/app/api.js", "/js/app/audio.js", "/js/app/catalog.js", "/js/app/input.js", "/js/app/sprites.js", "/js/app/scene.js", "/js/app/planets.js", "/js/app/screens.js", "/js/app/install.js", "/js/app/settings.js", "/js/app/party.js", "/js/app/achievements.js", "/js/app/toppings.js", "/js/app/gear.js", "/js/app/profile.js", "/js/app/main.js"
 ];

@@ -3,6 +3,7 @@ import { PALETTE, HEAT } from "../shared/palette.js";
 import { drawTrail, drawProjectile, drawWarn, drawToast } from "./sprites.js";
 import { BODIES, PASSERS } from "./planets.js";
 import { store, KEYS } from "../shared/store.js";
+import { LOCAL } from "../shared/local.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const POP_LIFE = 0.7, PUCK_R = 30, PUCK_LIFT = 110, GRAB_S = 0.6, FIELD_FADE = 5;
@@ -11,9 +12,9 @@ const SKY_SPEED = 20, SKY_GAP = 0.5, SKY_TOP = 0.3, SKY_LOOP = SKY_GAP * TOUR.le
 const HEAT_EASE = 0.7, HEAT_LOW = 0.45, HEAT_FIELD = 0.85;
 const HINT = "Pose ton doigt où tu veux";
 const COMET_S = 9, COMET_TAIL = 0.35, COMET_ALPHA = 0.7;
-const OFTEN = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("etoiles") === "souvent";
+const OFTEN = LOCAL && new URLSearchParams(location.search).get("etoiles") === "souvent";
 const COMET_FIRST = OFTEN ? [1, 2] : [30, 180], COMET_GAP = OFTEN ? [4, 6] : [120, 240];
-const ODD = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("planetes") === "souvent";
+const ODD = LOCAL && new URLSearchParams(location.search).get("planetes") === "souvent";
 const QUALITY = [2, 1.5, 1.25, 1], REDRAW_S = [1 / 30, 1 / 20, 1 / 20, 1 / 15], SLOW_MS = 20, SAMPLE = 90, SETTLE = 60, GAP_MS = 250;
 const HEAT_RGB = HEAT.map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
 

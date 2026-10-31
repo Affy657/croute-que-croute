@@ -3,6 +3,7 @@ import { FW, FH, STEP, clamp, speedMul, SPEED_START, SPEED_HOT } from "../game/f
 import { fmtCs } from "../shared/format.js";
 import { store, KEYS } from "../shared/store.js";
 import { VERSION } from "../version.js";
+import { LOCAL } from "../shared/local.js";
 import * as api from "./api.js";
 import * as audio from "./audio.js";
 import { createScene } from "./scene.js";
@@ -42,7 +43,7 @@ let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, la
 let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
 let settingsOpen = false, settingsFrom = "menu";
 let achOpen = false, achFrom = "menu", achTimer = null;
-let cardOpen = false, historyAsked = false;
+let cardOpen = false, historyAsked = false, invincible = false;
 
 const playing = () => S.mode === "play" || S.mode === "dying";
 const elapsed = () => sim.state.t - S.t0;
@@ -144,7 +145,8 @@ function start(train = null) {
   if (S.mode === "over" && ui.again.disabled) return false;
   if (api.net.updatePending && api.applyUpdate()) return false;
   const t0 = train ? train.from : 0, y = S.mode === "menu" ? S.toast.y : S.menuY;
-  sim = createSim(Math.random, train ? { only: train.id, t0, y } : { y });
+  const immortal = () => invincible;
+  sim = createSim(Math.random, train ? { only: train.id, t0, y, immortal } : { y, immortal });
   Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.myScope(), held: false });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0, scars: [] });
   scene.clear();
@@ -544,6 +546,16 @@ for (const tab of ui.infoTabs.children) {
     infoTab = tab.dataset.tab;
     renderInfo();
   });
+}
+if (LOCAL) {
+  const god = document.createElement("button");
+  Object.assign(god, { id: "godBtn", type: "button", textContent: "Invincible" });
+  god.setAttribute("aria-pressed", "false");
+  god.addEventListener("click", () => {
+    invincible = !invincible;
+    god.setAttribute("aria-pressed", String(invincible));
+  });
+  document.body.append(god);
 }
 ui.music.addEventListener("click", audio.toggleMusic);
 ui.sfx.addEventListener("click", audio.toggleSfx);
