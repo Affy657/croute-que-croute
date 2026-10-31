@@ -1,5 +1,6 @@
 import { fmtCs, clock } from "../shared/format.js";
 import { rain, bounce } from "../app/party.js";
+import { timeout } from "../shared/timeout.js";
 
 const POLL_MS = 10000, FETCH_MS = 8000, ROWS = 10, FEED_ROWS = 4, IDLE_MS = 3000, SOON_MS = 24 * 3600 * 1000, CROWN_MS = 6000;
 const $ = (id) => document.getElementById(id);
@@ -112,8 +113,7 @@ function renderFeed(items) {
 }
 
 async function grab(path) {
-  const signal = AbortSignal.timeout ? AbortSignal.timeout(FETCH_MS) : undefined;
-  const res = await fetch(path, { cache: "no-store", signal });
+  const res = await fetch(path, { cache: "no-store", signal: timeout(FETCH_MS) });
   if (!res.ok) throw new Error(path);
   return res.json();
 }

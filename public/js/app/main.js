@@ -35,7 +35,7 @@ const scene = createScene(canvas, document.getElementById("fx"));
 let sim = createSim();
 const S = {
   mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null, chain: 0, combo: 0, nearAt: -Infinity, train: null, t0: 0,
-  newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general", held: false,
+  newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general", guess: false, held: false,
   toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35, scars: [], spread: chosen(), ...outfit() }, gotToppings: [], menuY: FH * 0.55, menuAt: 0
 };
 let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, lastShown = "";
@@ -92,7 +92,7 @@ function die(killer) {
   const device = input.device();
   api.setDevice(device);
   if (device === "pc") S.scope = "pc";
-  else if (S.scope === "pc") S.scope = api.isOpen() ? "event" : "general";
+  else if (S.scope === "pc" || S.guess) S.scope = api.isOpen() ? "event" : "general";
   input.reset();
   S.score = Math.floor(elapsed() * 100);
   audio.musicRunEnd();
@@ -147,11 +147,12 @@ function start(train = null) {
   const t0 = train ? train.from : 0, y = S.mode === "menu" ? S.toast.y : S.menuY;
   const immortal = () => testing.invincible;
   sim = createSim(Math.random, train ? { only: train.id, t0, y, immortal } : { y, immortal });
-  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, combo: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.myScope(), held: false });
+  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, combo: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.myScope(), guess: !api.net.board, held: false });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0, scars: [] });
   scene.clear();
   S.run = train ? null : api.startRun({ look: myLook() });
-  if (!train) ach.runStart(api.isOpen() && api.net.board && api.net.board.event ? String(api.net.board.event.opensAt) : null);
+  const open = api.openEvent();
+  if (!train) ach.runStart(open ? String(open.opensAt) : null);
   if (S.run) S.run.then((r) => { if (r.status === 426 && S.mode === "play") api.applyUpdate(); });
   const lead = api.leader(S.scope);
   S.goal = train ? { best: 0, lead: 0, reached: 0 } : { best: api.standing(S.scope).best, lead: S.run && lead && !lead.me ? lead.best : 0, reached: 0 };
@@ -662,3 +663,4 @@ api.refreshBoard();
 api.resumePending();
 audio.initAudio();
 requestAnimationFrame(frame);
+document.documentElement.dataset.ready = "1";

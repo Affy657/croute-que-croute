@@ -34,7 +34,7 @@ function ago(ms) {
   return "vu il y a " + Math.floor(min / 1440) + " j";
 }
 
-const SUSPECT_LABELS = { high: "à vérifier : loin devant le 2e", slow: "à vérifier : partie ralentie ou mise en pause" };
+const SUSPECT_LABELS = { high: "à vérifier : loin devant le 2e", slow: "à vérifier : partie ralentie, mise en pause ou envoyée en retard" };
 
 function say(el, text, error) {
   el.textContent = text || "";
@@ -120,7 +120,7 @@ function tick() {
 function renderPlayers() {
   const players = data ? data.players : [];
   const doubt = players.filter((p) => p.suspect && !p.banned).length;
-  say($("suspectAlert"), doubt ? (doubt > 1 ? doubt + " records à vérifier" : "1 record à vérifier") + " (trait rouge). Retire le joueur si c'est de la triche." : "", true);
+  say($("suspectAlert"), doubt ? (doubt > 1 ? doubt + " records à vérifier" : "1 record à vérifier") + " (trait rouge). Regarde le détail avant de retirer quelqu'un." : "", true);
   let rank = 0;
   $("players").replaceChildren(...players.map((p) => {
     const li = document.createElement("li");
@@ -153,14 +153,17 @@ function renderPlayers() {
 }
 
 async function load() {
+  const asked = scope;
   try {
-    data = await call("GET", "/api/admin/players" + (scope === "event" ? "" : "?scope=" + scope));
+    const next = await call("GET", "/api/admin/players" + (asked === "event" ? "" : "?scope=" + asked));
+    if (asked !== scope) return;
+    data = next;
     for (const b of document.querySelectorAll(".scope")) b.setAttribute("aria-selected", String(b.dataset.scope === scope));
     say($("playersMsg"), "");
     renderEvent();
     renderPlayers();
   } catch (e) {
-    say($("playersMsg"), e.message, true);
+    if (asked === scope) say($("playersMsg"), e.message, true);
   }
 }
 

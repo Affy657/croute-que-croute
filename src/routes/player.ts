@@ -2,14 +2,14 @@ import { json, fail, readJson, clientIp, outdated, updateRequired, tooFast, allo
 import { randomToken, sha256, matchesSecret } from "../security";
 import { cleanPseudo, pseudoKey, cleanClientId, cleanLook } from "../validate";
 import {
-  events, openEventNow, eventById, findProfile, entryBest, generalRanking, generalCount, generalRank, eventRanking, renameCached, rankIn, rivalIn,
+  events, openEventNow, eventById, findProfile, entryBest, entryMark, generalRanking, generalCount, generalRank, eventRanking, renameCached, rankIn, rivalIn,
   promoteGeneral, promoteEvent, forgetCaches, cached,
   type EventRow, type Profile, type Ranked,
 } from "../db";
 import type { Ctx } from "../router";
 
 const GRACE_MS = 5 * 60 * 1000;
-const SLACK_MS = 5000;
+const SLACK_MS = 15000;
 const MAX_SCORE = 15 * 60 * 100;
 const TOP = 50;
 const FEED_MS = 15 * 60 * 1000, FEED_SIZE = 6;
@@ -333,7 +333,9 @@ export async function finishRun({ req, env, params }: Ctx) {
   const mine = () => (eventId ? entryBest(env, eventId, me.id) : Promise.resolve(0));
   if (run.finished_at) {
     if (run.score !== score) return fail(409, "Partie déjà enregistrée.");
-    return json(await standing(env, me, eventId, keptMobile(me), keptPc(me), await mine(), false));
+    const set = (best: number, at: number | null): Mark => ({ best, at, improved: at === run.finished_at });
+    const entry = eventId ? await entryMark(env, eventId, me.id) : { best: 0, at: null };
+    return json(await standing(env, me, eventId, set(me.best, me.best_at), set(me.pc_best, me.pc_best_at), entry.best, entry.at === run.finished_at));
   }
   const elapsed = now - run.started_at;
   if (score * 10 > elapsed + SLACK_MS) return fail(422, "Score refusé.");
