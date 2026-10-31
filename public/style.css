@@ -925,6 +925,15 @@ a.ghost {
   text-align: left;
 }
 
+.board-list li[data-id] {
+  cursor: pointer;
+}
+
+.board-list li[data-id]:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
 .board-list li.me {
   background: var(--mustard);
   color: var(--void);
@@ -1000,4 +1009,17 @@ a.ghost {
 
 .board-list .val {
   font-size: 0.95rem;
+}
+
+#profile .info-head {
+  gap: 0.3rem;
+}
+
+#profile .info-head p {
+  margin: 0;
+}
+
+.profile-toast {
+  width: 240px;
+  height: 190px;
 }

@@ -15,6 +15,7 @@ import { SPREADS, GEAR } from "../shared/palette.js";
 import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./catalog.js";
 import { renderSettings, suggestInstall, leaveSettings } from "./settings.js";
 import { onInstallChange } from "./install.js";
+import { openCard, closeCard, drawCard, myLook, shareLook } from "./profile.js";
 import {
   ui, show, setText, setDigits, tickCountdowns, renderMenu, renderPicker, openPicker, pickerIsOpen, renderBoard, renderOver, renderOverStats, renderRival, renderKiller,
   renderHud, renderControls, renderAll, setBoardScope, achLabel
@@ -41,6 +42,7 @@ let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, la
 let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
 let settingsOpen = false, settingsFrom = "menu";
 let achOpen = false, achFrom = "menu", achTimer = null;
+let cardOpen = false;
 
 const playing = () => S.mode === "play" || S.mode === "dying";
 const elapsed = () => sim.state.t - S.t0;
@@ -146,7 +148,7 @@ function start(train = null) {
   Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.myScope(), held: false });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0, scars: [] });
   scene.clear();
-  S.run = train ? null : api.startRun();
+  S.run = train ? null : api.startRun({ look: myLook() });
   if (!train) ach.runStart(api.isOpen() && api.net.board && api.net.board.event ? String(api.net.board.event.opensAt) : null);
   if (S.run) S.run.then((r) => { if (r.status === 426 && S.mode === "play") api.applyUpdate(); });
   const lead = api.leader(S.scope);
@@ -269,6 +271,22 @@ function openBoard(from) {
   api.refreshBoard();
   clearInterval(boardTimer);
   boardTimer = setInterval(() => { if (!document.hidden) api.refreshBoard(); }, BOARD_POLL_MS);
+}
+
+function openBoardCard(row) {
+  cardOpen = true;
+  show("profile");
+  renderControls(false);
+  ui.profile.scrollTop = 0;
+  openCard(row.dataset.id, row.dataset.pseudo);
+}
+
+function closeBoardCard() {
+  cardOpen = false;
+  closeCard();
+  show("board");
+  renderControls(false);
+  renderBoard();
 }
 
 function closeBoard() {
@@ -451,7 +469,8 @@ function frame(now) {
     update(STEP);
     acc -= STEP;
   }
-  if (!infoOpen && !settingsOpen && !achOpen) scene.render({ clock: S.clock, world: sim.state, toast: S.mode === "over" ? null : S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null, dying: S.mode === "dying" });
+  if (cardOpen) drawCard(S.clock);
+  else if (!infoOpen && !settingsOpen && !achOpen) scene.render({ clock: S.clock, world: sim.state, toast: S.mode === "over" ? null : S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null, dying: S.mode === "dying" });
   if (playing()) {
     const cs = Math.floor(elapsed() * 100), s = fmtCs(cs);
     if (s !== lastShown) {
@@ -483,6 +502,17 @@ ui.overAchBtn.addEventListener("click", openAch);
 ui.overHome.addEventListener("click", goHome);
 ui.boardBack.addEventListener("click", closeBoard);
 for (const tab of ui.boardTabs.children) tab.addEventListener("click", () => setBoardScope(tab.dataset.scope));
+ui.boardList.addEventListener("click", (e) => {
+  const row = e.target.closest("li[data-id]");
+  if (row) openBoardCard(row);
+});
+ui.boardList.addEventListener("keydown", (e) => {
+  const row = e.target.closest("li[data-id]");
+  if (!row || (e.key !== "Enter" && e.key !== " ")) return;
+  e.preventDefault();
+  openBoardCard(row);
+});
+ui.profileBack.addEventListener("click", closeBoardCard);
 ui.infoBtn.addEventListener("click", openInfo);
 ui.infoBack.addEventListener("click", closeInfo);
 ui.closeBtn.addEventListener("click", () => (settingsOpen ? closeSettings() : achOpen ? closeAch() : closeInfo()));
@@ -560,17 +590,21 @@ document.addEventListener("visibilitychange", () => {
 });
 
 api.on("board", renderAll);
+api.on("board", shareLook);
 api.on("result", ach.afterSubmit);
 api.on("board", () => ach.onBoard(api.net.board));
 onTopping((kind) => {
   S.toast.spread = kind;
   renderPicker();
+  shareLook();
 });
 onGear((slot, kind) => {
   S.toast[slot] = kind;
   renderPicker();
+  shareLook();
 });
 ach.onUnlock((a) => {
+  shareLook();
   if (a.gear) chooseGear(GEAR[a.gear].slot, a.gear);
   if (S.mode === "play") {
     toastAch(a);
