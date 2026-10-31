@@ -1153,6 +1153,32 @@ const HATS = {
       ctx.restore();
     }
   },
+  bunny(ctx, C) {
+    ctx.strokeStyle = C.void;
+    ctx.lineWidth = 1.7;
+    for (const side of [-1, 1]) {
+      ctx.save();
+      ctx.translate(side * 8, -16);
+      ctx.rotate(side * 0.2);
+      ctx.fillStyle = FUR;
+      ctx.beginPath();
+      ctx.moveTo(-4.6, 0);
+      ctx.bezierCurveTo(-7.5, -12, -5.5, -28, 0, -28.5);
+      ctx.bezierCurveTo(5.5, -28, 7.5, -12, 4.6, 0);
+      ctx.quadraticCurveTo(0, 3, -4.6, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#f4a3c0";
+      ctx.beginPath();
+      ctx.moveTo(-2.1, -3);
+      ctx.bezierCurveTo(-3.8, -12, -2.8, -23, 0, -24);
+      ctx.bezierCurveTo(2.8, -23, 3.8, -12, 2.1, -3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  },
   witch(ctx, C) {
     ctx.translate(0, -20);
     ctx.rotate(-0.14);
