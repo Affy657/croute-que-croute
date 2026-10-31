@@ -52,13 +52,14 @@ export const SKY = {
     sideLight: "#a77c47", side: "#6f3d1a", topLight: "#b19666", top: "#9c6e39",
     glazeLight: "#789a38", glaze: "#396318", jarLight: "#9a2a3f", jar: "#580d1e", jam: "#440917"
   },
+  violet: { band: "#a77fe0", storm: "rgba(255, 207, 51, 0.4)" },
   green: { light: "#4f9a55", dark: "#122b1c", band: "#a6d16a", ring: "#c8d65a" },
   speakers: {
     base: "#74419f", land: "#4f9a3f", landEdge: "#2f6526",
     box: "#1a1030", rim: "#4e3f75", rimLight: "#9583bd", cone: "#3d3060", wave: "#a77fd0"
   },
-  moons: { light: "#5fa85a", dark: "#143320", spot: "#2c6435" },
-  rock: { light: "#bf6a2c", dark: "#341910", spot: "#713617" },
+  moons: { light: "#5fa85a", dark: "#143320", crater: "#2c6435", floor: "#468a48" },
+  rock: { light: "#bf6a2c", dark: "#341910", crater: "#713617", floor: "#9c4f22" },
   tung: { light: "#e6bd85", wood: "#bf8a4c", dark: "#6b4421", grain: "#7d5129", bat: "#f0d3a0", batDark: "#b58a52", eye: "#fff6e0", nose: "#8a5a2e" },
   toaster: {
     sky: "#2c2650", skyLight: "#928bc2", horizon: "#d9d3f2", ground: "#1f1a35", groundLight: "#5c5487", rim: "rgba(13, 11, 36, 0.6)", shine: "#ffffff",
@@ -73,7 +74,6 @@ export const SKY = {
     box: "#0f1c2e", rim: "#3e6f8a", rimLight: "#8fd0e0", cone: "#25455c", wave: "#6fe0d8"
   },
   pumpkin: { light: "#ffb54d", mid: "#f07a12", dark: "#9c3f08", rib: "#b8520c", stem: "#6b7a2a", glow: "#ffe27a", deep: "#ff8a1a", stick: "#8a5a2e", straw: "#e0b35a", spill: "rgba(255, 214, 110, 0.4)", spillOut: "rgba(255, 214, 110, 0)" },
-  bauble: { light: "#ff5a64", dark: "#6e0c1f", gold: "#f2c14e", goldDark: "#a87a1c", thread: "rgba(242, 193, 78, 0)", snow: "#ffffff" },
   melies: {
     light: "#f7f0de", dark: "#8f8468", spot: "#c9bd9c", shadow: "#6e624a", cheek: "#fffaf0", feature: "#4f4032", mouth: "#3a2a22", eye: "#fffdf4",
     goo: "#fff8e6", gooEdge: "#c9bfa6", cloud: "#f2ecdc", cloudDark: "#a89f8a", rocketLight: "#eef1f6", rocketDark: "#6f7686", window: "#2f3a5a"
