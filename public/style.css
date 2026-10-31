@@ -399,23 +399,6 @@ h2.page-title {
   transform: translateX(-2px) rotate(-135deg);
 }
 
-.cue .pick {
-  opacity: 0.8;
-  animation: cue-left 1.6s ease-in-out infinite;
-}
-
-.cue .pick.next {
-  animation-name: cue-right;
-}
-
-@keyframes cue-left {
-  50% { translate: -4px 0; }
-}
-
-@keyframes cue-right {
-  50% { translate: 4px 0; }
-}
-
 .pick:active,
 .pick-sm:active {
   transform: scale(0.92);
@@ -475,22 +458,25 @@ h2.page-title {
   color: var(--ink);
 }
 
-.pick-name.hint {
-  left: 16px;
-  right: 16px;
-  color: var(--mustard);
-  animation: hint-bob 1.6s ease-in-out infinite;
+.pick-skins {
+  position: absolute;
+  top: calc(var(--drop) - 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-height: 38px;
+  padding: 0.3em 1.3em;
+  font-size: 0.8rem;
 }
 
-@keyframes hint-bob {
-  50% { transform: translateY(-3px); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pick-name.hint,
-  .cue .pick {
-    animation: none;
-  }
+.pick-dot {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--void);
+  border-radius: 50%;
+  background: var(--mustard);
 }
 
 .cta {

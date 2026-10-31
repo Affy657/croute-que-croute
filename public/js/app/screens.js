@@ -4,15 +4,12 @@ import { prefs, musicAvailable } from "./audio.js";
 import { progress } from "./achievements.js";
 import { PROJECTILES } from "../game/projectiles.js";
 import { GEAR, SLOTS, SPREADS } from "../shared/palette.js";
-import { owned, chosen, hintSeen, seeHint } from "./toppings.js";
+import { owned, chosen } from "./toppings.js";
 import { store, KEYS } from "../shared/store.js";
 import { gearOwned, gearTotal, chosenGear } from "./gear.js";
 
 const $ = (id) => document.getElementById(id);
 const BOARD_TOP = 30, PODIUM = 3;
-const HINT_TEXT = "Touche ta tartine pour changer de garniture";
-const HINT_GEAR = "Touche ta tartine pour changer d'accessoire";
-const HINT_NEW = "Nouveau ! Touche ta tartine pour l'essayer";
 
 export const ui = {
   menu: $("menu"), over: $("over"), board: $("board"), hud: $("hud"), time: $("time"), hudBest: $("hudBest"),
@@ -35,7 +32,7 @@ export const ui = {
   qr: $("qr"), qrHost: $("qrHost"), qrCopy: $("qrCopy"), qrBack: $("qrBack"),
   ach: $("ach"), achCount: $("achCount"), achList: $("achList"), achBack: $("achBack"), achToast: $("achToast"), holdHint: $("holdHint"), overAch: $("overAch"), overTry: $("overTry"), musicVol: $("musicVol"), sfxVol: $("sfxVol"), sensVol: $("sensVol"), mouseRow: $("mouseRow"), mouseTabs: $("mouseTabs"), mouseHint: $("mouseHint"),
   renameCard: $("renameCard"), renameForm: $("renameForm"), newPseudo: $("newPseudo"), renameNote: $("renameNote"),
-  picker: $("picker"), pickToast: $("pickToast"), pickLabel: $("pickLabel"), pickPrev: $("pickPrev"), pickNext: $("pickNext"), pickName: $("pickName"), pickCount: $("pickCount"),
+  picker: $("picker"), pickToast: $("pickToast"), pickLabel: $("pickLabel"), pickPrev: $("pickPrev"), pickNext: $("pickNext"), pickName: $("pickName"), pickCount: $("pickCount"), pickSkins: $("pickSkins"), pickDot: $("pickDot"),
   gearRows: $("gearRows"), profile: $("profile"), profileName: $("profileName"), profileBack: $("profileBack"), testCard: $("testCard"), godTabs: $("godTabs"), godPill: $("godPill"),
   installPop: $("installPop"), installPopText: $("installPopText"), installYes: $("installYes"), installLater: $("installLater")
 };
@@ -147,26 +144,23 @@ const seenCount = () => Number(store.get(KEYS.outfitSeen)) || 0;
 
 export function openPicker(open) {
   pickerOpen = open;
-  if (open) {
-    seeHint();
-    store.set(KEYS.outfitSeen, outfitCount());
-  }
+  if (open) store.set(KEYS.outfitSeen, outfitCount());
   renderPicker();
 }
 
 export function renderPicker() {
   const list = owned(), gears = Object.keys(SLOTS).some((s) => gearOwned(s).length), spreads = list.length > 1;
-  if (store.get(KEYS.outfitSeen) === null && hintSeen()) store.set(KEYS.outfitSeen, outfitCount());
-  const fresh = !pickerOpen && hintSeen() && outfitCount() > seenCount(), hint = !pickerOpen && (!hintSeen() || fresh), cue = !pickerOpen && (spreads || gears);
+  if (store.get(KEYS.outfitSeen) === null) store.set(KEYS.outfitSeen, outfitCount());
+  const fresh = !pickerOpen && outfitCount() > seenCount();
   ui.picker.hidden = needJoin() || (!spreads && !gears);
-  ui.picker.classList.toggle("cue", cue);
   ui.pickToast.setAttribute("aria-expanded", String(pickerOpen));
-  ui.pickPrev.hidden = ui.pickNext.hidden = !cue && (!pickerOpen || !spreads);
-  for (const b of [ui.pickPrev, ui.pickNext]) b.setAttribute("aria-label", cue ? "Changer de tenue" : b === ui.pickPrev ? "Garniture précédente" : "Garniture suivante");
-  ui.pickLabel.hidden = hint ? false : !pickerOpen || !spreads;
-  ui.pickLabel.classList.toggle("hint", hint);
-  ui.pickName.textContent = fresh ? HINT_NEW : hint ? (spreads ? HINT_TEXT : HINT_GEAR) : SPREADS[chosen()].name;
-  ui.pickCount.textContent = hint ? "" : list.length + "/" + Object.keys(SPREADS).length;
+  ui.pickSkins.hidden = pickerOpen;
+  ui.pickDot.hidden = !fresh;
+  ui.pickSkins.setAttribute("aria-label", fresh ? "Skins, nouveau skin gagné" : "Skins");
+  ui.pickPrev.hidden = ui.pickNext.hidden = !pickerOpen || !spreads;
+  ui.pickLabel.hidden = !pickerOpen || !spreads;
+  ui.pickName.textContent = SPREADS[chosen()].name;
+  ui.pickCount.textContent = list.length + "/" + Object.keys(SPREADS).length;
   ui.gearRows.hidden = !pickerOpen;
   ui.menu.classList.toggle("dressing", pickerOpen && gears);
   for (const row of ui.gearRows.children) {
