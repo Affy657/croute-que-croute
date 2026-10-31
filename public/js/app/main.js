@@ -3,7 +3,6 @@ import { FW, FH, STEP, clamp, speedMul, SPEED_START, SPEED_HOT } from "../game/f
 import { fmtCs } from "../shared/format.js";
 import { store, KEYS } from "../shared/store.js";
 import { VERSION } from "../version.js";
-import { LOCAL } from "../shared/local.js";
 import * as api from "./api.js";
 import * as audio from "./audio.js";
 import { createScene } from "./scene.js";
@@ -14,7 +13,7 @@ import { chosen, unlockTopping, chooseTopping, onTopping, stepTopping } from "./
 import { outfit, chooseGear, chosenGear, onGear, stepGear } from "./gear.js";
 import { SPREADS, GEAR } from "../shared/palette.js";
 import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./catalog.js";
-import { renderSettings, suggestInstall, leaveSettings } from "./settings.js";
+import { renderSettings, suggestInstall, leaveSettings, testing, setInvincible } from "./settings.js";
 import { onInstallChange } from "./install.js";
 import { openCard, closeCard, drawCard, myLook, shareLook } from "./profile.js";
 import {
@@ -43,7 +42,7 @@ let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, la
 let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
 let settingsOpen = false, settingsFrom = "menu";
 let achOpen = false, achFrom = "menu", achTimer = null;
-let cardOpen = false, historyAsked = false, invincible = false;
+let cardOpen = false, historyAsked = false;
 
 const playing = () => S.mode === "play" || S.mode === "dying";
 const elapsed = () => sim.state.t - S.t0;
@@ -145,7 +144,7 @@ function start(train = null) {
   if (S.mode === "over" && ui.again.disabled) return false;
   if (api.net.updatePending && api.applyUpdate()) return false;
   const t0 = train ? train.from : 0, y = S.mode === "menu" ? S.toast.y : S.menuY;
-  const immortal = () => invincible;
+  const immortal = () => testing.invincible;
   sim = createSim(Math.random, train ? { only: train.id, t0, y, immortal } : { y, immortal });
   Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.myScope(), held: false });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0, scars: [] });
@@ -161,6 +160,7 @@ function start(train = null) {
   show("play");
   renderControls(true);
   renderHud();
+  ui.godPill.hidden = !testing.invincible;
   if (train) ui.hudBest.textContent = "Entraînement : " + train.name;
   avoidHud();
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
@@ -178,10 +178,10 @@ function textWidth(el, text) {
 }
 
 function avoidHud() {
-  const t = ui.time.getBoundingClientRect(), b = ui.hudBest.getBoundingClientRect();
-  const half = Math.max(textWidth(ui.time, HUD_WIDEST), textWidth(ui.hudBest, ui.hudBest.textContent)) / 2 + HUD_PAD;
+  const t = ui.time.getBoundingClientRect(), b = ui.hudBest.getBoundingClientRect(), g = ui.godPill.hidden ? null : ui.godPill.getBoundingClientRect();
+  const half = Math.max(textWidth(ui.time, HUD_WIDEST), textWidth(ui.hudBest, ui.hudBest.textContent), g ? g.width : 0) / 2 + HUD_PAD;
   const mid = (t.left + t.right) / 2;
-  scene.avoid({ left: mid - half, right: mid + half, bottom: Math.max(t.bottom, b.bottom) + HUD_PAD });
+  scene.avoid({ left: mid - half, right: mid + half, bottom: Math.max(t.bottom, b.bottom, g ? g.bottom : 0) + HUD_PAD });
 }
 
 window.addEventListener("resize", () => {
@@ -547,16 +547,11 @@ for (const tab of ui.infoTabs.children) {
     renderInfo();
   });
 }
-if (LOCAL) {
-  const god = document.createElement("button");
-  Object.assign(god, { id: "godBtn", type: "button", textContent: "Invincible" });
-  god.setAttribute("aria-pressed", "false");
-  god.addEventListener("click", () => {
-    invincible = !invincible;
-    god.setAttribute("aria-pressed", String(invincible));
-  });
-  document.body.append(god);
-}
+ui.godPill.addEventListener("click", () => {
+  setInvincible(false);
+  ui.godPill.hidden = true;
+  avoidHud();
+});
 ui.music.addEventListener("click", audio.toggleMusic);
 ui.sfx.addEventListener("click", audio.toggleSfx);
 

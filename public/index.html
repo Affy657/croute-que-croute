@@ -24,6 +24,7 @@
 <div id="hud" hidden>
   <div id="time" class="digits">0,00</div>
   <div id="hudBest"></div>
+  <button id="godPill" class="ach-toast god-pill" type="button" aria-label="Enlever le mode invincible" hidden>Invincible ✕</button>
   <p id="achToast" class="ach-toast" hidden></p>
   <p id="holdHint" class="ach-toast" hidden>Touche pour reprendre</p>
 </div>
@@ -193,6 +194,17 @@
         </div>
       </div>
       <p id="mouseHint" class="sub" hidden></p>
+    </section>
+    <section id="testCard" class="card" hidden>
+      <h2>Mode test</h2>
+      <div class="slider">
+        <span>Invincible</span>
+        <div id="godTabs" class="board-tabs" role="tablist" aria-label="Invincible">
+          <button type="button" role="tab" data-god="0" aria-selected="true">Non</button>
+          <button type="button" role="tab" data-god="1" aria-selected="false">Oui</button>
+        </div>
+      </div>
+      <p class="sub">Seulement en local. En partie, touche « Invincible » sous le chrono pour l'enlever.</p>
     </section>
     <section id="installCard" class="card">
       <h2>Installer le jeu</h2>
