@@ -7,7 +7,7 @@ import { LOCAL } from "../shared/local.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const POP_LIFE = 0.7, PUCK_R = 30, PUCK_LIFT = 110, GRAB_S = 0.6, FIELD_FADE = 5;
-const TOUR = ["rare", "normal", "wild", "normal", "normal", "normal", "wild", "normal"], SIDES = [0.8, 0.22], TOUCH_REACH = 1.8;
+const TOUR = ["rare", "normal", "wild", "normal", "normal", "normal", "wild", "normal"], SIDES = [0.8, 0.22], TOUCH_REACH = 1.8, PASSER_REACH = 0.6;
 const SKY_SPEED = 20, SKY_GAP = 0.5, SKY_TOP = 0.3, SKY_LOOP = SKY_GAP * TOUR.length;
 const HEAT_EASE = 0.7, HEAT_LOW = 0.45, HEAT_FIELD = 0.85;
 const HINT = "Pose ton doigt où tu veux";
@@ -174,9 +174,16 @@ export function createScene(canvas, overlay) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
+  function passerAt(x, y) {
+    if (!comet) return null;
+    const { W, H } = view, u = Math.min(W, H), c = comet, P = PASSERS[c.kind];
+    const cx = (c.x0 + (c.x1 - c.x0) * c.k) * W, cy = (c.y0 + (c.y1 - c.y0) * c.k) * H;
+    return Math.hypot(x - cx, y - cy) < u * P.size * (P.span || 1) * PASSER_REACH ? { key: c.kind } : null;
+  }
+
   function bodyAt(x, y) {
     const { W, H } = view, u = Math.min(W, H);
-    return slots.find((b, i) => b && Math.hypot(x - W * SIDES[i % 2], y - skyY(i) * H) < b.r * u * Math.min(b.reach, TOUCH_REACH)) || null;
+    return slots.find((b, i) => b && Math.hypot(x - W * SIDES[i % 2], y - skyY(i) * H) < b.r * u * Math.min(b.reach, TOUCH_REACH)) || passerAt(x, y);
   }
 
   function newComet() {
