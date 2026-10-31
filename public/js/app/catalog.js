@@ -20,14 +20,14 @@ const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const previews = [];
 let running = false;
 
-function el(tag, cls, text) {
+export function el(tag, cls, text) {
   const node = document.createElement(tag);
   if (cls) node.className = cls;
   if (text !== undefined) node.textContent = text;
   return node;
 }
 
-function canvas(w, h) {
+export function canvas(w, h) {
   const c = document.createElement("canvas");
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   c.width = Math.round(w * dpr);
@@ -207,7 +207,7 @@ const SPEED = [[260, "très rapide"], [200, "rapide"], [140, "moyenne"], [0, "le
 const BREAK = [[1.75, "long"], [1.25, "moyen"], [0, "court"]];
 const level = (value, steps) => steps.find(([min]) => value >= min)[1];
 
-function stat(label, value) {
+export function stat(label, value) {
   const row = el("div", "fact");
   row.append(el("span", "label", label), el("span", "value", value));
   return row;
@@ -229,8 +229,28 @@ function openOnly(card) {
   if (card.open) return;
   const scroller = card.closest(".info-screen");
   const top = card.getBoundingClientRect().top;
-  for (const p of previews) p.card.open = false;
+  for (const other of card.parentElement.children) if (other !== card && other.open) other.open = false;
   if (scroller) scroller.scrollTop += card.getBoundingClientRect().top - top;
+}
+
+export function fold(title, tag, content) {
+  const card = el("details", "card fold");
+  const head = el("summary", "fold-head");
+  head.append(el("h2", null, title));
+  if (tag) head.append(tag);
+  card.append(head);
+  let build = typeof content === "function" ? content : null;
+  if (!build) card.append(content);
+  head.addEventListener("click", () => openOnly(card));
+  card.addEventListener("toggle", () => {
+    if (!card.open) return;
+    if (build) {
+      card.append(build());
+      build = null;
+    }
+    card.scrollIntoView({ block: "nearest", behavior: SCROLL });
+  });
+  return card;
 }
 
 export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
@@ -238,9 +258,6 @@ export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
   const total = live.reduce((s, a) => s + a.weight, 0);
   previews.length = 0;
   const cards = ATTACKS.filter((a) => showLab || !a.lab).map((attack) => {
-    const card = el("details", "card attack");
-    const head = el("summary", "attack-head");
-    head.append(el("h2", null, attack.name), attack.lab ? el("span", "badge lab", "Prototype") : el("span", "attack-when", `${attack.from} s`));
     const body = el("div", "attack-body");
     const cv = canvas(FW * PREVIEW_SCALE, FH * PREVIEW_SCALE);
     const facts = el("div", "facts");
@@ -259,14 +276,11 @@ export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
       text.append(go);
     }
     body.append(cv, text);
-    card.append(head, body);
+    const card = fold(attack.name, attack.lab ? el("span", "badge lab", "Prototype") : el("span", "fold-tag", `${attack.from} s`), body);
     const p = { attack, card, cv, ctx: cv.getContext("2d") };
     restart(p);
-    head.addEventListener("click", () => openOnly(card));
     card.addEventListener("toggle", () => {
-      if (!card.open) return;
-      restart(p);
-      card.scrollIntoView({ block: "nearest", behavior: SCROLL });
+      if (card.open) restart(p);
     });
     previews.push(p);
     return card;

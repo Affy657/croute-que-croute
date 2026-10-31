@@ -1096,18 +1096,22 @@ function melies(ctx, r, clock) {
 
 export const BODIES = {
   normal: [{ draw: purple, r: 0.13, reach: 1.7 }, { draw: moons, r: 0.045, reach: 3.1 }, { draw: green, r: 0.1, reach: 1.7 }, { draw: rock, r: 0.05, reach: 1.1 }],
-  wild: [{ draw: pancake, r: 0.12, reach: 1.5 }, { draw: speakers, r: 0.11, reach: 1.7 }, { draw: bass, r: 0.11, reach: 1.8 }],
+  wild: [
+    { draw: pancake, name: "Planète pancake", r: 0.12, reach: 1.5 }, { draw: speakers, name: "Planète enceintes", r: 0.11, reach: 1.7 },
+    { draw: bass, name: "Planète bleu canard", r: 0.11, reach: 1.8 }
+  ],
   rare: [
-    { draw: stage, r: 0.05, reach: 3.9 }, { draw: cheese, r: 0.1, reach: 1.5 }, { draw: toaster, r: 0.1, reach: 1.9 },
-    { draw: pumpkin, r: 0.09, reach: 2.1 }, { draw: melies, r: 0.1, reach: 1.4 }
+    { draw: stage, name: "Tung Tung Tung Sahur", r: 0.05, reach: 3.9 }, { draw: cheese, name: "Lune en fromage", r: 0.1, reach: 1.5 },
+    { draw: toaster, name: "Grille-pain", r: 0.1, reach: 1.9 },
+    { draw: pumpkin, name: "Citrouille", r: 0.09, reach: 2.1 }, { draw: melies, name: "Lune de Méliès", r: 0.1, reach: 1.4 }
   ]
 };
 
 const SANS = "Arial, Helvetica, sans-serif", SERIF = "Georgia, 'Times New Roman', serif";
 
 const CANS = {
-  "86": { edge: "#031722", mid: "#1f4458", lid: "#d8c48a", decor: eightSix },
-  maxi: { edge: "#012b17", mid: "#0c7d52", lid: "#d3d7de", decor: maximator }
+  "86": { name: "8.6 Original", edge: "#031722", mid: "#1f4458", lid: "#d8c48a", decor: eightSix },
+  maxi: { name: "Maximator", edge: "#012b17", mid: "#0c7d52", lid: "#d3d7de", decor: maximator }
 };
 
 function label(ctx, text, y, size, color, max, font = "bold " + size + "px " + SANS) {
@@ -1518,7 +1522,7 @@ function saucer(ctx, s, clock) {
 }
 
 export const PASSERS = {
-  ...Object.fromEntries(Object.keys(CANS).map((kind) => [kind, { draw: (ctx, s) => drawCan(ctx, kind, s), size: 0.13, trail: streak, spin: 1 }])),
-  tesla: { draw: roadster, size: 0.17, spin: 0.35 },
-  saucer: { draw: saucer, size: 0.15, flat: true }
+  ...Object.fromEntries(Object.keys(CANS).map((kind) => [kind, { name: CANS[kind].name, draw: (ctx, s) => drawCan(ctx, kind, s), size: 0.13, trail: streak, spin: 1 }])),
+  tesla: { name: "Tesla dans l'espace", draw: roadster, size: 0.17, spin: 0.35 },
+  saucer: { name: "Soucoupe volante", draw: saucer, size: 0.15, flat: true }
 };

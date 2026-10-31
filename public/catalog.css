@@ -115,14 +115,14 @@
   color: var(--ink-dim);
 }
 
-.catalog .attack {
+.catalog .fold {
   display: block;
   padding: 0;
   scroll-margin-top: 140px;
   scroll-margin-bottom: 16px;
 }
 
-.catalog .attack-head {
+.catalog .fold-head {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -135,16 +135,16 @@
   touch-action: manipulation;
 }
 
-.catalog .attack-head::-webkit-details-marker {
+.catalog .fold-head::-webkit-details-marker {
   display: none;
 }
 
-.catalog .attack-head h2 {
+.catalog .fold-head h2 {
   flex: 1;
   min-width: 0;
 }
 
-.catalog .attack-head::after {
+.catalog .fold-head::after {
   content: "";
   flex: none;
   width: 8px;
@@ -156,16 +156,16 @@
   transition: transform 0.2s ease;
 }
 
-.catalog .attack[open] .attack-head::after {
+.catalog .fold[open] .fold-head::after {
   transform: translateY(2px) rotate(-135deg);
 }
 
-.catalog .attack-head:focus-visible {
+.catalog .fold-head:focus-visible {
   outline: 3px solid var(--ink);
   outline-offset: -3px;
 }
 
-.catalog .attack-when {
+.catalog .fold-tag {
   font-family: var(--font-display);
   font-size: 0.85rem;
   color: var(--ink-dim);
@@ -191,6 +191,39 @@
 .catalog .badge.lab {
   background: transparent;
   border: 2px dashed var(--ink-dim);
+  color: var(--ink-dim);
+}
+
+.catalog .fold-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px 16px;
+}
+
+.catalog h3 {
+  margin: 4px 0 -4px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}
+
+.catalog .gallery.tight {
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+}
+
+.catalog .gallery.tight .name {
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+.catalog .weapon.locked canvas {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.catalog .weapon.locked .name {
   color: var(--ink-dim);
 }
 
