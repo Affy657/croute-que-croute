@@ -148,12 +148,17 @@
 
 <section id="profile" class="screen info-screen" hidden>
   <div class="info-bar info-head">
-    <h2 id="profileName" class="page-title"></h2>
-    <p id="profileSince" class="eyebrow"></p>
-    <p id="profileLast" class="eyebrow" hidden></p>
+    <h2 id="profileName" class="page-title" tabindex="-1"></h2>
+    <p id="profileSince" class="profile-meta"></p>
+    <p id="profileLast" class="profile-meta" hidden></p>
   </div>
-  <canvas id="profileToast" class="profile-toast" aria-hidden="true" hidden></canvas>
-  <div id="profileBody" class="catalog info-body"></div>
+  <div class="profile-grid">
+    <div class="profile-hero">
+      <canvas id="profileToast" class="profile-toast" aria-hidden="true"></canvas>
+      <div id="profileRanks" class="profile-ranks"></div>
+    </div>
+    <div id="profileBody" class="catalog info-body"></div>
+  </div>
   <button id="profileBack" class="cta back" type="button">Retour</button>
 </section>
 

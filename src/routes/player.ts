@@ -225,7 +225,12 @@ async function loadCard(env: Env, id: string) {
     )
       .bind(p.id, SIX_SEVEN_CS)
       .first<{ total: number | null; last: number | null; low: number | null; round: number | null; six: number | null }>(),
-    env.DB.prepare("SELECT score, device, finished_at AS at FROM runs WHERE player_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT ?")
+    env.DB.prepare(
+      `SELECT score, device, at FROM (
+         SELECT score, device, finished_at AS at, ROW_NUMBER() OVER (PARTITION BY device IS 'pc' ORDER BY finished_at DESC) AS n
+         FROM runs WHERE player_id = ?1 AND finished_at IS NOT NULL
+       ) WHERE n <= ?2 ORDER BY at ASC`,
+    )
       .bind(p.id, CARD_RUNS)
       .all<{ score: number; device: string | null; at: number }>(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM entries WHERE player_id = ? AND run_count > 0").bind(p.id).first<{ n: number }>(),
@@ -241,6 +246,8 @@ async function loadCard(env: Env, id: string) {
       .all<{ name: string; closesAt: number; place: number }>(),
   ]);
   const now = Date.now(), places = top.results;
+  const closed = (e: { closesAt: number }) => now > e.closesAt + GRACE_MS;
+  const bestPlace = places.find((e) => e.place === places[0].place && closed(e)) ?? places[0];
   return {
     pseudo: p.pseudo,
     joinedAt: p.created_at,
@@ -253,16 +260,16 @@ async function loadCard(env: Env, id: string) {
     pcCount,
     runs: p.run_count,
     played: totals?.total ?? 0,
-    recent: recent.results.reverse().map((r) => ({ score: r.score, pc: r.device === "pc" })),
+    recent: recent.results.map((r) => ({ score: r.score, pc: r.device === "pc", at: r.at })),
     events: played?.n ?? 0,
-    eventBest: places[0] ? { name: places[0].name, place: places[0].place } : null,
+    eventBest: bestPlace ? { name: bestPlace.name, place: bestPlace.place, live: !closed(bestPlace) } : null,
     look: p.look ? JSON.parse(p.look) : null,
     feats: {
       express: totals?.low != null && totals.low < EXPRESS_CS,
       round: !!totals?.round,
       sixSeven: !!totals?.six,
       top10: places.some((e) => e.place <= EVENT_TOP),
-      eventWin: places.some((e) => e.place === 1 && now > e.closesAt + GRACE_MS),
+      eventWin: places.some((e) => e.place === 1 && closed(e)),
     },
   };
 }

@@ -6,13 +6,13 @@ import { outfit, gearOwned, gearTotal } from "./gear.js";
 import { chosen, owned } from "./toppings.js";
 import { progress } from "./achievements.js";
 
-const SEND_MS = 1500, TOAST_SCALE = 2.2, TOAST_Y = 0.58, BAR_MIN = 6;
+const SEND_MS = 1500, TOAST_SCALE = 2.2, TOAST_Y = 0.58, BAR_MIN = 6, PODIUM = 3, BLANK = " ";
 const SHELVES = [["head", "Chapeaux"], ["side", "Côtés"], ["bread", "Pains"], ["spread", "Garnitures"]];
 const $ = (id) => document.getElementById(id);
-const ui = { name: $("profileName"), since: $("profileSince"), last: $("profileLast"), canvas: $("profileToast"), body: $("profileBody") };
+const ui = { name: $("profileName"), since: $("profileSince"), last: $("profileLast"), canvas: $("profileToast"), ranks: $("profileRanks"), body: $("profileBody") };
 const ctx = ui.canvas.getContext("2d");
 const toast = { x: 0, y: 0, tilt: 0, thrust: 0.35, scars: [], spread: "butter", head: null, side: null, bread: null };
-let shown = null, sent = null, timer = null;
+let shown = null, sent = null, timer = null, ready = false;
 
 export function myLook() {
   const own = Object.fromEntries(Object.keys(SLOTS).map((slot) => [slot, gearOwned(slot).length]));
@@ -37,10 +37,10 @@ function el(tag, cls, text) {
   return node;
 }
 
-function tile(label, value, sub) {
+function tile(label, value, ...subs) {
   const node = el("div", "tile");
   node.append(el("span", "tile-label", label), el("span", "tile-value", value));
-  if (sub) node.append(el("span", "tile-sub", sub));
+  for (const sub of subs) node.append(el("span", "tile-sub", sub));
   return node;
 }
 
@@ -56,16 +56,38 @@ function tiles(...list) {
   return node;
 }
 
-function spark(recent) {
-  const top = Math.max(...recent.map((r) => r.score), 1);
+function rankBadge(label, best, rank, count) {
+  const node = el("div", "rank" + (rank && rank <= PODIUM ? " p" + rank : ""));
+  if (rank) {
+    const place = el("span", "rank-place", ord(rank));
+    place.append(el("small", null, "/ " + count));
+    node.append(place);
+  }
+  node.append(el("span", "rank-time", fmtCs(best) + " s"), el("span", "rank-label", label));
+  return node;
+}
+
+function spark(runs, best) {
+  const top = Math.max(...runs.map((r) => r.score), 1);
   const node = el("div", "spark");
-  node.append(...recent.map((r) => {
-    const col = el("div", "spark-col"), lane = el("div", "spark-lane"), bar = el("i");
+  node.append(...runs.map((r, i) => {
+    const col = el("div", i === runs.length - 1 ? "spark-col last" : "spark-col"), lane = el("div", "spark-lane"), bar = el("i", r.score >= best ? "best" : null);
     bar.style.height = Math.max(BAR_MIN, (r.score / top) * 100) + "%";
     lane.append(bar);
     col.append(lane, el("span", null, String(Math.floor(r.score / 100))));
     return col;
   }));
+  return node;
+}
+
+function progression(c) {
+  if (!c.recent.length) return null;
+  const of = (pc) => c.recent.filter((r) => r.pc === pc);
+  let pc = c.recent[c.recent.length - 1].pc, runs = of(pc);
+  if (runs.length < 2) runs = of((pc = !pc));
+  if (runs.length < 2) return null;
+  const node = card("Progression", spark(runs, pc ? c.pcBest : c.best));
+  node.firstChild.append(el("span", "card-tag", pc ? "PC" : "Mobile"));
   return node;
 }
 
@@ -87,8 +109,12 @@ function since(ms) {
   return "Depuis le " + d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: year ? "numeric" : undefined });
 }
 
-const place = (rank, count) => (rank ? ord(rank) + " / " + count : "");
 const shelfTotal = (slot) => (slot === "spread" ? Object.keys(SPREADS).length : gearTotal(slot));
+
+function showToast(on) {
+  ready = on;
+  ui.canvas.classList.toggle("off", !on);
+}
 
 function render(c) {
   ui.name.textContent = c.pseudo;
@@ -96,15 +122,18 @@ function render(c) {
   ui.last.textContent = c.lastAt ? "Dernière partie " + ago(c.now - c.lastAt) : "";
   ui.last.hidden = !c.lastAt;
   Object.assign(toast, { spread: "butter", head: null, side: null, bread: null }, c.look ? { spread: c.look.spread || "butter", head: c.look.head, side: c.look.side, bread: c.look.bread } : {});
-  ui.canvas.hidden = false;
-  const records = c.best || c.pcBest
-    ? tiles(c.best ? tile("Mobile", fmtCs(c.best) + " s", place(c.rank, c.count)) : null, c.pcBest ? tile("PC", fmtCs(c.pcBest) + " s", place(c.pcRank, c.pcCount)) : null)
-    : el("p", "sub", "Pas encore de record");
+  showToast(true);
+  const ranks = [c.best ? rankBadge("Mobile", c.best, c.rank, c.count) : null, c.pcBest ? rankBadge("PC", c.pcBest, c.pcRank, c.pcCount) : null].filter(Boolean);
+  ui.ranks.replaceChildren(...(ranks.length ? ranks : [el("p", "note", "Pas encore de record")]));
+  const e = c.eventBest;
   const cards = [
-    card("Records", records),
-    card("Parties", tiles(tile("Parties", String(c.runs)), tile("Temps joué", duration(c.played)))),
-    c.recent.length > 1 ? card("Progression", spark(c.recent)) : null,
-    card("Soirées", tiles(tile("Soirées", String(c.events)), c.eventBest ? tile("Meilleure place", ord(c.eventBest.place), c.eventBest.name) : null))
+    card("Parties", tiles(
+      tile("Jouées", String(c.runs)),
+      tile("Temps de jeu", duration(c.played)),
+      tile("Soirées", String(c.events)),
+      e ? tile("Meilleure place", ord(e.place), ...(e.live ? [e.name, "En cours"] : [e.name])) : null
+    )),
+    progression(c)
   ];
   if (c.look) {
     const shelves = SHELVES.map(([slot, label]) => tile(label, Math.min(c.look.own[slot], shelfTotal(slot)) + "/" + shelfTotal(slot)));
@@ -113,25 +142,46 @@ function render(c) {
   ui.body.replaceChildren(...cards.filter(Boolean));
 }
 
+function loading() {
+  ui.since.textContent = BLANK;
+  ui.last.textContent = BLANK;
+  ui.last.hidden = false;
+  showToast(false);
+  ui.ranks.replaceChildren(el("div", "rank skeleton"));
+  ui.body.replaceChildren(el("section", "card skeleton"), el("section", "card skeleton"));
+}
+
+function failed(missing, id, pseudo) {
+  ui.since.textContent = "";
+  ui.last.hidden = true;
+  ui.ranks.replaceChildren();
+  const box = el("div", "profile-empty");
+  box.append(el("p", "note", missing ? "Joueur introuvable" : "Hors ligne"));
+  if (!missing) {
+    const retry = el("button", "ghost", "Réessayer");
+    retry.type = "button";
+    retry.addEventListener("click", () => openCard(id, pseudo));
+    box.append(retry);
+  }
+  ui.body.replaceChildren(box);
+}
+
 export async function openCard(id, pseudo) {
   shown = id;
   ui.name.textContent = pseudo || "";
-  ui.since.textContent = "";
-  ui.last.hidden = true;
-  ui.canvas.hidden = true;
-  ui.body.replaceChildren(el("p", "note", "Chargement…"));
+  loading();
   try {
     const c = await call("GET", "/api/players/" + encodeURIComponent(id));
     if (shown === id) render(c);
   } catch (e) {
-    if (shown === id) ui.body.replaceChildren(el("p", "note", e.status === 404 ? "Joueur introuvable" : "Hors ligne"));
+    if (shown === id) failed(e.status === 404, id, pseudo);
   }
 }
 
 export const closeCard = () => { shown = null; };
 
 export function drawCard(clock) {
-  if (ui.canvas.hidden) return;
+  if (!ready) return;
   const { width, height } = ui.canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
   if (!width) return;
   const w = Math.round(width * dpr), h = Math.round(height * dpr);
