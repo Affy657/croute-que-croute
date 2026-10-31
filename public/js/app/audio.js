@@ -12,7 +12,7 @@ const SOUNDS = {
   first: [{ url: "/sfx/first.mp3", gain: 1 }]
 };
 const SFX_GAP = { near: 0.08 };
-const VOLUME = 0.6, FADE_MS = 500, DRIFT = 0.35, SFX_VOLUME = 1, SFX_LATE_MS = 300;
+const VOLUME = 0.6, FADE_MS = 500, DRIFT = 1, RESYNC_S = 3, SFX_VOLUME = 1, SFX_LATE_MS = 300;
 const MUFFLE_HZ = 320, MUFFLE_Q = 6, MUFFLE_IN_S = 0.8, MUFFLE_FAR = 0.45, MUFFLE_S = 1.5, MUFFLE_FADE_S = 1;
 const PREVIEW_AT = 30, PREVIEW_MS = 2000;
 
@@ -26,7 +26,7 @@ export const prefs = {
   musicLevel: level(KEYS.musicVolume), sfxLevel: level(KEYS.sfxVolume)
 };
 const listeners = [];
-let el = null, live = false, primed = false, running = false, runTime = 0, fadeTimer = null, previewTimer = null;
+let el = null, live = false, primed = false, running = false, runTime = 0, fadeTimer = null, previewTimer = null, synced = -Infinity;
 let ctx = null, master = null, musicGain = null, musicFilter = null, musicBoost = 1;
 const buffers = {}, lastPlayed = {};
 
@@ -38,16 +38,17 @@ export async function initAudio() {
   ensureContext();
   for (const url of MUSIC_FILES) {
     try {
-      if ((await fetch(url, { method: "HEAD", cache: "no-store" })).ok) {
-        el = new Audio(url);
-        el.loop = true;
-        el.preload = "auto";
-        el.addEventListener("playing", () => { live = true; });
-        for (const name of ["pause", "waiting", "ended"]) el.addEventListener(name, () => { live = false; });
-        if (ctx) routeMusic(volumeWorks() ? VOLUME : 1);
-        el.volume = musicVolume();
-        break;
-      }
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      el = new Audio(URL.createObjectURL(await res.blob()));
+      el.loop = true;
+      el.preload = "auto";
+      el.addEventListener("playing", () => { live = true; });
+      for (const name of ["pause", "waiting", "ended"]) el.addEventListener(name, () => { live = false; });
+      if (ctx) routeMusic(volumeWorks() ? VOLUME : 1);
+      el.volume = musicVolume();
+      if (running && prefs.music) playAt(runTime);
+      break;
     } catch (e) {}
   }
   changed();
@@ -133,6 +134,7 @@ function playAt(t) {
   el.muted = false;
   el.volume = musicVolume();
   el.currentTime = trackAt(t);
+  synced = t;
   el.play().catch(() => {});
 }
 
@@ -239,7 +241,10 @@ export function musicRunSync(t) {
   if (!el || !live || el.seeking || !el.duration) return;
   const jump = jumpFrom(el.currentTime);
   if (jump !== null) el.currentTime = jump;
-  else if (Math.abs(runAt(el.currentTime, t) - t) > DRIFT) el.currentTime = trackAt(t);
+  else if (t - synced > RESYNC_S && Math.abs(runAt(el.currentTime, t) - t) > DRIFT) {
+    synced = t;
+    el.currentTime = trackAt(t);
+  }
 }
 
 export function musicRunEnd() {

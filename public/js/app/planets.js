@@ -1095,11 +1095,11 @@ function melies(ctx, r, clock) {
 }
 
 export const BODIES = {
-  normal: [{ draw: purple, r: 0.13 }, { draw: moons, r: 0.045 }, { draw: green, r: 0.1 }, { draw: rock, r: 0.05 }],
-  wild: [{ draw: pancake, r: 0.12 }, { draw: speakers, r: 0.11 }, { draw: bass, r: 0.11 }],
+  normal: [{ draw: purple, r: 0.13, reach: 1.7 }, { draw: moons, r: 0.045, reach: 3.1 }, { draw: green, r: 0.1, reach: 1.7 }, { draw: rock, r: 0.05, reach: 1.1 }],
+  wild: [{ draw: pancake, r: 0.12, reach: 1.5 }, { draw: speakers, r: 0.11, reach: 1.7 }, { draw: bass, r: 0.11, reach: 1.8 }],
   rare: [
-    { draw: stage, r: 0.05 }, { draw: cheese, r: 0.1 }, { draw: toaster, r: 0.1 },
-    { draw: pumpkin, r: 0.09 }, { draw: melies, r: 0.1 }
+    { draw: stage, r: 0.05, reach: 3.9 }, { draw: cheese, r: 0.1, reach: 1.5 }, { draw: toaster, r: 0.1, reach: 1.9 },
+    { draw: pumpkin, r: 0.09, reach: 2.1 }, { draw: melies, r: 0.1, reach: 1.4 }
   ]
 };
 

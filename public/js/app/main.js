@@ -45,7 +45,7 @@ let achOpen = false, achFrom = "menu", achTimer = null;
 const playing = () => S.mode === "play" || S.mode === "dying";
 const elapsed = () => sim.state.t - S.t0;
 const replay = () => (S.mode === "over" ? S.train : null);
-const input = createInput(canvas, { active: () => S.mode === "play", scale: () => scene.view.scale });
+const input = createInput(canvas, { active: () => S.mode === "play", scale: () => scene.view.scale, view: () => scene.view, toast: () => sim.state.toast });
 
 function scar(e) {
   const tt = S.toast;

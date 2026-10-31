@@ -17,7 +17,9 @@ export const KEYS = {
   bread: "cv-pain",
   pendingScores: "cv-score-attente",
   lastReload: "cv-reload",
-  quality: "cv-qualite"
+  quality: "cv-qualite",
+  sensitivity: "cv-sensibilite",
+  mouseAim: "cv-souris"
 };
 
 function safe(storage) {

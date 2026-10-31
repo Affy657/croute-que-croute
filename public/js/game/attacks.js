@@ -2,7 +2,7 @@ import { FW, FH, M, clamp, speedMul } from "./field.js";
 import { projectile } from "./projectiles.js";
 
 const MAX_STREAK = 3, REPEAT_FACTOR = 0.5;
-const SLANT = 0.55, CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55, SERIES_GAP = 0.7, SERIES_SHIFT = 140, SERIES_NOTICE = 0.7, SERIES_HOLE = 60;
+const SLANT = 0.55, CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55, SERIES_GAP = 0.7, SERIES_MOVE = 90, SERIES_SHIFT = 140, SERIES_NOTICE = 0.7, SERIES_HOLE = 60;
 
 const inside = (p) => ({ x: clamp(p.x, 10, FW - 10), y: clamp(p.y, 10, FH - 10) });
 
@@ -95,17 +95,19 @@ function wall(g) {
 const seriesSize = (t) => (t >= 60 ? 3 : 2);
 
 function wallSeries(g) {
-  const { t, rnd, pick } = g;
+  const { t, rng, rnd, pick } = g;
   const side = pick(["left", "right", "top"]);
   const v = 150 * speedMul(t);
+  const [lo, hi] = side === "top" ? [70, FW - 70] : [100, FH * 0.62];
   const items = [];
-  let gc = side === "top" ? rnd(70, FW - 70) : rnd(100, FH * 0.62);
+  let gc = rnd(lo, hi);
   for (let i = 0; i < seriesSize(t); i++) {
     const at = t + 0.7 + i * SERIES_GAP;
     const wall = side === "top" ? topWall(g, at, v, SERIES_HOLE, gc) : sideWall(g, side, at, v, SERIES_HOLE, gc);
     if (i) for (const w of wall) w.notice = SERIES_NOTICE;
     items.push(...wall);
-    gc = side === "top" ? clamp(gc + rnd(-SERIES_SHIFT, SERIES_SHIFT), 70, FW - 70) : clamp(gc + rnd(-SERIES_SHIFT, SERIES_SHIFT), 100, FH * 0.62);
+    const d = rnd(SERIES_MOVE, SERIES_SHIFT) * (rng() < 0.5 ? -1 : 1);
+    gc = clamp(gc + d < lo || gc + d > hi ? gc - d : gc + d, lo, hi);
   }
   return items;
 }

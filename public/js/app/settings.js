@@ -3,6 +3,7 @@ import { installMode, promptInstall, shouldSuggest, markSuggested, onInstallChan
 import { prefs, setLevel, previewMusic, previewSfx } from "./audio.js";
 import { ui, setText } from "./screens.js";
 import { net, rename } from "./api.js";
+import { controls, setSens, setAim, hasMouse } from "./input.js";
 
 const FLASH_MS = 2000;
 const HINTS = {
@@ -32,6 +33,18 @@ export function renderSettings() {
   ui.installBtn.hidden = mode !== "prompt";
   ui.musicVol.value = Math.round(prefs.musicLevel * 100);
   ui.sfxVol.value = Math.round(prefs.sfxLevel * 100);
+  renderControlsCard();
+}
+
+const MOUSE_HINTS = ["La tartine bouge comme avec le doigt.", "La tartine va là où tu pointes."];
+
+function renderControlsCard() {
+  ui.sensVol.value = Math.round(controls.sens * 10);
+  const mouse = hasMouse();
+  ui.mouseRow.hidden = !mouse;
+  ui.mouseHint.hidden = !mouse;
+  ui.mouseHint.textContent = MOUSE_HINTS[controls.aim ? 1 : 0];
+  for (const b of ui.mouseTabs.children) b.setAttribute("aria-selected", String((b.dataset.aim === "1") === controls.aim));
 }
 
 function mountAdmin() {
@@ -115,6 +128,13 @@ ui.musicVol.addEventListener("input", () => setLevel("music", ui.musicVol.value 
 ui.musicVol.addEventListener("change", previewMusic);
 ui.sfxVol.addEventListener("input", () => setLevel("sfx", ui.sfxVol.value / 100));
 ui.sfxVol.addEventListener("change", () => previewSfx("record"));
+ui.sensVol.addEventListener("input", () => setSens(ui.sensVol.value / 10));
+for (const b of ui.mouseTabs.children) {
+  b.addEventListener("click", () => {
+    setAim(b.dataset.aim === "1");
+    renderControlsCard();
+  });
+}
 ui.installBtn.addEventListener("click", promptInstall);
 ui.shareBtn.addEventListener("click", shareGame);
 ui.renameForm.addEventListener("submit", renamePlayer);

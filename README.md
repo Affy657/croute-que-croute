@@ -13,7 +13,8 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 ## Le jeu
 
 - On scanne le QR code, on choisit un pseudo, on joue autant qu'on veut. Sans pseudo, la partie ne compte pas au classement.
-- Le doigt glisse n'importe où : la tartine suit le mouvement, 1,8 fois plus loin que le doigt, pour que le doigt ne la cache pas.
+- Le doigt glisse n'importe où : la tartine suit le mouvement, 1,8 fois plus loin que le doigt, pour que le doigt ne la cache pas. Réglable dans Paramètres, Contrôles, « Sensibilité » (de 0,8 à 2,8, 1,8 au milieu ; gardé dans `cv-sensibilite`).
+- Souris (31/10/2026) : sur un appareil qui a une souris, Paramètres propose « Glisser » (la souris bouge la tartine comme le doigt, avec la même sensibilité) ou « Viser » (la tartine va là où pointe la souris et le curseur disparaît pendant la partie ; `cv-souris`). Le mouvement reste découpé en petits pas comme pour le doigt : aller vite ne permet pas de traverser un couvert.
 - La partie démarre avec la tartine là où elle volait sur l'accueil. Sur téléphone, un rond pulse en bas (`PUCK_LIFT` dans `scene.js`) pour montrer où poser le doigt.
 - Rien n'arrive par le bas (le doigt cacherait les attaques). Les attaques de côté partent des 60 % du haut.
 - Chaque attaque est annoncée 0,45 à 0,9 s avant par une pastille au bord de l'écran, jamais posée sur le chrono.
@@ -28,7 +29,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Garnitures : 9 tartinades dessinées sur la tartine (`TOPPINGS` dans `sprites.js`) : confiture, pâte à tartiner, miel et son abeille, ketchup en zigzag, dentifrice rayé, œuf au plat, sardine entière, slime qui a un œil, pâtée pour chien tartinée avec son odeur et sa mouche. Beurre au départ. 1 attaque à couteaux sur 10 a un couteau garni : le frôler ou se faire tuer par lui débloque sa garniture (pas en entraînement). Une garniture gagnée est mise tout de suite. Dès la première, toucher la tartine de l'accueil ouvre des flèches pour changer (une astuce le dit tant qu'on ne l'a pas fait). Gardées sur le téléphone (`cv-garnitures`, `cv-garniture`, `cv-garniture-astuce`), purement visuel. En local, `?garnitures=toutes` dans l'adresse les débloque toutes.
 - Tenue de la tartine (30/10/2026) : 3 emplacements en plus de la garniture, un objet de chaque à la fois (`slot` dans `GEAR` de `palette.js`, dessins `HATS`, `SIDES` et `BREADS` dans `sprites.js`). Chaque objet est la récompense d'un succès qui a un lien avec lui (champ `gear`) :
   - Chapeaux : bandeau de ninja (Insaisissable, frôlé x5), couronne (Tartine d'or), toque de chef (Tout le frigo), casque d'astronaute (Fidèle du Space), chapeau de pirate (Dans le top), bonnet de Noël (Joyeux Noël, jouer en décembre), auréole (Tartinée express), bonnet de nuit (En détente), oreilles de chien (Ouaf), chapeau de sorcière (Tartine de minuit, jouer entre minuit et 3 h, à l'heure du téléphone).
-  - Côtés : boosters (Dorée à point, 90 s), couteau et fourchette (Tout vu).
+  - Côtés : boosters (Dorée à point, 90 s), couteau et fourchette (Tout vu), mains Six Seven (secret Six Seven : les deux mains, paumes vers le ciel, montent et descendent chacune leur tour, sans arrêt).
   - Pain : pain de mie au départ, pain grillé (Bien grillée, 120 s), pain carbonisé (Tartine de légende, 150 s), brioche (Boulangerie, 50 parties), tartine sans croûte (Accro à la croûte, 100 parties : du pain de mie sans sa croûte). Seules les couleurs et les détails changent : même forme, même zone de touche.
   - Avant le 30/10/2026 : sorcière à 30 s, bonnet de Noël à 10 parties, boosters à 60 s puis 90 s. Ceux qui les avaient gagnés ainsi les perdent jusqu'à remplir la nouvelle condition.
   - Un objet gagné est mis tout de suite, même en pleine partie. Choix dans les flèches de la tartine de l'accueil : une ligne par emplacement (chapeau, côtés, pain) sous celle de la garniture, montrée seulement quand on a gagné au moins un objet de cet emplacement. Pendant le choix, le bas de l'accueil (Jouer, classement…) se cache pour laisser la place. Gardé sur le téléphone (`cv-accessoire` pour le chapeau, `cv-cotes`, `cv-pain`), purement visuel. En local, `?accessoires=tous` les débloque tous le temps de la page, et `?succes=tous` gagne pour de bon tous les succès (donc tous les objets) sur ce navigateur ; avec `&garnitures=toutes`, tout le jeu est débloqué.
@@ -45,7 +46,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 | Mur | 12 s | Rangée serrée avec un seul trou d'environ 100 px |
 | Rouleau | 16 s | Traverse lentement par un côté. 2 à la suite dès 36 s, 3 dès 60 s |
 | Éventail | 22 s | 3 couteaux en cône vers la tartine, 4 dès 38 s, 5 dès 54 s |
-| Murs en série | 28 s | 2 murs d'affilée du même côté ou du haut (3 dès 60 s), trous d'environ 120 px, décalés de 140 px au plus d'un mur à l'autre. Chaque mur n'est annoncé que juste avant d'arriver. Joue seul : l'attaque suivante part quand le dernier mur a fait 20 % de sa traversée |
+| Murs en série | 28 s | 2 murs d'affilée du même côté ou du haut (3 dès 60 s), trous d'environ 120 px, décalés de 90 à 140 px d'un mur à l'autre (jamais alignés). Chaque mur n'est annoncé que juste avant d'arriver. Joue seul : l'attaque suivante part quand le dernier mur a fait 20 % de sa traversée |
 | Croix | 32 s | 4 couteaux en même temps vers la tartine |
 | Couteau à pain | 38 s | Rebondit une fois sur un bord |
 | Pluie en biais | 45 s | 7 à 8 fourchettes en diagonale, qui balaient l'écran d'un côté à l'autre |
@@ -57,7 +58,7 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 - Fouet mis de côté (jugé trop facile) : `lab: true` dans `attacks.js` et `projectiles.js`, visible seulement dans l'admin. Enlever `lab` pour le remettre.
 - Couloir (deux murs de deux côtés, 46 s) mis de côté de la même façon : trop proche des murs en série, on pouvait le prendre pour un bug.
 - Chances, vitesses et délais de chaque attaque : `attacks.js`. Le calendrier est dans le jeu (Infos, onglet Attaques).
-- Le trou des murs en série par le haut pouvait sauter d'un bord à l'autre entre deux murs : 27 morts pour 100 séries chez un débutant, contre 5 par les côtés. Limité à 140 px depuis le 30/10/2026, comme par les côtés.
+- Le trou des murs en série par le haut pouvait sauter d'un bord à l'autre entre deux murs : 27 morts pour 100 séries chez un débutant, contre 5 par les côtés. Limité à 140 px depuis le 30/10/2026, comme par les côtés. Depuis le 31/10/2026, chaque trou se décale aussi d'au moins 90 px (`SERIES_MOVE`), vers un côté tiré au hasard (l'autre si le bord est trop près) : les joueurs trouvaient trop facile un trou presque aligné avec le précédent. Mesuré : 0 série refusée par le solveur à 30 s et à 65 s, 0 mort pour le robot parfait.
 
 ## Équité
 
@@ -176,6 +177,9 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 - Elle ne joue qu'en partie et repart du début à chaque partie, pour suivre la montée de la difficulté.
 - Coupée et en boucle : elle joue jusqu'à 83,1 s (la voix finit de retomber), saute à la montée de 131,9 s qui mène au second passage énergique, puis reboucle sur la montée après 208,7 s. Coupes calées sur le tempo (172 BPM) et les débuts de mesure, déclenchées par la position réelle de la musique (`MUSIC_PARTS` dans `audio.js`). Approximatives en attendant une version montée par un DJ.
 - À la mort, elle passe « sous l'eau » puis s'éteint (2,5 s). Elle passe pour ça par Web Audio sur tous les téléphones.
+- Chargement (31/10/2026, la musique marchait mal sur les autres téléphones) : le serveur ne sert pas les fichiers par morceaux (il répond à une demande « Range » avec tout le fichier). Safari refuse alors de jouer le son, et les autres navigateurs sautent mal dans le morceau (coupes de `MUSIC_PARTS`, recalage). Le morceau est maintenant téléchargé en entier au lancement du jeu, puis joué depuis la mémoire du téléphone (adresse `blob:`, permise par `media-src` dans `_headers`). S'il arrive en pleine partie, il démarre à la bonne seconde.
+- Recalage sur le chrono : seulement si la musique a plus d'1 s d'écart, et au plus toutes les 3 s (`DRIFT`, `RESYNC_S`). Avant : dès 0,35 s, à chaque image, ce qui pouvait la faire hoqueter sans fin sur un téléphone lent à redémarrer le son.
+- Règle des navigateurs : le son ne peut démarrer qu'après un vrai toucher (doigt levé). Si on lance la toute première partie sans avoir touché l'écran avant, la musique démarre au premier lever du doigt.
 - Changer de musique : remplacer le fichier, mettre à jour `MUSIC_CREDIT` et `MUSIC_PARTS` (`[[0, durée]]` pour tout jouer en boucle) dans `audio.js`, puis `npm run deploy`.
 - Bruitages Mixkit dans `public/sfx/` (départ, frôlé, mort, record, 1re place). Licence gratuite d'après la FAQ Mixkit, texte officiel à relire avant une diffusion hors soirée. Changer : remplacer le fichier, ou une ligne dans `SOUNDS` (`audio.js`).
 - Volumes Musique et Bruitages dans Paramètres. Sur iPhone, le bouton silencieux coupe les bruitages, pas la musique (règle d'Apple).
@@ -183,7 +187,7 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 
 ## Succès
 
-- 24 succès en 5 familles (temps de cuisson, frôlés et découvertes, garnitures, assiduité et soirées, secrets) : liste et conditions dans `achievements.js`.
+- 25 succès en 5 familles (temps de cuisson, frôlés et découvertes, garnitures, assiduité et soirées, secrets) : liste et conditions dans `achievements.js`.
 - Un secret pas encore trouvé montre « ??? » et un indice (`hint`).
 - Badge « Nouveau » sur les succès gagnés depuis la dernière visite de l'écran (`seen` dans `cv-succes`).
 - Un succès qui donne un objet de tenue l'écrit sous sa condition (« Débloque : … »), même pour un secret pas encore trouvé.
@@ -192,6 +196,7 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 - Temps de cuisson : 10, 30, 60, 90, 120 et 150 s (« Tartine de légende », la vitesse maximale). Avant le 30/10/2026 : 10, 20, 30, 45, 60 et 80 s, devenus trop faciles avec la nouvelle courbe. Les succès 20, 45 et 80 s déjà gagnés disparaissent du compte.
 - Secret « En détente » : rester 3 s sans bouger (5 s avant le 30/10/2026 : un joueur immobile survivait 5 s dans 0 % des cas, 3 s dans 5 à 15 %).
 - Garnitures : 1, 4 puis toutes gagnées. Le secret « Ouaf » : se faire tartiner par un couteau à la pâtée pour chien.
+- Secret « Six Seven » (31/10/2026) : finir une partie à 67 s, peu importe les centièmes (de 67,00 à 67,99 s). Il donne les mains Six Seven.
 - Gardés sur le téléphone (`cv-succes`), sans effet sur le classement. Perdus en changeant de téléphone ou de navigateur. Sur iPhone, Safari et l'appli installée ne partagent pas leurs succès.
 - Le nombre de parties prend le plus grand entre le compteur du téléphone et celui du serveur.
 
@@ -202,7 +207,8 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 - Une partie ne compte que si le réseau passe au départ. À la fin, l'envoi du score réessaie pendant 2 min (« Envoi en attente… »), même si on ferme le jeu ou si le serveur a une erreur passagère.
 - Téléphone verrouillé ou appli quittée en pleine partie : la partie se met en pause, « Touche pour reprendre » (un simple clic suffit aussi sur ordinateur, même très bref). Le temps de pause compte dans le temps réel vu par le serveur : l'admin affiche alors « partie ralentie ou mise en pause ».
 - Le cache hors ligne (`sw.js`) est renouvelé à chaque version.
-- Petits téléphones (30/10/2026, des joueurs avaient des lags) : le jeu mesure sa fluidité. Si l'image médiane dépasse 20 ms (moins de 50 images par seconde ; 24 ms avant le 30/10/2026 au soir), il baisse sa netteté par paliers (`QUALITY` dans `scene.js` : densité 2, 1,5, 1,25 puis 1) et s'en souvient sur ce téléphone (`cv-qualite`). Densité 2 au plus pour tout le monde (avant : 2,5). La couche des annonces n'est plus effacée quand elle est déjà vide. Pistes mesurées le 30/10/2026 mais pas appliquées : garder en image les planètes complexes (crêpe, enceintes, fromage, grille-pain coûtent 0,5 à 0,9 ms par image sur un PC, 3 à 4 fois moins en image) et la tartine (gain faible). Mettre les couverts en image est plus lent. Réécrire des bouts en Rust (WebAssembly) n'aiderait pas : le dessin se fait dans le navigateur, et le reste du calcul est devenu négligeable.
+- Petits téléphones (30/10/2026, des joueurs avaient des lags) : le jeu mesure sa fluidité. Si l'image médiane dépasse 20 ms (moins de 50 images par seconde ; 24 ms avant le 30/10/2026 au soir), il baisse sa netteté par paliers (`QUALITY` dans `scene.js` : densité 2, 1,5, 1,25 puis 1) et s'en souvient sur ce téléphone (`cv-qualite`). Densité 2 au plus pour tout le monde (avant : 2,5). La couche des annonces n'est plus effacée quand elle est déjà vide. Tartine en image : gain faible, pas fait.
+- Planètes en image (31/10/2026, il restait des joueurs avec des lags) : chaque planète du fond est dessinée dans une image à part (`art` dans `scene.js`), puis seulement collée à chaque image du jeu. Les planètes fixes ne sont dessinées qu'une fois, les animées sont redessinées 30 fois par seconde (20 puis 15 fois quand le téléphone a baissé sa netteté, `REDRAW_S`). `reach` dans `BODIES` donne la taille de l'image (anneaux, ondes, Tung et sa batte compris). Mesuré sur un PC, par image : violette 3,4 ms, citrouille 3,8, lune de Méliès 3,6, grille-pain 2,2, crêpe et enceintes environ 1 ms en direct, contre 0,1 à 0,2 ms une fois en image. Fond du jeu opaque (`alpha: false`), plus léger à afficher. Mettre les couverts en image est plus lent. Réécrire des bouts en Rust (WebAssembly) n'aiderait pas : le dessin se fait dans le navigateur, et le reste du calcul est devenu négligeable.
 
 ## Check-list d'une soirée
 
@@ -244,7 +250,7 @@ Après :
 | `migrations/` | Schéma de la base |
 | `scripts/` | Mise en ligne, icônes, QR codes |
 | `test/` | Robot d'équité, tests de l'API, outils d'équilibrage (`equilibrage/`) |
-| `maquettes/` | Images de travail : pistes de redesign de la tartine (pas retenues), planches des garnitures, des accessoires, des canettes, des planètes drôles, du ciel (toutes les planètes, la Tesla et la soucoupe), des couleurs de la deuxième planète enceintes et de Tung Tung Tung Sahur |
+| `maquettes/` | Images de travail : pistes de redesign de la tartine (pas retenues), planches des garnitures, des accessoires, des canettes, des planètes drôles, du ciel (toutes les planètes, la Tesla et la soucoupe), des couleurs de la deuxième planète enceintes, de Tung Tung Tung Sahur et des mains Six Seven |
 
 | Commande | À quoi ça sert |
 |---|---|

@@ -7,7 +7,7 @@ const FAMILIES = [["time", "Temps de cuisson"], ["play", "Frôlés et découvert
 const TIMES = [[10, "t10"], [30, "t30"], [60, "t60"], [90, "t90"], [120, "t120"], [150, "t150"]];
 const NEARS = [[20, "near20"]];
 const RUNS = [[10, "runs10"], [50, "runs50"], [100, "runs100"]];
-const STILL_S = 3, COMBO = 5, NIGHT_UNTIL_H = 3, DECEMBER = 11, EXPRESS_CS = 200, EVENTS = 3, TOP = 10, FRIDGE = 4;
+const SIX_SEVEN_S = 67, STILL_S = 3, COMBO = 5, NIGHT_UNTIL_H = 3, DECEMBER = 11, EXPRESS_CS = 200, EVENTS = 3, TOP = 10, FRIDGE = 4;
 const LIVE = ATTACKS.filter((a) => !a.lab);
 const EXTRAS = Object.keys(SPREADS).length - 1;
 const TOPPINGS = [[1, "top1"], [FRIDGE, "top4"], [EXTRAS, "topAll"]];
@@ -35,6 +35,7 @@ export const ACHIEVEMENTS = [
   { id: "express", family: "secret", name: "Tartinée express", desc: "Se faire tartiner en moins de 2 s", hint: "il y a des records qu'on ne cherche pas.", gear: "halo" },
   { id: "zen", family: "secret", name: "En détente", desc: "Rester " + STILL_S + " s sans bouger", hint: "le meilleur coup, c'est parfois de ne rien faire.", gear: "nightcap" },
   { id: "round", family: "secret", name: "Chiffre rond", desc: "Finir pile sur une seconde ronde", hint: "les comptes ronds font les bons amis." },
+  { id: "sixSeven", family: "secret", name: "Six Seven", desc: "Finir une partie à " + SIX_SEVEN_S + " s", hint: "un chiffre que tout le monde mime avec les mains.", gear: "sixseven" },
   { id: "woof", family: "secret", name: "Ouaf", desc: "Se faire tartiner par un couteau à la pâtée pour chien", hint: "ça sent un peu le chien.", gear: "dog" },
   { id: "night", family: "secret", name: "Tartine de minuit", desc: "Jouer entre minuit et " + NIGHT_UNTIL_H + " h", hint: "les sorcières sortent la nuit.", gear: "witch" }
 ];
@@ -166,6 +167,7 @@ export function runEnd(score, killer) {
   countRuns(data.runs);
   if (score < EXPRESS_CS) unlock("express");
   if (score > 0 && score % 100 === 0) unlock("round");
+  if (Math.floor(score / 100) === SIX_SEVEN_S) unlock("sixSeven");
   if (killer && killer.spread === "dog") unlock("woof");
 }
 

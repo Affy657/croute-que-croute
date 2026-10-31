@@ -27,7 +27,7 @@ export const ui = {
   settings: $("settings"), settingsBar: $("settingsBar"), settingsTabs: $("settingsTabs"), settingsApp: $("settingsApp"), settingsAdmin: $("settingsAdmin"),
   settingsBack: $("settingsBack"), installCard: $("installCard"), installHint: $("installHint"), installBtn: $("installBtn"), shareBtn: $("shareBtn"), qrBtn: $("qrBtn"),
   qr: $("qr"), qrHost: $("qrHost"), qrBack: $("qrBack"),
-  ach: $("ach"), achCount: $("achCount"), achList: $("achList"), achBack: $("achBack"), achToast: $("achToast"), holdHint: $("holdHint"), overAch: $("overAch"), musicVol: $("musicVol"), sfxVol: $("sfxVol"),
+  ach: $("ach"), achCount: $("achCount"), achList: $("achList"), achBack: $("achBack"), achToast: $("achToast"), holdHint: $("holdHint"), overAch: $("overAch"), musicVol: $("musicVol"), sfxVol: $("sfxVol"), sensVol: $("sensVol"), mouseRow: $("mouseRow"), mouseTabs: $("mouseTabs"), mouseHint: $("mouseHint"),
   renameCard: $("renameCard"), renameForm: $("renameForm"), newPseudo: $("newPseudo"), renameNote: $("renameNote"),
   picker: $("picker"), pickToast: $("pickToast"), pickLabel: $("pickLabel"), pickPrev: $("pickPrev"), pickNext: $("pickNext"), pickName: $("pickName"), pickCount: $("pickCount"),
   gearRows: $("gearRows"),
