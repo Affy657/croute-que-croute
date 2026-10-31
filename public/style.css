@@ -7,6 +7,8 @@
   --jam-deep: #c41d40;
   --ink: #fff6e0;
   --ink-dim: #b9b0d6;
+  --silver: #d5dbe8;
+  --bronze: #d9802f;
   --font-display: "Bungee", "Arial Black", Impact, sans-serif;
   color-scheme: dark;
 }
@@ -926,7 +928,13 @@ a.ghost {
 }
 
 .board-list li[data-id] {
+  grid-template-columns: 2.6rem 1fr auto 0.5rem;
   cursor: pointer;
+}
+
+.board-list li[data-id]::after {
+  content: "›";
+  opacity: 0.55;
 }
 
 .board-list li[data-id]:focus-visible {
@@ -953,11 +961,11 @@ a.ghost {
 }
 
 .board-list li.p2 .pos {
-  background: #d5dbe8;
+  background: var(--silver);
 }
 
 .board-list li.p3 .pos {
-  background: #d9802f;
+  background: var(--bronze);
 }
 
 .board-list li.p1 {
@@ -971,11 +979,11 @@ a.ghost {
 }
 
 .board-list li.p2 {
-  box-shadow: inset 0 0 0 2px #d5dbe8;
+  box-shadow: inset 0 0 0 2px var(--silver);
 }
 
 .board-list li.p3 {
-  box-shadow: inset 0 0 0 2px #d9802f;
+  box-shadow: inset 0 0 0 2px var(--bronze);
 }
 
 .board-list li.me.podium .pos {
@@ -1019,9 +1027,144 @@ a.ghost {
   margin: 0;
 }
 
+.profile-meta {
+  min-height: 1.3em;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  color: var(--ink-dim);
+}
+
+.profile-grid {
+  width: min(100%, 560px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.profile-hero {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
 .profile-toast {
   width: 240px;
   height: 190px;
+}
+
+.profile-toast.off {
+  visibility: hidden;
+}
+
+.profile-ranks {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.rank {
+  box-sizing: border-box;
+  flex: 0 1 170px;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 12px 10px;
+  border-radius: 16px;
+  background: #1a1640;
+}
+
+.rank.p1 {
+  box-shadow: inset 0 0 0 2px var(--mustard);
+}
+
+.rank.p2 {
+  box-shadow: inset 0 0 0 2px var(--silver);
+}
+
+.rank.p3 {
+  box-shadow: inset 0 0 0 2px var(--bronze);
+}
+
+.rank-place {
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.rank.p1 .rank-place {
+  color: var(--mustard);
+}
+
+.rank.p2 .rank-place {
+  color: var(--silver);
+}
+
+.rank.p3 .rank-place {
+  color: var(--bronze);
+}
+
+.rank-place small {
+  margin-left: 0.3em;
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}
+
+.rank-time {
+  font-size: 0.95rem;
+}
+
+.rank-label {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+
+.skeleton {
+  animation: pulse 1.1s ease-in-out infinite alternate;
+}
+
+.catalog .card.skeleton {
+  min-height: 110px;
+}
+
+@keyframes pulse {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+.profile-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
+}
+
+@media (min-width: 900px) {
+  .profile-grid {
+    width: min(100%, 864px);
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    align-items: start;
+    gap: 24px;
+  }
+
+  #profile .info-body {
+    width: 100%;
+  }
 }
 
 .god-pill {

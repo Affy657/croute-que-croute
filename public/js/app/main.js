@@ -276,19 +276,23 @@ function openBoard(from) {
 }
 
 function openBoardCard(row) {
-  cardOpen = true;
+  cardOpen = row.dataset.id;
   show("profile");
   renderControls(false);
   ui.profile.scrollTop = 0;
   openCard(row.dataset.id, row.dataset.pseudo);
+  ui.profileName.focus({ preventScroll: true });
 }
 
 function closeBoardCard() {
+  const id = cardOpen;
   cardOpen = false;
   closeCard();
   show("board");
   renderControls(false);
   renderBoard();
+  const row = ui.boardList.querySelector(`li[data-id="${CSS.escape(id)}"]`);
+  if (row) row.focus({ preventScroll: true });
 }
 
 function closeBoard() {

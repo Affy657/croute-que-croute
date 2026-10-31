@@ -289,3 +289,21 @@
   font-size: 0.75rem;
   color: var(--ink-dim);
 }
+
+.catalog .spark-lane i.best {
+  background: var(--jam);
+}
+
+.catalog .spark-col.last span {
+  padding: 0 5px;
+  border-radius: 6px;
+  background: var(--row);
+  color: var(--ink);
+}
+
+.catalog h2 .card-tag {
+  margin-left: 0.5em;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
