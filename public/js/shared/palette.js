@@ -36,6 +36,7 @@ export const GEAR = {
   boosters: { slot: "side", name: "Boosters" },
   cutlery: { slot: "side", name: "Couteau et fourchette" },
   sixseven: { slot: "side", name: "Mains Six Seven" },
+  bat: { slot: "side", name: "Ailes de chauve-souris" },
   toasted: { slot: "bread", name: "Pain grillé", crust: "#8f4b1a", crumb: "#dc9a52" },
   burnt: { slot: "bread", name: "Pain carbonisé", crust: "#4b3226", crumb: "#6a4a38" },
   brioche: { slot: "bread", name: "Brioche", crust: "#b9581b", crumb: "#ffdb8c" },
@@ -75,6 +76,7 @@ export const SKY = {
     base: "#1d6f86", land: "#e2a43c", landEdge: "#a86e1c",
     box: "#0f1c2e", rim: "#3e6f8a", rimLight: "#8fd0e0", cone: "#25455c", wave: "#6fe0d8"
   },
+  pirate: { light: "#8fe6ff", dark: "#1a6cc4", shallow: "#b8f1ff", foam: "#e8fbff", sand: "#f6d98b", jungle: "#3fae4a", jungleDark: "#2b8a3a", rock: "#8d86a3", rockLight: "#d9d4e6", cave: "#2a2440", palm: "#4cc25a", trunk: "#8a5a2e", ring: "#2ba7e6", ringBack: "#1a6cc4", ringLight: "#b8f1ff", hull: "#9a5428", hullDark: "#5a2e12", trim: "#f2b13a", window: "#ffd66b", sail: "#fff6e0", flag: "#e0244a", mark: "#e0244a", smoke: "#eef0f6", flash: "#ffcf33" },
   pumpkin: { light: "#ffb54d", mid: "#f07a12", dark: "#9c3f08", rib: "#b8520c", stem: "#6b7a2a", glow: "#ffe27a", deep: "#ff8a1a", stick: "#8a5a2e", straw: "#e0b35a", spill: "rgba(255, 214, 110, 0.4)", spillOut: "rgba(255, 214, 110, 0)" },
   melies: {
     light: "#f7f0de", dark: "#8f8468", spot: "#c9bd9c", shadow: "#6e624a", cheek: "#fffaf0", feature: "#4f4032", mouth: "#3a2a22", eye: "#fffdf4",
@@ -83,7 +85,8 @@ export const SKY = {
 };
 
 export const SPREADS = {
-  butter: { name: "Beurre", color: "#fff1a8", shine: "#ffffff" },
+  butter: { name: "Beurre", free: true, color: "#fff1a8", shine: "#ffffff" },
+  plain: { name: "Nature", free: true, with: "nature", color: "#f6c983", shine: "#fff6e0" },
   jam: { name: "Confiture", with: "à la confiture", color: "#9b1b3a", shine: "#e0577a", bits: true },
   choco: { name: "Pâte à tartiner", with: "à la pâte à tartiner", color: "#5b331d", shine: "#8a5636" },
   honey: { name: "Miel", with: "au miel", color: "#f0a81c", shine: "#ffd36b", drip: true },

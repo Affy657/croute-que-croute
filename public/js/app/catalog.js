@@ -131,7 +131,7 @@ export function renderWeapons(root, { showLab = false } = {}) {
     weaponGroup("Taille réelle", `À l'échelle de ton écran (× ${scale.toFixed(2).replace(".", ",")}). En pointillés jaunes : la hitbox.`,
       [toastCard(scale), ...kinds.filter((k) => !PROJECTILES[k].lab).map((k) => weaponCard(k, null, null, scale))]),
     weaponGroup("Variantes rares", "Une attaque à couteaux sur 10 cache un couteau avec une tartinade rare. Juste un skin : même hitbox.",
-      Object.keys(SPREADS).filter((sp) => sp !== "butter").map(spreadCard))
+      Object.keys(SPREADS).filter((sp) => !SPREADS[sp].free).map(spreadCard))
   ];
   if (showLab && lab.length) {
     groups.push(weaponGroup("Prototypes", "Pas encore en jeu, visibles seulement par les admins. Tu peux les voir bouger dans l'onglet Attaques.",

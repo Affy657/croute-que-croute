@@ -1094,6 +1094,323 @@ function melies(ctx, r, clock) {
   ctx.restore();
 }
 
+const SWELL = [[-0.62, 0.3, 0.5], [0.66, 0.3, -0.4]];
+const RING = { rx: 1.45, ry: 0.4, tilt: -0.2, w: 0.2, lap: 0.42 };
+const SHIP_U = 0.4;
+const SHORE = [[0.02, 0.06, 0.5], [-0.32, 0.18, 0.3], [0.36, 0.2, 0.3], [0.05, -0.24, 0.42], [-0.3, -0.17, 0.28], [0.34, -0.14, 0.3]];
+
+function swell(ctx, r, clock, P) {
+  ctx.strokeStyle = P.foam;
+  ctx.lineWidth = ink(r);
+  ctx.lineCap = "round";
+  ctx.globalAlpha *= 0.6;
+  for (const [y, gap, speed] of SWELL) {
+    const shift = (((clock * speed) % gap) + gap) % gap;
+    ctx.beginPath();
+    for (let x = -1.2 + shift; x < 1.2; x += gap) {
+      ctx.moveTo((x - 0.08) * r, y * r);
+      ctx.quadraticCurveTo(x * r, (y - 0.07) * r, (x + 0.08) * r, y * r);
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha /= 0.6;
+}
+
+function blob(ctx, r, parts) {
+  ctx.beginPath();
+  for (const [x, y, s] of parts) {
+    ctx.moveTo((x + s) * r, y * r);
+    ctx.arc(x * r, y * r, s * r, 0, TAU);
+  }
+}
+
+function skullRock(ctx, r, P) {
+  ctx.save();
+  ctx.translate(0, -r * 0.18);
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = ink(r);
+  const g = ctx.createRadialGradient(-r * 0.1, -r * 0.18, r * 0.03, 0, 0, r * 0.36);
+  g.addColorStop(0, P.rockLight);
+  g.addColorStop(1, P.rock);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.3, r * 0.1);
+  ctx.bezierCurveTo(-r * 0.36, -r * 0.18, -r * 0.2, -r * 0.36, 0, -r * 0.36);
+  ctx.bezierCurveTo(r * 0.2, -r * 0.36, r * 0.36, -r * 0.18, r * 0.3, r * 0.1);
+  ctx.lineTo(r * 0.18, r * 0.16);
+  ctx.lineTo(r * 0.16, r * 0.27);
+  ctx.lineTo(-r * 0.16, r * 0.27);
+  ctx.lineTo(-r * 0.18, r * 0.16);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = P.cave;
+  for (const k of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(k * r * 0.12, -r * 0.06, r * 0.085, r * 0.1, k * 0.25, 0, TAU);
+    ctx.fill();
+  }
+  ctx.beginPath();
+  ctx.moveTo(0, r * 0.04);
+  ctx.lineTo(-r * 0.04, r * 0.11);
+  ctx.lineTo(r * 0.04, r * 0.11);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = P.cave;
+  ctx.lineWidth = Math.max(1, r * 0.022);
+  ctx.beginPath();
+  for (const x of [-0.08, 0, 0.08]) {
+    ctx.moveTo(x * r, r * 0.17);
+    ctx.lineTo(x * r, r * 0.25);
+  }
+  ctx.moveTo(-r * 0.15, r * 0.2);
+  ctx.lineTo(r * 0.15, r * 0.2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function palmTree(ctx, r, x, y, size, lean, clock, P) {
+  const sway = Math.sin(clock * 1.3 + x * 5) * 0.06, top = [lean * r * 0.12 + sway * r, -r * 0.36];
+  ctx.save();
+  ctx.translate(x * r, y * r);
+  ctx.scale(size, size);
+  ctx.lineCap = "round";
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = (ink(r) * 2.4) / size;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.quadraticCurveTo(lean * r * 0.02, -r * 0.2, top[0], top[1]);
+  ctx.stroke();
+  ctx.strokeStyle = P.trunk;
+  ctx.lineWidth = (ink(r) * 1.3) / size;
+  ctx.stroke();
+  ctx.translate(top[0], top[1]);
+  ctx.fillStyle = P.palm;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = (ink(r) * 0.8) / size;
+  for (const a of [-2.7, -2, -1.3, -0.6, 0.1]) {
+    ctx.save();
+    ctx.rotate(a + Math.PI / 2 + sway);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(r * 0.12, -r * 0.14, r * 0.29, -r * 0.01);
+    ctx.quadraticCurveTo(r * 0.12, -r * 0.02, 0, 0);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function skullIsland(ctx, r, clock, P) {
+  ctx.fillStyle = P.shallow;
+  ctx.globalAlpha *= 0.7;
+  blob(ctx, r, SHORE.map(([x, y, s]) => [x, y, s + 0.08]));
+  ctx.fill();
+  ctx.globalAlpha /= 0.7;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = ink(r);
+  ctx.fillStyle = P.sand;
+  blob(ctx, r, SHORE);
+  ctx.fill();
+  ctx.fillStyle = P.jungle;
+  blob(ctx, r, SHORE.map(([x, y, s]) => [x, y - 0.03, s - 0.08]));
+  ctx.fill();
+  dots(ctx, r, P.jungleDark, [[-0.36, 0.1, 0.1], [0.4, 0.14, 0.11], [-0.2, 0.3, 0.08], [0.22, 0.32, 0.09], [0.42, -0.18, 0.08], [-0.4, -0.2, 0.08]]);
+  skullRock(ctx, r, P);
+  palmTree(ctx, r, -0.5, 0.26, 0.85, -1, clock, P);
+  palmTree(ctx, r, 0.54, 0.28, 0.95, 1, clock, P);
+  ctx.strokeStyle = P.mark;
+  ctx.lineWidth = Math.max(1, r * 0.035);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  for (const k of [-1, 1]) {
+    ctx.moveTo(r * 0.3 - r * 0.045, r * 0.12 - k * r * 0.035);
+    ctx.lineTo(r * 0.3 + r * 0.045, r * 0.12 + k * r * 0.035);
+  }
+  ctx.stroke();
+}
+
+function ringHalf(ctx, r, clock, P, front) {
+  const { rx, ry, tilt, w } = RING, from = front ? 0 : Math.PI, to = front ? Math.PI : TAU;
+  ctx.save();
+  ctx.lineCap = "butt";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, rx * r, ry * r, tilt, from, to);
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = w * r + ink(r) * 2;
+  ctx.stroke();
+  ctx.strokeStyle = front ? P.ring : P.ringBack;
+  ctx.lineWidth = w * r;
+  ctx.stroke();
+  ctx.strokeStyle = P.ringLight;
+  ctx.lineWidth = w * r * 0.3;
+  ctx.globalAlpha *= 0.55;
+  ctx.stroke();
+  ctx.globalAlpha /= 0.55;
+  ctx.setLineDash([r * 0.1, r * 0.22]);
+  ctx.lineDashOffset = -clock * r * 0.25;
+  ctx.strokeStyle = P.foam;
+  ctx.lineWidth = Math.max(1, r * 0.035);
+  ctx.lineCap = "round";
+  for (const k of [-0.28, 0.28]) {
+    ctx.beginPath();
+    ctx.ellipse(0, 0, (rx + k * w) * r, (ry + k * w * 0.4) * r, tilt, from, to);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function mainSail(ctx, u, x, top, bottom, half, puff, P) {
+  ctx.beginPath();
+  ctx.moveTo(x - half, top);
+  ctx.quadraticCurveTo(x, top + u * 0.06, x + half, top);
+  ctx.quadraticCurveTo(x + half + puff, (top + bottom) / 2, x + half, bottom);
+  ctx.quadraticCurveTo(x, bottom + u * 0.08, x - half, bottom);
+  ctx.quadraticCurveTo(x - half + puff, (top + bottom) / 2, x - half, top);
+  ctx.closePath();
+  ctx.fillStyle = P.sail;
+  ctx.fill();
+  ctx.stroke();
+}
+
+function jolly(ctx, u, x, y, P) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.strokeStyle = INK;
+  ctx.lineCap = "round";
+  ctx.lineWidth = u * 0.07;
+  ctx.beginPath();
+  for (const k of [-1, 1]) {
+    ctx.moveTo(-u * 0.24, -k * u * 0.1 + u * 0.16);
+    ctx.lineTo(u * 0.24, k * u * 0.1 + u * 0.16);
+  }
+  ctx.stroke();
+  ctx.fillStyle = INK;
+  disc(ctx, 0, -u * 0.04, u * 0.16);
+  ctx.beginPath();
+  rr(ctx, -u * 0.09, u * 0.04, u * 0.18, u * 0.1, u * 0.03);
+  ctx.fill();
+  ctx.fillStyle = P.sail;
+  disc(ctx, -u * 0.065, -u * 0.05, u * 0.045);
+  disc(ctx, u * 0.065, -u * 0.05, u * 0.045);
+  ctx.restore();
+}
+
+function galleon(ctx, u, clock, P, line) {
+  const puff = Math.sin(clock * 1.1) * u * 0.05, flap = Math.sin(clock * 7) * u * 0.05;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = line;
+  ctx.beginPath();
+  ctx.moveTo(u * 0.95, -u * 0.46);
+  ctx.lineTo(u * 1.45, -u * 0.72);
+  ctx.stroke();
+  ctx.fillStyle = P.hullDark;
+  for (const [x, top] of [[0.02, -1.78], [0.62, -1.36]]) {
+    ctx.beginPath();
+    rr(ctx, x * u - u * 0.045, top * u, u * 0.09, (-0.3 - top) * u, u * 0.03);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.fillStyle = P.flag;
+  ctx.beginPath();
+  ctx.moveTo(u * 0.06, -u * 1.76);
+  ctx.quadraticCurveTo(u * 0.22, -u * 1.76 + flap, u * 0.4, -u * 1.68 + flap);
+  ctx.lineTo(u * 0.06, -u * 1.6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = P.sail;
+  ctx.beginPath();
+  ctx.moveTo(u * 0.66, -u * 1.3);
+  ctx.lineTo(u * 1.4, -u * 0.74);
+  ctx.lineTo(u * 0.68, -u * 0.66);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  mainSail(ctx, u, u * 0.02, -u * 1.56, -u * 0.62, u * 0.46, puff, P);
+  jolly(ctx, u, u * 0.02 + puff * 0.5, -u * 1.12, P);
+  ctx.fillStyle = P.hullDark;
+  ctx.beginPath();
+  rr(ctx, -u * 0.1, -u * 1.62, u * 0.24, u * 0.1, u * 0.03);
+  ctx.fill();
+  ctx.stroke();
+  const g = ctx.createLinearGradient(0, -u * 0.5, 0, u * 0.2);
+  g.addColorStop(0, P.hull);
+  g.addColorStop(1, P.hullDark);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-u * 1.02, -u * 0.78);
+  ctx.lineTo(-u * 0.58, -u * 0.78);
+  ctx.lineTo(-u * 0.55, -u * 0.42);
+  ctx.lineTo(u * 0.7, -u * 0.32);
+  ctx.lineTo(u * 1.05, -u * 0.52);
+  ctx.quadraticCurveTo(u * 0.85, u * 0.2, 0, u * 0.18);
+  ctx.quadraticCurveTo(-u * 0.78, u * 0.16, -u * 0.98, -u * 0.12);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = P.trim;
+  ctx.lineWidth = line * 1.3;
+  ctx.beginPath();
+  ctx.moveTo(-u * 0.96, -u * 0.3);
+  ctx.quadraticCurveTo(0, -u * 0.12, u * 0.9, -u * 0.3);
+  ctx.stroke();
+  ctx.fillStyle = P.window;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = line;
+  ctx.beginPath();
+  rr(ctx, -u * 0.92, -u * 0.7, u * 0.26, u * 0.16, u * 0.04);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = INK;
+  for (const x of [-0.42, -0.08, 0.26, 0.58]) disc(ctx, x * u, -u * 0.02 + Math.abs(x) * u * 0.04, u * 0.06);
+}
+
+function smoke(ctx, u, clock, P) {
+  const k = (clock % 4.2) / 1.1;
+  if (k >= 1) return;
+  ctx.save();
+  ctx.fillStyle = P.smoke;
+  ctx.globalAlpha *= 1 - k;
+  for (const [x, y, s] of [[0, 0, 0.16], [0.14, -0.1, 0.12], [-0.12, -0.08, 0.11]]) disc(ctx, (0.3 + x + k * 0.2) * u, (0.05 + y + k * 0.35) * u, (s + k * 0.12) * u);
+  ctx.restore();
+  if (k < 0.15) {
+    ctx.fillStyle = P.flash;
+    disc(ctx, u * 0.3, u * 0.05, u * 0.09);
+  }
+}
+
+function shipOnRing(ctx, r, clock, P) {
+  const { rx, ry, tilt, lap } = RING, t = clock * lap, depth = (Math.sin(t) + 1) / 2;
+  const c = Math.cos(tilt), s = Math.sin(tilt), ex = rx * Math.cos(t) * r, ey = ry * Math.sin(t) * r;
+  const u = r * SHIP_U * (0.72 + 0.3 * depth), dir = Math.sin(t) > 0 ? -1 : 1;
+  ctx.save();
+  ctx.translate(ex * c - ey * s, ex * s + ey * c);
+  ctx.rotate(tilt + Math.sin(clock * 1.7) * 0.05);
+  ctx.scale(dir, 1);
+  ctx.globalAlpha *= 0.75 + 0.25 * depth;
+  galleon(ctx, u, clock, P, Math.max(1, ink(r) * (0.7 + 0.3 * depth)));
+  if (depth > 0.5) smoke(ctx, u, clock, P);
+  ctx.restore();
+}
+
+function pirate(ctx, r, clock) {
+  const P = SKY.pirate, front = Math.sin(clock * RING.lap) > 0;
+  ringHalf(ctx, r, clock, P, false);
+  if (!front) shipOnRing(ctx, r, clock, P);
+  ball(ctx, r, P.light, P.dark);
+  clipped(ctx, r, () => {
+    swell(ctx, r, clock, P);
+    skullIsland(ctx, r, clock, P);
+  });
+  tone(ctx, r);
+  ringHalf(ctx, r, clock, P, true);
+  if (front) shipOnRing(ctx, r, clock, P);
+}
+
 export const BODIES = {
   normal: [{ draw: purple, r: 0.13, reach: 1.7 }, { draw: moons, r: 0.045, reach: 3.1 }, { draw: green, r: 0.1, reach: 1.7 }, { draw: rock, r: 0.05, reach: 1.1 }],
   wild: [
@@ -1103,7 +1420,8 @@ export const BODIES = {
   rare: [
     { draw: stage, name: "Tung Tung Tung Sahur", r: 0.05, reach: 3.9 }, { draw: cheese, name: "Lune en fromage", r: 0.1, reach: 1.5 },
     { draw: toaster, name: "Grille-pain", r: 0.1, reach: 1.9 },
-    { draw: pumpkin, name: "Citrouille", r: 0.09, reach: 2.1 }, { draw: melies, name: "Lune de Méliès", r: 0.1, reach: 1.4 }
+    { draw: pumpkin, key: "pumpkin", name: "Citrouille", r: 0.09, reach: 2.1 }, { draw: melies, name: "Lune de Méliès", r: 0.1, reach: 1.4 },
+    { draw: pirate, key: "pirate", name: "Planète pirate", r: 0.07, reach: 2.25 }
   ]
 };
 
@@ -1521,8 +1839,229 @@ function saucer(ctx, s, clock) {
   ctx.restore();
 }
 
+const SANTA = { red: "#d7263d", redDark: "#9c1528", fur: "#fff6e0", skin: "#f3c39b", gold: "#f2b13a", deer: "#9a6436", deerDark: "#6b4022", antler: "#e6c48a", sack: "#8a5a2e", gift: "#3fae4a" };
+const SPARKS = [[0.5, -0.06, 0.035], [0.75, 0.05, 0.025], [1.0, -0.02, 0.03], [1.3, 0.07, 0.02], [1.6, -0.05, 0.022], [1.95, 0.03, 0.016], [2.3, -0.03, 0.013]];
+
+function stardust(ctx, len, s) {
+  for (const [k, y, r] of SPARKS) {
+    const x = -s * 0.55 - k * s * 0.6;
+    if (-x > len + s * 0.55) break;
+    ctx.globalAlpha = Math.max(0, 1 - k / 2.6) * 0.9;
+    ctx.fillStyle = "rgb(" + GOLD + ")";
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4, d = i % 2 ? r * 0.35 : r;
+      ctx.lineTo(x + Math.cos(a) * d * s, y * s + Math.sin(a) * d * s);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function leg(ctx, s, x, y, a, line) {
+  const fx = x + Math.sin(a) * s * 0.09, fy = y + Math.cos(a) * s * 0.09;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(fx, fy);
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = s * 0.03 + line * 2;
+  ctx.stroke();
+  ctx.strokeStyle = SANTA.deerDark;
+  ctx.lineWidth = s * 0.03;
+  ctx.stroke();
+}
+
+function reindeer(ctx, s, x, y, clock, line) {
+  const run = Math.sin(clock * 11 + x * 9);
+  ctx.save();
+  ctx.translate(x * s, (y + run * 0.012) * s);
+  for (const [lx, phase] of [[-0.08, 1], [-0.05, -1], [0.07, -1], [0.1, 1]]) leg(ctx, s, lx * s, s * 0.03, phase * run * 0.7 + (lx < 0 ? 0.5 : -0.5), line);
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = line;
+  ctx.fillStyle = SANTA.fur;
+  disc(ctx, -s * 0.13, -s * 0.03, s * 0.025);
+  ctx.fillStyle = SANTA.deer;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, s * 0.13, s * 0.055, -0.05, 0, TAU);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(s * 0.07, -s * 0.03);
+  ctx.quadraticCurveTo(s * 0.12, -s * 0.1, s * 0.15, -s * 0.13);
+  ctx.lineTo(s * 0.19, -s * 0.1);
+  ctx.quadraticCurveTo(s * 0.15, -s * 0.04, s * 0.12, s * 0.02);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = s * 0.022 + line * 2;
+  ctx.beginPath();
+  for (const [bx, by, ex, ey] of [[0.15, -0.16, 0.1, -0.27], [0.12, -0.22, 0.05, -0.25], [0.12, -0.22, 0.16, -0.29], [0.18, -0.16, 0.2, -0.27]]) {
+    ctx.moveTo(bx * s, by * s);
+    ctx.lineTo(ex * s, ey * s);
+  }
+  ctx.stroke();
+  ctx.strokeStyle = SANTA.antler;
+  ctx.lineWidth = s * 0.022;
+  ctx.stroke();
+  ctx.fillStyle = SANTA.deer;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = line;
+  ctx.beginPath();
+  ctx.ellipse(s * 0.19, -s * 0.15, s * 0.055, s * 0.038, 0.35, 0, TAU);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = SANTA.deerDark;
+  ctx.beginPath();
+  ctx.ellipse(s * 0.13, -s * 0.18, s * 0.025, s * 0.012, -0.6, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = INK;
+  disc(ctx, s * 0.24, -s * 0.13, s * 0.014);
+  disc(ctx, s * 0.195, -s * 0.165, s * 0.01);
+  ctx.fillStyle = SANTA.red;
+  ctx.beginPath();
+  ctx.ellipse(s * 0.11, -s * 0.05, s * 0.025, s * 0.05, 0.5, 0, TAU);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = SANTA.gold;
+  disc(ctx, s * 0.135, -s * 0.02, s * 0.018);
+  ctx.restore();
+}
+
+function sleigh(ctx, s, clock, line) {
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = line;
+  ctx.fillStyle = SANTA.sack;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.44, -s * 0.12);
+  ctx.quadraticCurveTo(-s * 0.5, -s * 0.3, -s * 0.38, -s * 0.36);
+  ctx.quadraticCurveTo(-s * 0.3, -s * 0.33, -s * 0.24, -s * 0.12);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = SANTA.gift;
+  ctx.beginPath();
+  rr(ctx, -s * 0.43, -s * 0.45, s * 0.1, s * 0.1, s * 0.015);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = SANTA.red;
+  ctx.lineWidth = s * 0.02;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.38, -s * 0.45);
+  ctx.lineTo(-s * 0.38, -s * 0.35);
+  ctx.stroke();
+  const wave = Math.sin(clock * 6) * 0.25;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = line;
+  ctx.fillStyle = SANTA.red;
+  ctx.beginPath();
+  rr(ctx, -s * 0.25, -s * 0.33, s * 0.17, s * 0.24, s * 0.07);
+  ctx.fill();
+  ctx.stroke();
+  ctx.save();
+  ctx.translate(-s * 0.2, -s * 0.28);
+  ctx.rotate(-2.3 + wave);
+  ctx.beginPath();
+  rr(ctx, -s * 0.025, 0, s * 0.05, s * 0.13, s * 0.025);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = SANTA.fur;
+  disc(ctx, 0, s * 0.14, s * 0.03);
+  ctx.restore();
+  ctx.fillStyle = SANTA.skin;
+  ctx.beginPath();
+  ctx.arc(-s * 0.15, -s * 0.4, s * 0.06, 0, TAU);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = SANTA.fur;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.21, -s * 0.4);
+  ctx.quadraticCurveTo(-s * 0.2, -s * 0.28, -s * 0.13, -s * 0.27);
+  ctx.quadraticCurveTo(-s * 0.08, -s * 0.31, -s * 0.09, -s * 0.39);
+  ctx.quadraticCurveTo(-s * 0.15, -s * 0.36, -s * 0.21, -s * 0.4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = INK;
+  disc(ctx, -s * 0.12, -s * 0.42, s * 0.01);
+  ctx.fillStyle = SANTA.red;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.21, -s * 0.44);
+  ctx.quadraticCurveTo(-s * 0.18, -s * 0.56, -s * 0.3, -s * 0.55);
+  ctx.quadraticCurveTo(-s * 0.13, -s * 0.6, -s * 0.09, -s * 0.44);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = SANTA.fur;
+  ctx.beginPath();
+  rr(ctx, -s * 0.225, -s * 0.47, s * 0.145, s * 0.04, s * 0.02);
+  ctx.fill();
+  ctx.stroke();
+  disc(ctx, -s * 0.31, -s * 0.55, s * 0.028);
+  ctx.beginPath();
+  ctx.arc(-s * 0.31, -s * 0.55, s * 0.028, 0, TAU);
+  ctx.stroke();
+  ctx.strokeStyle = SANTA.gold;
+  ctx.lineWidth = line * 1.6;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.46, s * 0.12);
+  ctx.lineTo(s * 0.1, s * 0.12);
+  ctx.quadraticCurveTo(s * 0.2, s * 0.12, s * 0.2, s * 0.04);
+  ctx.quadraticCurveTo(s * 0.2, -s * 0.01, s * 0.15, 0);
+  for (const x of [-0.36, -0.06]) {
+    ctx.moveTo(x * s, s * 0.12);
+    ctx.lineTo(x * s, s * 0.05);
+  }
+  ctx.stroke();
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = line;
+  const g = ctx.createLinearGradient(0, -s * 0.2, 0, s * 0.06);
+  g.addColorStop(0, SANTA.red);
+  g.addColorStop(1, SANTA.redDark);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.48, -s * 0.2);
+  ctx.quadraticCurveTo(-s * 0.46, s * 0.06, -s * 0.3, s * 0.06);
+  ctx.lineTo(s * 0.02, s * 0.06);
+  ctx.quadraticCurveTo(s * 0.12, s * 0.05, s * 0.12, -s * 0.06);
+  ctx.quadraticCurveTo(s * 0.12, -s * 0.13, s * 0.05, -s * 0.12);
+  ctx.lineTo(-s * 0.36, -s * 0.12);
+  ctx.quadraticCurveTo(-s * 0.4, -s * 0.2, -s * 0.48, -s * 0.2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = SANTA.gold;
+  ctx.lineWidth = line * 1.3;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.44, -s * 0.08);
+  ctx.quadraticCurveTo(-s * 0.2, -s * 0.02, s * 0.08, -s * 0.06);
+  ctx.stroke();
+}
+
+function santa(ctx, s, clock) {
+  const line = Math.max(1, s * 0.02);
+  ctx.save();
+  ctx.translate(-s * 0.15, Math.sin(clock * 3.5) * s * 0.03);
+  ctx.rotate(Math.sin(clock * 2.2) * 0.05);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "#5a3a1e";
+  ctx.lineWidth = line;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.1, -s * 0.2);
+  ctx.quadraticCurveTo(s * 0.2, -s * 0.12, s * 0.36, -s * 0.06);
+  ctx.lineTo(s * 0.7, -s * 0.07);
+  ctx.stroke();
+  sleigh(ctx, s, clock, line);
+  reindeer(ctx, s, 0.36, -0.02, clock, line);
+  reindeer(ctx, s, 0.68, -0.04, clock, line);
+  ctx.restore();
+}
+
 export const PASSERS = {
   ...Object.fromEntries(Object.keys(CANS).map((kind) => [kind, { name: CANS[kind].name, draw: (ctx, s) => drawCan(ctx, kind, s), size: 0.13, trail: streak, spin: 1 }])),
   tesla: { name: "Tesla dans l'espace", draw: roadster, size: 0.17, spin: 0.35 },
-  saucer: { name: "Soucoupe volante", draw: saucer, size: 0.15, flat: true }
+  saucer: { name: "Soucoupe volante", draw: saucer, size: 0.15, flat: true },
+  santa: { name: "Père Noël", draw: santa, size: 0.2, span: 1.5, trail: stardust, flat: true }
 };

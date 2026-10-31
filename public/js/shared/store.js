@@ -12,6 +12,7 @@ export const KEYS = {
   toppings: "cv-garnitures",
   topping: "cv-garniture",
   toppingHint: "cv-garniture-astuce",
+  outfitSeen: "cv-tenue-vue",
   gear: "cv-accessoire",
   side: "cv-cotes",
   bread: "cv-pain",
@@ -20,7 +21,8 @@ export const KEYS = {
   quality: "cv-qualite",
   sensitivity: "cv-sensibilite",
   mouseAim: "cv-souris",
-  invincible: "cv-invincible"
+  invincible: "cv-invincible",
+  diag: "cv-diag"
 };
 
 function safe(storage) {

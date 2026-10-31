@@ -5,7 +5,7 @@ import { LOCAL } from "../shared/local.js";
 const listeners = [];
 
 if (LOCAL && new URLSearchParams(location.search).get("garnitures") === "toutes") {
-  store.set(KEYS.toppings, JSON.stringify(Object.keys(SPREADS).filter((k) => k !== "butter")));
+  store.set(KEYS.toppings, JSON.stringify(Object.keys(SPREADS).filter((k) => !SPREADS[k].free)));
 }
 
 function load() {
@@ -17,7 +17,7 @@ function load() {
   }
 }
 
-export const unlocked = (kind) => kind === "butter" || load().includes(kind);
+export const unlocked = (kind) => !!(SPREADS[kind] && SPREADS[kind].free) || load().includes(kind);
 export const onTopping = (fn) => listeners.push(fn);
 export const owned = () => Object.keys(SPREADS).filter(unlocked);
 export const hintSeen = () => store.get(KEYS.toppingHint) === "1";
@@ -37,7 +37,7 @@ export function unlockTopping(kind) {
 export const toppingList = () => load();
 
 export function addToppings(list) {
-  const mine = load(), more = (Array.isArray(list) ? list : []).filter((k) => SPREADS[k] && k !== "butter" && !mine.includes(k));
+  const mine = load(), more = (Array.isArray(list) ? list : []).filter((k) => SPREADS[k] && !SPREADS[k].free && !mine.includes(k));
   if (!more.length) return;
   store.set(KEYS.toppings, JSON.stringify([...new Set([...mine, ...more])]));
   for (const fn of listeners) fn(chosen());

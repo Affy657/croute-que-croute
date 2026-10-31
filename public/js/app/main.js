@@ -1,10 +1,11 @@
 import { createSim } from "../game/sim.js";
 import { FW, FH, STEP, clamp, speedMul, SPEED_START, SPEED_HOT } from "../game/field.js";
 import { fmtCs } from "../shared/format.js";
-import { store, KEYS } from "../shared/store.js";
+import { store, session, KEYS } from "../shared/store.js";
 import { VERSION } from "../version.js";
 import * as api from "./api.js";
 import * as audio from "./audio.js";
+import { startDiag } from "./diag.js";
 import { createScene } from "./scene.js";
 import { createInput } from "./input.js";
 import { burst, rain, bounce } from "./party.js";
@@ -532,12 +533,19 @@ ui.infoBtn.addEventListener("click", openInfo);
 ui.infoBack.addEventListener("click", closeInfo);
 ui.closeBtn.addEventListener("click", () => (settingsOpen ? closeSettings() : achOpen ? closeAch() : closeInfo()));
 ui.menuAch.addEventListener("click", openAch);
+ui.menu.addEventListener("click", (e) => {
+  if (e.target.closest("button, a, input, label, select, .picker")) return;
+  const b = scene.bodyAt(e.clientX, e.clientY), a = b && ach.touchSky(b.key);
+  if (!a) return;
+  toastAch(a);
+  toastAch({ name: gearLabel(a) });
+});
 ui.pickToast.addEventListener("click", () => openPicker(!pickerIsOpen()));
 document.addEventListener("pointerdown", (e) => {
   if (pickerIsOpen() && !ui.picker.contains(e.target)) openPicker(false);
 });
-ui.pickPrev.addEventListener("click", () => stepTopping(-1));
-ui.pickNext.addEventListener("click", () => stepTopping(1));
+ui.pickPrev.addEventListener("click", () => (pickerIsOpen() ? stepTopping(-1) : openPicker(true)));
+ui.pickNext.addEventListener("click", () => (pickerIsOpen() ? stepTopping(1) : openPicker(true)));
 ui.gearRows.addEventListener("click", (e) => {
   const b = e.target.closest("[data-step]");
   if (b) stepGear(b.parentElement.dataset.slot, Number(b.dataset.step));
@@ -670,6 +678,8 @@ finishLoading(new Promise((ok) => api.on("board", ok)));
 api.refreshBoard();
 initAccount(openSettings);
 api.resumePending();
+if (new URLSearchParams(location.search).get("diag") === "son") session.set(KEYS.diag, "1");
+startDiag(session.get(KEYS.diag) === "1");
 audio.initAudio();
 requestAnimationFrame(frame);
 document.documentElement.dataset.ready = "1";

@@ -5,12 +5,14 @@ import { progress } from "./achievements.js";
 import { PROJECTILES } from "../game/projectiles.js";
 import { GEAR, SLOTS, SPREADS } from "../shared/palette.js";
 import { owned, chosen, hintSeen, seeHint } from "./toppings.js";
+import { store, KEYS } from "../shared/store.js";
 import { gearOwned, gearTotal, chosenGear } from "./gear.js";
 
 const $ = (id) => document.getElementById(id);
 const BOARD_TOP = 30, PODIUM = 3;
 const HINT_TEXT = "Touche ta tartine pour changer de garniture";
 const HINT_GEAR = "Touche ta tartine pour changer d'accessoire";
+const HINT_NEW = "Nouveau ! Touche ta tartine pour l'essayer";
 
 export const ui = {
   menu: $("menu"), over: $("over"), board: $("board"), hud: $("hud"), time: $("time"), hudBest: $("hudBest"),
@@ -18,7 +20,7 @@ export const ui = {
   menuRankBox: $("menuRankBox"), menuRank: $("menuRank"), menuInfo: $("menuInfo"), menuPitch: $("menuPitch"),
   joinForm: $("joinForm"), pseudo: $("pseudo"), joinError: $("joinError"), haveAccount: $("haveAccount"),
   linkForm: $("linkForm"), linkInput: $("linkInput"), linkError: $("linkError"), newAccount: $("newAccount"),
-  linkCard: $("linkCard"), linkBtn: $("linkBtn"), link: $("link"), linkQr: $("linkQr"), linkCode: $("linkCode"), linkTime: $("linkTime"), linkFail: $("linkFail"), linkBack: $("linkBack"),
+  linkCard: $("linkCard"), linkBtn: $("linkBtn"), link: $("link"), linkQr: $("linkQr"), linkCode: $("linkCode"), linkTime: $("linkTime"), linkCopy: $("linkCopy"), linkFail: $("linkFail"), linkBack: $("linkBack"),
   mergeBtn: $("mergeBtn"), mergeForm: $("mergeForm"), mergeInput: $("mergeInput"), mergeNote: $("mergeNote"), mergeAsk: $("mergeAsk"), mergeYes: $("mergeYes"), mergeNo: $("mergeNo"),
   outRow: $("outRow"), outBtn: $("outBtn"), outNote: $("outNote"), outAsk: $("outAsk"), outYes: $("outYes"), outNo: $("outNo"),
   menuActions: $("menuActions"), play: $("play"), menuBoard: $("menuBoard"), menuAch: $("menuAch"), menuCountdown: $("menuCountdown"), settingsBtn: $("settingsBtn"),
@@ -30,7 +32,7 @@ export const ui = {
   info: $("info"), infoBtn: $("infoBtn"), closeBtn: $("closeBtn"), infoTabs: $("infoTabs"), infoBody: $("infoBody"), infoBack: $("infoBack"),
   settings: $("settings"), settingsBar: $("settingsBar"), settingsTabs: $("settingsTabs"), settingsApp: $("settingsApp"), settingsAdmin: $("settingsAdmin"),
   settingsBack: $("settingsBack"), installCard: $("installCard"), installHint: $("installHint"), installBtn: $("installBtn"), shareBtn: $("shareBtn"), qrBtn: $("qrBtn"),
-  qr: $("qr"), qrHost: $("qrHost"), qrBack: $("qrBack"),
+  qr: $("qr"), qrHost: $("qrHost"), qrCopy: $("qrCopy"), qrBack: $("qrBack"),
   ach: $("ach"), achCount: $("achCount"), achList: $("achList"), achBack: $("achBack"), achToast: $("achToast"), holdHint: $("holdHint"), overAch: $("overAch"), musicVol: $("musicVol"), sfxVol: $("sfxVol"), sensVol: $("sensVol"), mouseRow: $("mouseRow"), mouseTabs: $("mouseTabs"), mouseHint: $("mouseHint"),
   renameCard: $("renameCard"), renameForm: $("renameForm"), newPseudo: $("newPseudo"), renameNote: $("renameNote"),
   picker: $("picker"), pickToast: $("pickToast"), pickLabel: $("pickLabel"), pickPrev: $("pickPrev"), pickNext: $("pickNext"), pickName: $("pickName"), pickCount: $("pickCount"),
@@ -140,20 +142,30 @@ let pickerOpen = false;
 
 export const pickerIsOpen = () => pickerOpen;
 
+const outfitCount = () => owned().length + Object.keys(SLOTS).reduce((n, s) => n + gearOwned(s).length, 0);
+const seenCount = () => Number(store.get(KEYS.outfitSeen)) || 0;
+
 export function openPicker(open) {
   pickerOpen = open;
-  if (open) seeHint();
+  if (open) {
+    seeHint();
+    store.set(KEYS.outfitSeen, outfitCount());
+  }
   renderPicker();
 }
 
 export function renderPicker() {
-  const list = owned(), gears = Object.keys(SLOTS).some((s) => gearOwned(s).length), spreads = list.length > 1, hint = !pickerOpen && !hintSeen();
+  const list = owned(), gears = Object.keys(SLOTS).some((s) => gearOwned(s).length), spreads = list.length > 1;
+  if (store.get(KEYS.outfitSeen) === null && hintSeen()) store.set(KEYS.outfitSeen, outfitCount());
+  const fresh = !pickerOpen && hintSeen() && outfitCount() > seenCount(), hint = !pickerOpen && (!hintSeen() || fresh), cue = !pickerOpen && (spreads || gears);
   ui.picker.hidden = needJoin() || (!spreads && !gears);
+  ui.picker.classList.toggle("cue", cue);
   ui.pickToast.setAttribute("aria-expanded", String(pickerOpen));
-  ui.pickPrev.hidden = ui.pickNext.hidden = !pickerOpen || !spreads;
+  ui.pickPrev.hidden = ui.pickNext.hidden = !cue && (!pickerOpen || !spreads);
+  for (const b of [ui.pickPrev, ui.pickNext]) b.setAttribute("aria-label", cue ? "Changer de tenue" : b === ui.pickPrev ? "Garniture précédente" : "Garniture suivante");
   ui.pickLabel.hidden = hint ? false : !pickerOpen || !spreads;
   ui.pickLabel.classList.toggle("hint", hint);
-  ui.pickName.textContent = hint ? (spreads ? HINT_TEXT : HINT_GEAR) : SPREADS[chosen()].name;
+  ui.pickName.textContent = fresh ? HINT_NEW : hint ? (spreads ? HINT_TEXT : HINT_GEAR) : SPREADS[chosen()].name;
   ui.pickCount.textContent = hint ? "" : list.length + "/" + Object.keys(SPREADS).length;
   ui.gearRows.hidden = !pickerOpen;
   ui.menu.classList.toggle("dressing", pickerOpen && gears);

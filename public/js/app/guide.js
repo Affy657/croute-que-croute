@@ -59,7 +59,7 @@ function nears() {
 }
 
 function toppings() {
-  const kinds = Object.keys(SPREADS).filter((k) => k !== "butter");
+  const kinds = Object.keys(SPREADS).filter((k) => !SPREADS[k].free);
   return fold("Garnitures", count(kinds.filter(unlocked).length, kinds.length), () => body(
     bullets(
       "Une attaque à couteaux sur 10 cache un couteau garni. Frôle-le ou fais-toi tartiner par lui : sa garniture est à toi.",
@@ -106,7 +106,7 @@ function feats() {
 
 function sky() {
   const planet = (b) => item(art((ctx) => b.draw(ctx, (SKY_H / 2 - 2) / b.reach, 0), 1, SKY_W, SKY_H), b.name);
-  const passer = (p) => item(art((ctx) => p.draw(ctx, (PASSER_S * p.size) / PASSERS.saucer.size, 0), 1), p.name);
+  const passer = (p) => item(art((ctx) => p.draw(ctx, (PASSER_S * p.size) / PASSERS.saucer.size / (p.span || 1), 0), 1), p.name);
   return fold("Le ciel", null, () => body(
     bullets(
       "Les planètes défilent par tours de 8 : 5 normales, 2 extravagantes et 1 drôle.",
