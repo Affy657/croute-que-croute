@@ -8,7 +8,7 @@ import { owned, chosen, hintSeen, seeHint } from "./toppings.js";
 import { gearOwned, gearTotal, chosenGear } from "./gear.js";
 
 const $ = (id) => document.getElementById(id);
-const BOARD_TOP = 10, PODIUM = 3;
+const BOARD_TOP = 30, PODIUM = 3;
 const HINT_TEXT = "Touche ta tartine pour changer de garniture";
 const HINT_GEAR = "Touche ta tartine pour changer d'accessoire";
 
@@ -183,6 +183,7 @@ function boardRow(rank, pseudo, best, me, id) {
 
 export function setBoardScope(scope) {
   boardScope = scope;
+  ui.boardList.scrollTop = 0;
   renderBoard();
 }
 
@@ -202,15 +203,10 @@ export function renderBoard() {
   boardCountdown();
   const top = b && !soon ? (scope === "event" ? b.eventTop : scope === "pc" ? b.pcTop || [] : b.top) : [];
   const mine = soon ? { rank: null } : standing(scope), me = b && b.me;
-  let n = Math.min(top.length, BOARD_TOP);
-  ui.boardList.hidden = false;
-  let count = fillBoard(top.slice(0, n), mine, me);
-  while (n > PODIUM && overflows(ui.boardList)) count = fillBoard(top.slice(0, --n), mine, me);
+  const count = fillBoard(top.slice(0, BOARD_TOP), mine, me);
   ui.boardList.hidden = count === 0;
   setText(ui.boardEmpty, count ? "" : soon ? "Prochaine soirée " + when(next.opensAt) : b ? "Aucun score pour l'instant" : "Hors ligne");
 }
-
-const overflows = (list) => list.clientHeight > 0 && list.scrollHeight > list.clientHeight + 1;
 
 function fillBoard(top, mine, me) {
   const rows = top.map((r) => boardRow(r.rank, r.pseudo, r.best, r.me, r.id));

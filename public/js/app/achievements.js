@@ -21,7 +21,7 @@ export const ACHIEVEMENTS = [
   { id: "t120", family: "time", name: "Bien grillée", desc: "Tenir 120 s", gear: "toasted" },
   { id: "t150", family: "time", name: "Tartine de légende", desc: "Tenir 150 s", gear: "burnt" },
   { id: "combo5", family: "play", name: "Insaisissable", desc: "Faire un frôlé x" + COMBO, gear: "ninja" },
-  { id: "near20", family: "play", name: "Ça passe crème", desc: "20 frôlés dans une partie" },
+  { id: "near20", family: "play", name: "Ça passe crème", desc: "20 frôlés dans une partie", gear: "hitbox" },
   { id: "allAttacks", family: "play", name: "Tout vu", desc: "Voir les " + LIVE.length + " attaques", gear: "cutlery" },
   { id: "top1", family: "topping", name: "Ça change du beurre", desc: "Gagner une garniture" },
   { id: "top4", family: "topping", name: "Le frigo est plein", desc: "Gagner " + FRIDGE + " garnitures" },

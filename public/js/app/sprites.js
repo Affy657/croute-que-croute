@@ -1,5 +1,5 @@
 import { PALETTE, SPREADS, GEAR } from "../shared/palette.js";
-import { FW, FH, clamp } from "../game/field.js";
+import { FW, FH, HIT_R, NEAR, clamp } from "../game/field.js";
 import { PROJECTILES } from "../game/projectiles.js";
 
 export function rr(ctx, x, y, w, h, r) {
@@ -1218,14 +1218,40 @@ export function hat(ctx, kind, C) {
   ctx.restore();
 }
 
+function nearZone(ctx, C) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0, 0, HIT_R + NEAR, 0, TAU);
+  ctx.fillStyle = C.mustard;
+  ctx.globalAlpha = 0.16;
+  ctx.fill();
+  ctx.globalAlpha = 0.8;
+  ctx.setLineDash([3, 3]);
+  ctx.lineWidth = 1.4;
+  ctx.strokeStyle = C.mustard;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function hitCircle(ctx) {
+  ctx.beginPath();
+  ctx.arc(0, 0, HIT_R, 0, TAU);
+}
+
 export function drawToast(ctx, t, splat, C = PALETTE) {
-  const w = 40, h = 42, bread = GEAR[t.bread];
+  const w = 40, h = 42, bread = GEAR[t.bread], hitbox = t.bread === "hitbox";
   ctx.save();
   ctx.translate(t.x, t.y);
   ctx.rotate(splat ? 0.5 : t.tilt);
   ctx.lineJoin = "round";
+  if (hitbox && !splat) nearZone(ctx, C);
   if (!splat) thrusters(ctx, t, w, h, C);
   if (!splat && SIDES[t.side]) SIDES[t.side](ctx, t, C);
+  if (hitbox) {
+    ctx.save();
+    hitCircle(ctx);
+    ctx.clip();
+  }
   toastPath(ctx, w, h);
   ctx.fillStyle = bread ? bread.crust : C.crust;
   ctx.fill();
@@ -1250,6 +1276,13 @@ export function drawToast(ctx, t, splat, C = PALETTE) {
   if (BREADS[t.bread]) BREADS[t.bread](ctx, w, h, C);
   topping(ctx, t.spread, C);
   if (t.scars && t.scars.length) scars(ctx, t.scars, w, h, C);
+  if (hitbox) {
+    ctx.restore();
+    hitCircle(ctx);
+    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = C.void;
+    ctx.stroke();
+  }
   hat(ctx, t.head, C);
   if (splat) {
     ctx.fillStyle = C.jam;
