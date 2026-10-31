@@ -49,11 +49,13 @@ if (navigator.audioSession) {
 function build() {
   const Ctx = window.AudioContext || window.webkitAudioContext;
   if (!Ctx) return false;
-  ctx = new Ctx();
+  const made = new Ctx();
+  ctx = made;
   stale = false;
   note("contexte créé", ctx.state, ctx.sampleRate + " Hz");
-  ctx.addEventListener("statechange", () => {
-    note("contexte", ctx.state);
+  made.addEventListener("statechange", () => {
+    if (made !== ctx) return note("ancien contexte", made.state);
+    note("contexte", made.state);
     reconcile();
   });
   const limiter = ctx.createDynamicsCompressor();
@@ -229,7 +231,7 @@ export function unlockAudio() {
   ensureContext();
   if (!ctx) return;
   if (stale || ctx.state === "closed") rebuild();
-  else wake();
+  wake();
   reconcile();
 }
 
@@ -325,11 +327,11 @@ export function previewMusic() {
 }
 
 function fire(name, rate) {
-  const variants = SOUNDS[name], t = ctx.currentTime;
-  if (t - (lastPlayed[name] ?? -Infinity) < (SFX_GAP[name] || 0)) return;
+  const variants = SOUNDS[name], t = ctx.currentTime, now = performance.now() / 1000;
+  if (now - (lastPlayed[name] ?? -Infinity) < (SFX_GAP[name] || 0)) return;
   const pick = variants[Math.floor(Math.random() * variants.length)];
   if (!buffers[pick.url]) return;
-  lastPlayed[name] = t;
+  lastPlayed[name] = now;
   const src = ctx.createBufferSource();
   const gain = ctx.createGain();
   src.buffer = buffers[pick.url];
