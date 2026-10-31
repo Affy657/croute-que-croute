@@ -45,7 +45,7 @@ const S = {
 let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, lastShown = "";
 let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
 let settingsOpen = false, settingsFrom = "menu";
-let achOpen = false, achFrom = "menu", achTimer = null;
+let achOpen = false, achFrom = "menu";
 let cardOpen = false, historyFor = null;
 
 const playing = () => S.mode === "play" || S.mode === "dying";
@@ -154,6 +154,7 @@ function start(train = null) {
   Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, combo: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.myScope(), guess: !api.net.board, held: false });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0, scars: [] });
   scene.clear();
+  ui.menuToast.hidden = true;
   S.run = train ? null : api.startRun({ look: myLook() });
   const open = api.openEvent();
   if (!train) ach.runStart(open ? String(open.opensAt) : null);
@@ -378,16 +379,16 @@ function goHome() {
 }
 
 function toastAch(a) {
-  const t = ui.achToast;
-  t.textContent = !t.hidden && achTimer ? t.textContent + ", " + a.name : "★ " + a.name;
-  if (t.hidden || !achTimer) {
+  const t = S.mode === "menu" ? ui.menuToast : ui.achToast;
+  if (t.hidden || !t.timer) {
+    t.textContent = "★ " + a.name;
     t.hidden = false;
     bounce(t);
-  }
-  clearTimeout(achTimer);
-  achTimer = setTimeout(() => {
+  } else if (!t.textContent.includes(a.name)) t.textContent += ", " + a.name;
+  clearTimeout(t.timer);
+  t.timer = setTimeout(() => {
     t.hidden = true;
-    achTimer = null;
+    t.timer = null;
   }, ACH_TOAST_MS);
 }
 
@@ -536,10 +537,11 @@ ui.closeBtn.addEventListener("click", () => (settingsOpen ? closeSettings() : ac
 ui.menuAch.addEventListener("click", openAch);
 ui.menu.addEventListener("click", (e) => {
   if (e.target.closest("button, a, input, label, select, .picker")) return;
-  const b = scene.bodyAt(e.clientX, e.clientY), a = b && ach.touchSky(b.key);
-  if (!a) return;
-  toastAch(a);
-  toastAch({ name: gearLabel(a) });
+  const b = scene.bodyAt(e.clientX, e.clientY), hit = b && ach.touchSky(b.key);
+  if (!hit) return;
+  if (!hit.fresh) return toastAch({ name: hit.feat.name + " : déjà gagné" });
+  toastAch(hit.feat);
+  toastAch({ name: gearLabel(hit.feat) });
 });
 ui.pickToast.addEventListener("click", () => openPicker(!pickerIsOpen()));
 document.addEventListener("pointerdown", (e) => {

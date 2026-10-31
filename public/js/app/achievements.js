@@ -125,9 +125,10 @@ export const onUnlock = (fn) => listeners.push(fn);
 
 export function touchSky(key) {
   const id = SKY_TOUCH[key];
-  if (!id || data.got[id]) return null;
+  if (!id) return null;
+  const fresh = !data.got[id];
   unlock(id);
-  return BY_ID[id];
+  return { feat: BY_ID[id], fresh };
 }
 export const has = (id) => !!data.got[id];
 export const runUnlocked = () => fresh.slice();
