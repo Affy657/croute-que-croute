@@ -2,6 +2,7 @@ import { VERSION } from "../version.js";
 import { store, session, KEYS } from "../shared/store.js";
 import { guessDevice } from "./input.js";
 import { LOCAL } from "../shared/local.js";
+import { timeout } from "../shared/timeout.js";
 
 const RELOAD_GAP = 15000;
 const SEND_TRIES = 3, SEND_GAP_MS = 1500, WAIT_GAP_MS = 5000, WAIT_MS = 120000, SEND_TIMEOUT_MS = 8000;
@@ -28,7 +29,7 @@ const settled = (status) => status && status < 500 && status !== 408 && status !
 export async function call(method, path, body, timeoutMs) {
   const headers = { "content-type": "application/json", "x-app-version": VERSION };
   if (net.token) headers.authorization = "Bearer " + net.token;
-  const signal = timeoutMs && AbortSignal.timeout ? AbortSignal.timeout(timeoutMs) : undefined;
+  const signal = timeoutMs ? timeout(timeoutMs) : undefined;
   const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined, signal });
   let data = null;
   try { data = await res.json(); } catch (e) {}
@@ -134,8 +135,8 @@ export async function rename(pseudo) {
 }
 
 export function startRun(body) {
-  if (!canCompete()) return null;
-  return call("POST", "/api/runs", body).catch((e) => ({
+  if (!net.token || (net.board && !canCompete())) return null;
+  return call("POST", "/api/runs", body, SEND_TIMEOUT_MS).catch((e) => ({
     error: e.status ? e.message : "Hors ligne : score non compté",
     status: e.status
   }));

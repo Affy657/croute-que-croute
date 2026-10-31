@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 
 const BASE = process.argv[2] || "http://127.0.0.1:8787";
+if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(BASE)) {
+  console.error("Les tests d'API ne tournent qu'en local.");
+  process.exit(1);
+}
 const KEY = readFileSync(".dev.vars", "utf8").match(/ADMIN_KEY=(\w+)/)[1];
 const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
 const results = [];

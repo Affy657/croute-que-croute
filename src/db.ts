@@ -37,6 +37,7 @@ const CACHE_MS = 10000;
 const EVENT_GENERAL_MS = 60000;
 export const RECENT_MS = 12 * 3600 * 1000;
 const GENERAL_LIMIT = 1000;
+const CACHE_KEEP = 300;
 const OLD_TOKEN_LENGTH = 48;
 const EVENT_COLS = "id, name, opens_at, closes_at";
 const COLS: Record<Board, { best: string; at: string }> = { general: { best: "best", at: "best_at" }, pc: { best: "pc_best", at: "pc_best_at" } };
@@ -85,18 +86,25 @@ export async function findProfile(req: Request, env: Env) {
   return me;
 }
 
-export async function entryBest(env: Env, eventId: number, playerId: string) {
-  const row = await env.DB.prepare("SELECT best FROM entries WHERE event_id = ? AND player_id = ?")
+export async function entryMark(env: Env, eventId: number, playerId: string) {
+  const row = await env.DB.prepare("SELECT best, best_at AS at FROM entries WHERE event_id = ? AND player_id = ?")
     .bind(eventId, playerId)
-    .first<{ best: number }>();
-  return row?.best ?? 0;
+    .first<{ best: number; at: number | null }>();
+  return row ?? { best: 0, at: null };
 }
+
+export const entryBest = async (env: Env, eventId: number, playerId: string) => (await entryMark(env, eventId, playerId)).best;
 
 export function cached<T>(key: string, maxAge: number, load: () => Promise<T>): Promise<T> {
   const now = Date.now();
   const hit = rankingCache.get(key);
   if (hit && now - hit.at < maxAge) return Promise.resolve(hit.value as T);
   return load().then((value) => {
+    if (value === null) {
+      rankingCache.delete(key);
+      return value;
+    }
+    if (rankingCache.size >= CACHE_KEEP) for (const [k, v] of rankingCache) if (now - v.at > EVENT_GENERAL_MS) rankingCache.delete(k);
     rankingCache.set(key, { at: now, value });
     return value;
   });

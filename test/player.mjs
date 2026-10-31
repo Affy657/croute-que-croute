@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 
 const BASE = process.argv[2] || "http://127.0.0.1:8787";
+if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(BASE)) {
+  console.error("Les tests d'API ne tournent qu'en local.");
+  process.exit(1);
+}
 const KEY = readFileSync(".dev.vars", "utf8").match(/ADMIN_KEY=(\w+)/)[1];
 const VERSION = process.argv[3] || "dev";
 const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
@@ -74,10 +78,10 @@ const runId = r.data.runId;
 await wait(1200);
 r = await call("POST", `/api/runs/${runId}`, { token, body: { score: 99999999 } });
 check("score absurde refusé", r.status === 400, r);
-r = await call("POST", `/api/runs/${runId}`, { token, body: { score: 100 } });
+r = await call("POST", `/api/runs/${runId}`, { token, body: { score: 100, combo: 7 } });
 check("score enregistré au général et à la soirée", r.status === 200 && r.data.best === 100 && r.data.improved && r.data.rank >= 1 && r.data.eventBest === 100 && r.data.eventImproved && r.data.eventRank >= 1, r);
-r = await call("POST", `/api/runs/${runId}`, { token, body: { score: 100 } });
-check("renvoi du même score = succès sans doublon", r.status === 200 && !r.data.improved && r.data.best === 100, r);
+r = await call("POST", `/api/runs/${runId}`, { token, body: { score: 100, combo: 7 } });
+check("renvoi du même score = même réponse, sans doublon", r.status === 200 && r.data.improved && r.data.eventImproved && r.data.best === 100, r);
 r = await call("POST", `/api/runs/${runId}`, { token, body: { score: 120 } });
 check("autre score sur la même partie refusé", r.status === 409, r);
 
@@ -86,6 +90,10 @@ check("classements général et soirée : le joueur y est", r.status === 200 && 
 {
   const { me, top } = r.data, above = top[me.rank - 2];
   check("rival : le joueur juste au-dessus", me.rank === 1 ? me.rival === null : !!above && me.rival.pseudo === above.pseudo && me.rival.best === above.best, { rank: me.rank, rival: me.rival });
+  const card = await call("GET", `/api/players/${me.id}`);
+  check("fiche : record, progression et meilleur frôlé", card.status === 200 && card.data.best === 100 && card.data.combo === 7 && card.data.records.some((x) => !x.pc && x.score === 100), card.data);
+  const none = await call("GET", "/api/players/inconnu-" + hex(8));
+  check("fiche d'un joueur inconnu = 404", none.status === 404, none);
 }
 
 {
@@ -115,6 +123,8 @@ check("trop de parties d'affilée freinées (429)", limited > 0, { limited });
 r = await call("POST", `/api/admin/players/${row.id}/ban`, { key: KEY, body: { banned: true } });
 r = await call("GET", "/api/board", { token });
 check("joueur retiré absent des deux classements", r.data.me.rank === null && r.data.me.eventRank === null && r.data.me.banned && !r.data.top.some((x) => x.me) && !r.data.eventTop.some((x) => x.me), r.data.me);
+r = await call("GET", `/api/players/${row.id}`);
+check("joueur retiré sans fiche", r.status === 404, r);
 
 r = await call("GET", "/api/admin/players?scope=general", { key: KEY });
 check("admin : classement général disponible", r.status === 200 && r.data.scope === "general" && r.data.players.some((p) => p.pseudo === pseudo), r.data.scope);
@@ -125,10 +135,12 @@ const pcToken = r.data.token;
 r = await call("POST", "/api/runs", { token: pcToken });
 const pcRun = r.data.runId;
 await wait(1500);
-r = await call("POST", `/api/runs/${pcRun}`, { token: pcToken, body: { score: 100, device: "pc" } });
+r = await call("POST", `/api/runs/${pcRun}`, { token: pcToken, body: { score: 100, device: "pc", combo: 500 } });
 check("partie sur PC : record PC, hors soirée", r.status === 200 && r.data.pcBest === 100 && r.data.pcImproved && r.data.best === 0 && r.data.eventBest === null, r.data);
 r = await call("GET", "/api/board", { token: pcToken });
 check("partie sur PC : seulement au classement PC", r.data.pcTop.some((x) => x.me) && !r.data.top.some((x) => x.me) && !r.data.eventTop.some((x) => x.me) && r.data.me.pcRank > 0, r.data.me);
+r = await call("GET", `/api/players/${r.data.me.id}`);
+check("fiche : frôlé hors limites ignoré, record PC dans la progression", r.status === 200 && r.data.combo === 0 && r.data.pcBest === 100 && r.data.records.some((x) => x.pc && x.score === 100), r.data);
 r = await call("POST", "/api/runs", { token: pcToken });
 const phoneRun = r.data.runId;
 await wait(1000);
