@@ -115,11 +115,72 @@
   color: var(--ink-dim);
 }
 
+.catalog .attack {
+  display: block;
+  padding: 0;
+  scroll-margin-top: 140px;
+  scroll-margin-bottom: 16px;
+}
+
 .catalog .attack-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border-radius: 16px;
+  list-style: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.catalog .attack-head::-webkit-details-marker {
+  display: none;
+}
+
+.catalog .attack-head h2 {
+  flex: 1;
+  min-width: 0;
+}
+
+.catalog .attack-head::after {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin: 0 4px 0 2px;
+  border-right: 2.5px solid var(--ink-dim);
+  border-bottom: 2.5px solid var(--ink-dim);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.catalog .attack[open] .attack-head::after {
+  transform: translateY(2px) rotate(-135deg);
+}
+
+.catalog .attack-head:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: -3px;
+}
+
+.catalog .attack-when {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+.catalog .train-note {
+  font-size: 0.8rem;
+  text-align: center;
+  color: var(--ink-dim);
+}
+
+.catalog .weapon .close-up {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 30%);
+  mask-image: linear-gradient(90deg, transparent, #000 30%);
 }
 
 .catalog .badge {
@@ -143,6 +204,7 @@
   display: flex;
   gap: 14px;
   align-items: flex-start;
+  padding: 0 16px 16px;
 }
 
 .catalog .attack-body canvas {
