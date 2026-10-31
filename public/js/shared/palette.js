@@ -33,6 +33,7 @@ export const GEAR = {
   halo: { slot: "head", name: "Auréole" },
   nightcap: { slot: "head", name: "Bonnet de nuit" },
   dog: { slot: "head", name: "Oreilles de chien" },
+  bunny: { slot: "head", name: "Oreilles de lapin" },
   boosters: { slot: "side", name: "Boosters" },
   cutlery: { slot: "side", name: "Couteau et fourchette" },
   sixseven: { slot: "side", name: "Mains Six Seven" },
@@ -77,6 +78,7 @@ export const SKY = {
     box: "#0f1c2e", rim: "#3e6f8a", rimLight: "#8fd0e0", cone: "#25455c", wave: "#6fe0d8"
   },
   pirate: { light: "#8fe6ff", dark: "#1a6cc4", shallow: "#b8f1ff", foam: "#e8fbff", sand: "#f6d98b", jungle: "#3fae4a", jungleDark: "#2b8a3a", rock: "#8d86a3", rockLight: "#d9d4e6", cave: "#2a2440", palm: "#4cc25a", trunk: "#8a5a2e", ring: "#2ba7e6", ringBack: "#1a6cc4", ringLight: "#b8f1ff", hull: "#9a5428", hullDark: "#5a2e12", trim: "#f2b13a", window: "#ffd66b", sail: "#fff6e0", flag: "#e0244a", mark: "#e0244a", smoke: "#eef0f6", flash: "#ffcf33" },
+  egg: { light: "#ffdcec", mid: "#f59cc4", dark: "#a8436e", spot: "#d9578f", speck: "#fff6e0", stripe: "#7ec8ff", zig: "#ffcf33", ribbon: "#4fd6a8", ribbonBack: "#2e9c78", ribbonLight: "#c4f7e4" },
   pumpkin: { light: "#ffb54d", mid: "#f07a12", dark: "#9c3f08", rib: "#b8520c", stem: "#6b7a2a", glow: "#ffe27a", deep: "#ff8a1a", stick: "#8a5a2e", straw: "#e0b35a", spill: "rgba(255, 214, 110, 0.4)", spillOut: "rgba(255, 214, 110, 0)" },
   melies: {
     light: "#f7f0de", dark: "#8f8468", spot: "#c9bd9c", shadow: "#6e624a", cheek: "#fffaf0", feature: "#4f4032", mouth: "#3a2a22", eye: "#fffdf4",

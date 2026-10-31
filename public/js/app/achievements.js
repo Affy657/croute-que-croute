@@ -41,9 +41,10 @@ export const ACHIEVEMENTS = [
   { id: "night", family: "secret", name: "Tartine de minuit", desc: "Jouer entre minuit et " + NIGHT_UNTIL_H + " h", hint: "les chauves-souris sortent la nuit.", gear: "bat" },
   { id: "pumpkin", family: "secret", name: "Des bonbons ou un sort", desc: "Toucher la planète citrouille sur l'accueil", hint: "une citrouille passe parfois dans le ciel de l'accueil.", gear: "witch" },
   { id: "ahoy", family: "secret", name: "À l'abordage", desc: "Toucher la planète pirate sur l'accueil", hint: "un navire croise parfois au large de l'accueil.", gear: "pirate" },
-  { id: "hoho", family: "secret", name: "Ho ho ho", desc: "Toucher le père Noël sur l'accueil", hint: "un traîneau traverse parfois le ciel de l'accueil.", gear: "santa" }
+  { id: "hoho", family: "secret", name: "Ho ho ho", desc: "Toucher le père Noël sur l'accueil", hint: "un traîneau traverse parfois le ciel de l'accueil.", gear: "santa" },
+  { id: "eggHunt", family: "secret", name: "Chasse aux œufs", desc: "Toucher l'œuf de Pâques sur l'accueil", hint: "un lapin sautille parfois dans le ciel de l'accueil.", gear: "bunny" }
 ];
-const SKY_TOUCH = { pumpkin: "pumpkin", pirate: "ahoy", santa: "hoho" };
+const SKY_TOUCH = { pumpkin: "pumpkin", pirate: "ahoy", santa: "hoho", egg: "eggHunt" };
 const BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
 
 const blank = () => ({ got: {}, attacks: [], events: [], runs: 0 });
