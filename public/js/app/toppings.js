@@ -1,8 +1,8 @@
 import { store, KEYS } from "../shared/store.js";
 import { SPREADS } from "../shared/palette.js";
+import { LOCAL } from "../shared/local.js";
 
 const listeners = [];
-const LOCAL = ["127.0.0.1", "localhost"].includes(location.hostname);
 
 if (LOCAL && new URLSearchParams(location.search).get("garnitures") === "toutes") {
   store.set(KEYS.toppings, JSON.stringify(Object.keys(SPREADS).filter((k) => k !== "butter")));

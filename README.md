@@ -241,6 +241,7 @@ Après :
 - Journaux d'erreurs : gardés 3 jours dans Cloudflare, page du Worker `croute-que-croute`. En direct : `npx wrangler tail`.
 - Non retenus : un cache partagé entre les copies du serveur (Durable Object, dont le quota gratuit est à peu près ce qu'une soirée consomme) et une lecture partagée entre deux demandes (risque d'erreurs côté Cloudflare, gain faible).
 - Git : une branche par changement, fusionnée dans `master` avec `--no-ff`, puis poussée sur GitHub.
+- Outils locaux (`LOCAL` dans `shared/local.js` : localhost, 127.0.0.1 ou une adresse du réseau privé comme 192.168.x.x, donc aussi un téléphone sur le wifi ; jamais l'adresse en ligne) : `?accessoires=tous`, `?succes=tous`, `?garnitures=toutes`, `?planetes=souvent`, `?etoiles=souvent` (voir plus haut), `?jeton=<jeton>` qui connecte le téléphone à ce joueur (lien donné par `npm run seed`), et le bouton « Invincible » en haut à gauche : allumé, les couverts ne tuent plus (option `immortal` de `createSim`) ; on peut l'éteindre en pleine partie pour mourir au prochain coup. Une partie invincible compte comme une autre (record, classement local, succès), pour pouvoir tester les longues parties.
 
 | Dossier | Rôle |
 |---|---|
@@ -251,7 +252,7 @@ Après :
 | `public/sw.js`, `manifest.webmanifest` | Appli installable |
 | `src/` | API : routes (`routes/`, liste dans `worker.ts`), base et cache (`db.ts`), sécurité et contrôles |
 | `migrations/` | Schéma de la base |
-| `scripts/` | Mise en ligne, icônes, QR codes |
+| `scripts/` | Mise en ligne, icônes, QR codes, seed de la base locale |
 | `test/` | Robot d'équité, tests de l'API, outils d'équilibrage (`equilibrage/`) |
 | `maquettes/` | Images de travail : pistes de redesign de la tartine (pas retenues), planches des garnitures, des accessoires, des canettes, des planètes drôles, du ciel (toutes les planètes, la Tesla et la soucoupe), des couleurs de la deuxième planète enceintes, de Tung Tung Tung Sahur et des mains Six Seven |
 
@@ -259,6 +260,7 @@ Après :
 |---|---|
 | `npm install` | Installer les outils |
 | `npm run db:local` | Créer la base locale (à refaire après une migration) |
+| `npm run seed` | Remplir la base locale pour tester (jamais en ligne : refuse `--remote`). Efface puis recrée ses propres données, sans toucher aux tiennes : 24 joueurs (`seed-*`) avec parties, records Mobile et PC, tenues, et 3 soirées passées (« Space Tartinade test 1 à 3 », id 9001 à 9003). Dont « Testeur » (record 95,12 s, 1er de la soirée test 2, une partie à 1,80 s, une à 67,42 s, une à 40,00 s, sans tenue envoyée) et « Tricheur » (retiré, 14 min, pas de fiche). Affiche un lien `?jeton=` pour jouer en Testeur. `npm run seed -- --soiree` ajoute une soirée en cours (maintenant moins 1 h jusqu'à plus 3 h) |
 | `npm run dev` | Jeu en local sur http://localhost:8787, clé admin dans `.dev.vars`. Dans l'app Claude, le serveur « croute-que-croute » de `.claude/launch.json` lance la même chose, ouvert au wifi (`--ip 0.0.0.0`) pour tester sur téléphone |
 | `npm test` | Robot d'équité, 0 mort attendu (environ 4 min) |
 | `npm run test:api` | Tests de l'API, avec `npm run dev` lancé |

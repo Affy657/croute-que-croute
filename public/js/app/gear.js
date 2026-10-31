@@ -1,10 +1,10 @@
 import { store, KEYS } from "../shared/store.js";
 import { GEAR, SLOTS } from "../shared/palette.js";
 import { ACHIEVEMENTS, has } from "./achievements.js";
+import { LOCAL } from "../shared/local.js";
 
 const listeners = [];
 const SOURCE = Object.fromEntries(ACHIEVEMENTS.filter((a) => a.gear).map((a) => [a.gear, a.id]));
-const LOCAL = ["127.0.0.1", "localhost"].includes(location.hostname);
 const ALL = LOCAL && new URLSearchParams(location.search).get("accessoires") === "tous";
 const KEY = { head: KEYS.gear, side: KEYS.side, bread: KEYS.bread };
 

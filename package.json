@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "db:local": "wrangler d1 migrations apply croute-que-croute --local",
+    "seed": "node scripts/seed.mjs",
     "db:remote": "wrangler d1 migrations apply croute-que-croute --remote",
     "deploy": "node scripts/deploy.mjs",
     "icons": "node scripts/icons.mjs",

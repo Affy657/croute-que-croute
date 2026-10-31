@@ -2,6 +2,7 @@ import { store, KEYS } from "../shared/store.js";
 import { ATTACKS } from "../game/attacks.js";
 import { SPREADS, GEAR } from "../shared/palette.js";
 import { owned } from "./toppings.js";
+import { LOCAL } from "../shared/local.js";
 
 const FAMILIES = [["time", "Temps de cuisson"], ["play", "Frôlés et découvertes"], ["topping", "Garnitures"], ["loyal", "Assiduité et soirées"], ["secret", "Secrets"]];
 const TIMES = [[10, "t10"], [30, "t30"], [60, "t60"], [90, "t90"], [120, "t120"], [150, "t150"]];
@@ -40,7 +41,6 @@ export const ACHIEVEMENTS = [
   { id: "night", family: "secret", name: "Tartine de minuit", desc: "Jouer entre minuit et " + NIGHT_UNTIL_H + " h", hint: "les sorcières sortent la nuit.", gear: "witch" }
 ];
 const BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
-const LOCAL = ["127.0.0.1", "localhost"].includes(location.hostname);
 
 const blank = () => ({ got: {}, attacks: [], events: [], runs: 0 });
 

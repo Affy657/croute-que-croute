@@ -20,7 +20,7 @@ function passAt(items) {
   return end;
 }
 
-export function createSim(rng = Math.random, { fair = true, react = REACT, only = null, t0 = 0, y = FH * 0.7 } = {}) {
+export function createSim(rng = Math.random, { fair = true, react = REACT, only = null, t0 = 0, y = FH * 0.7, immortal = () => false } = {}) {
   const rnd = (a, b) => a + rng() * (b - a);
   const pick = (arr) => arr[Math.floor(rng() * arr.length)];
   const forced = only && ATTACKS.find((a) => a.id === only);
@@ -94,7 +94,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
     const tt = state.toast;
     for (const o of state.obs) {
       const gap = gapTo(o, tt.x, tt.y);
-      if (gap < HIT_R) {
+      if (gap < HIT_R && !immortal()) {
         state.dead = true;
         events.push({ type: "death", by: o.from, kind: o.kind, spread: o.spread });
         return;
