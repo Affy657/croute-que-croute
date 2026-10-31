@@ -677,6 +677,21 @@ a.ghost {
   height: auto;
 }
 
+.link-qr {
+  width: min(70vw, 280px);
+  border-radius: 16px;
+  image-rendering: pixelated;
+}
+
+.link-code {
+  margin: 0;
+  min-height: 1.2em;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  letter-spacing: 0.12em;
+  color: var(--mustard);
+}
+
 .pop {
   position: fixed;
   inset: 0;

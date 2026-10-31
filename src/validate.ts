@@ -24,6 +24,14 @@ export const cleanRole = (raw: unknown) => (raw === "owner" || raw === "admin" ?
 
 export const cleanClientId = (raw: unknown) => (typeof raw === "string" && /^[a-f0-9]{32}$/.test(raw) ? raw : null);
 
+export const LINK_CHARS = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+export const LINK_LENGTH = 8;
+
+export function cleanLinkCode(raw: unknown) {
+  const code = typeof raw === "string" ? raw.toUpperCase().replace(/[\s-]/g, "") : "";
+  return code.length === LINK_LENGTH && [...code].every((c) => LINK_CHARS.includes(c)) ? code : null;
+}
+
 const LOOK_SLOTS = ["head", "side", "bread", "spread"] as const;
 const LOOK_KIND = /^[a-z0-9]{1,20}$/;
 const LOOK_MAX = 99;

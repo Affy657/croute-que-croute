@@ -2,6 +2,7 @@ import { fail } from "./http";
 import { dispatch, type Route } from "./router";
 import * as player from "./routes/player";
 import * as admin from "./routes/admin";
+import * as link from "./routes/link";
 
 const ID = "([\\w-]{1,64})";
 
@@ -11,6 +12,8 @@ const routes: Route[] = [
   { method: "POST", path: "/api/join", run: player.join },
   { method: "PATCH", path: "/api/me", run: player.rename },
   { method: "PUT", path: "/api/me/look", run: player.saveLook },
+  { method: "POST", path: "/api/me/link", run: link.createLink },
+  { method: "POST", path: "/api/link", run: link.useLink },
   { method: "GET", path: new RegExp(`^/api/players/${ID}$`), run: player.card },
   { method: "POST", path: "/api/runs", run: player.startRun },
   { method: "POST", path: new RegExp(`^/api/runs/${ID}$`), run: player.finishRun },

@@ -122,6 +122,29 @@ check("classements général et soirée : le joueur y est", r.status === 200 && 
   check("tenue seule toujours acceptée", r.status === 200 && r.data.ok && r.data.progress === undefined, r.data);
 }
 
+{
+  r = await call("POST", "/api/me/link", {});
+  check("code de liaison sans compte refusé", r.status === 401, r);
+  r = await call("POST", "/api/me/link", { token });
+  const code = r.data && r.data.code;
+  check("code de liaison : 8 caractères, QR et expiration", r.status === 201 && /^[2-9A-HJKMNP-Z]{8}$/.test(code) && r.data.qr.bits.length === r.data.qr.size ** 2 && r.data.expiresAt > Date.now(), r.data);
+  r = await call("POST", "/api/link", { body: { code: code.slice(0, 4).toLowerCase() + " " + code.slice(4), clientId: hex(32) } });
+  const second = r.data && r.data.token;
+  check("autre appareil connecté avec le code (minuscules et espace acceptés)", r.status === 200 && !!second && r.data.pseudo === pseudo, r.data);
+  const [a, b] = await Promise.all([call("GET", "/api/board", { token }), call("GET", "/api/board", { token: second })]);
+  check("les deux appareils restent connectés au même compte", !!a.data.me && !!b.data.me && a.data.me.id === b.data.me.id, [a.data.me, b.data.me]);
+  r = await call("POST", "/api/link", { body: { code, clientId: hex(32) } });
+  check("code déjà utilisé refusé", r.status === 404, r);
+  r = await call("POST", "/api/link", { body: { code: "ABCDEFGH", clientId: hex(32) } });
+  check("code inconnu refusé", r.status === 404, r);
+  r = await call("POST", "/api/link", { body: { code: "ABC", clientId: hex(32) } });
+  check("code mal formé refusé", r.status === 400, r);
+  const fresh = (await call("POST", "/api/me/link", { token: second })).data.code;
+  await call("POST", "/api/me/link", { token });
+  r = await call("POST", "/api/link", { body: { code: fresh, clientId: hex(32) } });
+  check("nouveau code : l'ancien ne marche plus", r.status === 404, r);
+}
+
 r = await call("GET", "/api/admin/players", { key: KEY });
 const row = r.data.players.find((p) => p.pseudo === pseudo);
 check("admin : nombre de parties terminées", row && row.runs === 1 && row.suspect === null, row);

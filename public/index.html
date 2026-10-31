@@ -49,6 +49,14 @@
       <input id="pseudo" name="pseudo" maxlength="16" placeholder="Ton pseudo" autocomplete="nickname" autocapitalize="off" spellcheck="false" required>
       <p id="joinError" class="note error" hidden></p>
       <button class="cta" type="submit">C'est parti</button>
+      <button id="haveAccount" class="ghost" type="button">J'ai déjà un compte</button>
+    </form>
+    <form id="linkForm" class="join" hidden>
+      <label for="linkInput" class="sr-only">Code de ton autre appareil</label>
+      <input id="linkInput" name="code" maxlength="9" placeholder="Code à 8 caractères" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required>
+      <p id="linkError" class="note error" hidden></p>
+      <button class="cta" type="submit">Connecter</button>
+      <button id="newAccount" class="ghost" type="button">Nouveau joueur</button>
     </form>
     <div id="menuActions" class="actions">
       <button id="play" class="cta" type="button">Jouer</button>
@@ -185,6 +193,13 @@
       </form>
       <p id="renameNote" class="note" hidden></p>
     </section>
+    <section id="linkCard" class="card" hidden>
+      <h2>Autre appareil</h2>
+      <p class="sub">Joue avec ton compte sur un autre téléphone ou un PC.</p>
+      <div class="card-actions">
+        <button id="linkBtn" class="ghost" type="button">Afficher mon code</button>
+      </div>
+    </section>
     <section class="card">
       <h2>Son</h2>
       <label class="slider"><span>Musique</span><input id="musicVol" type="range" min="0" max="100" step="5"></label>
@@ -240,6 +255,18 @@
     <p id="qrHost" class="eyebrow"></p>
   </div>
   <button id="qrBack" class="cta back" type="button">Retour</button>
+</section>
+
+<section id="link" class="screen veil" hidden>
+  <div class="block">
+    <h2>Sur l'autre appareil</h2>
+    <canvas id="linkQr" class="qr-img link-qr" width="560" height="560" aria-hidden="true"></canvas>
+    <p id="linkCode" class="link-code"></p>
+    <p id="linkTime" class="eyebrow"></p>
+    <p id="linkFail" class="note error" hidden></p>
+    <p class="note">Scanne avec l'appareil photo, ou tape ce code dans «&nbsp;J'ai déjà un compte&nbsp;».</p>
+  </div>
+  <button id="linkBack" class="cta back" type="button">Retour</button>
 </section>
 
 <button id="closeBtn" class="corner" type="button" aria-label="Fermer" hidden>
