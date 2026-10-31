@@ -370,14 +370,15 @@ function thrusters(ctx, t, w, h, C) {
   }
 }
 
-function scars(ctx, list, w, h, C) {
+function scars(ctx, list, w, h, C, round) {
   ctx.save();
-  toastPath(ctx, w, h);
+  if (round) roundPath(ctx);
+  else toastPath(ctx, w, h);
   ctx.clip();
   ctx.fillStyle = C.handle;
   for (const s of list) {
     const c = Math.cos(s.a), n = Math.sin(s.a);
-    const edge = 1 / Math.max(Math.abs(c) / (w / 2), Math.abs(n) / (n < 0 ? h * 0.55 : h / 2));
+    const edge = round ? ROUND_R : 1 / Math.max(Math.abs(c) / (w / 2), Math.abs(n) / (n < 0 ? h * 0.55 : h / 2));
     const out = edge + 3, tip = edge - s.len;
     ctx.beginPath();
     ctx.moveTo(c * out - n * 2.6, n * out + c * 2.6);
@@ -1218,50 +1219,63 @@ export function hat(ctx, kind, C) {
   ctx.restore();
 }
 
-function nearZone(ctx, C) {
-  ctx.save();
+const ROUND_R = 21, ROUND_SPREAD = 0.82, NEAR_CRUMBS = 14, NEAR_SPIN_MS = 9000, NEAR_GLOW = 0.34;
+
+function roundPath(ctx) {
   ctx.beginPath();
-  ctx.arc(0, 0, HIT_R + NEAR, 0, TAU);
-  ctx.fillStyle = C.mustard;
-  ctx.globalAlpha = 0.16;
+  ctx.arc(0, 0, ROUND_R, 0, TAU);
+}
+
+function nearZone(ctx, C) {
+  const outer = HIT_R + NEAR, spin = (performance.now() / NEAR_SPIN_MS) * TAU;
+  ctx.save();
+  const glow = ctx.createRadialGradient(0, 0, HIT_R, 0, 0, outer);
+  glow.addColorStop(0, C.mustard);
+  glow.addColorStop(1, "rgba(255, 207, 51, 0)");
+  ctx.fillStyle = glow;
+  ctx.globalAlpha = NEAR_GLOW;
+  ctx.beginPath();
+  ctx.arc(0, 0, outer, 0, TAU);
   ctx.fill();
-  ctx.globalAlpha = 0.8;
-  ctx.setLineDash([3, 3]);
-  ctx.lineWidth = 1.4;
-  ctx.strokeStyle = C.mustard;
-  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = C.crumb;
+  ctx.strokeStyle = C.crust;
+  ctx.lineWidth = 0.9;
+  for (let i = 0; i < NEAR_CRUMBS; i++) {
+    const a = spin + (i / NEAR_CRUMBS) * TAU, size = 1.5 + (i % 3) * 0.4;
+    ctx.save();
+    ctx.translate(Math.cos(a) * outer, Math.sin(a) * outer);
+    ctx.rotate(a * 2 + i);
+    ctx.beginPath();
+    rr(ctx, -size, -size * 0.8, size * 2, size * 1.6, size * 0.6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
   ctx.restore();
 }
 
-function hitCircle(ctx) {
-  ctx.beginPath();
-  ctx.arc(0, 0, HIT_R, 0, TAU);
-}
-
 export function drawToast(ctx, t, splat, C = PALETTE) {
-  const w = 40, h = 42, bread = GEAR[t.bread], hitbox = t.bread === "hitbox";
+  const w = 40, h = 42, bread = GEAR[t.bread], round = t.bread === "hitbox", s = round ? HIT_R / ROUND_R : 1;
+  const body = round ? roundPath : (c) => toastPath(c, w, h);
   ctx.save();
   ctx.translate(t.x, t.y);
   ctx.rotate(splat ? 0.5 : t.tilt);
   ctx.lineJoin = "round";
-  if (hitbox && !splat) nearZone(ctx, C);
+  if (round && !splat) nearZone(ctx, C);
+  ctx.scale(s, s);
   if (!splat) thrusters(ctx, t, w, h, C);
   if (!splat && SIDES[t.side]) SIDES[t.side](ctx, t, C);
-  if (hitbox) {
-    ctx.save();
-    hitCircle(ctx);
-    ctx.clip();
-  }
-  toastPath(ctx, w, h);
+  body(ctx);
   ctx.fillStyle = bread ? bread.crust : C.crust;
   ctx.fill();
-  ctx.lineWidth = 2.2;
+  ctx.lineWidth = 2.2 / s;
   ctx.strokeStyle = C.void;
   ctx.stroke();
   ctx.save();
   ctx.translate(0, 2);
   ctx.scale(0.78, 0.78);
-  toastPath(ctx, w, h);
+  body(ctx);
   ctx.fillStyle = bread ? bread.crumb : C.crumb;
   ctx.fill();
   ctx.restore();
@@ -1274,15 +1288,11 @@ export function drawToast(ctx, t, splat, C = PALETTE) {
   }
   ctx.globalAlpha = 1;
   if (BREADS[t.bread]) BREADS[t.bread](ctx, w, h, C);
+  ctx.save();
+  ctx.scale(round ? ROUND_SPREAD : 1, round ? ROUND_SPREAD : 1);
   topping(ctx, t.spread, C);
-  if (t.scars && t.scars.length) scars(ctx, t.scars, w, h, C);
-  if (hitbox) {
-    ctx.restore();
-    hitCircle(ctx);
-    ctx.lineWidth = 2.2;
-    ctx.strokeStyle = C.void;
-    ctx.stroke();
-  }
+  ctx.restore();
+  if (t.scars && t.scars.length) scars(ctx, t.scars, w, h, C, round);
   hat(ctx, t.head, C);
   if (splat) {
     ctx.fillStyle = C.jam;
