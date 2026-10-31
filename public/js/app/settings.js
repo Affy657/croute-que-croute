@@ -1,4 +1,5 @@
-import { store, KEYS } from "../shared/store.js";
+import { store, session, KEYS } from "../shared/store.js";
+import { LOCAL } from "../shared/local.js";
 import { installMode, promptInstall, shouldSuggest, markSuggested, onInstallChange } from "./install.js";
 import { prefs, setLevel, previewMusic, previewSfx } from "./audio.js";
 import { ui, setText } from "./screens.js";
@@ -12,6 +13,13 @@ const HINTS = {
   menu: "Ouvre le menu du navigateur, puis « Installer l'appli » ou « Ajouter à l'écran d'accueil »."
 };
 let tab = "app";
+
+export const testing = { invincible: LOCAL && session.get(KEYS.invincible) === "1" };
+
+export function setInvincible(on) {
+  testing.invincible = LOCAL && on;
+  session.set(KEYS.invincible, testing.invincible ? "1" : null);
+}
 
 export function renderSettings() {
   const admin = !!store.get(KEYS.adminToken);
@@ -34,6 +42,12 @@ export function renderSettings() {
   ui.musicVol.value = Math.round(prefs.musicLevel * 100);
   ui.sfxVol.value = Math.round(prefs.sfxLevel * 100);
   renderControlsCard();
+  renderTestCard();
+}
+
+function renderTestCard() {
+  ui.testCard.hidden = !LOCAL;
+  for (const b of ui.godTabs.children) b.setAttribute("aria-selected", String((b.dataset.god === "1") === testing.invincible));
 }
 
 const MOUSE_HINTS = ["La tartine bouge comme avec le doigt.", "La tartine va là où tu pointes."];
@@ -133,6 +147,12 @@ for (const b of ui.mouseTabs.children) {
   b.addEventListener("click", () => {
     setAim(b.dataset.aim === "1");
     renderControlsCard();
+  });
+}
+for (const b of ui.godTabs.children) {
+  b.addEventListener("click", () => {
+    setInvincible(b.dataset.god === "1");
+    renderTestCard();
   });
 }
 ui.installBtn.addEventListener("click", promptInstall);

@@ -19,7 +19,8 @@ export const KEYS = {
   lastReload: "cv-reload",
   quality: "cv-qualite",
   sensitivity: "cv-sensibilite",
-  mouseAim: "cv-souris"
+  mouseAim: "cv-souris",
+  invincible: "cv-invincible"
 };
 
 function safe(storage) {
