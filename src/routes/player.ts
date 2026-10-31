@@ -13,7 +13,7 @@ const SLACK_MS = 5000;
 const MAX_SCORE = 15 * 60 * 100;
 const TOP = 50;
 const FEED_MS = 15 * 60 * 1000, FEED_SIZE = 6;
-const CARD_MS = 10000, CARD_RUNS = 10;
+const CARD_MS = 10000, CARD_RUNS = 10, EXPRESS_CS = 200, SIX_SEVEN_CS = 6700, EVENT_TOP = 10;
 const BAD_PSEUDO = "Pseudo de 2 à 16 caractères : lettres, chiffres, espaces, tirets.";
 
 interface RunRow {
@@ -218,24 +218,29 @@ async function loadCard(env: Env, id: string) {
     generalCount(env, general),
     p.pc_best > 0 ? generalRank(env, pc, p.id, p.pc_best, p.pc_best_at, "pc") : null,
     generalCount(env, pc, false, "pc"),
-    env.DB.prepare("SELECT SUM(score) AS total, MAX(finished_at) AS last FROM runs WHERE player_id = ? AND finished_at IS NOT NULL")
-      .bind(p.id)
-      .first<{ total: number | null; last: number | null }>(),
+    env.DB.prepare(
+      `SELECT SUM(score) AS total, MAX(finished_at) AS last, MIN(score) AS low,
+         MAX(score > 0 AND score % 100 = 0) AS round, MAX(score >= ?2 AND score < ?2 + 100) AS six
+       FROM runs WHERE player_id = ?1 AND finished_at IS NOT NULL`,
+    )
+      .bind(p.id, SIX_SEVEN_CS)
+      .first<{ total: number | null; last: number | null; low: number | null; round: number | null; six: number | null }>(),
     env.DB.prepare("SELECT score, device, finished_at AS at FROM runs WHERE player_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT ?")
       .bind(p.id, CARD_RUNS)
       .all<{ score: number; device: string | null; at: number }>(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM entries WHERE player_id = ? AND run_count > 0").bind(p.id).first<{ n: number }>(),
     env.DB.prepare(
-      `SELECT ev.name, 1 + (
+      `SELECT ev.name, ev.closes_at AS closesAt, 1 + (
          SELECT COUNT(*) FROM entries o JOIN profiles q ON q.id = o.player_id
          WHERE o.event_id = e.event_id AND q.banned = 0 AND o.best > 0 AND (o.best > e.best OR (o.best = e.best AND o.best_at < e.best_at))
        ) AS place
        FROM entries e JOIN events ev ON ev.id = e.event_id
-       WHERE e.player_id = ? AND e.best > 0 ORDER BY place ASC, ev.opens_at DESC LIMIT 1`,
+       WHERE e.player_id = ? AND e.best > 0 ORDER BY place ASC, ev.opens_at DESC`,
     )
       .bind(p.id)
-      .first<{ name: string; place: number }>(),
+      .all<{ name: string; closesAt: number; place: number }>(),
   ]);
+  const now = Date.now(), places = top.results;
   return {
     pseudo: p.pseudo,
     joinedAt: p.created_at,
@@ -250,8 +255,15 @@ async function loadCard(env: Env, id: string) {
     played: totals?.total ?? 0,
     recent: recent.results.reverse().map((r) => ({ score: r.score, pc: r.device === "pc" })),
     events: played?.n ?? 0,
-    eventBest: top,
+    eventBest: places[0] ? { name: places[0].name, place: places[0].place } : null,
     look: p.look ? JSON.parse(p.look) : null,
+    feats: {
+      express: totals?.low != null && totals.low < EXPRESS_CS,
+      round: !!totals?.round,
+      sixSeven: !!totals?.six,
+      top10: places.some((e) => e.place <= EVENT_TOP),
+      eventWin: places.some((e) => e.place === 1 && now > e.closesAt + GRACE_MS),
+    },
   };
 }
 
