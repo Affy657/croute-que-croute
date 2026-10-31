@@ -111,7 +111,7 @@ function toastCard(scale) {
   const { cv, ctx } = realCanvas(TOAST_W, scale);
   drawToast(ctx, { x: 0, y: 0, tilt: 0, thrust: 0.35 }, null);
   hitbox(ctx, scale, [(c) => c.arc(0, 0, HIT_R, 0, Math.PI * 2)]);
-  card.append(cv, el("span", "name", "Tartine"), el("span", "meta", `touchée dans un cercle de ${HIT_R * 2} px`));
+  card.append(cv, el("span", "name", "Tartine"), el("span", "meta", `hitbox ronde de ${HIT_R * 2} px`));
   return card;
 }
 
@@ -128,13 +128,13 @@ export function renderWeapons(root, { showLab = false } = {}) {
   const kinds = Object.keys(PROJECTILES);
   const lab = kinds.filter((k) => PROJECTILES[k].lab);
   const groups = [
-    weaponGroup("Taille réelle", `Comme dans le jeu sur cet écran (échelle × ${scale.toFixed(2).replace(".", ",")}). En pointillés jaunes : la zone de touche.`,
+    weaponGroup("Taille réelle", `À l'échelle de ton écran (× ${scale.toFixed(2).replace(".", ",")}). En pointillés jaunes : la hitbox.`,
       [toastCard(scale), ...kinds.filter((k) => !PROJECTILES[k].lab).map((k) => weaponCard(k, null, null, scale))]),
-    weaponGroup("Variantes rares", "1 attaque à couteaux sur 10 : un seul de ses couteaux change de tartinade. Pur visuel, la zone de touche ne change pas. Ici en gros plan.",
+    weaponGroup("Variantes rares", "Une attaque à couteaux sur 10 cache un couteau avec une tartinade rare. Juste un skin : même hitbox.",
       Object.keys(SPREADS).filter((sp) => sp !== "butter").map(spreadCard))
   ];
   if (showLab && lab.length) {
-    groups.push(weaponGroup("Prototypes", "Pas encore dans le jeu, visibles seulement sur les téléphones admin : à voir en mouvement dans l'onglet Attaques.",
+    groups.push(weaponGroup("Prototypes", "Pas encore en jeu, visibles seulement par les admins. Tu peux les voir bouger dans l'onglet Attaques.",
       lab.map((k) => weaponCard(k, null, "prototype", scale))));
   }
   root.replaceChildren(...groups);
@@ -143,8 +143,8 @@ export function renderWeapons(root, { showLab = false } = {}) {
 function progressionCard() {
   const steps = [];
   for (const a of ATTACKS.filter((x) => !x.lab && x.growsUntil)) steps.push([a.growsUntil, a.growth]);
-  steps.push([GAP_END, "les attaques s'enchaînent au rythme le plus rapide"]);
-  steps.push([SPEED_UNTIL, "les couverts atteignent leur vitesse maximale"]);
+  steps.push([GAP_END, "cadence max des attaques"]);
+  steps.push([SPEED_UNTIL, "vitesse max des couverts"]);
   steps.sort((x, y) => x[0] - y[0]);
   const section = el("section", "card");
   const list = el("ol", "timeline");
@@ -217,8 +217,9 @@ function rulesCard() {
   const rules = el("section", "card");
   const list = el("ul", "rules");
   for (const text of [
-    "On peut toujours s'en sortir : chaque attaque est testée avant d'être lancée, même si tu réagis un dixième de seconde après l'alerte.",
-    "Une attaque ne sort jamais plus de 3 fois d'affilée, et celle qui vient de sortir revient moins souvent. Les grosses figures (croix, murs en série, double pluie) ne sortent jamais deux fois de suite."
+    "Toujours esquivable : chaque attaque est testée avant de partir, même si tu réagis un dixième de seconde après l'alerte.",
+    "Jamais plus de 3 fois la même attaque d'affilée, et celle qui vient de sortir revient moins souvent.",
+    "Croix, murs en série et double pluie ne sortent jamais deux fois de suite."
   ]) list.append(el("li", null, text));
   rules.append(el("h2", null, "Règles"), list);
   return rules;
@@ -255,7 +256,7 @@ export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
       const go = el("button", "ghost train", "S'entraîner");
       go.type = "button";
       go.addEventListener("click", () => onTrain(attack));
-      text.append(go, el("p", "train-note", "Seulement cette attaque, hors classement, succès et record."));
+      text.append(go);
     }
     body.append(cv, text);
     card.append(head, body);
@@ -287,10 +288,10 @@ function credit(title, text, href, label) {
 
 export function renderCredits(root) {
   root.replaceChildren(
-    credit("Collectif", "Tartine Sauvage, qui organise les soirées Space Tartinade", CREW_URL, "Suivre sur Instagram"),
+    credit("Collectif", "Tartine Sauvage, l'équipe derrière les soirées Space Tartinade", CREW_URL, "Suivre sur Instagram"),
     credit("Développeur", DEV.name, DEV.url, "Voir sur LinkedIn"),
     credit("Musique", `${MUSIC_CREDIT.title}, de ${MUSIC_CREDIT.artist}`, MUSIC_CREDIT.url, "Écouter sur Spotify"),
-    credit("Bruitages", `Sons de la banque ${SFX_CREDIT.name}`, SFX_CREDIT.url, `Voir ${SFX_CREDIT.name}`)
+    credit("Bruitages", `Sons de ${SFX_CREDIT.name}`, SFX_CREDIT.url, `Voir ${SFX_CREDIT.name}`)
   );
 }
 
