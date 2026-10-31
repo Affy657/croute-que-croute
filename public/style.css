@@ -928,13 +928,7 @@ a.ghost {
 }
 
 .board-list li[data-id] {
-  grid-template-columns: 2.6rem 1fr auto 0.5rem;
   cursor: pointer;
-}
-
-.board-list li[data-id]::after {
-  content: "›";
-  opacity: 0.55;
 }
 
 .board-list li[data-id]:focus-visible {
@@ -1023,7 +1017,14 @@ a.ghost {
   gap: 0.3rem;
 }
 
-#profile .info-head p {
+.profile-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.profile-foot p {
   margin: 0;
 }
 
@@ -1053,7 +1054,7 @@ a.ghost {
 
 .profile-toast {
   width: 240px;
-  height: 190px;
+  height: 170px;
 }
 
 .profile-toast.off {
@@ -1108,6 +1109,11 @@ a.ghost {
 
 .rank.p3 .rank-place {
   color: var(--bronze);
+}
+
+.rank.empty .rank-place,
+.rank.empty .rank-time {
+  color: var(--ink-dim);
 }
 
 .rank-place small {

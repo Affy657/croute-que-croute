@@ -6,7 +6,7 @@ import { outfit, gearOwned, gearTotal } from "./gear.js";
 import { chosen, owned } from "./toppings.js";
 import { progress } from "./achievements.js";
 
-const SEND_MS = 1500, TOAST_SCALE = 2.2, TOAST_Y = 0.58, BAR_MIN = 6, PODIUM = 3, BLANK = " ";
+const SEND_MS = 1500, TOAST_SCALE = 2, TOAST_Y = 0.53, BAR_MIN = 6, PODIUM = 3, BLANK = " ", NONE = "-";
 const SHELVES = [["head", "Chapeaux"], ["side", "Côtés"], ["bread", "Pains"], ["spread", "Garnitures"]];
 const $ = (id) => document.getElementById(id);
 const ui = { name: $("profileName"), since: $("profileSince"), last: $("profileLast"), canvas: $("profileToast"), ranks: $("profileRanks"), body: $("profileBody") };
@@ -57,21 +57,18 @@ function tiles(...list) {
 }
 
 function rankBadge(label, best, rank, count) {
-  const node = el("div", "rank" + (rank && rank <= PODIUM ? " p" + rank : ""));
-  if (rank) {
-    const place = el("span", "rank-place", ord(rank));
-    place.append(el("small", null, "/ " + count));
-    node.append(place);
-  }
-  node.append(el("span", "rank-time", fmtCs(best) + " s"), el("span", "rank-label", label));
+  const node = el("div", "rank" + (!best ? " empty" : rank && rank <= PODIUM ? " p" + rank : ""));
+  const place = el("span", "rank-place", best && rank ? ord(rank) : NONE);
+  if (best && rank) place.append(el("small", null, "/ " + count));
+  node.append(place, el("span", "rank-time", best ? fmtCs(best) + " s" : NONE), el("span", "rank-label", label));
   return node;
 }
 
-function spark(runs, best) {
-  const top = Math.max(...runs.map((r) => r.score), 1);
+function spark(records) {
+  const top = Math.max(...records.map((r) => r.score), 1);
   const node = el("div", "spark");
-  node.append(...runs.map((r, i) => {
-    const col = el("div", i === runs.length - 1 ? "spark-col last" : "spark-col"), lane = el("div", "spark-lane"), bar = el("i", r.score >= best ? "best" : null);
+  node.append(...records.map((r, i) => {
+    const col = el("div", i === records.length - 1 ? "spark-col last" : "spark-col"), lane = el("div", "spark-lane"), bar = el("i");
     bar.style.height = Math.max(BAR_MIN, (r.score / top) * 100) + "%";
     lane.append(bar);
     col.append(lane, el("span", null, String(Math.floor(r.score / 100))));
@@ -81,12 +78,12 @@ function spark(runs, best) {
 }
 
 function progression(c) {
-  if (!c.recent.length) return null;
-  const of = (pc) => c.recent.filter((r) => r.pc === pc);
-  let pc = c.recent[c.recent.length - 1].pc, runs = of(pc);
-  if (runs.length < 2) runs = of((pc = !pc));
-  if (runs.length < 2) return null;
-  const node = card("Progression", spark(runs, pc ? c.pcBest : c.best));
+  if (!c.records.length) return null;
+  const of = (pc) => c.records.filter((r) => r.pc === pc);
+  let pc = c.records[c.records.length - 1].pc, records = of(pc);
+  if (records.length < 2) records = of((pc = !pc));
+  if (records.length < 2) return null;
+  const node = card("Progression", spark(records));
   node.firstChild.append(el("span", "card-tag", pc ? "PC" : "Mobile"));
   return node;
 }
@@ -123,15 +120,14 @@ function render(c) {
   ui.last.hidden = !c.lastAt;
   Object.assign(toast, { spread: "butter", head: null, side: null, bread: null }, c.look ? { spread: c.look.spread || "butter", head: c.look.head, side: c.look.side, bread: c.look.bread } : {});
   showToast(true);
-  const ranks = [c.best ? rankBadge("Mobile", c.best, c.rank, c.count) : null, c.pcBest ? rankBadge("PC", c.pcBest, c.pcRank, c.pcCount) : null].filter(Boolean);
-  ui.ranks.replaceChildren(...(ranks.length ? ranks : [el("p", "note", "Pas encore de record")]));
-  const e = c.eventBest;
+  ui.ranks.replaceChildren(rankBadge("Mobile", c.best, c.rank, c.count), rankBadge("PC", c.pcBest, c.pcRank, c.pcCount));
   const cards = [
     card("Parties", tiles(
       tile("Jouées", String(c.runs)),
       tile("Temps de jeu", duration(c.played)),
       tile("Soirées", String(c.events)),
-      e ? tile("Meilleure place", ord(e.place), ...(e.live ? [e.name, "En cours"] : [e.name])) : null
+      tile("Meilleure place", c.eventBest ? ord(c.eventBest.place) : NONE),
+      tile("Meilleur frôlé", c.combo ? "x" + c.combo : NONE)
     )),
     progression(c)
   ];
@@ -147,7 +143,7 @@ function loading() {
   ui.last.textContent = BLANK;
   ui.last.hidden = false;
   showToast(false);
-  ui.ranks.replaceChildren(el("div", "rank skeleton"));
+  ui.ranks.replaceChildren(el("div", "rank skeleton"), el("div", "rank skeleton"));
   ui.body.replaceChildren(el("section", "card skeleton"), el("section", "card skeleton"));
 }
 
