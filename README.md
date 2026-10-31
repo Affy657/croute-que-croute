@@ -272,7 +272,7 @@ Après :
 | `npm run seed` | Remplir la base locale pour tester (jamais en ligne : refuse `--remote`). Efface puis recrée ses propres données, sans toucher aux tiennes : 24 joueurs (`seed-*`) avec parties, records Mobile et PC, tenues, et 3 soirées passées (« Space Tartinade test 1 à 3 », id 9001 à 9003). Dont « Testeur » (record 95,12 s, 1er de la soirée test 2, une partie à 1,80 s, une à 67,42 s, une à 40,00 s, sans tenue envoyée) et « Tricheur » (retiré, 14 min, pas de fiche). Affiche un lien `?jeton=` pour jouer en Testeur. `npm run seed -- --soiree` ajoute une soirée en cours (maintenant moins 1 h jusqu'à plus 3 h) |
 | `npm run dev` | Jeu en local sur http://localhost:8787, clé admin dans `.dev.vars`. Dans l'app Claude, le serveur « croute-que-croute » de `.claude/launch.json` lance la même chose, ouvert au wifi (`--ip 0.0.0.0`) pour tester sur téléphone |
 | `npm test` | Robot d'équité, 0 mort attendu (environ 4 min) |
-| `npm run test:api` | Tests de l'API, avec `npm run dev` lancé (refusent toute autre adresse que la machine locale) |
+| `npm run test:api` | Tests de l'API sur une base neuve à part (serveur lancé seul sur le port 8790, effacé à la fin) : ni les données ni le serveur de `npm run dev` ne sont touchés |
 | `npm run equilibrage` et suivantes | Mesurer le dosage du jeu avec le robot « humain » (voir Équilibrage) |
 | `npm run check` | Vérifier les types de l'API |
 | `npm run db:remote` | Appliquer les migrations en ligne, avant `npm run deploy` |
