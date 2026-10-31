@@ -8,7 +8,7 @@ export const FAMILIES = [["time", "Temps de cuisson"], ["play", "Frôlés et dé
 const TIMES = [[10, "t10"], [30, "t30"], [60, "t60"], [90, "t90"], [120, "t120"], [150, "t150"]];
 const NEARS = [[20, "near20"]];
 const RUNS = [[10, "runs10"], [50, "runs50"], [100, "runs100"]];
-const SIX_SEVEN_S = 67, STILL_S = 3, COMBO = 5, NIGHT_UNTIL_H = 3, DECEMBER = 11, OCTOBER = 9, EXPRESS_CS = 200, EVENTS = 3, TOP = 10, FRIDGE = 4;
+const SIX_SEVEN_S = 67, STILL_S = 3, COMBO = 5, NIGHT_UNTIL_H = 3, DECEMBER = 11, EXPRESS_CS = 200, EVENTS = 3, TOP = 10, FRIDGE = 4;
 const LIVE = ATTACKS.filter((a) => !a.lab);
 const EXTRAS = Object.keys(SPREADS).length - 1;
 const TOPPINGS = [[1, "top1"], [FRIDGE, "top4"], [EXTRAS, "topAll"]];
@@ -30,17 +30,19 @@ export const ACHIEVEMENTS = [
   { id: "runs50", family: "loyal", name: "Boulangerie", desc: "Jouer 50 parties", gear: "brioche" },
   { id: "runs100", family: "loyal", name: "Accro à la croûte", desc: "Jouer 100 parties", gear: "crustless" },
   { id: "xmas", family: "loyal", name: "Joyeux Noël", desc: "Jouer en décembre", gear: "santa" },
-  { id: "halloween", family: "loyal", name: "Joyeux Halloween", desc: "Jouer en octobre", gear: "bat" },
   { id: "events3", family: "loyal", name: "Fidèle du Space", desc: "Jouer à 3 soirées", gear: "astronaut" },
-  { id: "top10", family: "loyal", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée", gear: "pirate" },
+  { id: "top10", family: "loyal", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée" },
   { id: "eventWin", family: "loyal", name: "Tartine d'or", desc: "Finir 1er d'une soirée", gear: "crown" },
   { id: "express", family: "secret", name: "Tartinée express", desc: "Se faire tartiner en moins de 2 s", hint: "il y a des records qu'on ne cherche pas.", gear: "halo" },
   { id: "zen", family: "secret", name: "En détente", desc: "Rester " + STILL_S + " s sans bouger", hint: "le meilleur coup, c'est parfois de ne rien faire.", gear: "nightcap" },
   { id: "round", family: "secret", name: "Chiffre rond", desc: "Finir pile sur une seconde ronde", hint: "les comptes ronds font les bons amis." },
   { id: "sixSeven", family: "secret", name: "Six Seven", desc: "Finir une partie à " + SIX_SEVEN_S + " s", hint: "un chiffre que tout le monde mime avec les mains.", gear: "sixseven" },
   { id: "woof", family: "secret", name: "Ouaf", desc: "Se faire tartiner par un couteau à la pâtée pour chien", hint: "ça sent un peu le chien.", gear: "dog" },
-  { id: "night", family: "secret", name: "Tartine de minuit", desc: "Jouer entre minuit et " + NIGHT_UNTIL_H + " h", hint: "les sorcières sortent la nuit.", gear: "witch" }
+  { id: "night", family: "secret", name: "Tartine de minuit", desc: "Jouer entre minuit et " + NIGHT_UNTIL_H + " h", hint: "les chauves-souris sortent la nuit.", gear: "bat" },
+  { id: "pumpkin", family: "secret", name: "Des bonbons ou un sort", desc: "Toucher la planète citrouille sur l'accueil", hint: "une citrouille passe parfois dans le ciel de l'accueil.", gear: "witch" },
+  { id: "ahoy", family: "secret", name: "À l'abordage", desc: "Toucher la planète pirate sur l'accueil", hint: "un navire croise parfois au large de l'accueil.", gear: "pirate" }
 ];
+const SKY_TOUCH = { pumpkin: "pumpkin", pirate: "ahoy" };
 const BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
 
 const blank = () => ({ got: {}, attacks: [], events: [], runs: 0 });
@@ -120,6 +122,13 @@ export function absorb(remote) {
 
 export const forSync = () => ({ got: { ...data.got }, attacks: data.attacks.slice() });
 export const onUnlock = (fn) => listeners.push(fn);
+
+export function touchSky(key) {
+  const id = SKY_TOUCH[key];
+  if (!id || data.got[id]) return null;
+  unlock(id);
+  return BY_ID[id];
+}
 export const has = (id) => !!data.got[id];
 export const runUnlocked = () => fresh.slice();
 export const progress = () => ({ got: ACHIEVEMENTS.filter((a) => data.got[a.id]).length, total: ACHIEVEMENTS.length });
@@ -147,7 +156,6 @@ export function runStart(eventKey) {
   const now = new Date();
   if (now.getHours() < NIGHT_UNTIL_H) unlock("night");
   if (now.getMonth() === DECEMBER) unlock("xmas");
-  if (now.getMonth() === OCTOBER) unlock("halloween");
 }
 
 export function runCombo(chain) {

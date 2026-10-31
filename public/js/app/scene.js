@@ -7,7 +7,7 @@ import { LOCAL } from "../shared/local.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const POP_LIFE = 0.7, PUCK_R = 30, PUCK_LIFT = 110, GRAB_S = 0.6, FIELD_FADE = 5;
-const TOUR = ["rare", "normal", "wild", "normal", "normal", "normal", "wild", "normal"], SIDES = [0.8, 0.22];
+const TOUR = ["rare", "normal", "wild", "normal", "normal", "normal", "wild", "normal"], SIDES = [0.8, 0.22], TOUCH_REACH = 1.8;
 const SKY_SPEED = 20, SKY_GAP = 0.5, SKY_TOP = 0.3, SKY_LOOP = SKY_GAP * TOUR.length;
 const HEAT_EASE = 0.7, HEAT_LOW = 0.45, HEAT_FIELD = 0.85;
 const HINT = "Pose ton doigt où tu veux";
@@ -172,6 +172,11 @@ export function createScene(canvas, overlay) {
       ctx.drawImage(img, Math.round(W * SIDES[i % 2] * dpr - img.width / 2), Math.round(y * dpr - img.height / 2));
     });
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function bodyAt(x, y) {
+    const { W, H } = view, u = Math.min(W, H);
+    return slots.find((b, i) => b && Math.hypot(x - W * SIDES[i % 2], y - skyY(i) * H) < b.r * u * Math.min(b.reach, TOUCH_REACH)) || null;
   }
 
   function newComet() {
@@ -374,5 +379,5 @@ export function createScene(canvas, overlay) {
 
   const avoid = (box) => { hudBox = box; };
 
-  return { view, update, render, splash, pop, clear, avoid, pace };
+  return { view, update, render, splash, pop, clear, avoid, pace, bodyAt };
 }

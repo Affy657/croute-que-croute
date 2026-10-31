@@ -533,6 +533,13 @@ ui.infoBtn.addEventListener("click", openInfo);
 ui.infoBack.addEventListener("click", closeInfo);
 ui.closeBtn.addEventListener("click", () => (settingsOpen ? closeSettings() : achOpen ? closeAch() : closeInfo()));
 ui.menuAch.addEventListener("click", openAch);
+ui.menu.addEventListener("click", (e) => {
+  if (e.target.closest("button, a, input, label, select, .picker")) return;
+  const b = scene.bodyAt(e.clientX, e.clientY), a = b && ach.touchSky(b.key);
+  if (!a) return;
+  toastAch(a);
+  toastAch({ name: gearLabel(a) });
+});
 ui.pickToast.addEventListener("click", () => openPicker(!pickerIsOpen()));
 document.addEventListener("pointerdown", (e) => {
   if (pickerIsOpen() && !ui.picker.contains(e.target)) openPicker(false);
