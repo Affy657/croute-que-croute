@@ -16,7 +16,9 @@ export const ui = {
   menu: $("menu"), over: $("over"), board: $("board"), hud: $("hud"), time: $("time"), hudBest: $("hudBest"),
   brand: $("brand"), menuStats: $("menuStats"), menuBestBox: $("menuBestBox"), menuBest: $("menuBest"),
   menuRankBox: $("menuRankBox"), menuRank: $("menuRank"), menuInfo: $("menuInfo"), menuPitch: $("menuPitch"),
-  joinForm: $("joinForm"), pseudo: $("pseudo"), joinError: $("joinError"),
+  joinForm: $("joinForm"), pseudo: $("pseudo"), joinError: $("joinError"), haveAccount: $("haveAccount"),
+  linkForm: $("linkForm"), linkInput: $("linkInput"), linkError: $("linkError"), newAccount: $("newAccount"),
+  linkCard: $("linkCard"), linkBtn: $("linkBtn"), link: $("link"), linkQr: $("linkQr"), linkCode: $("linkCode"), linkTime: $("linkTime"), linkFail: $("linkFail"), linkBack: $("linkBack"),
   menuActions: $("menuActions"), play: $("play"), menuBoard: $("menuBoard"), menuAch: $("menuAch"), menuCountdown: $("menuCountdown"), settingsBtn: $("settingsBtn"),
   final: $("final"), overBy: $("overBy"), newBest: $("newBest"), overNote: $("overNote"), overRival: $("overRival"),
   overStats: $("overStats"), overBestBox: $("overBestBox"), overBest: $("overBest"), overRankBox: $("overRankBox"), overRank: $("overRank"),
@@ -34,8 +36,8 @@ export const ui = {
   installPop: $("installPop"), installPopText: $("installPopText"), installYes: $("installYes"), installLater: $("installLater")
 };
 
-const PAGES = ["menu", "over", "board", "hud", "info", "settings", "qr", "ach", "profile"];
-const SCREENS = { menu: ["menu"], play: ["hud"], over: ["over"], board: ["board"], info: ["info"], settings: ["settings"], qr: ["qr"], ach: ["ach"], profile: ["profile"] };
+const PAGES = ["menu", "over", "board", "hud", "info", "settings", "qr", "link", "ach", "profile"];
+const SCREENS = { menu: ["menu"], play: ["hud"], over: ["over"], board: ["board"], info: ["info"], settings: ["settings"], qr: ["qr"], link: ["link"], ach: ["ach"], profile: ["profile"] };
 
 export function show(name) {
   for (const id of PAGES) ui[id].hidden = !SCREENS[name].includes(id);
@@ -103,11 +105,19 @@ function fillStats(box, bestBox, bestEl, rankBox, rankEl, best, rank, count) {
 
 export const needJoin = () => !!net.board && !registered();
 
+let linking = false;
+
+export function setLinking(on) {
+  linking = on;
+  renderMenu();
+}
+
 export function renderMenu() {
   const b = net.board;
   const me = b && b.me;
   ui.menuPitch.hidden = !!net.token || registered();
-  ui.joinForm.hidden = !needJoin();
+  ui.joinForm.hidden = !needJoin() || linking;
+  ui.linkForm.hidden = !needJoin() || !linking;
   ui.menuActions.hidden = needJoin();
   ui.menuBoard.hidden = !b;
   const mine = standing();
@@ -269,7 +279,7 @@ function renderToggle(button, on, available) {
 }
 
 export function renderControls(playing) {
-  const page = !ui.info.hidden || !ui.settings.hidden || !ui.qr.hidden || !ui.ach.hidden || !ui.profile.hidden;
+  const page = !ui.info.hidden || !ui.settings.hidden || !ui.qr.hidden || !ui.link.hidden || !ui.ach.hidden || !ui.profile.hidden;
   ui.infoBtn.hidden = playing || page || !ui.board.hidden;
   ui.settingsBtn.hidden = ui.infoBtn.hidden;
   const quiet = playing || page;

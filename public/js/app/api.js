@@ -129,6 +129,14 @@ export async function join(pseudo) {
   await refreshBoard();
 }
 
+export async function linkWith(code) {
+  const r = await call("POST", "/api/link", { code, clientId: clientId() });
+  setToken(r.token);
+  await refreshBoard();
+}
+
+export const newLinkCode = () => call("POST", "/api/me/link");
+
 export async function rename(pseudo) {
   await call("PATCH", "/api/me", { pseudo });
   await refreshBoard();

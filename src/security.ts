@@ -9,6 +9,15 @@ export function randomToken() {
   return hex(bytes);
 }
 
+export function randomCode(chars: string, length: number) {
+  const fair = 256 - (256 % chars.length);
+  let code = "";
+  while (code.length < length) {
+    for (const b of crypto.getRandomValues(new Uint8Array(length))) if (b < fair && code.length < length) code += chars[b % chars.length];
+  }
+  return code;
+}
+
 export async function sha256(text: string) {
   return hex(await crypto.subtle.digest("SHA-256", encoder.encode(text)));
 }

@@ -33,6 +33,7 @@ export function renderSettings() {
   else leaveSettings();
   const me = net.board && net.board.me;
   ui.renameCard.hidden = !me;
+  ui.linkCard.hidden = !me;
   if (me && document.activeElement !== ui.newPseudo) ui.newPseudo.value = me.pseudo;
   setText(ui.renameNote, "");
   const mode = installMode();

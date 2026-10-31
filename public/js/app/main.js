@@ -16,6 +16,7 @@ import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./c
 import { renderSettings, suggestInstall, leaveSettings, testing, setInvincible } from "./settings.js";
 import { onInstallChange } from "./install.js";
 import { openCard, closeCard, drawCard, myLook, shareLook } from "./profile.js";
+import { linkFromUrl } from "./account.js";
 import {
   ui, show, setText, setDigits, tickCountdowns, renderMenu, renderPicker, openPicker, pickerIsOpen, renderBoard, renderOver, renderOverStats, renderRival, renderKiller,
   renderHud, renderControls, renderAll, setBoardScope, achLabel
@@ -140,7 +141,7 @@ function backTo(from) {
 }
 
 function start(train = null) {
-  if (boardOpen || infoOpen || settingsOpen || achOpen || (!train && !ui.joinForm.hidden) || !ui.installPop.hidden) return false;
+  if (boardOpen || infoOpen || settingsOpen || achOpen || (!train && (!ui.joinForm.hidden || !ui.linkForm.hidden)) || !ui.installPop.hidden) return false;
   if (S.mode !== "menu" && S.mode !== "over") return false;
   if (S.mode === "over" && ui.again.disabled) return false;
   if (api.net.updatePending && api.applyUpdate()) return false;
@@ -660,6 +661,7 @@ setInterval(() => {
 
 showMenu();
 api.refreshBoard();
+linkFromUrl();
 api.resumePending();
 audio.initAudio();
 requestAnimationFrame(frame);
