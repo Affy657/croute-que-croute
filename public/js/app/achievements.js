@@ -105,6 +105,19 @@ function unlock(id, synced = false) {
   for (const fn of listeners) fn(a, synced);
 }
 
+export function absorb(remote) {
+  const got = remote && remote.got && typeof remote.got === "object" ? remote.got : {};
+  const attacks = remote && Array.isArray(remote.attacks) ? remote.attacks.filter((id) => typeof id === "string") : [];
+  const news = Object.keys(got).filter((id) => BY_ID[id] && !data.got[id] && Number.isFinite(got[id]));
+  if (!news.length && attacks.every((id) => data.attacks.includes(id))) return;
+  change((d) => {
+    for (const id of news) d.got[id] = d.got[id] || got[id];
+    d.attacks = union(d.attacks, attacks);
+  });
+  for (const id of news) for (const fn of listeners) fn(BY_ID[id], true);
+}
+
+export const forSync = () => ({ got: { ...data.got }, attacks: data.attacks.slice() });
 export const onUnlock = (fn) => listeners.push(fn);
 export const has = (id) => !!data.got[id];
 export const runUnlocked = () => fresh.slice();

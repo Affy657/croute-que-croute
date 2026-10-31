@@ -1,9 +1,9 @@
 import { json, fail, readJson, clientIp, outdated, updateRequired, tooFast, allowed } from "../http";
-import { randomToken, sha256, matchesSecret } from "../security";
-import { cleanPseudo, pseudoKey, cleanClientId, cleanLook } from "../validate";
+import { randomToken, sha256 } from "../security";
+import { cleanPseudo, pseudoKey, cleanClientId, cleanLook, cleanProgress, mergeProgress, type Progress } from "../validate";
 import {
   events, openEventNow, eventById, findProfile, entryBest, entryMark, generalRanking, generalCount, generalRank, eventRanking, renameCached, rankIn, rivalIn,
-  promoteGeneral, promoteEvent, forgetCaches, cached,
+  promoteGeneral, promoteEvent, cached,
   type EventRow, type Profile, type Ranked,
 } from "../db";
 import type { Ctx } from "../router";
@@ -14,6 +14,7 @@ const MAX_SCORE = 15 * 60 * 100;
 const TOP = 50;
 const FEED_MS = 15 * 60 * 1000, FEED_SIZE = 6;
 const CARD_MS = 10000, CARD_RECORDS = 10, EXPRESS_CS = 200, SIX_SEVEN_CS = 6700, EVENT_TOP = 10, MAX_COMBO = 99;
+const PROGRESS_TRIES = 3;
 const BAD_PSEUDO = "Pseudo de 2 à 16 caractères : lettres, chiffres, espaces, tirets.";
 
 interface RunRow {
@@ -125,22 +126,26 @@ export async function join({ req, env }: Ctx) {
   const ip = clientIp(req);
   if (!(await allowed(env.JOIN_LIMIT, "join:" + (clientId ?? ip))) || !(await allowed(env.JOIN_IP_LIMIT, "join:" + ip))) return tooFast();
   const key = pseudoKey(pseudo);
-  const taken = await env.DB.prepare("SELECT id, pseudo, client_id FROM profiles WHERE pseudo_key = ?")
-    .bind(key)
-    .first<{ id: string; pseudo: string; client_id: string | null }>();
+  const taken = await env.DB.prepare("SELECT id, pseudo FROM profiles WHERE pseudo_key = ?").bind(key).first<{ id: string; pseudo: string }>();
   const token = randomToken();
   const [tokenHash, clientHash] = await Promise.all([sha256(token), clientId ? sha256(clientId) : null]);
+  const session = (id: string) =>
+    env.DB.prepare("INSERT INTO sessions (token_hash, player_id, client_hash, created_at) VALUES (?, ?, ?, ?)").bind(tokenHash, id, clientHash, Date.now());
   if (taken) {
-    if (clientId && taken.client_id && (await matchesSecret(clientId, taken.client_id))) {
-      await env.DB.prepare("UPDATE profiles SET token = ?, client_id = ? WHERE id = ?").bind(tokenHash, clientHash, taken.id).run();
+    const device = (sql: string) => env.DB.prepare(sql).bind(taken.id, clientHash, clientId);
+    if (clientId && (await device("SELECT 1 FROM sessions WHERE player_id = ?1 AND client_hash IN (?2, ?3)").first())) {
+      await env.DB.batch([device("DELETE FROM sessions WHERE player_id = ?1 AND client_hash IN (?2, ?3)"), session(taken.id)]);
       return json({ token, pseudo: taken.pseudo });
     }
     return fail(409, "Ce pseudo est déjà pris.");
   }
+  const id = crypto.randomUUID();
   try {
-    await env.DB.prepare("INSERT INTO profiles (id, pseudo, pseudo_key, token, client_id, created_at) VALUES (?, ?, ?, ?, ?, ?)")
-      .bind(crypto.randomUUID(), pseudo, key, tokenHash, clientHash, Date.now())
-      .run();
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO profiles (id, pseudo, pseudo_key, token, client_id, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+        .bind(id, pseudo, key, tokenHash, clientHash, Date.now()),
+      session(id),
+    ]);
   } catch (e) {
     if (String(e).includes("UNIQUE")) return fail(409, "Ce pseudo est déjà pris.");
     throw e;
@@ -187,10 +192,24 @@ export async function saveLook({ req, env }: Ctx) {
   const me = await findProfile(req, env);
   if (!me) return fail(401, "Joueur inconnu.");
   if (!(await allowed(env.RUN_LIMIT, "look:" + me.id))) return tooFast();
-  const look = cleanLook((await readJson(req)).look);
+  const body = await readJson(req);
+  const look = cleanLook(body.look);
   if (!look) return fail(400, "Tenue invalide.");
   await lookUpdate(env, me.id, look).run();
-  return json({ ok: true });
+  const sent = cleanProgress(body.progress);
+  return json({ ok: true, progress: sent ? await saveProgress(env, me.id, sent) : undefined });
+}
+
+async function saveProgress(env: Env, id: string, sent: Progress) {
+  let merged = sent;
+  for (let i = 0; i < PROGRESS_TRIES; i++) {
+    const stored = (await env.DB.prepare("SELECT progress FROM profiles WHERE id = ?").bind(id).first<{ progress: string | null }>())?.progress ?? null;
+    merged = mergeProgress(cleanProgress(stored ? JSON.parse(stored) : {})!, sent);
+    const text = JSON.stringify(merged);
+    if (text === stored) break;
+    if ((await env.DB.prepare("UPDATE profiles SET progress = ?1 WHERE id = ?2 AND progress IS ?3").bind(text, id, stored).run()).meta.changes) break;
+  }
+  return merged;
 }
 
 interface CardRow {
@@ -343,16 +362,6 @@ export async function finishRun({ req, env, params }: Ctx) {
     .bind(now, score, device, combo, run.id)
     .run();
   if (!saved.meta.changes) return json(await standing(env, me, eventId, keptMobile(me), keptPc(me), await mine(), false));
-  if (device === "pc" && me.best > 0 && !(await env.DB.prepare("SELECT 1 FROM runs WHERE player_id = ? AND device = 'mobile' LIMIT 1").bind(me.id).first())) {
-    await env.DB.batch([
-      env.DB.prepare("UPDATE profiles SET pc_best = best, pc_best_at = best_at, pc_best_elapsed = best_elapsed WHERE id = ? AND best > pc_best").bind(me.id),
-      env.DB.prepare("UPDATE profiles SET best = 0, best_at = NULL, best_elapsed = NULL WHERE id = ?").bind(me.id),
-      env.DB.prepare("UPDATE runs SET device = 'pc' WHERE player_id = ? AND device IS NULL").bind(me.id),
-    ]);
-    if (me.best > me.pc_best) Object.assign(me, { pc_best: me.best, pc_best_at: me.best_at });
-    Object.assign(me, { best: 0, best_at: null });
-    forgetCaches();
-  }
   const statements = [
     env.DB.prepare("UPDATE profiles SET run_count = run_count + 1 WHERE id = ?").bind(me.id),
     device === "pc"

@@ -34,6 +34,15 @@ export function unlockTopping(kind) {
   return true;
 }
 
+export const toppingList = () => load();
+
+export function addToppings(list) {
+  const mine = load(), more = (Array.isArray(list) ? list : []).filter((k) => SPREADS[k] && k !== "butter" && !mine.includes(k));
+  if (!more.length) return;
+  store.set(KEYS.toppings, JSON.stringify([...new Set([...mine, ...more])]));
+  for (const fn of listeners) fn(chosen());
+}
+
 export function chooseTopping(kind) {
   if (!unlocked(kind)) return;
   store.set(KEYS.topping, kind);

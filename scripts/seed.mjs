@@ -105,7 +105,7 @@ for (const p of players) {
   taken.add(keyOf(p.pseudo));
 }
 
-const rows = { profiles: [], runs: [], entries: [] };
+const rows = { profiles: [], sessions: [], runs: [], entries: [] };
 for (const p of players) {
   const best = { mobile: null, pc: null }, entries = new Map();
   p.runs.sort((a, b) => a.at - b.at).forEach((r, k) => {
@@ -121,6 +121,7 @@ for (const p of players) {
   });
   const m = best.mobile || { score: 0, at: null, elapsed: null }, c = best.pc || { score: 0, at: null, elapsed: null };
   rows.profiles.push([p.id, p.pseudo, keyOf(p.pseudo), sha(p.token), null, m.score, m.at, m.elapsed, p.runs.length, p.banned, Math.round(p.joined), c.score, c.at, c.elapsed, p.look ? JSON.stringify(p.look) : null]);
+  rows.sessions.push([sha(p.token), p.id, null, Math.round(p.joined)]);
   for (const [eventId, e] of entries) rows.entries.push([eventId, p.id, e.best, e.at, e.elapsed, e.runs]);
 }
 
@@ -137,10 +138,12 @@ const script = [
   `DELETE FROM entries WHERE player_id LIKE 'seed-%' OR event_id IN (${SEED_EVENTS});`,
   `UPDATE runs SET event_id = NULL WHERE event_id IN (${SEED_EVENTS}) AND player_id NOT LIKE 'seed-%';`,
   "DELETE FROM runs WHERE player_id LIKE 'seed-%';",
+  "DELETE FROM sessions WHERE player_id LIKE 'seed-%';",
   "DELETE FROM profiles WHERE id LIKE 'seed-%';",
   `DELETE FROM events WHERE id IN (${SEED_EVENTS});`,
   ...insert("events", "id, name, opens_at, closes_at, created_at", events.map((e) => [e.id, e.name, e.opens, e.closes, e.opens - DAY])),
   ...insert("profiles", "id, pseudo, pseudo_key, token, client_id, best, best_at, best_elapsed, run_count, banned, created_at, pc_best, pc_best_at, pc_best_elapsed, look", rows.profiles),
+  ...insert("sessions", "token_hash, player_id, client_hash, created_at", rows.sessions),
   ...insert("runs", "id, player_id, event_id, started_at, finished_at, score, device, combo", rows.runs),
   ...insert("entries", "event_id, player_id, best, best_at, best_elapsed, run_count", rows.entries)
 ].join("\n");

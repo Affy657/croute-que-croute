@@ -3,8 +3,8 @@ import { SLOTS, SPREADS } from "../shared/palette.js";
 import { call, canCompete } from "./api.js";
 import { drawToast } from "./sprites.js";
 import { outfit, gearOwned, gearTotal } from "./gear.js";
-import { chosen, owned } from "./toppings.js";
-import { progress } from "./achievements.js";
+import { chosen, owned, toppingList, addToppings } from "./toppings.js";
+import { progress, forSync, absorb } from "./achievements.js";
 
 const SEND_MS = 1500, TOAST_SCALE = 2, TOAST_Y = 0.53, BAR_MIN = 6, PODIUM = 3, BLANK = " ", NONE = "-";
 const SHELVES = [["head", "Chapeaux"], ["side", "Côtés"], ["bread", "Pains"], ["spread", "Garnitures"]];
@@ -23,10 +23,14 @@ export function shareLook() {
   clearTimeout(timer);
   timer = setTimeout(() => {
     if (!canCompete()) return;
-    const look = myLook(), key = JSON.stringify(look);
+    const body = { look: myLook(), progress: { ...forSync(), toppings: toppingList() } }, key = JSON.stringify(body);
     if (key === sent) return;
     sent = key;
-    call("PUT", "/api/me/look", { look }).catch(() => { if (sent === key) sent = null; });
+    call("PUT", "/api/me/look", body).then((r) => {
+      if (!r || !r.progress) return;
+      absorb(r.progress);
+      addToppings(r.progress.toppings);
+    }).catch(() => { if (sent === key) sent = null; });
   }, SEND_MS);
 }
 
