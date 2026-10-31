@@ -749,7 +749,7 @@ function toastie(ctx, w, head) {
   ctx.restore();
 }
 
-const CABINETS = [[-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
+const WALL_ROWS = [["bass", 1], ["mid", 0.74], ["horn", 0.5]];
 
 function blast(ctx, r, y, clock) {
   ctx.save();
@@ -759,44 +759,110 @@ function blast(ctx, r, y, clock) {
   const alpha = ctx.globalAlpha, beat = (clock / BEAT) % 1;
   for (let i = 0; i < 2; i++) {
     const k = (beat + i) / 2;
-    ctx.globalAlpha = alpha * 0.55 * (1 - k);
+    ctx.globalAlpha = alpha * 0.6 * (1 - k);
     for (const mid of [0, Math.PI]) {
       ctx.beginPath();
-      ctx.arc(0, y, r * (0.7 + 0.7 * k), mid - 0.55, mid + 0.55);
+      ctx.arc(0, y, r * (0.95 + 0.7 * k), mid - 0.5, mid + 0.5);
       ctx.stroke();
     }
   }
   ctx.restore();
 }
 
+function woofer(ctx, s, pump) {
+  const W = SKY.wall;
+  ctx.fillStyle = W.surround;
+  ctx.beginPath();
+  ctx.arc(0, 0, s, 0, TAU);
+  ctx.fill();
+  ctx.stroke();
+  const g = ctx.createRadialGradient(-s * 0.25, -s * 0.25, s * 0.05, 0, 0, s * 0.82);
+  g.addColorStop(0, W.coneLight);
+  g.addColorStop(1, W.cone);
+  ctx.fillStyle = g;
+  disc(ctx, 0, 0, s * 0.8);
+  ctx.fillStyle = W.cap;
+  ctx.beginPath();
+  ctx.arc(0, 0, s * (0.3 + 0.1 * pump), 0, TAU);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = W.shine;
+  disc(ctx, -s * 0.1, -s * 0.12, s * 0.1);
+}
+
+function horn(ctx, w, h) {
+  const W = SKY.wall, ox = w * 0.38, oy = h * 0.3, ix = w * 0.07, iy = h * 0.07;
+  ctx.fillStyle = W.cone;
+  ctx.beginPath();
+  rr(ctx, -ox, -oy, ox * 2, oy * 2, h * 0.06);
+  ctx.fill();
+  ctx.strokeStyle = W.surround;
+  ctx.beginPath();
+  for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+    ctx.moveTo(sx * ox, sy * oy);
+    ctx.lineTo(sx * ix, sy * iy);
+  }
+  ctx.rect(-ox, -oy, ox * 2, oy * 2);
+  ctx.stroke();
+  ctx.fillStyle = INK;
+  ctx.fillRect(-ix, -iy, ix * 2, iy * 2);
+}
+
+function cabinet(ctx, x, y, w, h, kind, pump, line) {
+  const W = SKY.wall;
+  ctx.fillStyle = W.box;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = line;
+  ctx.beginPath();
+  rr(ctx, x - w / 2, y - h, w, h, w * 0.08);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = W.edge;
+  ctx.lineWidth = line * 0.7;
+  ctx.beginPath();
+  rr(ctx, x - w / 2 + line * 1.4, y - h + line * 1.4, w - line * 2.8, h - line * 2.8, w * 0.05);
+  ctx.stroke();
+  ctx.save();
+  ctx.translate(x, y - h / 2);
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = line * 0.8;
+  if (kind === "bass") woofer(ctx, w * 0.36, pump);
+  else if (kind === "mid") {
+    for (const dx of [-0.23, 0.23]) {
+      ctx.save();
+      ctx.translate(dx * w, 0);
+      woofer(ctx, w * 0.19, pump);
+      ctx.restore();
+    }
+  } else horn(ctx, w, h);
+  ctx.restore();
+}
+
 function wall(ctx, r, clock) {
-  const W = SKY.wall, b = r * 0.42, base = -r * 0.78, pulse = (1 - ((clock / BEAT) % 1)) ** 3;
-  blast(ctx, r, base - b, clock);
+  const W = SKY.wall, b = r * 0.38, base = -r * 0.6, pump = (1 - ((clock / BEAT) % 1)) ** 3, line = ink(r);
+  const mid = base - (b * WALL_ROWS.reduce((s, [, h]) => s + h, 0)) / 2;
+  const glow = ctx.createRadialGradient(0, mid, r * 0.1, 0, mid, r * 1.5);
+  glow.addColorStop(0, W.glow);
+  glow.addColorStop(1, W.glowOut);
+  ctx.save();
+  ctx.globalAlpha *= 0.55 + 0.45 * pump;
+  ctx.fillStyle = glow;
+  disc(ctx, 0, mid, r * 1.5);
+  ctx.restore();
+  blast(ctx, r, mid, clock);
   ball(ctx, r, W.light, W.dark);
-  dots(ctx, r, W.spot, [[0.38, 0.32, 0.2], [-0.48, 0.22, 0.14], [0.02, 0.62, 0.12], [-0.2, -0.15, 0.08]]);
+  dots(ctx, r, W.spot, [[0.4, 0.38, 0.18], [-0.52, 0.3, 0.13], [0.05, 0.68, 0.1], [-0.12, 0.12, 0.07]]);
   clipped(ctx, r, () => {
     ctx.fillStyle = SKY.shade;
     ctx.beginPath();
-    ctx.ellipse(b * 0.3, base + r * 0.05, b * 1.9, r * 0.13, 0, 0, TAU);
+    ctx.ellipse(0, base + r * 0.04, b * 2.3, r * 0.14, 0, 0, TAU);
     ctx.fill();
   });
   tone(ctx, r);
-  const g = ctx.createLinearGradient(0, base - 2 * b, 0, base);
-  g.addColorStop(0, W.boxLight);
-  g.addColorStop(1, W.box);
-  for (const [col, row] of CABINETS) {
-    const x = col * b, y = base - row * b;
-    ctx.fillStyle = g;
-    ctx.strokeStyle = INK;
-    ctx.lineWidth = ink(r);
-    ctx.beginPath();
-    rr(ctx, x - b / 2, y - b, b, b, b * 0.14);
-    ctx.fill();
-    ctx.stroke();
-    ctx.save();
-    ctx.translate(x, y - b / 2);
-    speaker(ctx, b * (row ? 0.3 : 0.36) * (1 + 0.14 * pulse), LIGHT);
-    ctx.restore();
+  let y = base;
+  for (const [kind, h] of WALL_ROWS) {
+    for (let i = 0; i < 4; i++) cabinet(ctx, (i - 1.5) * b, y, b, h * b, kind, pump, line);
+    y -= h * b;
   }
 }
 
@@ -853,7 +919,7 @@ function witch(ctx, s, clock) {
 }
 
 function pumpkin(ctx, r, clock) {
-  const P = SKY.pumpkin, a = clock * 0.9, front = Math.sin(a) > 0, t = clock % 4;
+  const P = SKY.pumpkin, a = clock * 0.9, front = Math.sin(a) > 0, t = clock % 4, flicker = 0.82 + 0.18 * Math.sin(clock * 13) * Math.sin(clock * 7.3);
   const fly = () => {
     const depth = 0.85 + 0.15 * Math.sin(a);
     ctx.save();
@@ -897,13 +963,19 @@ function pumpkin(ctx, r, clock) {
   shade.addColorStop(1, SKY.shade);
   ctx.fillStyle = shade;
   ctx.fillRect(-r * 1.1, -r, r * 2.2, r * 2);
+  const spill = ctx.createRadialGradient(0, r * 0.12, 0, 0, r * 0.12, r * 0.85);
+  spill.addColorStop(0, P.spill);
+  spill.addColorStop(1, P.spillOut);
+  ctx.globalAlpha *= flicker;
+  ctx.fillStyle = spill;
+  ctx.fillRect(-r * 1.1, -r, r * 2.2, r * 2);
   ctx.restore();
   const open = t < 1.2 ? 0.55 + 0.45 * Math.abs(Math.sin(t * 9)) : 0.4;
   const glow = ctx.createRadialGradient(0, r * 0.1, r * 0.05, 0, r * 0.1, r * 0.75);
   glow.addColorStop(0, P.glow);
   glow.addColorStop(1, P.deep);
   ctx.save();
-  ctx.globalAlpha *= 0.82 + 0.18 * Math.sin(clock * 13) * Math.sin(clock * 7.3);
+  ctx.globalAlpha *= flicker;
   ctx.fillStyle = glow;
   grin(ctx, r, open);
   ctx.fill();
@@ -914,6 +986,14 @@ function pumpkin(ctx, r, clock) {
   ctx.stroke();
   ctx.fillStyle = P.mid;
   for (const x of [-0.22, 0.12]) ctx.fillRect(x * r, r * 0.27, r * 0.1, r * 0.09);
+  ctx.strokeStyle = P.stem;
+  ctx.lineWidth = Math.max(1, r * 0.035);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(r * 0.06, -r * 0.8);
+  ctx.bezierCurveTo(r * 0.28, -r * 1.0, r * 0.42, -r * 0.84, r * 0.32, -r * 0.78);
+  ctx.bezierCurveTo(r * 0.24, -r * 0.74, r * 0.22, -r * 0.86, r * 0.3, -r * 0.86);
+  ctx.stroke();
   if (front) fly();
 }
 
@@ -934,8 +1014,8 @@ function bauble(ctx, r, clock) {
     ctx.beginPath();
     for (let i = 0; i < 3; i++) {
       ctx.rotate(Math.PI / 3);
-      ctx.moveTo(-r * 0.09, 0);
-      ctx.lineTo(r * 0.09, 0);
+      ctx.moveTo(-r * 0.12, 0);
+      ctx.lineTo(r * 0.12, 0);
     }
     ctx.stroke();
     ctx.restore();
@@ -970,6 +1050,14 @@ function bauble(ctx, r, clock) {
     ctx.fill();
     ctx.fillStyle = B.snow;
     for (const x of [-0.66, -0.33, 0, 0.33, 0.66]) disc(ctx, x * r, r * (0.12 - 0.12 * x * x), r * 0.055);
+    ctx.strokeStyle = B.snow;
+    ctx.lineWidth = Math.max(1, r * 0.025);
+    for (const y of [-0.12, 0.12]) {
+      ctx.beginPath();
+      ctx.moveTo(-r, y * r);
+      ctx.quadraticCurveTo(0, (y + 0.24) * r, r, y * r);
+      ctx.stroke();
+    }
   });
   glint(ctx, r, 0.6);
   tone(ctx, r);
@@ -990,6 +1078,12 @@ function bauble(ctx, r, clock) {
     ctx.lineTo(x * r, -r * 0.93);
   }
   ctx.stroke();
+  const k = (clock % 3.2) / 3.2;
+  if (k < 0.2) {
+    ctx.fillStyle = PALETTE.ink;
+    starPath(ctx, -r * 0.5, -r * 0.48, r * 0.28 * Math.sin((k / 0.2) * Math.PI), 0.2, 4, 0);
+    ctx.fill();
+  }
 }
 
 function sleepy(ctx, r, clock) {
@@ -1009,6 +1103,16 @@ function sleepy(ctx, r, clock) {
     ctx.beginPath();
     ctx.arc(side * r * 0.33, -r * 0.04, r * 0.15, 0.15 * Math.PI, 0.85 * Math.PI);
     ctx.stroke();
+    ctx.save();
+    ctx.lineWidth *= 0.5;
+    ctx.beginPath();
+    for (const a of [0.32, 0.5, 0.68]) {
+      const x = side * r * 0.33 + Math.cos(a * Math.PI) * r * 0.15, y = -r * 0.04 + Math.sin(a * Math.PI) * r * 0.15;
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + Math.cos(a * Math.PI) * r * 0.05, y + Math.sin(a * Math.PI) * r * 0.05);
+    }
+    ctx.stroke();
+    ctx.restore();
   }
   ctx.fillStyle = INK;
   ctx.beginPath();
@@ -1094,7 +1198,13 @@ function chest(ctx, x, y, w, clock) {
 }
 
 function island(ctx, r, clock) {
-  const I = SKY.island, line = ink(r), crown = [r * 0.12, -r * 1.72];
+  const I = SKY.island, line = ink(r), crown = [r * 0.1, -r * 1.7];
+  const a1 = -Math.PI / 2 - 0.62, a2 = -Math.PI / 2 + 0.56;
+  const p1 = [Math.cos(a1) * r, Math.sin(a1) * r], p2 = [Math.cos(a2) * r, Math.sin(a2) * r];
+  const hill = () => {
+    ctx.moveTo(...p1);
+    ctx.bezierCurveTo(-r * 0.42, -r * 1.14, r * 0.36, -r * 1.16, ...p2);
+  };
   ball(ctx, r, I.light, I.dark);
   clipped(ctx, r, () => {
     ctx.strokeStyle = I.foam;
@@ -1107,25 +1217,32 @@ function island(ctx, r, clock) {
     }
   });
   tone(ctx, r);
-  ctx.strokeStyle = I.foam;
-  ctx.lineWidth = Math.max(1, r * 0.05);
-  ctx.beginPath();
-  ctx.ellipse(r * 0.05, -r * 0.88, r * 0.55, r * 0.24, 0, 0.1, Math.PI - 0.1);
-  ctx.stroke();
-  const sand = ctx.createLinearGradient(0, -r * 1.1, 0, -r * 0.7);
+  clipped(ctx, r, () => {
+    ctx.strokeStyle = I.foam;
+    ctx.lineWidth = r * (0.09 + 0.02 * Math.sin(clock * 1.5));
+    ctx.beginPath();
+    ctx.moveTo(...p1);
+    ctx.quadraticCurveTo(0, -r * 0.6, ...p2);
+    ctx.stroke();
+  });
+  const sand = ctx.createLinearGradient(0, -r * 1.12, 0, -r * 0.66);
   sand.addColorStop(0, I.sand);
   sand.addColorStop(1, I.sandDark);
   ctx.fillStyle = sand;
+  ctx.beginPath();
+  hill();
+  ctx.quadraticCurveTo(0, -r * 0.6, ...p1);
+  ctx.fill();
   ctx.strokeStyle = INK;
   ctx.lineWidth = line;
-  ctx.beginPath();
-  ctx.ellipse(r * 0.05, -r * 0.9, r * 0.48, r * 0.2, 0, 0, TAU);
-  ctx.fill();
-  ctx.stroke();
   ctx.lineCap = "round";
   ctx.beginPath();
-  ctx.moveTo(-r * 0.12, -r * 1.02);
-  ctx.quadraticCurveTo(-r * 0.16, -r * 1.45, ...crown);
+  hill();
+  ctx.stroke();
+  dots(ctx, 1, I.sandDark, [[-r * 0.25, -r * 0.88, r * 0.025], [r * 0.16, -r * 0.8, r * 0.02], [-r * 0.04, -r * 0.74, r * 0.02], [r * 0.34, -r * 0.9, r * 0.018]]);
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.12, -r * 1.03);
+  ctx.quadraticCurveTo(-r * 0.16, -r * 1.42, ...crown);
   ctx.lineWidth = r * 0.13 + line * 2;
   ctx.stroke();
   ctx.strokeStyle = I.trunk;
@@ -1142,12 +1259,12 @@ function island(ctx, r, clock) {
   ctx.lineJoin = "round";
   FRONDS.forEach((a, i) => frond(ctx, crown[0], crown[1], a + Math.sin(clock * 1.4 + i) * 0.07, r * 0.7));
   dots(ctx, 1, I.nut, [[crown[0] - r * 0.06, crown[1] + r * 0.07, r * 0.07], [crown[0] + r * 0.06, crown[1] + r * 0.08, r * 0.07]]);
-  chest(ctx, r * 0.3, -r * 1.02, r * 0.3, clock);
+  chest(ctx, r * 0.28, -r * 1.0, r * 0.3, clock);
 }
 
 function spaceToast(ctx, r, clock) {
-  const A = SKY.astro, w = r * 1.25, k = w / 40, a = -0.9 + Math.sin(clock * 7) * 0.45;
-  const hx = 16 + Math.cos(a) * 24, hy = 14 + Math.sin(a) * 24;
+  const A = SKY.astro, w = r * 1.25, k = w / 40, a = -0.75 + Math.sin(clock * 7) * 0.45;
+  const hx = 14 + Math.cos(a) * 24, hy = 21 + Math.sin(a) * 24;
   ctx.save();
   ctx.translate(0, Math.sin(clock * 0.8) * r * 0.08);
   ctx.rotate(Math.sin(clock * 0.45) * 0.3);
@@ -1160,8 +1277,12 @@ function spaceToast(ctx, r, clock) {
   ctx.moveTo(-14, 24);
   ctx.bezierCurveTo(-30, 44, -48, 18, -66, 42);
   ctx.stroke();
+  ctx.restore();
+  toastie(ctx, w, "astronaut");
+  ctx.scale(k, k);
+  ctx.lineCap = "round";
   ctx.beginPath();
-  ctx.moveTo(16, 14);
+  ctx.moveTo(14, 22);
   ctx.lineTo(hx, hy);
   ctx.strokeStyle = INK;
   ctx.lineWidth = 9.5;
@@ -1177,84 +1298,181 @@ function spaceToast(ctx, r, clock) {
   ctx.fill();
   ctx.stroke();
   ctx.restore();
-  toastie(ctx, w, "astronaut");
-  ctx.restore();
 }
 
-const GOO = [[0, 0, 0.12], [-0.11, 0.09, 0.055], [0.12, 0.07, 0.05], [0.04, -0.13, 0.05], [-0.14, -0.06, 0.04]];
+const SPLAT = [[0, 0, 0.17], [-0.15, 0.05, 0.08], [0.15, 0.04, 0.07], [0.02, -0.16, 0.07], [-0.17, -0.1, 0.06], [0.13, -0.12, 0.05]];
+const DRIPS = [[-0.08, 0.3, 0.07], [0.06, 0.4, 0.08], [-0.17, 0.18, 0.05]];
+const PUFFS = [[-0.8, 0.72, 0.24], [-0.52, 0.9, 0.24], [-0.2, 1.0, 0.2], [0.18, 1.0, 0.18], [0.5, 0.88, 0.24], [0.82, 0.64, 0.2]];
 
-function capsule(ctx, len, rad) {
-  const M = SKY.melies, g = ctx.createLinearGradient(0, -rad, 0, rad);
+function goo(ctx, r, clock) {
+  const M = SKY.melies, grow = 0.04 * Math.sin(clock * 0.8);
+  const shape = () => {
+    ctx.beginPath();
+    for (const [x, y, s] of SPLAT) {
+      ctx.moveTo((x + s) * r, y * r);
+      ctx.arc(x * r, y * r, s * r, 0, TAU);
+    }
+    for (const [x, len, w] of DRIPS) rr(ctx, (x - w / 2) * r, 0, w * r, (len + grow) * r, (w / 2) * r);
+  };
+  ctx.strokeStyle = M.gooEdge;
+  ctx.lineWidth = ink(r) * 1.6;
+  shape();
+  ctx.stroke();
+  ctx.fillStyle = M.goo;
+  shape();
+  ctx.fill();
+}
+
+function capsule(ctx, r) {
+  const M = SKY.melies, len = r * 0.42, rad = r * 0.19, g = ctx.createLinearGradient(0, -rad, 0, rad);
   g.addColorStop(0, M.rocketLight);
   g.addColorStop(1, M.rocketDark);
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.moveTo(0, -rad * 0.55);
-  ctx.lineTo(len * 0.3, -rad);
+  ctx.moveTo(0, -rad);
   ctx.lineTo(len, -rad);
-  ctx.lineTo(len, rad);
-  ctx.lineTo(len * 0.3, rad);
-  ctx.lineTo(0, rad * 0.55);
+  ctx.ellipse(len, 0, rad * 0.5, rad, 0, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(0, rad);
   ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(len * 0.45, 0, rad * 0.5, rad, 0, -Math.PI / 2, Math.PI / 2);
+  ctx.stroke();
+  ctx.fillStyle = M.window;
+  ctx.beginPath();
+  ctx.arc(len * 0.72, -rad * 0.3, rad * 0.24, 0, TAU);
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = M.rocketDark;
   ctx.beginPath();
-  rr(ctx, len - rad * 0.32, -rad * 1.12, rad * 0.32, rad * 2.24, rad * 0.1);
+  ctx.ellipse(len, 0, rad * 0.5, rad, 0, 0, TAU);
   ctx.fill();
   ctx.stroke();
-  ctx.fillStyle = M.window;
+  ctx.fillStyle = M.rocketLight;
   ctx.beginPath();
-  ctx.arc(len * 0.62, 0, rad * 0.38, 0, TAU);
+  ctx.ellipse(len, 0, rad * 0.32, rad * 0.66, 0, 0, TAU);
   ctx.fill();
+  ctx.fillStyle = M.rocketDark;
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * TAU;
+    disc(ctx, len + Math.cos(a) * rad * 0.41, Math.sin(a) * rad * 0.83, rad * 0.06);
+  }
+}
+
+function puffs(ctx, r) {
+  const M = SKY.melies, shape = () => {
+    ctx.beginPath();
+    for (const [x, y, s] of PUFFS) {
+      ctx.moveTo((x + s) * r, y * r);
+      ctx.arc(x * r, y * r, s * r, 0, TAU);
+    }
+  };
+  const g = ctx.createLinearGradient(0, r * 0.5, 0, r * 1.2);
+  g.addColorStop(0, M.cloud);
+  g.addColorStop(1, M.cloudDark);
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = ink(r) * 2;
+  shape();
   ctx.stroke();
+  ctx.fillStyle = g;
+  shape();
+  ctx.fill();
 }
 
 function melies(ctx, r, clock) {
-  const M = SKY.melies, line = Math.max(1.2, r * 0.05);
+  const M = SKY.melies, line = Math.max(1.2, r * 0.045), t = clock % 5;
+  ctx.save();
+  if (t > 4.5) ctx.translate(Math.sin(clock * 70) * r * 0.015, 0);
   ball(ctx, r, M.light, M.dark);
-  dots(ctx, r, M.spot, [[0.62, 0.4, 0.1], [-0.55, 0.52, 0.08], [0.72, -0.38, 0.07], [0.18, 0.78, 0.06], [-0.8, 0.05, 0.05]]);
+  dots(ctx, r, M.spot, [[0.72, -0.42, 0.07], [0.84, 0.1, 0.06], [-0.8, -0.32, 0.05], [0.5, -0.74, 0.05], [-0.62, 0.42, 0.05]]);
+  ctx.save();
+  ctx.globalAlpha *= 0.3;
+  ctx.fillStyle = M.shadow;
+  for (const [x, y, w, h, a] of [[-0.3, -0.2, 0.22, 0.15, 0], [0.3, -0.18, 0.21, 0.14, 0], [-0.03, 0.02, 0.06, 0.17, 0.15], [0.05, 0.17, 0.15, 0.05, 0], [0.01, 0.44, 0.3, 0.11, 0]]) {
+    ctx.beginPath();
+    ctx.ellipse(x * r, y * r, w * r, h * r, a, 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
+  ctx.save();
+  ctx.globalAlpha *= 0.55;
+  ctx.fillStyle = M.cheek;
+  for (const x of [-0.5, 0.52]) {
+    ctx.beginPath();
+    ctx.ellipse(x * r, r * 0.2, r * 0.19, r * 0.15, 0, 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
   ctx.strokeStyle = M.feature;
   ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.lineWidth = line * 1.3;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.56, -r * 0.34);
+  ctx.quadraticCurveTo(-r * 0.38, -r * 0.46, -r * 0.13, -r * 0.43);
+  ctx.moveTo(r * 0.13, -r * 0.43);
+  ctx.quadraticCurveTo(r * 0.36, -r * 0.48, r * 0.55, -r * 0.34);
+  ctx.stroke();
   ctx.lineWidth = line;
   ctx.beginPath();
-  ctx.moveTo(r * 0.16, -r * 0.4);
-  ctx.quadraticCurveTo(r * 0.33, -r * 0.52, r * 0.52, -r * 0.38);
-  ctx.moveTo(-r * 0.54, -r * 0.44);
-  ctx.quadraticCurveTo(-r * 0.33, -r * 0.36, -r * 0.12, -r * 0.44);
-  ctx.moveTo(r * 0.03, -r * 0.22);
-  ctx.quadraticCurveTo(r * 0.18, r * 0.04, r * 0.02, r * 0.13);
-  ctx.moveTo(-r * 0.34, r * 0.44);
-  ctx.quadraticCurveTo(-r * 0.16, r * 0.31, 0, r * 0.37);
-  ctx.quadraticCurveTo(r * 0.16, r * 0.43, r * 0.32, r * 0.33);
+  ctx.moveTo(-r * 0.02, -r * 0.16);
+  ctx.quadraticCurveTo(-r * 0.07, -r * 0.02, -r * 0.08, r * 0.1);
+  ctx.quadraticCurveTo(r * 0.04, r * 0.21, r * 0.17, r * 0.1);
+  ctx.quadraticCurveTo(r * 0.17, r * 0.0, r * 0.1, -r * 0.03);
+  ctx.moveTo(-r * 0.14, r * 0.17);
+  ctx.quadraticCurveTo(-r * 0.27, r * 0.3, -r * 0.25, r * 0.43);
+  ctx.moveTo(r * 0.24, r * 0.15);
+  ctx.quadraticCurveTo(r * 0.35, r * 0.28, r * 0.31, r * 0.41);
+  ctx.stroke();
+  ctx.fillStyle = M.mouth;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.22, r * 0.43);
+  ctx.quadraticCurveTo(r * 0.01, r * 0.34, r * 0.24, r * 0.41);
+  ctx.quadraticCurveTo(r * 0.02, r * 0.55, -r * 0.22, r * 0.43);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.13, r * 0.53);
+  ctx.quadraticCurveTo(r * 0.02, r * 0.6, r * 0.16, r * 0.52);
   ctx.stroke();
   if (clock % 4.5 < 0.15) {
+    ctx.lineWidth = line * 1.3;
     ctx.beginPath();
-    ctx.moveTo(r * 0.21, -r * 0.2);
-    ctx.lineTo(r * 0.45, -r * 0.2);
+    ctx.moveTo(r * 0.18, -r * 0.17);
+    ctx.quadraticCurveTo(r * 0.3, -r * 0.12, r * 0.42, -r * 0.17);
     ctx.stroke();
   } else {
     ctx.fillStyle = M.eye;
     ctx.beginPath();
-    ctx.ellipse(r * 0.33, -r * 0.2, r * 0.13, r * 0.085, 0, 0, TAU);
+    ctx.ellipse(r * 0.3, -r * 0.18, r * 0.12, r * 0.075, 0, 0, TAU);
     ctx.fill();
-    ctx.lineWidth = line * 0.7;
-    ctx.stroke();
     ctx.fillStyle = M.feature;
-    disc(ctx, r * 0.27, -r * 0.19, r * 0.05);
+    disc(ctx, r * 0.25, -r * 0.17, r * 0.05);
+    ctx.lineWidth = line * 1.3;
+    ctx.beginPath();
+    ctx.ellipse(r * 0.3, -r * 0.18, r * 0.12, r * 0.075, 0, Math.PI, TAU);
+    ctx.stroke();
   }
+  ctx.lineWidth = line * 0.8;
+  ctx.beginPath();
+  ctx.arc(r * 0.3, -r * 0.16, r * 0.13, 0.25 * Math.PI, 0.75 * Math.PI);
+  ctx.stroke();
   tone(ctx, r);
   ctx.save();
-  ctx.translate(-r * 0.32, -r * 0.2);
-  ctx.fillStyle = M.goo;
-  for (const [x, y, s] of GOO) disc(ctx, x * r, y * r, s * r);
-  ctx.rotate(-2.45);
+  ctx.translate(-r * 0.3, -r * 0.2);
+  goo(ctx, r, clock);
+  ctx.rotate(-2.5);
   ctx.strokeStyle = INK;
   ctx.lineWidth = ink(r);
   ctx.lineJoin = "round";
-  capsule(ctx, r * 0.82, r * 0.17);
-  ctx.fillStyle = M.goo;
-  disc(ctx, r * 0.03, 0, r * 0.08);
+  capsule(ctx, r);
+  ctx.fillStyle = SKY.melies.goo;
+  disc(ctx, r * 0.02, -r * 0.1, r * 0.06);
+  disc(ctx, r * 0.03, r * 0.11, r * 0.05);
+  ctx.restore();
+  puffs(ctx, r);
   ctx.restore();
 }
 
