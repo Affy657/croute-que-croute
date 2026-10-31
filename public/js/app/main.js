@@ -361,6 +361,7 @@ function renderOverAch() {
   const got = S.train ? [] : [...ach.runUnlocked().map((a) => a.name), ...S.gotToppings.map((k) => "Garniture " + SPREADS[k].name), ...ach.runUnlocked().filter((a) => a.gear).map(gearLabel)];
   ui.overAch.hidden = !got.length;
   ui.overAch.textContent = "★ " + got.join(", ");
+  ui.overTry.hidden = !!S.train || (!S.gotToppings.length && !ach.runUnlocked().some((a) => a.gear));
   ui.overAchBtn.textContent = achLabel();
 }
 
@@ -551,6 +552,10 @@ ui.gearRows.addEventListener("click", (e) => {
   if (b) stepGear(b.parentElement.dataset.slot, Number(b.dataset.step));
 });
 ui.overAch.addEventListener("click", openAch);
+ui.overTry.addEventListener("click", () => {
+  goHome();
+  openPicker(true);
+});
 ui.achBack.addEventListener("click", closeAch);
 ui.settingsBtn.addEventListener("click", openSettings);
 ui.settingsBack.addEventListener("click", closeSettings);
