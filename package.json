@@ -13,7 +13,7 @@
     "types": "wrangler types",
     "check": "tsc --noEmit",
     "test": "node test/fairness.mjs 100 150",
-    "test:api": "node test/player.mjs && node test/admin.mjs",
+    "test:api": "node test/api.mjs",
     "equilibrage": "node test/equilibrage/comparer.mjs",
     "equilibrage:attaques": "node test/equilibrage/attaques.mjs",
     "equilibrage:vides": "node test/equilibrage/vides.mjs",
