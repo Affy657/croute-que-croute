@@ -1,12 +1,12 @@
 import { clock } from "../shared/format.js";
 import { ui, show, setText, renderControls, setLinking } from "./screens.js";
 import { net, on, registered, serverNow, linkWith, newLinkCode, logoutOthers } from "./api.js";
-import { renderSettings } from "./settings.js";
+import { renderSettings, copy } from "./settings.js";
 import { resync } from "./profile.js";
 
 const TICK_MS = 1000, RETRY_MS = 20000, QUIET = 4, OFFLINE = "Pas de réseau, réessaie.";
 const OUT_ASK = "Tes autres appareils sortent du compte. Pour revenir, il leur faudra un nouveau code.";
-let timer = null, until = Infinity, live = false, asked = 0, merging = null, waiting = null, opener = () => {};
+let timer = null, until = Infinity, live = false, asked = 0, shown = "", merging = null, waiting = null, opener = () => {};
 
 const quoted = (name) => "« " + name + " »";
 
@@ -33,7 +33,9 @@ async function fetchCode() {
     if (mine !== asked) return;
     setText(ui.linkFail, "");
     drawQr(r.qr);
+    shown = r.code;
     ui.linkCode.textContent = spaced(r.code);
+    ui.linkCopy.hidden = false;
     until = r.expiresAt;
     live = true;
     tick();
@@ -42,6 +44,7 @@ async function fetchCode() {
     setText(ui.linkFail, e.status ? e.message : OFFLINE);
     drawQr(null);
     ui.linkCode.textContent = "";
+    ui.linkCopy.hidden = true;
     until = serverNow() + RETRY_MS;
     live = false;
     tick();
@@ -66,6 +69,7 @@ function openLink() {
   renderControls(false);
   drawQr(null);
   ui.linkCode.textContent = "";
+  ui.linkCopy.hidden = true;
   ui.linkTime.textContent = "";
   setText(ui.linkFail, "");
   live = false;
@@ -187,6 +191,7 @@ export function initAccount(openSettings) {
 }
 
 ui.linkBtn.addEventListener("click", openLink);
+ui.linkCopy.addEventListener("click", () => copy(ui.linkCopy, shown, "Code copié"));
 ui.mergeBtn.addEventListener("click", () => {
   resetMerge();
   ui.mergeForm.hidden = !ui.mergeForm.hidden;

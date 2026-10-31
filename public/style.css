@@ -399,6 +399,23 @@ h2.page-title {
   transform: translateX(-2px) rotate(-135deg);
 }
 
+.cue .pick {
+  opacity: 0.8;
+  animation: cue-left 1.6s ease-in-out infinite;
+}
+
+.cue .pick.next {
+  animation-name: cue-right;
+}
+
+@keyframes cue-left {
+  50% { translate: -4px 0; }
+}
+
+@keyframes cue-right {
+  50% { translate: 4px 0; }
+}
+
 .pick:active,
 .pick-sm:active {
   transform: scale(0.92);
@@ -470,7 +487,8 @@ h2.page-title {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pick-name.hint {
+  .pick-name.hint,
+  .cue .pick {
     animation: none;
   }
 }

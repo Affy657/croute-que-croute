@@ -536,8 +536,8 @@ ui.pickToast.addEventListener("click", () => openPicker(!pickerIsOpen()));
 document.addEventListener("pointerdown", (e) => {
   if (pickerIsOpen() && !ui.picker.contains(e.target)) openPicker(false);
 });
-ui.pickPrev.addEventListener("click", () => stepTopping(-1));
-ui.pickNext.addEventListener("click", () => stepTopping(1));
+ui.pickPrev.addEventListener("click", () => (pickerIsOpen() ? stepTopping(-1) : openPicker(true)));
+ui.pickNext.addEventListener("click", () => (pickerIsOpen() ? stepTopping(1) : openPicker(true)));
 ui.gearRows.addEventListener("click", (e) => {
   const b = e.target.closest("[data-step]");
   if (b) stepGear(b.parentElement.dataset.slot, Number(b.dataset.step));

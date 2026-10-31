@@ -8,7 +8,7 @@ export const FAMILIES = [["time", "Temps de cuisson"], ["play", "Frôlés et dé
 const TIMES = [[10, "t10"], [30, "t30"], [60, "t60"], [90, "t90"], [120, "t120"], [150, "t150"]];
 const NEARS = [[20, "near20"]];
 const RUNS = [[10, "runs10"], [50, "runs50"], [100, "runs100"]];
-const SIX_SEVEN_S = 67, STILL_S = 3, COMBO = 5, NIGHT_UNTIL_H = 3, DECEMBER = 11, EXPRESS_CS = 200, EVENTS = 3, TOP = 10, FRIDGE = 4;
+const SIX_SEVEN_S = 67, STILL_S = 3, COMBO = 5, NIGHT_UNTIL_H = 3, DECEMBER = 11, OCTOBER = 9, EXPRESS_CS = 200, EVENTS = 3, TOP = 10, FRIDGE = 4;
 const LIVE = ATTACKS.filter((a) => !a.lab);
 const EXTRAS = Object.keys(SPREADS).length - 1;
 const TOPPINGS = [[1, "top1"], [FRIDGE, "top4"], [EXTRAS, "topAll"]];
@@ -30,6 +30,7 @@ export const ACHIEVEMENTS = [
   { id: "runs50", family: "loyal", name: "Boulangerie", desc: "Jouer 50 parties", gear: "brioche" },
   { id: "runs100", family: "loyal", name: "Accro à la croûte", desc: "Jouer 100 parties", gear: "crustless" },
   { id: "xmas", family: "loyal", name: "Joyeux Noël", desc: "Jouer en décembre", gear: "santa" },
+  { id: "halloween", family: "loyal", name: "Joyeux Halloween", desc: "Jouer en octobre", gear: "bat" },
   { id: "events3", family: "loyal", name: "Fidèle du Space", desc: "Jouer à 3 soirées", gear: "astronaut" },
   { id: "top10", family: "loyal", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée", gear: "pirate" },
   { id: "eventWin", family: "loyal", name: "Tartine d'or", desc: "Finir 1er d'une soirée", gear: "crown" },
@@ -146,6 +147,7 @@ export function runStart(eventKey) {
   const now = new Date();
   if (now.getHours() < NIGHT_UNTIL_H) unlock("night");
   if (now.getMonth() === DECEMBER) unlock("xmas");
+  if (now.getMonth() === OCTOBER) unlock("halloween");
 }
 
 export function runCombo(chain) {

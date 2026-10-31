@@ -105,20 +105,38 @@ function flash(button, text) {
   button.flash = setTimeout(() => { button.textContent = button.label; }, FLASH_MS);
 }
 
+function copyByHand(text) {
+  const area = document.createElement("textarea");
+  area.value = text;
+  area.readOnly = true;
+  area.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+  document.body.append(area);
+  area.select();
+  area.setSelectionRange(0, text.length);
+  let ok = false;
+  try {
+    ok = document.execCommand("copy");
+  } catch (e) {}
+  area.remove();
+  return ok;
+}
+
+export async function copy(button, text, done = "Copié !") {
+  let ok = true;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    ok = copyByHand(text);
+  }
+  flash(button, ok ? done : "Copie impossible");
+}
+
 async function shareGame() {
   const url = location.origin + "/";
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: "Croûte que Croûte", text: "Viens jouer à Croûte que Croûte !", url });
-    } catch (e) {}
-    return;
-  }
+  if (!navigator.share) return copy(ui.shareBtn, url, "Lien copié");
   try {
-    await navigator.clipboard.writeText(url);
-    flash(ui.shareBtn, "Lien copié");
-  } catch (e) {
-    flash(ui.shareBtn, "Copie impossible");
-  }
+    await navigator.share({ title: "Croûte que Croûte", text: "Viens jouer à Croûte que Croûte !", url });
+  } catch (e) {}
 }
 
 export function suggestInstall() {
@@ -165,6 +183,7 @@ ui.installYes.addEventListener("click", () => {
 });
 ui.installLater.addEventListener("click", closePop);
 ui.qrHost.textContent = location.host;
+ui.qrCopy.addEventListener("click", () => copy(ui.qrCopy, location.origin + "/", "Lien copié"));
 onInstallChange(() => {
   if (!ui.settings.hidden) renderSettings();
 });

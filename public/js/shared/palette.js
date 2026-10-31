@@ -36,6 +36,7 @@ export const GEAR = {
   boosters: { slot: "side", name: "Boosters" },
   cutlery: { slot: "side", name: "Couteau et fourchette" },
   sixseven: { slot: "side", name: "Mains Six Seven" },
+  bat: { slot: "side", name: "Ailes de chauve-souris" },
   toasted: { slot: "bread", name: "Pain grillé", crust: "#8f4b1a", crumb: "#dc9a52" },
   burnt: { slot: "bread", name: "Pain carbonisé", crust: "#4b3226", crumb: "#6a4a38" },
   brioche: { slot: "bread", name: "Brioche", crust: "#b9581b", crumb: "#ffdb8c" },

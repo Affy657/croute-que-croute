@@ -785,7 +785,7 @@ function sideCutlery(ctx, t, C) {
   }
 }
 
-const SIX_SEVEN_HZ = 2.2;
+const SIX_SEVEN_HZ = 2.2, BAT_HZ = 2.6;
 
 const DIGITS = {
   6(ctx) {
@@ -870,7 +870,52 @@ function sideSixSeven(ctx, t, C) {
   }
 }
 
-const SIDES = { boosters: sideBoosters, cutlery: sideCutlery, sixseven: sideSixSeven };
+function sideBat(ctx, t, C) {
+  const k = Math.sin((performance.now() / 1000) * Math.PI * 2 * BAT_HZ);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  for (const side of [-1, 1]) {
+    ctx.save();
+    ctx.translate(side * 12, -3);
+    ctx.scale(side, 1);
+    ctx.rotate(k * 0.28);
+    const g = ctx.createLinearGradient(0, 0, 36, 0);
+    g.addColorStop(0, "#2e1846");
+    g.addColorStop(1, "#5c3486");
+    ctx.beginPath();
+    ctx.moveTo(0, -1);
+    ctx.quadraticCurveTo(6, -14, 14, -15);
+    ctx.quadraticCurveTo(26, -16, 36, -7);
+    ctx.quadraticCurveTo(28, -1, 31, 8);
+    ctx.quadraticCurveTo(23, 4, 21, 15);
+    ctx.quadraticCurveTo(13, 7, 3, 12);
+    ctx.closePath();
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.strokeStyle = C.void;
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+    ctx.strokeStyle = "#9b78c8";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for (const [x, y] of [[36, -7], [31, 8], [21, 15]]) {
+      ctx.moveTo(14, -15);
+      ctx.lineTo(x, y);
+    }
+    ctx.moveTo(2, -2);
+    ctx.quadraticCurveTo(6, -13, 14, -15);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(14, -15);
+    ctx.quadraticCurveTo(13, -19, 10, -19);
+    ctx.strokeStyle = C.ink;
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+const SIDES = { boosters: sideBoosters, cutlery: sideCutlery, sixseven: sideSixSeven, bat: sideBat };
 
 function crumbClip(ctx, w, h) {
   ctx.save();
