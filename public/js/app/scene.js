@@ -6,7 +6,7 @@ import { store, KEYS } from "../shared/store.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const POP_LIFE = 0.7, PUCK_R = 30, PUCK_LIFT = 110, GRAB_S = 0.6, FIELD_FADE = 5;
-const TOUR = ["normal", "normal", "wild", "normal", "wild", "rare"], SIDES = [0.8, 0.22];
+const TOUR = ["rare", "normal", "wild", "normal", "normal", "normal", "wild", "normal"], SIDES = [0.8, 0.22];
 const SKY_SPEED = 20, SKY_GAP = 0.5, SKY_TOP = 0.3, SKY_LOOP = SKY_GAP * TOUR.length;
 const HEAT_EASE = 0.7, HEAT_LOW = 0.45, HEAT_FIELD = 0.85;
 const HINT = "Pose ton doigt où tu veux";
