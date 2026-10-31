@@ -3,6 +3,7 @@ import { dispatch, type Route } from "./router";
 import * as player from "./routes/player";
 import * as admin from "./routes/admin";
 import * as link from "./routes/link";
+import * as diag from "./routes/diag";
 
 const ID = "([\\w-]{1,64})";
 
@@ -15,6 +16,7 @@ const routes: Route[] = [
   { method: "POST", path: "/api/me/link", run: link.createLink },
   { method: "DELETE", path: "/api/me/devices", run: link.logoutOthers },
   { method: "POST", path: "/api/link", run: link.useLink },
+  { method: "POST", path: "/api/diag", run: diag.report },
   { method: "GET", path: new RegExp(`^/api/players/${ID}$`), run: player.card },
   { method: "POST", path: "/api/runs", run: player.startRun },
   { method: "POST", path: new RegExp(`^/api/runs/${ID}$`), run: player.finishRun },

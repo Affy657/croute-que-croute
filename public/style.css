@@ -1286,3 +1286,42 @@ a.ghost {
   pointer-events: auto;
   cursor: pointer;
 }
+
+.diag {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 64px);
+  left: 8px;
+  right: 8px;
+  z-index: 50;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(13, 11, 36, 0.85);
+  color: var(--ink);
+  pointer-events: none;
+}
+
+.diag pre {
+  margin: 0;
+  font: 11px/1.35 ui-monospace, Menlo, monospace;
+  white-space: pre-wrap;
+}
+
+.diag div {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  pointer-events: auto;
+}
+
+.diag button {
+  padding: 4px 10px;
+  border: 1px solid var(--ink-dim);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font: 12px/1 ui-monospace, Menlo, monospace;
+}
+
+.diag.small pre {
+  display: none;
+}

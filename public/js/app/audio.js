@@ -29,6 +29,11 @@ const listeners = [];
 let el = null, live = false, primed = false, running = false, runTime = 0, fadeTimer = null, previewTimer = null, synced = -Infinity;
 let ctx = null, master = null, musicGain = null, musicFilter = null, musicBoost = 1;
 const buffers = {}, lastPlayed = {};
+let tracer = null;
+
+const note = (...parts) => tracer && tracer(parts.join(" "));
+export const traceAudio = (fn) => { tracer = fn; };
+export const audioParts = () => ({ el, ctx, musicGain, primed, running, live, fading: !!fadeTimer, boost: musicBoost });
 
 export const musicAvailable = () => !!el;
 export const onAudioChange = (fn) => listeners.push(fn);
@@ -45,11 +50,15 @@ export async function initAudio() {
       el.preload = "auto";
       el.addEventListener("playing", () => { live = true; });
       for (const name of ["pause", "waiting", "ended"]) el.addEventListener(name, () => { live = false; });
-      if (ctx) routeMusic(volumeWorks() ? VOLUME : 1);
+      const works = volumeWorks();
+      if (ctx) routeMusic(works ? VOLUME : 1);
+      note("musique prête", url, works ? "volume ok" : "volume bloqué", musicGain ? "via webaudio" : "directe");
       el.volume = musicVolume();
       if (running && prefs.music) playAt(runTime);
       break;
-    } catch (e) {}
+    } catch (e) {
+      note("musique échec", url, e.message);
+    }
   }
   changed();
 }
@@ -70,6 +79,7 @@ function routeMusic(boost) {
     musicGain.gain.value = gainLevel();
     ctx.createMediaElementSource(el).connect(musicFilter).connect(musicGain).connect(ctx.destination);
   } catch (e) {
+    note("route échouée", e.message);
     musicGain = null;
     musicFilter = null;
   }
@@ -129,17 +139,19 @@ function jumpFrom(p) {
 }
 
 function playAt(t) {
+  note("lecture à", t.toFixed(2));
   stopFade();
   openMusic();
   el.muted = false;
   el.volume = musicVolume();
   el.currentTime = trackAt(t);
   synced = t;
-  el.play().catch(() => {});
+  el.play().catch((e) => note("lecture refusée", e.name));
 }
 
 function fadeOut(muffle = false) {
   if (!el || el.paused) return;
+  note("fondu", muffle ? "étouffé" : "simple", musicGain ? "par gain" : "par volume");
   stopFade();
   if (musicGain) {
     const t = ctx.currentTime, { gain } = musicGain, { frequency, Q } = musicFilter, loud = gain.value;
@@ -158,6 +170,7 @@ function fadeOut(muffle = false) {
     gain.linearRampToValueAtTime(0, end);
     fadeTimer = setTimeout(() => {
       fadeTimer = null;
+      note("fondu fini, pause");
       el.pause();
       openMusic();
     }, (end - t) * 1000);
@@ -180,6 +193,8 @@ function ensureContext() {
   const Ctx = window.AudioContext || window.webkitAudioContext;
   if (ctx || !Ctx) return;
   ctx = new Ctx();
+  note("contexte créé", ctx.state, ctx.sampleRate + " Hz");
+  ctx.addEventListener("statechange", () => note("contexte", ctx.state));
   const limiter = ctx.createDynamicsCompressor();
   limiter.threshold.value = -3;
   limiter.knee.value = 0;
@@ -199,7 +214,9 @@ function ensureContext() {
 }
 
 const wakeContext = () => {
-  if (ctx && ctx.state !== "running" && ctx.state !== "closed") ctx.resume().catch(() => {});
+  if (!ctx || ctx.state === "running" || ctx.state === "closed") return;
+  note("réveil contexte", ctx.state);
+  ctx.resume().catch((e) => note("réveil refusé", e.name));
 };
 
 export function unlockAudio() {
@@ -212,17 +229,20 @@ export function unlockAudio() {
   }
   if (primed) return;
   primed = true;
+  note("amorçage");
   el.muted = true;
   if (musicGain) musicGain.gain.value = 0;
   el.play().then(
     () => {
+      note("amorçage joué", el.muted ? "puis pause" : "et gardé");
       if (el.muted) {
         el.pause();
         openMusic();
       }
       el.muted = false;
     },
-    () => {
+    (e) => {
+      note("amorçage refusé", e.name);
       primed = false;
       el.muted = false;
       openMusic();
@@ -231,6 +251,7 @@ export function unlockAudio() {
 }
 
 export function musicRunStart() {
+  note("partie commence");
   running = true;
   runTime = 0;
   if (el && prefs.music) playAt(0);
@@ -240,20 +261,25 @@ export function musicRunSync(t) {
   runTime = t;
   if (!el || !live || el.seeking || !el.duration) return;
   const jump = jumpFrom(el.currentTime);
-  if (jump !== null) el.currentTime = jump;
-  else if (t - synced > RESYNC_S && Math.abs(runAt(el.currentTime, t) - t) > DRIFT) {
+  if (jump !== null) {
+    note("saut", el.currentTime.toFixed(2), "vers", jump.toFixed(2));
+    el.currentTime = jump;
+  } else if (t - synced > RESYNC_S && Math.abs(runAt(el.currentTime, t) - t) > DRIFT) {
+    note("recalage", el.currentTime.toFixed(2), "vers", trackAt(t).toFixed(2));
     synced = t;
     el.currentTime = trackAt(t);
   }
 }
 
 export function musicRunEnd() {
+  note("partie finie");
   running = false;
   fadeOut(true);
 }
 
 export function pauseForBackground(hidden) {
   if (!el) return;
+  note(hidden ? "mise en pause (cachée)" : "retour au premier plan");
   if (hidden) {
     stopFade();
     el.pause();
@@ -265,6 +291,7 @@ export function pauseForBackground(hidden) {
 
 export function toggleMusic() {
   prefs.music = !prefs.music;
+  note("bouton musique", prefs.music ? "allumé" : "coupé");
   store.set(KEYS.musicOff, prefs.music ? null : "1");
   if (!prefs.music && el) {
     stopFade();
@@ -281,6 +308,7 @@ export function toggleSfx() {
 
 export function setLevel(kind, value) {
   const v = Math.min(1, Math.max(0, value));
+  note("curseur", kind, Math.round(v * 100));
   if (kind === "music") {
     prefs.musicLevel = v;
     store.set(KEYS.musicVolume, Math.round(v * 100));
@@ -295,6 +323,7 @@ export function setLevel(kind, value) {
 
 export function previewMusic() {
   if (!el || running || !prefs.music) return;
+  note("aperçu musique");
   ensureContext();
   wakeContext();
   playAt(PREVIEW_AT);
