@@ -1,4 +1,4 @@
-import { DIR, createSim, ATTACKS, WALL_HOLE, WALL_AWAY, WALL_LOW, CALM_PASS, gapTo, field, mulberry32, solverPilot } from "./jeu.mjs";
+import { DIR, createSim, ATTACKS, WALL_HOLE, WALL_AWAY, WALL_LOW, ROLLING_APART, CALM_PASS, gapTo, field, mulberry32, solverPilot } from "./jeu.mjs";
 
 const GAMES = Number(process.argv[2]) || 120, LIMIT = Number(process.argv[3]) || 150;
 const SOLVER_GAMES = 20, SOLVER_LIMIT = 300, TRAIN_LIMIT = 90, LINGER_S = 12, MISS_PX = 3;
@@ -72,6 +72,7 @@ function play(seed, style, { only = null, t0 = 0, limit = LIMIT, dt = STEP } = {
     }
     for (const w of s.warns) if (!s.dead && w.at < s.t) report("annonce jamais lancée", where({ at: w.at }));
     maxObs = Math.max(maxObs, s.obs.length);
+    if (s.obs.filter((o) => o.kind === "rolling").length + s.warns.filter((w) => w.obs[0].kind === "rolling").length > 2) report("plus de 2 rouleaux à l'écran", where({}));
     if (s.stats.spawned !== spawned) {
       const id = s.last, a = byId[id];
       if (!only) {
@@ -91,6 +92,8 @@ function play(seed, style, { only = null, t0 = 0, limit = LIMIT, dt = STEP } = {
         if (a.kin === "wall" && ["rain", "slant", "downpour"].includes(prev) && s.warns.some((w) => !seen.has(w) && !w.obs[0].vx)) report("mur par le haut juste après une pluie", where({ id, prev }));
       }
       if (a.calm) seriesEnd = passAt(s.warns.filter((w) => w.obs[0].from === id));
+      const rolls = s.warns.filter((w) => !seen.has(w) && w.obs[0].kind === "rolling").map((w) => w.y);
+      if (rolls.length === 2 && Math.abs(rolls[0] - rolls[1]) < ROLLING_APART - 1e-6) report("rouleaux trop proches", where({ id, rolls }));
       if (a.kin === "wall") {
         const fresh = s.warns.filter((w) => !seen.has(w)), first = Math.min(...fresh.map((w) => w.at));
         for (const at of new Set(fresh.map((w) => w.at))) {
