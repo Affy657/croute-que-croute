@@ -356,6 +356,8 @@ export function playSfx(name, rate) {
   if (prefs.sfx) trigger(name, SFX_LATE_MS, rate);
 }
 
+export const prepareSfx = ensureContext;
+
 export function previewSfx(name) {
   ensureContext();
   trigger(name, Infinity);
