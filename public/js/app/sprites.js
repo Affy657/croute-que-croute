@@ -1394,9 +1394,10 @@ function nearZone(ctx, C) {
 
 const FLAMES = 16, EMBERS = 5, EMBER_RISE = 20, VOLT_MS = 80, VOLT_STEPS = 7, VOLT_R = 33, NEON_R = 35;
 const VOLT_ARCS = [[0.2, 1.1], [2, 0.9], [3.4, 1.2], [4.9, 0.8]];
-const NEON = ["#ff3fa4", "#8a5cff", "#ffcf33"];
+const NEON = ["#ff3fa4", "#8a5cff", "#ffcf33"], NEON_SEAM = 0.02;
 const RING_RX = 43, RING_RY = 12, RING_TILT = -0.28, RING_SPIN = 0.9, MOON_R = 3.8;
 const RING_SPARKLES = [[-36, -26, 2.2], [34, 24, 1.8], [-28, 30, 1.4]];
+const SIDE_REACH = { boosters: 31, cutlery: 32, sixseven: 44, bat: 50 }, SIDE_BAND = 16;
 
 function glow(ctx, y, inner, outer, from, to) {
   const g = ctx.createRadialGradient(0, y, inner, 0, y, outer);
@@ -1479,11 +1480,11 @@ function auraVolt(ctx, now) {
 function auraNeon(ctx, now) {
   const pulse = 0.75 + 0.25 * Math.sin(now * 4), turn = now * 1.5, arc = TAU / (NEON.length * 2);
   glow(ctx, 0, 22, 40, `rgba(255, 63, 164, ${0.28 * pulse})`, "rgba(138, 92, 255, 0)");
-  ctx.lineCap = "round";
+  ctx.lineCap = "butt";
   for (let i = 0; i < NEON.length * 2; i++) {
     ctx.strokeStyle = NEON[i % NEON.length];
     ctx.beginPath();
-    ctx.arc(0, 0, NEON_R, turn + i * arc, turn + (i + 1) * arc);
+    ctx.arc(0, 0, NEON_R, turn + i * arc, turn + (i + 1) * arc + NEON_SEAM);
     ctx.globalAlpha = 0.35 * pulse;
     ctx.lineWidth = 7;
     ctx.stroke();
@@ -1589,8 +1590,14 @@ export function drawToast(ctx, t, splat, C = PALETTE, aura = true) {
   topping(ctx, t.spread, C);
   ctx.restore();
   if (front) {
+    const reach = SIDE_REACH[t.side], near = (HIT_R + NEAR) / s;
     ctx.save();
     body(ctx);
+    if (reach) ctx.rect(-reach, -SIDE_BAND, reach * 2, SIDE_BAND * 2);
+    if (round) {
+      ctx.moveTo(near, 0);
+      ctx.arc(0, 0, near, 0, TAU);
+    }
     ctx.clip();
     ctx.scale(1 / s, 1 / s);
     front(ctx, performance.now() / 1000, C);
