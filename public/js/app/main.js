@@ -542,6 +542,7 @@ ui.menu.addEventListener("click", (e) => {
   if (!hit.fresh) return toastAch({ name: hit.feat.name + " : déjà gagné" });
   toastAch(hit.feat);
   toastAch({ name: gearLabel(hit.feat) });
+  if (hit.all) toastAch(hit.all);
 });
 ui.pickToast.addEventListener("click", () => openPicker(!pickerIsOpen()));
 document.addEventListener("pointerdown", (e) => {
@@ -642,6 +643,7 @@ onTopping((kind) => {
 });
 onGear((slot, kind) => {
   S.toast[slot] = kind;
+  ach.checkOutfit(S.toast);
   renderPicker();
   shareLook();
 });
@@ -654,6 +656,7 @@ ach.onUnlock((a, synced) => {
   } else if (S.mode === "over") renderOverAch();
   else if (!ui.menu.hidden) renderMenu();
 });
+ach.checkOutfit(S.toast);
 api.on("update", () => {
   if (S.mode === "menu" && !boardOpen && !infoOpen && !settingsOpen && !achOpen) api.applyUpdate();
 });
