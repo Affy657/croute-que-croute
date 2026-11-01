@@ -16,6 +16,7 @@ export const KEYS = {
   gear: "cv-accessoire",
   side: "cv-cotes",
   bread: "cv-pain",
+  aura: "cv-aura",
   pendingScores: "cv-score-attente",
   lastReload: "cv-reload",
   quality: "cv-qualite",

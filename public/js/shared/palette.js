@@ -20,7 +20,7 @@ export const PALETTE = {
   "trail-end": "rgba(255, 246, 224, 0)"
 };
 
-export const SLOTS = { head: "Sans chapeau", side: "Rien sur les côtés", bread: "Pain de mie" };
+export const SLOTS = { head: "Sans chapeau", side: "Rien sur les côtés", bread: "Pain de mie", aura: "Sans aura" };
 
 export const GEAR = {
   witch: { slot: "head", name: "Chapeau de sorcière" },
@@ -43,7 +43,11 @@ export const GEAR = {
   burnt: { slot: "bread", name: "Pain carbonisé", crust: "#4b3226", crumb: "#6a4a38" },
   brioche: { slot: "bread", name: "Brioche", crust: "#b9581b", crumb: "#ffdb8c" },
   crustless: { slot: "bread", name: "Sans croûte", crust: "#f6c983", crumb: "#f6c983" },
-  hitbox: { slot: "bread", name: "Hitbox", crust: PALETTE.crust, crumb: PALETTE.crumb }
+  hitbox: { slot: "bread", name: "Hitbox", crust: PALETTE.crust, crumb: PALETTE.crumb },
+  heat: { slot: "aura", name: "Surchauffe" },
+  volt: { slot: "aura", name: "Survoltée" },
+  neon: { slot: "aura", name: "Néon de soirée" },
+  ring: { slot: "aura", name: "Anneau planétaire" }
 };
 
 export const HEAT = ["#0d0b24", "#381496", "#6c1630"];

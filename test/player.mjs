@@ -127,6 +127,10 @@ check("classements général et soirée : le joueur y est", r.status === 200 && 
   check("progression gardée sur le serveur et réunie", r.status === 200 && p && p.got.t10 === 1000 && p.got.t30 === 3000 && !("mauvais-id" in p.got) && p.attacks.join() === "rain,wall" && p.toppings.join() === "jam", r.data);
   r = await call("PUT", "/api/me/look", { token, body: { look } });
   check("tenue seule toujours acceptée", r.status === 200 && r.data.ok && r.data.progress === undefined, r.data);
+  const fresh = (await call("POST", "/api/join", { body: { pseudo: "Aura" + hex(4), clientId: hex(32) } })).data.token;
+  r = await call("PUT", "/api/me/look", { token: fresh, body: { look: { ...look, aura: "ring", own: { aura: 2 } } } });
+  const id = (await call("GET", "/api/board", { token: fresh })).data.me.id, shown = (await call("GET", `/api/players/${id}`)).data.look;
+  check("aura gardée dans la tenue et montrée sur la fiche", r.status === 200 && !!shown && shown.aura === "ring" && shown.own.aura === 2, shown);
 }
 
 {

@@ -6,7 +6,7 @@ import { LOCAL } from "../shared/local.js";
 const listeners = [];
 const SOURCE = Object.fromEntries(ACHIEVEMENTS.filter((a) => a.gear).map((a) => [a.gear, a.id]));
 const ALL = LOCAL && new URLSearchParams(location.search).get("accessoires") === "tous";
-const KEY = { head: KEYS.gear, side: KEYS.side, bread: KEYS.bread };
+const KEY = { head: KEYS.gear, side: KEYS.side, bread: KEYS.bread, aura: KEYS.aura };
 
 if (store.get(KEYS.gear) === "boosters") {
   store.set(KEYS.side, "boosters");

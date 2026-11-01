@@ -6,12 +6,12 @@ import { outfit, gearOwned, gearTotal } from "./gear.js";
 import { chosen, owned, toppingList, addToppings } from "./toppings.js";
 import { progress, forSync, absorb } from "./achievements.js";
 
-const SEND_MS = 1500, TOAST_SCALE = 2, TOAST_Y = 0.53, BAR_MIN = 6, PODIUM = 3, BLANK = " ", NONE = "-";
-const SHELVES = [["head", "Chapeaux"], ["side", "Côtés"], ["bread", "Pains"], ["spread", "Garnitures"]];
+const SEND_MS = 1500, TOAST_SCALE = 1.8, TOAST_Y = 0.53, BAR_MIN = 6, PODIUM = 3, BLANK = " ", NONE = "-";
+const SHELVES = [["head", "Chapeaux"], ["side", "Côtés"], ["bread", "Pains"], ["aura", "Auras"], ["spread", "Garnitures"]];
 const $ = (id) => document.getElementById(id);
 const ui = { name: $("profileName"), since: $("profileSince"), last: $("profileLast"), canvas: $("profileToast"), ranks: $("profileRanks"), body: $("profileBody") };
 const ctx = ui.canvas.getContext("2d");
-const toast = { x: 0, y: 0, tilt: 0, thrust: 0.35, scars: [], spread: "butter", head: null, side: null, bread: null };
+const toast = { x: 0, y: 0, tilt: 0, thrust: 0.35, scars: [], spread: "butter", head: null, side: null, bread: null, aura: null };
 let shown = null, sent = null, timer = null, ready = false;
 
 export function myLook() {
@@ -127,7 +127,7 @@ function render(c) {
   ui.since.textContent = since(c.joinedAt);
   ui.last.textContent = c.lastAt ? "Dernière partie " + ago(c.now - c.lastAt) : "";
   ui.last.hidden = !c.lastAt;
-  Object.assign(toast, { spread: "butter", head: null, side: null, bread: null }, c.look ? { spread: c.look.spread || "butter", head: c.look.head, side: c.look.side, bread: c.look.bread } : {});
+  Object.assign(toast, { spread: "butter", head: null, side: null, bread: null, aura: null }, c.look ? { spread: c.look.spread || "butter", head: c.look.head, side: c.look.side, bread: c.look.bread, aura: c.look.aura } : {});
   showToast(true);
   ui.ranks.replaceChildren(rankBadge("Mobile", c.best, c.rank, c.count), rankBadge("PC", c.pcBest, c.pcRank, c.pcCount));
   const cards = [
@@ -141,7 +141,7 @@ function render(c) {
     progression(c)
   ];
   if (c.look) {
-    const shelves = SHELVES.map(([slot, label]) => tile(label, Math.min(c.look.own[slot], shelfTotal(slot)) + "/" + shelfTotal(slot)));
+    const shelves = SHELVES.map(([slot, label]) => tile(label, Math.min(c.look.own[slot] || 0, shelfTotal(slot)) + "/" + shelfTotal(slot)));
     cards.push(card("Collection", tiles(tile("Succès", Math.min(c.look.ach, progress().total) + "/" + progress().total), ...shelves)));
   }
   ui.body.replaceChildren(...cards.filter(Boolean));

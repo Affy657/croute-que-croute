@@ -1,6 +1,6 @@
 import { FW, FH, clamp } from "../game/field.js";
 import { PALETTE, HEAT } from "../shared/palette.js";
-import { drawTrail, drawProjectile, drawWarn, drawToast } from "./sprites.js";
+import { drawTrail, drawProjectile, drawWarn, drawToast, drawAura } from "./sprites.js";
 import { BODIES, PASSERS } from "./planets.js";
 import { store, KEYS } from "../shared/store.js";
 import { LOCAL } from "../shared/local.js";
@@ -371,9 +371,10 @@ export function createScene(canvas, overlay) {
     ctx.beginPath();
     ctx.rect(0, 0, FW, FH);
     ctx.clip();
+    if (toast && !splat) drawAura(ctx, toast, C);
     for (const o of world.obs) drawTrail(ctx, o, C);
     for (const o of world.obs) drawProjectile(ctx, o, C);
-    if (toast) drawToast(ctx, toast, splat, C);
+    if (toast) drawToast(ctx, toast, splat, C, false);
     drawEffects();
     ctx.restore();
   }
