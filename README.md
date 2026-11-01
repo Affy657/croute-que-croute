@@ -202,6 +202,7 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 
 ## Son
 
+- En local (`LOCAL`, téléphone sur le wifi compris), musique et bruitages sont coupés à chaque chargement (demande d'Adrien, 01/11/2026). Les boutons les rallument jusqu'au rechargement suivant.
 - Musique : `public/music/theme.m4a` (ou `.mp3`), hors git pour les droits et le poids : à remettre avant de déployer depuis un autre PC. En prod : « Roundabout » de Blacklolita, en attendant les morceaux des collègues. Demander l'accord de l'artiste avant une diffusion plus large.
 - Elle ne joue qu'en partie et repart du début à chaque partie, pour suivre la montée de la difficulté. Hors partie, seulement 2 s d'aperçu quand on lâche le curseur. Rallumer le bouton Musique ne lance plus rien (01/11/2026, Adrien trouvait que la musique partait dans l'accueil).
 - Coupée et en boucle : elle joue jusqu'à 83,1 s (la voix finit de retomber), saute à la montée de 131,9 s qui mène au second passage énergique, puis reboucle sur la montée après 208,7 s. Coupes calées sur le tempo (172 BPM) et les débuts de mesure, (`MUSIC_PARTS` dans `audio.js`). Le morceau est décodé une fois au lancement, ses passages recollés en mémoire avec un fondu de 15 ms aux jointures, puis joué en boucle à l'échantillon près par une seule source (`stitch`) : plus aucun saut. Approximatives en attendant une version montée par un DJ.
