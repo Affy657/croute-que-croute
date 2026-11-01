@@ -42,7 +42,7 @@ function addMovers(list, o, t0) {
   const tb = o.vx > 0 ? (FW - o.x) / o.vx : -o.x / o.vx;
   if (tb <= 0 || t0 + tb >= m.t1) return;
   m.t1 = t0 + tb;
-  addMovers(list, { ...o, x: o.x + o.vx * tb, y: o.y + o.vy * tb, vx: -o.vx, a: Math.atan2(o.vy, -o.vx), bounces: o.bounces - 1 }, t0 + tb);
+  addMovers(list, { ...o, x: o.x + o.vx * tb, y: o.y + o.vy * tb, vx: -o.vx, a: Math.PI - o.a, bounces: o.bounces - 1 }, t0 + tb);
 }
 
 function capsule(ax, ay, bx, by, tx, ty, len, r, area) {

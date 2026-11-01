@@ -49,7 +49,7 @@ export function moveProjectile(o, dt) {
   if (o.bounces > 0 && ((o.x > FW && o.vx > 0) || (o.x < 0 && o.vx < 0))) {
     o.x = o.vx > 0 ? 2 * FW - o.x : -o.x;
     o.vx = -o.vx;
-    o.a = Math.atan2(o.vy, o.vx);
+    o.a = Math.PI - o.a;
     o.bounces--;
   }
 }

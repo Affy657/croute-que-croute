@@ -43,9 +43,9 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 | Couteau visé | 0 s | Vise la tartine au moment de l'annonce. Tourne 1 fois sur 3 dès 25 s |
 | Pluie de fourchettes | 3 s | 4 fourchettes, 1 de plus toutes les 15 s (8 dès 60 s) |
 | Hachoir | 8 s | Tombe très vite au-dessus de la tartine, annonce longue (0,9 s). 2 à la suite dès 30 s, 3 dès 55 s, dans des colonnes voisines |
-| Mur | 12 s | Rangée serrée avec un seul trou d'environ 100 px |
-| Rouleau | 16 s | Traverse lentement par un côté. 2 à la suite dès 36 s, 3 dès 60 s |
-| Éventail | 22 s | 3 couteaux en cône vers la tartine, 4 dès 38 s, 5 dès 54 s |
+| Mur | 12 s | Rangée serrée avec un seul trou d'environ 100 px. Par un côté, le trou peut être à n'importe quelle hauteur |
+| Rouleau | 16 s | Traverse lentement par un côté, rebondit sur le bord d'en face et revient, à n'importe quelle hauteur. 2 à la suite dès 36 s |
+| Éventail | 22 s | 3 couteaux en cône vers la tartine, 4 dès 38 s, 5 dès 54 s. Un couteau toujours sur la tartine |
 | Murs en série | 28 s | 2 murs d'affilée du même côté ou du haut (3 dès 60 s), trous d'environ 120 px, décalés de 90 à 140 px d'un mur à l'autre (jamais alignés). Chaque mur n'est annoncé que juste avant d'arriver. Joue seul : l'attaque suivante part quand le dernier mur a fait 20 % de sa traversée |
 | Croix | 32 s | 4 couteaux en même temps vers la tartine |
 | Couteau à pain | 38 s | Rebondit une fois sur un bord |
@@ -53,14 +53,16 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 | Double pluie | 54 s | 8 fourchettes (9 dès 60 s), à gauche et à droite en alternance |
 
 - Vitesse des couverts : × (1,4 + t / 75), × 3 à 120 s, plafonnée à × 3,4 dès 150 s (`SPEED_START`, `SPEED_RAMP`, `SPEED_UNTIL` dans `field.js`). Délai entre deux attaques : 0,95 s moins 0,005625 × t, 0,5 s au plus court dès 80 s (`GAP_*` dans `sim.js`). Courbe du 30/10/2026, choisie avec le robot « humain » (voir Équilibrage), puis plafond de vitesse monté de 2,2 à 2,4 par Adrien après l'avoir testée (trop facile après 60 s). Le soir même, des joueurs faisaient 150 s : plafond monté à × 3 (120 s) et délai minimal à 0,45 s (75 s), début identique jusqu'à 60 s (voir Équilibrage). Puis Adrien : délai minimal de 0,5 s atteint à 80 s (nombre rond, un peu plus doux entre 30 et 80 s : 0,61 s à 60 s au lieu de 0,55 s), et vitesse des couverts sans limite. Le 30/10/2026 au soir, d'après les retours des joueurs (beaucoup trop rapide au-delà), vitesse plafonnée à celle de 150 s. Avant : × 1 à × 2,6 à 80 s, et 1,25 s à 0,42 s dès 52 s. Début trop calme, mur de difficulté entre 40 et 60 s, puis un plafond si haut que la chance décidait.
-- Jamais plus de 3 fois la même attaque d'affilée, sauf si c'est la seule possible (couteau visé avant 3 s). Croix, murs en série et double pluie ne sortent jamais deux fois de suite. Jamais de mur juste après des murs en série, ni l'inverse (même `kin`). Pas de mur ni de murs en série tant qu'un rouleau est annoncé ou à l'écran, et l'inverse (`shuns`) : un rouleau dans le trou d'un mur le bouchait presque. Si les murs en série sont tirés pendant une annonce, ils attendent qu'elle soit partie (rien d'autre n'est annoncé entre-temps), et l'attaque suivante ne part que quand leur dernier mur a fait 20 % de sa traversée (`CALM_PASS` dans `sim.js`), avec une « durée » (`cost`) de 1. Il reste environ 1 s sans nouvel objet après le dernier mur entre 28 et 60 s, puis 0,86 s, à peine plus que l'écart normal (0,8 à 0,9 s). Historique du 30/10/2026, Adrien trouvant l'attente trop longue à chaque fois : d'abord jusqu'à ce que le dernier mur quitte l'écran (environ 2 s de vide), puis 40 % de sa traversée avec une durée de 4 (1,2 à 1,8 s, la durée de 4 imposait elle-même l'attente avant 60 s). Avant aussi, les murs en série étaient écartés à chaque annonce en cours, et après 60 s ils ne sortaient presque plus.
+- Jamais plus de 3 fois la même attaque d'affilée, sauf si c'est la seule possible (couteau visé avant 3 s). Croix, murs en série et double pluie ne sortent jamais deux fois de suite. Jamais de mur juste après des murs en série, ni l'inverse (même `kin`). Pas de mur ni de murs en série tant qu'un rouleau est annoncé ou à l'écran, et l'inverse (`shuns`) : un rouleau dans le trou d'un mur le bouchait presque. Jamais de hachoir juste après une pluie de fourchettes (droite, en biais ou double) ou une croix, ni de croix juste après un hachoir (`avoids`, 01/11/2026, voir Équilibrage) : esquiver le hachoir obligeait à traverser la pluie de côté, et la croix se refermait pendant qu'on dansait entre les hachoirs. Si les murs en série sont tirés pendant une annonce, ils attendent qu'elle soit partie (rien d'autre n'est annoncé entre-temps), et l'attaque suivante ne part que quand leur dernier mur a fait 20 % de sa traversée (`CALM_PASS` dans `sim.js`), avec une « durée » (`cost`) de 1. Il reste environ 1 s sans nouvel objet après le dernier mur entre 28 et 60 s, puis 0,86 s, à peine plus que l'écart normal (0,8 à 0,9 s). Historique du 30/10/2026, Adrien trouvant l'attente trop longue à chaque fois : d'abord jusqu'à ce que le dernier mur quitte l'écran (environ 2 s de vide), puis 40 % de sa traversée avec une durée de 4 (1,2 à 1,8 s, la durée de 4 imposait elle-même l'attente avant 60 s). Avant aussi, les murs en série étaient écartés à chaque annonce en cours, et après 60 s ils ne sortaient presque plus.
+- Rouleau en aller-retour (01/11/2026, idée d'Adrien) : il rebondit sur le bord d'en face (`bounces: 1`, comme le couteau à pain) et peut passer à n'importe quelle hauteur. Avant, il ne passait que dans la moitié haute (de 80 à 384 px) : un joueur resté en bas n'avait jamais à l'esquiver. Plus jamais 3 rouleaux à la fois (avant : dès 60 s), jugé abusé par Adrien une fois en aller-retour.
+- Éventail à 4 couteaux (de 38 à 54 s) : il laissait un trou pile sur la tartine, et ne pas bouger suffisait 98 fois sur 100. Depuis le 01/11/2026, quand le nombre de couteaux est pair, le cône est décalé d'un demi-écart pour qu'un couteau vise la tartine.
 - 1 attaque à couteaux sur 10 a un couteau garni (voir Garnitures).
 - Fouet mis de côté (jugé trop facile) : `lab: true` dans `attacks.js` et `projectiles.js`, visible seulement dans l'admin. Enlever `lab` pour le remettre.
 - Couloir (deux murs de deux côtés, 46 s) mis de côté de la même façon : trop proche des murs en série, on pouvait le prendre pour un bug.
 - Chances, vitesses et délais de chaque attaque : `attacks.js`. Le calendrier est dans le jeu (Infos, onglet Attaques).
 - Infos, onglet Attaques (refait le 31/10/2026 après une critique de design ; avant, tout était ouvert et il fallait 10 écrans et demi pour le parcourir sur téléphone) : une carte repliée par attaque, avec son nom et son heure d'arrivée. Une seule s'ouvre à la fois, avec son aperçu animé (seul l'aperçu ouvert tourne), ses pastilles et « S'entraîner ». En dessous, Progression (les paliers de difficulté, sans les arrivées déjà sur les cartes) et Règles. Onglet Armes : la taille réelle avec la zone de touche, puis les variantes rares en gros plan sur la lame (`spreadCard` dans `catalog.js`). Onglet Guide (31/10/2026, le wiki du jeu demandé par Adrien, `guide.js`) : mêmes cartes repliables, dessin compris seulement à l'ouverture, pour Frôlés, Garnitures, Accessoires, Succès, Le ciel, Classements, Soirées et Compte. Garnitures, Accessoires et Succès affichent ce que le joueur a gagné (« 3 / 9 ») et grisent le reste ; un accessoire d'un succès secret pas encore trouvé dit seulement « Succès secret ». Le ciel montre les planètes drôles et extravagantes et tout ce qui passe en étoile filante (`name` dans `BODIES` et `PASSERS` de `planets.js`). Les onglets d'Infos ont moins de marge pour tenir à quatre sur un téléphone. Textes d'Infos (descriptions et paliers dans `attacks.js`, le reste dans `catalog.js` et `guide.js`) écrits pour des joueurs, à la demande d'Adrien : tutoiement, phrases courtes, « hitbox », « skin », « max ».
 - Les onglets (Infos, Classement, Paramètres) font au moins 44 px de haut, la taille minimale pour un doigt.
-- Le trou des murs en série par le haut pouvait sauter d'un bord à l'autre entre deux murs : 27 morts pour 100 séries chez un débutant, contre 5 par les côtés. Limité à 140 px depuis le 30/10/2026, comme par les côtés. Depuis le 31/10/2026, chaque trou se décale aussi d'au moins 90 px (`SERIES_MOVE`), vers un côté tiré au hasard (l'autre si le bord est trop près) : les joueurs trouvaient trop facile un trou presque aligné avec le précédent. Mesuré : 0 série refusée par le solveur à 30 s et à 65 s, 0 mort pour le robot parfait.
+- Le trou des murs en série par le haut pouvait sauter d'un bord à l'autre entre deux murs : 27 morts pour 100 séries chez un débutant, contre 5 par les côtés. Limité à 140 px depuis le 30/10/2026, comme par les côtés. Depuis le 31/10/2026, chaque trou se décale aussi d'au moins 90 px (`SERIES_MOVE`), vers un côté tiré au hasard (l'autre si le bord est trop près) : les joueurs trouvaient trop facile un trou presque aligné avec le précédent. Mesuré : 0 série refusée par le solveur à 30 s et à 65 s, 0 mort pour le robot parfait. Depuis le 01/11/2026, le trou d'un mur par un côté peut être à n'importe quelle hauteur (de 100 px du haut à 100 px du bas), et plus seulement dans la moitié haute : un joueur resté en bas devait remonter de 300 px ou plus.
 
 ## Équité
 
@@ -78,7 +80,7 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 - Il ne voit une annonce qu'après son temps de réaction, il se déplace à vitesse limitée, et il a des moments d'inattention de 0,4 s où il ne bouge plus.
 - Un niveau de 0 à 1 règle les trois (`profileOf`) : réaction de 0,33 s à 0,18 s, vitesse de 240 à 480 px/s, une inattention toutes les 6 s en moyenne au niveau 0, toutes les 20 s au niveau 1.
 - Il choisit son chemin avec le solveur du jeu, à partir de ce qu'il voit.
-- Limites : il ne se fatigue pas au fil de la partie, il voit tout parfaitement et son doigt ne cache rien. Les chiffres servent à comparer deux versions entre elles, pas à prédire les temps réels. Le vrai repère, c'est le classement en prod.
+- Limites : il ne se fatigue pas au fil de la partie, il voit tout parfaitement et son doigt ne cache rien. Entre deux attaques, il revient vers le milieu de l'écran (384 px de haut, `pathOf` dans `solver.js`), alors qu'un joueur reste plutôt en bas : pour mesurer avec un robot qui se tient en bas, faire une copie avec `equilibrage:variante` et y remplacer `FH * 0.6` par `FH * 0.8` dans `pathOf`. Les chiffres servent à comparer deux versions entre elles, pas à prédire les temps réels. Le vrai repère, c'est le classement en prod.
 
 **Les commandes**
 
@@ -87,6 +89,7 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 | `npm run equilibrage` | 80 joueurs du niveau 0 au niveau 1, 5 parties chacun, sur deux séries de tirages : part du niveau dans le score, surprises, médianes par niveau, risque de mort par tranche de 20 s | environ 10 min pour deux versions |
 | `npm run equilibrage:attaques` | Morts pour 100 lancées de chaque attaque, pour un débutant (niveau 0,1), un moyen (0,5) et un fort (0,9). Murs en série séparés entre haut et côtés | environ 10 min |
 | `npm run equilibrage:vides` | Temps sans nouvel objet avant et après des murs en série, comparé à l'écart normal entre deux attaques | 1 min |
+| `npm run equilibrage:combos` | Pour un joueur moyen à 45 s et à 65 s, rien d'autre à l'écran au départ : morts pour 100 essais de chaque attaque seule, de chaque paire d'attaques, puis des suites de 3 qui prolongent les paires les plus dures. « En trop » : les morts en plus de ce que donneraient les attaques jouées chacune de leur côté. Aussi : survie sans bouger. `ATTAQUE=rolling npm run equilibrage:combos` ne mesure que les paires d'une attaque (2 à 3 min) | environ 13 min |
 | `npm run equilibrage:invariants` | Robots immobile, nerveux, collé aux bords et parfait : valeurs impossibles, couverts oubliés, règles de tirage, couvert traversé sans toucher. Sort en erreur au moindre problème | 1 à 3 min |
 
 **Lire les chiffres**
@@ -130,6 +133,23 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 - Les trois durcissent la fin de partie de la même façon : les écarts entre elles restent dans le bruit de mesure. Le robot fort meurt surtout de ses inattentions, donc la vitesse seule pèse peu sur lui.
 
 - À surveiller : les murs en série par le haut restent le piège n°1 des débutants. Avec 0,7 s de préavis, un débutant ne parcourt qu'environ 100 px, alors que le trou peut se décaler de 140 px.
+
+**Point du 01/11/2026** : enchaînements d'attaques (demande d'Adrien)
+- En prod, le jeu ne garde pas l'attaque qui tue, seulement le temps de chaque partie. Sur 1 083 parties de joueurs rodés (après leur 30e partie), le risque de mourir par tranche de 10 s passe de 21 % (30-40 s) à 44 % (40-50 s), puis 49, 58 et 77 % (70-80 s). Un vrai mur vers 40 s, que le robot ne montre pas. Beaucoup de morts vers 2 s chez ces joueurs : sans doute des relances volontaires.
+- Mesuré avec `equilibrage:combos`, joueur moyen :
+
+| | Avant | Après |
+|---|---|---|
+| Pire paire à 45 s (morts en trop pour 100) | pluie puis hachoir, +3,8 | pluie puis croix, +2,5 |
+| Éventail à 4 couteaux, survie sans bouger | 98 % | 0 % |
+| Rouleau, robot qui se tient en bas, survie sans bouger | 99 % | 65 % |
+| Murs en série à 65 s, robot au milieu et robot en bas (morts pour 100) | 9,5 et 18 | 8 et 12,5 |
+
+- Le robot fort ne meurt presque que de ses inattentions : par combo, ses chiffres restent dans le bruit. Les mesures se font avec le joueur moyen.
+- Avec un robot qui se tient en bas (voir Limites), le rouleau ne le touchait jamais et les murs par un côté le tuaient deux fois plus. D'où le rouleau et les trous de murs sur toute la hauteur.
+- `npm run equilibrage` ne départage pas des changements aussi fins : une version témoin, qui ne change que les tirages, bouge déjà de 4 points sur la part du niveau (48 % contre 44 %).
+- Écarté par Adrien : allonger la pause après 2 ou 3 hachoirs ou rouleaux, qui enlevait le surplus de difficulté sur l'attaque suivante.
+- À surveiller : dès 55 s, après 2 ou 3 hachoirs, l'attaque suivante reste plus dure (+2 à +3 morts pour 100), c'est le point le plus dur qui reste. L'attaque qui suit un rouleau en aller-retour est un peu plus dure (+1 à +3, le plus pour une croix). Pluie en biais : 84 % de survie sans bouger, gardée comme respiration.
 
 ## Soirées et classements
 
@@ -313,7 +333,6 @@ Après :
 - Remplacer ou compléter la musique avec des morceaux des collègues DJ.
 - Faire monter le morceau par un ami DJ : coupes et transitions propres, fin qui boucle. Les coupes faites dans le code en attendant sont approximatives.
 - Compte sur plusieurs appareils (piste du 31/10/2026) : un joueur qui change d'appareil, ou qui vide son navigateur, ne peut pas reprendre son pseudo. Faits le 31/10/2026 : lot 1, une clé par appareil (`sessions`) et progression gardée sur le serveur ; lot 2, QR et code de liaison ; lot 3, fusion de deux comptes ; « Déconnecter les autres » (voir Appli et réseau). Reste, pour récupérer son compte sans autre appareil : un code de secours ou un code reçu par e-mail. L'e-mail passerait par le compte Resend de Movie Picker (gratuit : 3 domaines, 100 e-mails par jour et 3 000 par mois partagés entre les projets), avec un domaine à soi pour l'expéditeur, à voir avec la décision sur l'adresse du jeu.
-- Peaufiner la difficulté des attaques qui s'enchaînent (demande d'Adrien, 31/10/2026). Certains enchaînements sont trop faciles, d'autres trop durs, donc le score dépend encore trop de la chance. À faire : repérer les deux cas (mesurer les morts et les esquives sans effort par paire d'attaques qui se suivent, avec le robot « humain » de l'équilibrage), puis ajouter des règles d'enchaînement pour les équilibrer, comme celles qui existent déjà (pas de mur juste après des murs en série, pas de mur pendant un rouleau, voir Attaques).
 
 ### Après le compte multi-appareils
 
@@ -324,7 +343,6 @@ Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du c
 
 ### Ajouté par Adrien le 01/11/2026
 
-- Rouleau à pâtisserie qui fait des allers-retours sur l'écran.
 - Débloquer des fonds de jeu tirés des affiches des soirées.
 - Toucher une bière (par exemple les canettes 8.6 et Maximator qui passent déjà en étoile filante) pour mettre un effet « bourré » sur le jeu.
 - Skin Tung Tung Tung Sahur pour la tartine (le personnage de la planète drôle).

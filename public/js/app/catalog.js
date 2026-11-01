@@ -219,7 +219,8 @@ function rulesCard() {
   for (const text of [
     "Toujours esquivable : chaque attaque est testée avant de partir, même si tu réagis un dixième de seconde après l'alerte.",
     "Jamais plus de 3 fois la même attaque d'affilée, et celle qui vient de sortir revient moins souvent.",
-    "Croix, murs en série et double pluie ne sortent jamais deux fois de suite."
+    "Croix, murs en série et double pluie ne sortent jamais deux fois de suite.",
+    "Jamais de hachoir juste après une pluie de fourchettes ou une croix, ni de croix juste après un hachoir."
   ]) list.append(el("li", null, text));
   rules.append(el("h2", null, "Règles"), list);
   return rules;

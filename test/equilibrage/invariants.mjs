@@ -85,6 +85,7 @@ function play(seed, style, { only = null, t0 = 0, limit = LIMIT, dt = STEP } = {
         if (k > (a.solo ? 1 : 3) && !alone) report("trop de fois la même attaque d'affilée", where({ id, k }));
         const prev = run[run.length - 2];
         if (prev && prev !== id && byId[prev].kin && byId[prev].kin === a.kin) report("deux attaques de la même famille d'affilée", where({ id, prev }));
+        if (prev && (a.avoids || []).includes(prev)) report("attaque juste après une attaque qu'elle évite", where({ id, prev }));
       }
       if (a.calm) seriesEnd = passAt(s.warns.filter((w) => w.obs[0].from === id));
     }
