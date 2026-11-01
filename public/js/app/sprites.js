@@ -1392,12 +1392,12 @@ function nearZone(ctx, C) {
   ctx.restore();
 }
 
-const FLAMES = 16, EMBERS = 5, EMBER_RISE = 20, VOLT_MS = 80, VOLT_STEPS = 7, VOLT_R = 33, NEON_R = 35;
-const VOLT_ARCS = [[0.2, 1.1], [2, 0.9], [3.4, 1.2], [4.9, 0.8]];
+const FIRE_TONGUES = 9, FIRE_LAYERS = [["jam", 1, 0], ["flame", 0.7, 1.7], ["mustard", 0.42, 3.1]], EMBERS = 5, EMBER_RISE = 20;
+const BOLTS = 3, BOLT_STEPS = 6, BOLT_MS = 90, BOLT_JAG = 3, BOLT_FORK = 0.3, SPARKS = 7, NEON_R = 35, FIRE_HOLE = 22;
 const NEON = ["#ff3fa4", "#8a5cff", "#ffcf33"], NEON_SEAM = 0.02;
 const RING_RX = 43, RING_RY = 12, RING_TILT = -0.28, RING_SPIN = 0.9, MOON_R = 3.8;
 const RING_SPARKLES = [[-36, -26, 2.2], [34, 24, 1.8], [-28, 30, 1.4]];
-const SIDE_REACH = { boosters: 31, cutlery: 32, sixseven: 44, bat: 50 }, SIDE_BAND = 16;
+const SIDE_REACH = { boosters: 31, cutlery: 32, sixseven: 44, bat: 50 }, SIDE_BAND = 20, OUTLINE = 2;
 
 function glow(ctx, y, inner, outer, from, to) {
   const g = ctx.createRadialGradient(0, y, inner, 0, y, outer);
@@ -1423,58 +1423,102 @@ function sparkle(ctx, x, y, s) {
   ctx.fill();
 }
 
-function auraHeat(ctx, now, C) {
-  glow(ctx, -4, 14, 40, "rgba(255, 122, 26, 0.5)", "rgba(224, 36, 74, 0)");
-  for (let i = 0; i < FLAMES; i++) {
-    const a = (i / FLAMES) * TAU, r = 22 + (i % 3) * 1.5, up = 1 + Math.max(0, -Math.sin(a)) * 0.5;
-    const len = (10 + ((i * 7) % 5) * 1.6 + Math.sin(now * 9 + i * 1.7) * 3) * up;
-    ctx.save();
-    ctx.translate(Math.cos(a) * r, Math.sin(a) * r * 1.05 - 2);
-    ctx.rotate(Math.atan2(Math.sin(a) - 1.3, Math.cos(a)) + Math.PI / 2);
-    const fire = ctx.createLinearGradient(0, 0, 0, -len);
-    fire.addColorStop(0, "rgba(255, 122, 26, 0.95)");
-    fire.addColorStop(0.6, "rgba(255, 207, 51, 0.8)");
-    fire.addColorStop(1, "rgba(255, 207, 51, 0)");
-    ctx.fillStyle = fire;
+function hash(n) {
+  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+function fireBase(a, round) {
+  const c = Math.cos(a), sn = Math.sin(a);
+  return round ? [c * 22, sn * 22] : [Math.sign(c) * Math.abs(c) ** 0.5 * 18, Math.sign(sn) * Math.abs(sn) ** 0.5 * 20 - 1];
+}
+
+function fireLayer(ctx, now, round, k, phase) {
+  ctx.beginPath();
+  for (let i = 0; i < FIRE_TONGUES; i++) {
+    const a0 = (i / FIRE_TONGUES) * TAU, a1 = ((i + 1) / FIRE_TONGUES) * TAU, am = (a0 + a1) / 2;
+    const [x0, y0] = fireBase(a0, round), [x1, y1] = fireBase(a1, round), [xm, ym] = fireBase(am, round);
+    const ox = Math.cos(am), oy = Math.sin(am), top = Math.max(0, -oy);
+    const len = (10 + 12 * top + Math.sin(now * 8 + i * 2.1 + phase) * 2.5) * k * (round ? 0.85 : 1);
+    const tx = xm + ox * len * 0.7 + Math.sin(now * 5 + i * 1.3 + phase) * len * 0.25, ty = ym + oy * len * 0.7 - len * 0.6;
+    if (!i) ctx.moveTo(x0, y0);
+    ctx.bezierCurveTo(x0 + ox * len * 0.7, y0 + oy * len * 0.7, xm + ox * len * 0.5 - (x1 - x0) * 0.15, ym + oy * len * 0.5 - len * 0.35, tx, ty);
+    ctx.bezierCurveTo(xm + ox * len * 0.5 + (x1 - x0) * 0.15, ym + oy * len * 0.5 - len * 0.35, x1 + ox * len * 0.7, y1 + oy * len * 0.7, x1, y1);
+  }
+  ctx.closePath();
+  if (round) {
+    ctx.moveTo(FIRE_HOLE, 0);
+    ctx.arc(0, 0, FIRE_HOLE, 0, TAU);
+  }
+  ctx.fill("evenodd");
+}
+
+function auraHeat(ctx, now, C, round) {
+  if (round) {
+    const g = ctx.createRadialGradient(0, 0, FIRE_HOLE, 0, 0, 44);
+    g.addColorStop(0, "rgba(255, 122, 26, 0)");
+    g.addColorStop(0.2, "rgba(255, 122, 26, 0.45)");
+    g.addColorStop(1, "rgba(224, 36, 74, 0)");
+    ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.moveTo(-3.2, 0);
-    ctx.quadraticCurveTo(-2.4, -len * 0.6, 0, -len);
-    ctx.quadraticCurveTo(2.4, -len * 0.6, 3.2, 0);
-    ctx.closePath();
+    ctx.arc(0, 0, 44, 0, TAU);
     ctx.fill();
-    ctx.restore();
+  } else glow(ctx, -4, 14, 42, "rgba(255, 122, 26, 0.45)", "rgba(224, 36, 74, 0)");
+  for (const [color, k, phase] of FIRE_LAYERS) {
+    ctx.fillStyle = C[color];
+    fireLayer(ctx, now, round, k, phase);
   }
   ctx.fillStyle = C.mustard;
   for (let i = 0; i < EMBERS; i++) {
-    const k = (now * 0.6 + i / EMBERS) % 1;
-    ctx.globalAlpha = 1 - k;
+    const rise = (now * 0.6 + i / EMBERS) % 1;
+    ctx.globalAlpha = 1 - rise;
     ctx.beginPath();
-    ctx.arc(-18 + i * 9 + Math.sin(now * 3 + i) * 2, -36 - k * EMBER_RISE, 1.3 - k * 0.6, 0, TAU);
+    ctx.arc(-18 + i * 9 + Math.sin(now * 3 + i) * 2, (round ? -36 : -40) - rise * EMBER_RISE, 1.3 - rise * 0.6, 0, TAU);
     ctx.fill();
   }
   ctx.globalAlpha = 1;
 }
 
-function auraVolt(ctx, now) {
-  glow(ctx, 0, 14, 38, "rgba(110, 210, 255, 0.35)", "rgba(110, 210, 255, 0)");
-  const tick = Math.floor((now * 1000) / VOLT_MS), turn = now * 0.8;
+function bolt(ctx, seed, a, r0, r1) {
+  let fx = 0, fy = 0;
+  ctx.beginPath();
+  for (let k = 0; k <= BOLT_STEPS; k++) {
+    const r = r0 + ((r1 - r0) * k) / BOLT_STEPS, j = k && k < BOLT_STEPS ? ((hash(seed + k) - 0.5) * 2 * BOLT_JAG) / r : 0;
+    const x = Math.cos(a + j) * r, y = Math.sin(a + j) * r;
+    if (k) ctx.lineTo(x, y);
+    else ctx.moveTo(x, y);
+    if (k === 3) [fx, fy] = [x, y];
+  }
+  const fork = a + (hash(seed + 9) > 0.5 ? BOLT_FORK : -BOLT_FORK);
+  ctx.moveTo(fx, fy);
+  ctx.lineTo(Math.cos(fork) * (r1 - 3), Math.sin(fork) * (r1 - 3));
+}
+
+function auraVolt(ctx, now, C, round) {
+  const ms = now * 1000, tick = Math.floor(ms / BOLT_MS), flash = 1 - (ms % BOLT_MS) / BOLT_MS;
+  const r0 = round ? 22 : 19, r1 = round ? 40 : 38;
+  glow(ctx, 0, 14, r1 + 2, `rgba(110, 210, 255, ${0.22 + 0.16 * flash})`, "rgba(110, 210, 255, 0)");
   ctx.lineJoin = "round";
-  VOLT_ARCS.forEach(([start, span], j) => {
-    if ((tick + j * 2) % 4 > 1) return;
-    const seed = tick * 7.3 + j * 13.1;
+  ctx.lineCap = "round";
+  for (let b = 0; b < BOLTS; b++) {
+    const seed = tick * 13 + b * 71;
+    bolt(ctx, seed, ((b + hash(seed) * 0.6) / BOLTS) * TAU + tick * 0.9, r0, r1);
+    ctx.strokeStyle = "rgba(79, 200, 255, 0.5)";
+    ctx.lineWidth = 3.4;
+    ctx.stroke();
+    ctx.strokeStyle = "#f2fbff";
+    ctx.lineWidth = 1.1;
+    ctx.stroke();
+  }
+  ctx.fillStyle = "#e8f8ff";
+  for (let i = 0; i < SPARKS; i++) {
+    const seed = tick * 7 + i * 31;
+    if (hash(seed) > 0.55) continue;
+    const a = hash(seed + 1) * TAU, r = r1 - 6 + hash(seed + 2) * 8;
     ctx.beginPath();
-    for (let k = 0; k <= VOLT_STEPS; k++) {
-      const a = turn + start + (span * k) / VOLT_STEPS, r = VOLT_R + Math.sin(seed + k * 2.3) * 4 * (k % 2 ? 1 : -1);
-      if (k) ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-      else ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
-    }
-    ctx.strokeStyle = "rgba(79, 200, 255, 0.45)";
-    ctx.lineWidth = 3.6;
-    ctx.stroke();
-    ctx.strokeStyle = "#e8f8ff";
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-  });
+    ctx.arc(Math.cos(a) * r, Math.sin(a) * r, 0.9, 0, TAU);
+    ctx.fill();
+  }
 }
 
 function auraNeon(ctx, now) {
@@ -1547,7 +1591,7 @@ export function drawAura(ctx, t, C = PALETTE) {
   ctx.save();
   ctx.translate(t.x, t.y);
   ctx.rotate(t.tilt);
-  aura.back(ctx, performance.now() / 1000, C);
+  aura.back(ctx, performance.now() / 1000, C, t.bread === "hitbox");
   ctx.restore();
 }
 
@@ -1590,7 +1634,7 @@ export function drawToast(ctx, t, splat, C = PALETTE, aura = true) {
   topping(ctx, t.spread, C);
   ctx.restore();
   if (front) {
-    const reach = SIDE_REACH[t.side], near = (HIT_R + NEAR) / s;
+    const reach = SIDE_REACH[t.side] || (round ? 0 : w / 2 + OUTLINE), near = (HIT_R + NEAR) / s;
     ctx.save();
     body(ctx);
     if (reach) ctx.rect(-reach, -SIDE_BAND, reach * 2, SIDE_BAND * 2);
