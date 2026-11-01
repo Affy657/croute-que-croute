@@ -1392,9 +1392,168 @@ function nearZone(ctx, C) {
   ctx.restore();
 }
 
-export function drawToast(ctx, t, splat, C = PALETTE) {
+const FLAMES = 16, EMBERS = 5, EMBER_RISE = 20, VOLT_MS = 80, VOLT_STEPS = 7, VOLT_R = 33, NEON_R = 35;
+const VOLT_ARCS = [[0.2, 1.1], [2, 0.9], [3.4, 1.2], [4.9, 0.8]];
+const NEON = ["#ff3fa4", "#8a5cff", "#ffcf33"];
+const RING_RX = 43, RING_RY = 12, RING_TILT = -0.28, RING_SPIN = 0.9, MOON_R = 3.8;
+const RING_SPARKLES = [[-36, -26, 2.2], [34, 24, 1.8], [-28, 30, 1.4]];
+
+function glow(ctx, y, inner, outer, from, to) {
+  const g = ctx.createRadialGradient(0, y, inner, 0, y, outer);
+  g.addColorStop(0, from);
+  g.addColorStop(1, to);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0, y, outer, 0, TAU);
+  ctx.fill();
+}
+
+function sparkle(ctx, x, y, s) {
+  ctx.beginPath();
+  ctx.moveTo(x, y - s * 1.6);
+  ctx.lineTo(x + s * 0.4, y - s * 0.4);
+  ctx.lineTo(x + s * 1.6, y);
+  ctx.lineTo(x + s * 0.4, y + s * 0.4);
+  ctx.lineTo(x, y + s * 1.6);
+  ctx.lineTo(x - s * 0.4, y + s * 0.4);
+  ctx.lineTo(x - s * 1.6, y);
+  ctx.lineTo(x - s * 0.4, y - s * 0.4);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function auraHeat(ctx, now, C) {
+  glow(ctx, -4, 14, 40, "rgba(255, 122, 26, 0.5)", "rgba(224, 36, 74, 0)");
+  for (let i = 0; i < FLAMES; i++) {
+    const a = (i / FLAMES) * TAU, r = 22 + (i % 3) * 1.5, up = 1 + Math.max(0, -Math.sin(a)) * 0.5;
+    const len = (10 + ((i * 7) % 5) * 1.6 + Math.sin(now * 9 + i * 1.7) * 3) * up;
+    ctx.save();
+    ctx.translate(Math.cos(a) * r, Math.sin(a) * r * 1.05 - 2);
+    ctx.rotate(Math.atan2(Math.sin(a) - 1.3, Math.cos(a)) + Math.PI / 2);
+    const fire = ctx.createLinearGradient(0, 0, 0, -len);
+    fire.addColorStop(0, "rgba(255, 122, 26, 0.95)");
+    fire.addColorStop(0.6, "rgba(255, 207, 51, 0.8)");
+    fire.addColorStop(1, "rgba(255, 207, 51, 0)");
+    ctx.fillStyle = fire;
+    ctx.beginPath();
+    ctx.moveTo(-3.2, 0);
+    ctx.quadraticCurveTo(-2.4, -len * 0.6, 0, -len);
+    ctx.quadraticCurveTo(2.4, -len * 0.6, 3.2, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.fillStyle = C.mustard;
+  for (let i = 0; i < EMBERS; i++) {
+    const k = (now * 0.6 + i / EMBERS) % 1;
+    ctx.globalAlpha = 1 - k;
+    ctx.beginPath();
+    ctx.arc(-18 + i * 9 + Math.sin(now * 3 + i) * 2, -36 - k * EMBER_RISE, 1.3 - k * 0.6, 0, TAU);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function auraVolt(ctx, now) {
+  glow(ctx, 0, 14, 38, "rgba(110, 210, 255, 0.35)", "rgba(110, 210, 255, 0)");
+  const tick = Math.floor((now * 1000) / VOLT_MS), turn = now * 0.8;
+  ctx.lineJoin = "round";
+  VOLT_ARCS.forEach(([start, span], j) => {
+    if ((tick + j * 2) % 4 > 1) return;
+    const seed = tick * 7.3 + j * 13.1;
+    ctx.beginPath();
+    for (let k = 0; k <= VOLT_STEPS; k++) {
+      const a = turn + start + (span * k) / VOLT_STEPS, r = VOLT_R + Math.sin(seed + k * 2.3) * 4 * (k % 2 ? 1 : -1);
+      if (k) ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+      else ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.strokeStyle = "rgba(79, 200, 255, 0.45)";
+    ctx.lineWidth = 3.6;
+    ctx.stroke();
+    ctx.strokeStyle = "#e8f8ff";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  });
+}
+
+function auraNeon(ctx, now) {
+  const pulse = 0.75 + 0.25 * Math.sin(now * 4), turn = now * 1.5, arc = TAU / (NEON.length * 2);
+  glow(ctx, 0, 22, 40, `rgba(255, 63, 164, ${0.28 * pulse})`, "rgba(138, 92, 255, 0)");
+  ctx.lineCap = "round";
+  for (let i = 0; i < NEON.length * 2; i++) {
+    ctx.strokeStyle = NEON[i % NEON.length];
+    ctx.beginPath();
+    ctx.arc(0, 0, NEON_R, turn + i * arc, turn + (i + 1) * arc);
+    ctx.globalAlpha = 0.35 * pulse;
+    ctx.lineWidth = 7;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 2.6;
+    ctx.stroke();
+  }
+}
+
+function ringBand(ctx, from, to) {
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, RING_RX, RING_RY, 0, from, to);
+  ctx.strokeStyle = "rgba(255, 207, 51, 0.85)";
+  ctx.lineWidth = 5;
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255, 241, 168, 0.9)";
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+}
+
+function moon(ctx, a, C) {
+  ctx.fillStyle = C.steel;
+  ctx.strokeStyle = C.void;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.arc(Math.cos(a) * RING_RX, Math.sin(a) * RING_RY, MOON_R, 0, TAU);
+  ctx.fill();
+  ctx.stroke();
+}
+
+function ringBack(ctx, now, C) {
+  ctx.save();
+  ctx.rotate(RING_TILT);
+  ringBand(ctx, 0, TAU);
+  moon(ctx, now * RING_SPIN, C);
+  ctx.restore();
+  ctx.fillStyle = C.ink;
+  RING_SPARKLES.forEach(([x, y, size], i) => {
+    ctx.globalAlpha = 0.5 + 0.5 * Math.sin(now * 3 + i * 2.1);
+    sparkle(ctx, x, y, size);
+  });
+  ctx.globalAlpha = 1;
+}
+
+function ringFront(ctx, now, C) {
+  const a = now * RING_SPIN;
+  ctx.save();
+  ctx.rotate(RING_TILT);
+  ringBand(ctx, 0, Math.PI);
+  if (Math.sin(a) > 0) moon(ctx, a, C);
+  ctx.restore();
+}
+
+const AURAS = { heat: { back: auraHeat }, volt: { back: auraVolt }, neon: { back: auraNeon }, ring: { back: ringBack, front: ringFront } };
+
+export function drawAura(ctx, t, C = PALETTE) {
+  const aura = AURAS[t.aura];
+  if (!aura) return;
+  ctx.save();
+  ctx.translate(t.x, t.y);
+  ctx.rotate(t.tilt);
+  aura.back(ctx, performance.now() / 1000, C);
+  ctx.restore();
+}
+
+export function drawToast(ctx, t, splat, C = PALETTE, aura = true) {
   const w = 40, h = 42, bread = GEAR[t.bread], round = t.bread === "hitbox", s = round ? HIT_R / ROUND_R : 1;
-  const body = round ? roundPath : (c) => toastPath(c, w, h);
+  const body = round ? roundPath : (c) => toastPath(c, w, h), front = !splat && AURAS[t.aura] && AURAS[t.aura].front;
+  if (aura && !splat) drawAura(ctx, t, C);
   ctx.save();
   ctx.translate(t.x, t.y);
   ctx.rotate(splat ? 0.5 : t.tilt);
@@ -1429,6 +1588,14 @@ export function drawToast(ctx, t, splat, C = PALETTE) {
   ctx.scale(round ? ROUND_SPREAD : 1, round ? ROUND_SPREAD : 1);
   topping(ctx, t.spread, C);
   ctx.restore();
+  if (front) {
+    ctx.save();
+    body(ctx);
+    ctx.clip();
+    ctx.scale(1 / s, 1 / s);
+    front(ctx, performance.now() / 1000, C);
+    ctx.restore();
+  }
   if (t.scars && t.scars.length) scars(ctx, t.scars, w, h, C, round);
   hat(ctx, t.head, C);
   if (splat) {

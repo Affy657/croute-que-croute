@@ -7,8 +7,8 @@ import { unlocked } from "./toppings.js";
 import { drawToast } from "./sprites.js";
 import { BODIES, PASSERS } from "./planets.js";
 
-const ART_W = 84, ART_H = 76, SKY_W = 130, SKY_H = 100, PASSER_S = 56;
-const SHELVES = [["head", "Chapeaux"], ["side", "Côtés"], ["bread", "Pains"]];
+const ART_W = 84, ART_H = 76, SHELF_SCALE = { side: 0.7, aura: 0.62 }, SKY_W = 130, SKY_H = 100, PASSER_S = 56;
+const SHELVES = [["head", "Chapeaux"], ["side", "Côtés"], ["bread", "Pains"], ["aura", "Auras"]];
 const SOURCE = Object.fromEntries(ACHIEVEMENTS.filter((a) => a.gear).map((a) => [a.gear, a]));
 
 function art(draw, scale, w = ART_W, h = ART_H) {
@@ -21,7 +21,7 @@ function art(draw, scale, w = ART_W, h = ART_H) {
 }
 
 const toastArt = (look, scale) =>
-  art((ctx) => drawToast(ctx, { x: 0, y: 0, tilt: 0, thrust: 0.35, spread: "butter", head: null, side: null, bread: null, ...look }, null), scale);
+  art((ctx) => drawToast(ctx, { x: 0, y: 0, tilt: 0, thrust: 0.35, spread: "butter", head: null, side: null, bread: null, aura: null, ...look }, null), scale);
 
 function item(cv, name, meta, got = true) {
   const card = el("div", got ? "weapon" : "weapon locked");
@@ -81,7 +81,7 @@ function gear() {
       el("h3", null, title),
       gallery(kinds.filter((k) => GEAR[k].slot === slot).map((k) => {
         const a = SOURCE[k], secret = !!a.hint && !has(a.id);
-        return item(toastArt({ [slot]: k }, slot === "side" ? 0.7 : 0.8), GEAR[k].name, secret ? "Succès secret" : a.desc, gearUnlocked(k));
+        return item(toastArt({ [slot]: k }, SHELF_SCALE[slot] || 0.8), GEAR[k].name, secret ? "Succès secret" : a.desc, gearUnlocked(k));
       }))
     ])
   ));

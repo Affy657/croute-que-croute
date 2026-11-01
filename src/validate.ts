@@ -32,7 +32,7 @@ export function cleanLinkCode(raw: unknown) {
   return code.length === LINK_LENGTH && [...code].every((c) => LINK_CHARS.includes(c)) ? code : null;
 }
 
-const LOOK_SLOTS = ["head", "side", "bread", "spread"] as const;
+const LOOK_SLOTS = ["head", "side", "bread", "aura", "spread"] as const;
 const LOOK_KIND = /^[a-z0-9]{1,20}$/;
 const LOOK_MAX = 99;
 
