@@ -5,7 +5,7 @@ import { SPREADS, GEAR } from "../shared/palette.js";
 import { owned } from "./toppings.js";
 import { LOCAL } from "../shared/local.js";
 
-export const FAMILIES = [["time", "Survie"], ["play", "Adresse"], ["collect", "Collection"], ["loyal", "Habitué"], ["event", "Soirées"], ["sky", "Le ciel"], ["secret", "Secrets"]];
+export const FAMILIES = [["time", "Survie"], ["play", "Adresse"], ["collect", "Collection"], ["loyal", "Habitué"], ["event", "Soirées"], ["sky", "Le ciel", "Touche ce qui passe dans le ciel de l'accueil."], ["secret", "Secrets"]];
 const TIMES = [[10, "t10"], [30, "t30"], [60, "t60"], [90, "t90"], [120, "t120"], [150, "t150"]];
 const NEARS = [[20, "near20"]];
 const RUNS = [[10, "runs10"], [50, "runs50"], [100, "runs100"]];
@@ -25,9 +25,9 @@ export const ACHIEVEMENTS = [
   { id: "t90", family: "time", name: "Dorée à point", desc: "Tenir 90 s", gear: "boosters" },
   { id: "t120", family: "time", name: "Bien grillée", desc: "Tenir 120 s" },
   { id: "t150", family: "time", name: "Tartine de légende", desc: "Tenir 150 s", gear: "burnt" },
-  { id: "combo5", family: "play", name: "Insaisissable", desc: "Faire un frôlé x" + COMBO, gear: "ninja" },
-  { id: "combo10", family: "play", name: "Intouchable", desc: "Faire un frôlé x" + COMBO_MAX },
-  { id: "near20", family: "play", name: "Ça passe crème", desc: "20 frôlés dans une partie", gear: "hitbox" },
+  { id: "combo5", family: "play", name: "Insaisissable", desc: "Enchaîner " + COMBO + " frôlés", gear: "ninja" },
+  { id: "combo10", family: "play", name: "Intouchable", desc: "Enchaîner " + COMBO_MAX + " frôlés" },
+  { id: "near20", family: "play", name: "Ça passe crème", desc: "Faire 20 frôlés dans une partie", gear: "hitbox" },
   { id: "careful", family: "play", name: "Prudente", desc: "Tenir " + CAREFUL_S + " s sans un seul frôlé" },
   { id: "top4", family: "collect", name: "Le frigo est plein", desc: "Gagner " + FRIDGE + " garnitures" },
   { id: "topAll", family: "collect", name: "Tout le frigo", desc: "Gagner les " + EXTRAS + " garnitures", gear: "chef" },
@@ -40,13 +40,13 @@ export const ACHIEVEMENTS = [
   { id: "event1", family: "event", name: "Première soirée", desc: "Jouer pendant une soirée Space Tartinade" },
   { id: "top10", family: "event", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée" },
   { id: "eventWin", family: "event", name: "Tartine d'or", desc: "Finir 1er d'une soirée", gear: "crown" },
-  { id: "pumpkin", family: "sky", name: "Des bonbons ou un sort", desc: "Toucher la planète citrouille sur l'accueil", hint: "une citrouille passe parfois dans le ciel de l'accueil.", gear: "witch" },
-  { id: "ahoy", family: "sky", name: "À l'abordage", desc: "Toucher la planète pirate sur l'accueil", hint: "un navire croise parfois au large de l'accueil.", gear: "pirate" },
-  { id: "hoho", family: "sky", name: "Ho ho ho", desc: "Toucher le père Noël sur l'accueil", hint: "un traîneau traverse parfois le ciel de l'accueil.", gear: "santa" },
-  { id: "eggHunt", family: "sky", name: "Chasse aux œufs", desc: "Toucher l'œuf de Pâques sur l'accueil", hint: "un lapin sautille parfois dans le ciel de l'accueil.", gear: "bunny" },
-  { id: "toaster", family: "sky", name: "Ding !", desc: "Toucher le grille-pain sur l'accueil", hint: "ça sent le pain grillé dans le ciel de l'accueil.", gear: "toasted" },
-  { id: "ufo", family: "sky", name: "Rencontre du 3e type", desc: "Toucher la soucoupe volante sur l'accueil", hint: "quelqu'un fait parfois coucou depuis le ciel de l'accueil.", gear: "antennae" },
-  { id: "roadTrip", family: "sky", name: "Road trip spatial", desc: "Toucher la voiture de l'espace sur l'accueil", hint: "une voiture rouge roule parfois dans le ciel de l'accueil.", gear: "astronaut" },
+  { id: "pumpkin", family: "sky", name: "Des bonbons ou un sort", desc: "Toucher la planète citrouille sur l'accueil", hint: "une citrouille passe parfois.", gear: "witch" },
+  { id: "ahoy", family: "sky", name: "À l'abordage", desc: "Toucher la planète pirate sur l'accueil", hint: "un navire croise parfois au large.", gear: "pirate" },
+  { id: "hoho", family: "sky", name: "Ho ho ho", desc: "Toucher le père Noël sur l'accueil", hint: "un traîneau traverse parfois.", gear: "santa" },
+  { id: "eggHunt", family: "sky", name: "Chasse aux œufs", desc: "Toucher l'œuf de Pâques sur l'accueil", hint: "un lapin sautille parfois.", gear: "bunny" },
+  { id: "toaster", family: "sky", name: "Ding !", desc: "Toucher le grille-pain sur l'accueil", hint: "ça sent le pain grillé là-haut.", gear: "toasted" },
+  { id: "ufo", family: "sky", name: "Rencontre du 3e type", desc: "Toucher la soucoupe volante sur l'accueil", hint: "quelqu'un fait parfois coucou de là-haut.", gear: "antennae" },
+  { id: "roadTrip", family: "sky", name: "Road trip spatial", desc: "Toucher la voiture de l'espace sur l'accueil", hint: "une voiture rouge roule parfois là-haut.", gear: "astronaut" },
   { id: "allSky", family: "sky", name: "Tout le ciel", desc: "Toucher les " + SKY_IDS.length + " surprises du ciel de l'accueil" },
   { id: "express", family: "secret", name: "Tartinée express", desc: "Se faire tartiner en moins de 2 s", hint: "il y a des records qu'on ne cherche pas.", gear: "halo" },
   { id: "zen", family: "secret", name: "En détente", desc: "Rester " + STILL_S + " s sans bouger", hint: "le meilleur coup, c'est parfois de ne rien faire.", gear: "nightcap" },
@@ -55,8 +55,19 @@ export const ACHIEVEMENTS = [
   { id: "night", family: "secret", name: "Tartine de minuit", desc: "Jouer entre minuit et " + NIGHT_UNTIL_H + " h", hint: "les chauves-souris sortent la nuit.", gear: "bat" }
 ];
 const BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
+const extras = () => owned().filter((k) => !SPREADS[k].free).length;
+const reached = (steps) => Math.max(0, ...steps.filter(([, id]) => data.got[id]).map(([n]) => n));
+const bestCs = () => Math.max(data.best, parseInt(store.get(KEYS.localBest) || "0", 10) || 0);
+const GOALS = {
+  ...Object.fromEntries(TIMES.map(([s, id]) => [id, () => [Math.max(Math.floor(bestCs() / 100), reached(TIMES)), s, " s"]])),
+  ...Object.fromEntries(RUNS.map(([n, id]) => [id, () => [Math.max(data.runs, reached(RUNS)), n]])),
+  ...Object.fromEntries(TOPPINGS.map(([n, id]) => [id, () => [extras(), n]])),
+  allAttacks: () => [LIVE.filter((a) => data.attacks.includes(a.id)).length, LIVE.length],
+  allWeapons: () => [WEAPONS.filter((k) => data.killers.includes(k)).length, WEAPONS.length],
+  allSky: () => [SKY_IDS.filter((id) => data.got[id]).length, SKY_IDS.length]
+};
 
-const blank = () => ({ got: {}, attacks: [], events: [], killers: [], runs: 0 });
+const blank = () => ({ got: {}, attacks: [], events: [], killers: [], runs: 0, best: 0 });
 
 function load() {
   try {
@@ -80,6 +91,7 @@ function merge(mine, stored) {
     events: union(mine.events, stored.events),
     killers: union(mine.killers, stored.killers),
     runs: Math.max(mine.runs, stored.runs),
+    best: Math.max(mine.best, stored.best),
     seen: Math.max(mine.seen || 0, stored.seen || 0)
   };
 }
@@ -161,7 +173,7 @@ function countRuns(n) {
 }
 
 export function countToppings() {
-  const n = owned().filter((k) => !SPREADS[k].free).length;
+  const n = extras();
   for (const [k, id] of TOPPINGS) if (n >= k) unlock(id);
 }
 
@@ -208,6 +220,7 @@ export function runEnd(score, killer) {
   run = null;
   change((d) => {
     d.runs++;
+    d.best = Math.max(d.best, score);
   });
   countRuns(data.runs);
   if (score < EXPRESS_CS) unlock("express");
@@ -229,6 +242,12 @@ export function afterSubmit(r) {
 export function onBoard(b) {
   if (b && b.me) countRuns(Math.max(data.runs, b.me.runs || 0));
   const top = b && b.me ? Math.max(b.me.best || 0, b.me.pcBest || 0) : 0;
+  if (b && b.me && (b.me.runs > data.runs || top > data.best)) {
+    change((d) => {
+      d.runs = Math.max(d.runs, b.me.runs || 0);
+      d.best = Math.max(d.best, top);
+    });
+  }
   for (const [s, id] of TIMES) if (top >= s * 100) unlock(id, true);
   const final = b && b.event && b.event.status === "closed" && b.now >= (b.event.finalAt || b.event.closesAt);
   if (final && b.me && !b.me.banned && b.me.eventRank === 1) unlock("eventWin");
@@ -247,36 +266,60 @@ function line(className, text) {
   return p;
 }
 
+function span(className, text) {
+  const s = document.createElement("span");
+  s.className = className;
+  s.textContent = text;
+  return s;
+}
+
+function meter(have, need, unit = "") {
+  const row = document.createElement("div"), bar = span("ach-bar", ""), fill = span("ach-fill", "");
+  row.className = "ach-meter";
+  bar.setAttribute("aria-hidden", "true");
+  fill.style.width = Math.min(100, (have / need) * 100) + "%";
+  bar.append(fill);
+  row.append(bar, span("ach-of", Math.min(have, need) + " / " + need + unit));
+  return row;
+}
+
 function item(a, since) {
-  const at = data.got[a.id], hidden = !!a.hint && !at;
+  const at = data.got[a.id], hidden = !!a.hint && !at, goal = !at && GOALS[a.id];
   const row = document.createElement("div");
   row.className = "ach-item" + (at ? "" : " locked");
-  const star = document.createElement("span");
-  star.className = "ach-star";
-  star.textContent = at ? "★" : "☆";
+  const star = span("ach-star", at ? "★" : "☆");
+  star.setAttribute("aria-hidden", "true");
   const text = document.createElement("div");
-  const name = line("ach-name", hidden ? "???" : a.name);
-  if (at > since) {
-    const tag = document.createElement("span");
-    tag.className = "ach-new";
-    tag.textContent = "Nouveau";
-    name.append(" ", tag);
-  }
+  const name = line("ach-name", ""), title = span("", hidden ? "???" : a.name);
+  if (hidden) title.setAttribute("aria-hidden", "true");
+  name.append(span("sr-only", at ? "Obtenu : " : hidden ? "Secret à trouver" : "À débloquer : "), title);
+  if (at > since) name.append(" ", span("ach-new", "Nouveau"));
   text.append(name, line("sub", hidden ? "Indice : " + a.hint : a.desc));
-  if (a.gear) text.append(line("ach-gear", "Débloque : " + GEAR[a.gear].name));
+  if (goal) text.append(meter(...goal()));
+  if (a.gear) {
+    const gear = line("ach-gear", "Débloque : ");
+    gear.append(span("ach-reward", GEAR[a.gear].name));
+    text.append(gear);
+  }
   row.append(star, text);
   return row;
 }
 
 export function renderAchievements(list, count) {
   const p = progress(), since = data.seen || 0;
-  count.textContent = p.got + " / " + p.total;
-  list.replaceChildren(...FAMILIES.map(([family, title]) => {
+  count.replaceChildren(meter(p.got, p.total));
+  list.replaceChildren(...FAMILIES.map(([family, title, note]) => {
     const card = document.createElement("section");
     card.className = "card";
-    const h = document.createElement("h2");
+    const items = ACHIEVEMENTS.filter((a) => a.family === family), got = items.filter((a) => data.got[a.id]).length;
+    const head = document.createElement("div");
+    head.className = "ach-head";
+    const h = document.createElement("h3");
     h.textContent = title;
-    card.append(h, ...ACHIEVEMENTS.filter((a) => a.family === family).map((a) => item(a, since)));
+    head.append(h, span("fold-tag" + (got === items.length ? " done" : ""), got + " / " + items.length));
+    card.append(head);
+    if (note) card.append(line("sub", note));
+    card.append(...items.map((a) => item(a, since)));
     return card;
   }));
   change((d) => {
