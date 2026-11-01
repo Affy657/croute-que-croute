@@ -193,7 +193,7 @@ export const ATTACKS = [
     info: "Un couteau lancé droit sur toi, du haut ou d'un côté. Bouge pendant l'alerte et c'est esquivé. Dès 25 s, il tourne sur lui-même une fois sur trois." },
   { id: "rain", name: "Pluie de fourchettes", from: 3, weight: 1.4, cost: 1.5, speed: 190, make: rain, growsUntil: 60, growth: "pluie max : 8 fourchettes",
     info: "4 fourchettes tombent du haut à la suite, un peu en biais. Une de plus toutes les 15 s, jusqu'à 8." },
-  { id: "cleaver", name: "Hachoir", avoids: ["rain", "slant", "downpour", "cross", "wall", "walls"], from: 8, weight: 0.9, cost: 1.3, speed: 300, make: cleaver, growsUntil: 55, growth: "hachoirs par 3",
+  { id: "cleaver", name: "Hachoir", solo: true, avoids: ["rain", "slant", "downpour", "cross", "wall", "walls"], from: 8, weight: 0.9, cost: 1.3, speed: 300, make: cleaver, growsUntil: 55, growth: "hachoirs par 3",
     info: "Tombe tout droit et très vite dans ta colonne, avec 0,9 s d'alerte. Change de colonne. Un 2e suit juste à côté dès 30 s, un 3e dès 55 s." },
   { id: "wall", name: "Mur", kin: "wall", solo: true, shuns: ["rolling", "wall", "walls"], from: 12, weight: 1.1, cost: 1.7, speed: 150, make: wall,
     info: "Une rangée serrée avec un seul trou, par le haut ou par un côté, jamais pile sur toi. Par le haut, il descend un peu plus vite. L'alerte te montre déjà où est le trou." },
