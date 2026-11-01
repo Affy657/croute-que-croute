@@ -3,7 +3,7 @@ import { projectile } from "./projectiles.js";
 
 const MAX_STREAK = 3, REPEAT_FACTOR = 0.5;
 const SLANT = 0.55, CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55, SERIES_GAP = 0.7, SERIES_MOVE = 90, SERIES_SHIFT = 140, SERIES_NOTICE = 0.7, TOP_WALL_RUSH = 1.3;
-export const WALL_HOLE = 144, WALL_AWAY = 90, WALL_LOW = 430;
+export const WALL_HOLE = 144, WALL_AWAY = 90, WALL_LOW = 430, ROLLING_APART = 200;
 const BREATHERS = ["rolling", "bread", "slant"], RAINS = ["rain", "slant", "downpour"];
 
 const inside = (p) => ({ x: clamp(p.x, 10, FW - 10), y: clamp(p.y, 10, FH - 10) });
@@ -87,8 +87,8 @@ function sideWall({ rnd }, side, at, v, gc = rnd(100, WALL_LOW)) {
   return wallLine(gc, -16, FH + 16, 34, (y) => ({ x: side === "left" ? 10 : FW - 10, y: clamp(y, 10, FH - 10), a: dir > 0 ? 0 : Math.PI, at, obs: [projectile("knife", x0, y, dir * v, 0)] }));
 }
 
-function holeAway(rnd, lo, hi, from) {
-  const a = clamp(from - WALL_AWAY, lo, hi), b = clamp(from + WALL_AWAY, lo, hi);
+function away(rnd, lo, hi, from, gap = WALL_AWAY) {
+  const a = clamp(from - gap, lo, hi), b = clamp(from + gap, lo, hi);
   const u = rnd(0, a - lo + hi - b);
   return u < a - lo ? lo + u : b + u - (a - lo);
 }
@@ -98,7 +98,7 @@ const wallSide = (g) => g.pick(RAINS.includes(g.last) ? ["left", "right"] : ["le
 function wall(g) {
   const side = wallSide(g);
   const v = 150 * speedMul(g.t), at = g.t + 0.7;
-  return side === "top" ? topWall(g, at, v * TOP_WALL_RUSH, holeAway(g.rnd, 70, FW - 70, g.toast.x)) : sideWall(g, side, at, v, holeAway(g.rnd, 100, WALL_LOW, g.toast.y));
+  return side === "top" ? topWall(g, at, v * TOP_WALL_RUSH, away(g.rnd, 70, FW - 70, g.toast.x)) : sideWall(g, side, at, v, away(g.rnd, 100, WALL_LOW, g.toast.y));
 }
 
 const seriesSize = (t) => (t >= 60 ? 3 : 2);
@@ -109,7 +109,7 @@ function wallSeries(g) {
   const v = 150 * speedMul(t);
   const [lo, hi] = side === "top" ? [70, FW - 70] : [100, WALL_LOW];
   const items = [];
-  let gc = holeAway(rnd, lo, hi, side === "top" ? toast.x : toast.y);
+  let gc = away(rnd, lo, hi, side === "top" ? toast.x : toast.y);
   for (let i = 0; i < seriesSize(t); i++) {
     const at = t + 0.7 + i * SERIES_GAP;
     const wall = side === "top" ? topWall(g, at, v, gc) : sideWall(g, side, at, v, gc);
@@ -151,14 +151,14 @@ function cross({ t, toast, rnd }) {
 const rollingCount = (t) => (t >= 36 ? 2 : 1);
 
 function rolling({ t, rnd, pick }) {
-  const top = 80, range = FH - 80 - top, v = 110 * speedMul(t);
+  const top = 80, bottom = FH - 80, v = 110 * speedMul(t);
   const items = [];
-  let y = rnd(top, top + range);
+  let y = rnd(top, bottom);
   for (let i = 0; i < rollingCount(t); i++) {
     const side = pick(["left", "right"]);
     const dir = side === "left" ? 1 : -1;
     items.push({ x: side === "left" ? 10 : FW - 10, y, a: dir > 0 ? 0 : Math.PI, at: t + 0.7 + i * ROLLING_GAP, obs: [projectile("rolling", side === "left" ? -M : FW + M, y, dir * v, 0, 0, { bounces: 1 })] });
-    y = top + ((y - top + rnd(60, range - 60)) % range);
+    y = away(rnd, top, bottom, y, ROLLING_APART);
   }
   return items;
 }
@@ -197,7 +197,7 @@ export const ATTACKS = [
     info: "Tombe tout droit et très vite dans ta colonne, avec 0,9 s d'alerte. Change de colonne. Un 2e suit juste à côté dès 30 s, un 3e dès 55 s." },
   { id: "wall", name: "Mur", kin: "wall", solo: true, shuns: ["rolling", "wall", "walls"], from: 12, weight: 1.1, cost: 1.7, speed: 150, make: wall,
     info: "Une rangée serrée avec un seul trou, par le haut ou par un côté, jamais pile sur toi. Par le haut, il descend un peu plus vite. L'alerte te montre déjà où est le trou." },
-  { id: "rolling", name: "Rouleau à pâtisserie", shuns: ["wall", "walls"], avoids: BREATHERS, from: 16, weight: 0.8, cost: 1.6, speed: 110, make: rolling, growsUntil: 36, growth: "rouleaux par 2",
+  { id: "rolling", name: "Rouleau à pâtisserie", shuns: ["wall", "walls", "rolling"], avoids: BREATHERS, from: 16, weight: 0.8, cost: 1.6, speed: 110, make: rolling, growsUntil: 36, growth: "rouleaux par 2",
     info: "Un gros rouleau debout traverse lentement l'écran par un côté, rebondit sur l'autre bord et revient. Passe au-dessus ou en dessous. 2 d'affilée dès 36 s." },
   { id: "fan", name: "Éventail", from: 22, weight: 1.1, cost: 1.5, speed: 200, make: fan, growsUntil: 54, growth: "éventail max : 5 couteaux",
     info: "3 à 5 couteaux en cône depuis le même point, dont un toujours sur toi. Sors du cône par le côté." },

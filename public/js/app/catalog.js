@@ -223,7 +223,8 @@ function rulesCard() {
     "Croix et double pluie ne sortent jamais deux fois de suite.",
     "Jamais de hachoir juste après une pluie de fourchettes, une croix ou un mur, ni de croix juste après un hachoir ou un mur, ni de double pluie juste après une pluie.",
     "Pluie en biais, couteau à pain et rouleau ne se suivent jamais.",
-    "Juste après une pluie, un mur arrive toujours par un côté, jamais par le haut."
+    "Juste après une pluie, un mur arrive toujours par un côté, jamais par le haut.",
+    "Jamais plus de 2 rouleaux à l'écran, et jamais collés l'un à l'autre."
   ]) list.append(el("li", null, text));
   rules.append(el("h2", null, "Règles"), list);
   return rules;
