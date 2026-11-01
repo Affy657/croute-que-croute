@@ -39,7 +39,7 @@ const file = "public/js/version.js";
 
 writeFileSync(file, `export const VERSION = "${version}";\n`);
 try {
-  execSync(`npx wrangler deploy --var APP_VERSION:${version}`, { stdio: "inherit" });
+  execSync(`npx wrangler deploy --var APP_VERSION:${version} --var APP_PREVIOUS:${board.version || "aucune"}`, { stdio: "inherit" });
   console.log(`Version en ligne : ${version}`);
 } finally {
   execSync(`git checkout -- ${file}`);

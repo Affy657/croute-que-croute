@@ -5,6 +5,7 @@ import { LOCAL } from "../shared/local.js";
 import { timeout } from "../shared/timeout.js";
 
 const RELOAD_GAP = 15000;
+const UPDATED = "Partie pas comptée : le jeu a été mis à jour, il se recharge quand tu rejoues.";
 const SEND_TRIES = 3, SEND_GAP_MS = 1500, WAIT_GAP_MS = 5000, WAIT_MS = 120000, SEND_TIMEOUT_MS = 8000;
 
 if (LOCAL) {
@@ -178,7 +179,7 @@ export async function rename(pseudo) {
 export function startRun(body) {
   if (!net.token || (net.board && !canCompete())) return null;
   return call("POST", "/api/runs", body, SEND_TIMEOUT_MS).catch((e) => ({
-    error: e.status ? e.message : "Hors ligne : score non compté",
+    error: e.status === 426 ? UPDATED : e.status ? e.message : "Hors ligne : score non compté",
     status: e.status
   }));
 }

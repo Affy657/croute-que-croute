@@ -8,7 +8,7 @@ const WINDOWS = process.platform === "win32";
 const dir = mkdtempSync(join(tmpdir(), "croute-api-"));
 
 execSync(`npx wrangler d1 migrations apply croute-que-croute --local --persist-to "${dir}"`, { stdio: "ignore" });
-const server = spawn(`npx wrangler dev --ip 127.0.0.1 --port ${PORT} --persist-to "${dir}" --show-interactive-dev-session=false`, { shell: true, stdio: "ignore", detached: !WINDOWS });
+const server = spawn(`npx wrangler dev --ip 127.0.0.1 --port ${PORT} --persist-to "${dir}" --var APP_PREVIOUS:precedente --show-interactive-dev-session=false`, { shell: true, stdio: "ignore", detached: !WINDOWS });
 
 function stop() {
   try {
