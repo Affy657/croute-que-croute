@@ -111,7 +111,7 @@ function die(killer) {
   const before = api.standing(S.scope);
   S.newBest = S.score > before.best;
   S.prevRank = before.rank;
-  api.saveLocalBest(S.score);
+  api.saveLocalBest(S.score, S.scope);
   const sub = S.run ? api.submitScore(S.score, device, S.combo, S.run, () => {
     if (S.submit === sub && S.mode === "over") setText(ui.overNote, "Envoi en attente…");
   }) : null;

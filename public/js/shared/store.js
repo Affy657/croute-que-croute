@@ -2,6 +2,7 @@ export const KEYS = {
   playerToken: "cv-token",
   clientId: "cv-client",
   localBest: "cv-best-cs",
+  myBests: "cv-records",
   musicOff: "cv-muted",
   sfxOff: "cv-sfx-off",
   musicVolume: "cv-music-vol",

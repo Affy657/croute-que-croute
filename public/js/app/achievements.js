@@ -18,7 +18,7 @@ export const ACHIEVEMENTS = [
   { id: "t30", family: "time", name: "Croustillante", desc: "Tenir 30 s" },
   { id: "t60", family: "time", name: "Une minute de gloire", desc: "Tenir 60 s" },
   { id: "t90", family: "time", name: "Dorée à point", desc: "Tenir 90 s", gear: "boosters" },
-  { id: "t120", family: "time", name: "Bien grillée", desc: "Tenir 120 s", gear: "toasted" },
+  { id: "t120", family: "time", name: "Bien grillée", desc: "Tenir 120 s" },
   { id: "t150", family: "time", name: "Tartine de légende", desc: "Tenir 150 s", gear: "burnt" },
   { id: "combo5", family: "play", name: "Insaisissable", desc: "Faire un frôlé x" + COMBO, gear: "ninja" },
   { id: "near20", family: "play", name: "Ça passe crème", desc: "20 frôlés dans une partie", gear: "hitbox" },
@@ -42,9 +42,10 @@ export const ACHIEVEMENTS = [
   { id: "pumpkin", family: "secret", name: "Des bonbons ou un sort", desc: "Toucher la planète citrouille sur l'accueil", hint: "une citrouille passe parfois dans le ciel de l'accueil.", gear: "witch" },
   { id: "ahoy", family: "secret", name: "À l'abordage", desc: "Toucher la planète pirate sur l'accueil", hint: "un navire croise parfois au large de l'accueil.", gear: "pirate" },
   { id: "hoho", family: "secret", name: "Ho ho ho", desc: "Toucher le père Noël sur l'accueil", hint: "un traîneau traverse parfois le ciel de l'accueil.", gear: "santa" },
-  { id: "eggHunt", family: "secret", name: "Chasse aux œufs", desc: "Toucher l'œuf de Pâques sur l'accueil", hint: "un lapin sautille parfois dans le ciel de l'accueil.", gear: "bunny" }
+  { id: "eggHunt", family: "secret", name: "Chasse aux œufs", desc: "Toucher l'œuf de Pâques sur l'accueil", hint: "un lapin sautille parfois dans le ciel de l'accueil.", gear: "bunny" },
+  { id: "toaster", family: "secret", name: "Ding !", desc: "Toucher le grille-pain sur l'accueil", hint: "ça sent le pain grillé dans le ciel de l'accueil.", gear: "toasted" }
 ];
-const SKY_TOUCH = { pumpkin: "pumpkin", pirate: "ahoy", santa: "hoho", egg: "eggHunt" };
+const SKY_TOUCH = { pumpkin: "pumpkin", pirate: "ahoy", santa: "hoho", egg: "eggHunt", toaster: "toaster" };
 const BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
 
 const blank = () => ({ got: {}, attacks: [], events: [], runs: 0 });

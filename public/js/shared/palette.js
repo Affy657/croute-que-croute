@@ -67,7 +67,7 @@ export const SKY = {
   tung: { light: "#e6bd85", wood: "#bf8a4c", dark: "#6b4421", grain: "#7d5129", bat: "#f0d3a0", batDark: "#b58a52", eye: "#fff6e0", nose: "#8a5a2e" },
   toaster: {
     sky: "#2c2650", skyLight: "#928bc2", horizon: "#d9d3f2", ground: "#1f1a35", groundLight: "#5c5487", rim: "rgba(13, 11, 36, 0.6)", shine: "#ffffff",
-    slot: "#14121f", glow: "#ffa04a", glowDark: "#8a2412", crust: "#9a4f1c", crumb: "#ecc27a", toasted: "#c47d36", bakelite: "#1a1424", bakeliteLight: "#4a3f63"
+    slot: "#14121f", glow: "#ffa04a", glowDark: "#8a2412", crust: "#9a4f1c", crumb: "#ecc27a", toasted: "#c47d36", raw: "#f7e6bd", rawCrust: "#dcae72", smoke: "#eef0f6", bakelite: "#1a1424", bakeliteLight: "#4a3f63"
   },
   cheese: {
     light: "#ffe98f", mid: "#f7c843", dark: "#c98b1c", shade: "rgba(13, 11, 36, 0.5)",
@@ -97,5 +97,6 @@ export const SPREADS = {
   egg: { name: "Œuf au plat", with: "à l'œuf", color: "#fdfdf5", shine: "#ffb81c" },
   sardine: { name: "Sardine", with: "à la sardine", color: "#9fb3c8", shine: "#e3ecf3" },
   slime: { name: "Slime", with: "au slime", color: "#5ed13a", shine: "#b8f59a", bits: true },
-  dog: { name: "Pâtée pour chien", with: "à la pâtée pour chien", color: "#6e3f22", shine: "#b07a4e", bits: true }
+  dog: { name: "Pâtée pour chien", with: "à la pâtée pour chien", color: "#6e3f22", shine: "#b07a4e", bits: true },
+  sauce: { name: "La sauce du chef", with: "à la sauce du chef", color: "#f7f4ec", shine: "#ffffff", drip: true }
 };
