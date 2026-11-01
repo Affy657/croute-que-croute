@@ -1,4 +1,5 @@
 import { store, KEYS } from "../shared/store.js";
+import { LOCAL } from "../shared/local.js";
 
 const MUSIC_FILES = ["/music/theme.m4a", "/music/theme.mp3"];
 export const MUSIC_CREDIT = { title: "Roundabout", artist: "Blacklolita", url: "https://open.spotify.com/track/1GbuLhdSobTcKzQfOGliQX" };
@@ -25,7 +26,7 @@ function level(key) {
 }
 
 export const prefs = {
-  music: store.get(KEYS.musicOff) !== "1", sfx: store.get(KEYS.sfxOff) !== "1",
+  music: !LOCAL && store.get(KEYS.musicOff) !== "1", sfx: !LOCAL && store.get(KEYS.sfxOff) !== "1",
   musicLevel: level(KEYS.musicVolume), sfxLevel: level(KEYS.sfxVolume)
 };
 const listeners = [], buffers = {}, lastPlayed = {};
