@@ -1,4 +1,4 @@
-import { DIR, createSim, ATTACKS, CALM_PASS, gapTo, field, mulberry32, solverPilot } from "./jeu.mjs";
+import { DIR, createSim, ATTACKS, WALL_HOLE, CALM_PASS, gapTo, field, mulberry32, solverPilot } from "./jeu.mjs";
 
 const GAMES = Number(process.argv[2]) || 120, LIMIT = Number(process.argv[3]) || 150;
 const SOLVER_GAMES = 20, SOLVER_LIMIT = 300, TRAIN_LIMIT = 90, LINGER_S = 12, MISS_PX = 3;
@@ -43,7 +43,7 @@ function jitter(prng) {
 
 function play(seed, style, { only = null, t0 = 0, limit = LIMIT, dt = STEP } = {}) {
   const sim = createSim(mulberry32(seed), only ? { only, t0 } : {});
-  const s = sim.state, born = new WeakMap(), run = [];
+  const s = sim.state, born = new WeakMap(), seen = new WeakSet(), run = [];
   const move = style === "robot" ? solverPilot(sim) : style === "nerveux" ? jitter(mulberry32(seed ^ 0x9e3779b9))
     : style === "bords" ? () => { const c = Math.floor(s.t / 3) % 4; return { x: [1e4, -1e4, 0, 0][c], y: [0, 0, 1e4, -1e4][c] }; }
     : () => ({ x: 0, y: 0 });
@@ -86,9 +86,20 @@ function play(seed, style, { only = null, t0 = 0, limit = LIMIT, dt = STEP } = {
         const prev = run[run.length - 2];
         if (prev && prev !== id && byId[prev].kin && byId[prev].kin === a.kin) report("deux attaques de la même famille d'affilée", where({ id, prev }));
         if (prev && (a.avoids || []).includes(prev)) report("attaque juste après une attaque qu'elle évite", where({ id, prev }));
+        const walled = s.obs.some((o) => byId[o.from].kin === "wall") || s.warns.some((w) => seen.has(w) && byId[w.obs[0].from].kin === "wall");
+        if (a.kin === "wall" && walled) report("mur lancé alors qu'un autre mur est encore là", where({ id, prev }));
       }
       if (a.calm) seriesEnd = passAt(s.warns.filter((w) => w.obs[0].from === id));
+      if (a.kin === "wall") {
+        const fresh = s.warns.filter((w) => !seen.has(w));
+        for (const at of new Set(fresh.map((w) => w.at))) {
+          const pos = fresh.filter((w) => w.at === at).map((w) => (w.obs[0].vx ? w.obs[0].y : w.obs[0].x)).sort((p, q) => p - q);
+          const holes = pos.slice(1).map((p, i) => p - pos[i]).filter((d) => d > 40);
+          if (holes.length !== 1 || Math.abs(holes[0] - WALL_HOLE) > 1e-6) report("trou de mur d'une autre taille", where({ id, holes }));
+        }
+      }
     }
+    for (const w of s.warns) seen.add(w);
     if (!only) {
       const froms = new Set([...s.obs.map((o) => o.from), ...s.warns.flatMap((w) => w.obs.map((o) => o.from))]);
       if (froms.has("rolling") && (froms.has("wall") || froms.has("walls"))) report("rouleau en même temps qu'un mur", where({}));
