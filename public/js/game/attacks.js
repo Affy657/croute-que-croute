@@ -2,7 +2,7 @@ import { FW, FH, M, clamp, speedMul } from "./field.js";
 import { projectile } from "./projectiles.js";
 
 const MAX_STREAK = 3, REPEAT_FACTOR = 0.5;
-const SLANT = 0.55, CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55, SERIES_GAP = 0.7, SERIES_MOVE = 90, SERIES_SHIFT = 140, SERIES_NOTICE = 0.7;
+const SLANT = 0.55, CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55, SERIES_GAP = 0.7, SERIES_MOVE = 90, SERIES_SHIFT = 140, SERIES_NOTICE = 0.7, TOP_WALL_RUSH = 1.3;
 export const WALL_HOLE = 144, WALL_AWAY = 90, WALL_LOW = 430;
 const BREATHERS = ["rolling", "bread", "slant"];
 
@@ -96,7 +96,7 @@ function holeAway(rnd, lo, hi, from) {
 function wall(g) {
   const side = g.pick(["left", "right", "top"]);
   const v = 150 * speedMul(g.t), at = g.t + 0.7;
-  return side === "top" ? topWall(g, at, v, holeAway(g.rnd, 70, FW - 70, g.toast.x)) : sideWall(g, side, at, v, holeAway(g.rnd, 100, WALL_LOW, g.toast.y));
+  return side === "top" ? topWall(g, at, v * TOP_WALL_RUSH, holeAway(g.rnd, 70, FW - 70, g.toast.x)) : sideWall(g, side, at, v, holeAway(g.rnd, 100, WALL_LOW, g.toast.y));
 }
 
 const seriesSize = (t) => (t >= 60 ? 3 : 2);
@@ -194,7 +194,7 @@ export const ATTACKS = [
   { id: "cleaver", name: "Hachoir", avoids: ["rain", "slant", "downpour", "cross", "wall", "walls"], from: 8, weight: 0.9, cost: 1.3, speed: 300, make: cleaver, growsUntil: 55, growth: "hachoirs par 3",
     info: "Tombe tout droit et très vite dans ta colonne, avec 0,9 s d'alerte. Change de colonne. Un 2e suit juste à côté dès 30 s, un 3e dès 55 s." },
   { id: "wall", name: "Mur", kin: "wall", solo: true, shuns: ["rolling", "wall", "walls"], from: 12, weight: 1.1, cost: 1.7, speed: 150, make: wall,
-    info: "Une rangée serrée avec un seul trou, par le haut ou par un côté, jamais pile sur toi. L'alerte te montre déjà où est le trou." },
+    info: "Une rangée serrée avec un seul trou, par le haut ou par un côté, jamais pile sur toi. Par le haut, il descend un peu plus vite. L'alerte te montre déjà où est le trou." },
   { id: "rolling", name: "Rouleau à pâtisserie", shuns: ["wall", "walls"], avoids: BREATHERS, from: 16, weight: 0.8, cost: 1.6, speed: 110, make: rolling, growsUntil: 36, growth: "rouleaux par 2",
     info: "Un gros rouleau debout traverse lentement l'écran par un côté, rebondit sur l'autre bord et revient. Passe au-dessus ou en dessous. 2 d'affilée dès 36 s." },
   { id: "fan", name: "Éventail", from: 22, weight: 1.1, cost: 1.5, speed: 200, make: fan, growsUntil: 54, growth: "éventail max : 5 couteaux",
