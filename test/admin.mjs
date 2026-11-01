@@ -56,6 +56,26 @@ check("admin ne voit pas l'équipe", r.status === 403, r);
 r = await call("POST", "/api/admin/invites", { body: { name: "Intrus", role: "owner" }, token: admin });
 check("admin ne peut pas inviter", r.status === 403, r);
 
+const oops = { kind: "erreur", message: "TypeError: test admin 12", source: "/js/app/main.js:12:3", stack: "frame@/js/app/main.js:12:3", trail: ["   1.00  clic #play"], device: "390x844 x3", count: 2 };
+const report = (session, errors) => call("POST", "/api/errors", { body: { version: "dev", page: "/", platform: "iPhone", standalone: true, ua: "test", session, errors } });
+await report("a1a1a1a1a1a1a1a1", [oops]);
+await report("b2b2b2b2b2b2b2b2", [{ ...oops, message: "TypeError: test admin 99", source: "/js/app/main.js:40:1", count: 1 }]);
+await report("b2b2b2b2b2b2b2b2", [{ kind: oops.kind, message: oops.message, source: oops.source, count: 5 }]);
+r = await call("GET", "/api/admin/errors", { token: admin });
+check("admin ne voit pas les erreurs des joueurs", r.status === 403, r);
+r = await call("GET", "/api/admin/errors", { token: owner });
+const oopsGroup = r.status === 200 ? r.data.groups.find((g) => g.message.startsWith("TypeError: test admin")) : null;
+check("erreurs regroupées au chiffre près dans le même fichier", !!oopsGroup && oopsGroup.count === 8 && oopsGroup.sessions === 2 && oopsGroup.platforms.iPhone === 2, r.data);
+check("détail de l'erreur avec ce qui s'est passé avant", !!oopsGroup && oopsGroup.last.trail.includes("clic #play") && oopsGroup.last.stack.startsWith("frame@"), oopsGroup);
+r = await call("GET", "/api/admin/errors/recent", { token: owner });
+check("erreurs de la dernière heure comptées", r.status === 200 && r.data.hour >= 1 && r.data.day >= r.data.hour, r);
+r = await call("DELETE", `/api/admin/errors/${oopsGroup && oopsGroup.id}`, { token: owner });
+check("erreur marquée corrigée", r.status === 200, r);
+r = await call("GET", "/api/admin/errors", { token: owner });
+check("erreur corrigée retirée de la liste", r.status === 200 && !r.data.groups.some((g) => g.id === (oopsGroup && oopsGroup.id)), r.data);
+r = await call("DELETE", `/api/admin/errors/${oopsGroup && oopsGroup.id}`, { token: owner });
+check("erreur déjà corrigée = 404", r.status === 404, r);
+
 r = await call("GET", "/api/admin/team", { token: owner });
 check("propriétaire voit l'équipe (2 personnes, lui marqué)", r.status === 200 && r.data.team.length >= 2 && r.data.team.some((a) => a.me && a.name === "Adrien"), r);
 const esteban = r.data.team.filter((a) => a.name === "Esteban" && a.role === "admin").pop();

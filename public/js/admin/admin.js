@@ -4,13 +4,14 @@ import { prepareSfx, previewSfx } from "../app/audio.js";
 import { VERSION } from "../version.js";
 
 const $ = (id) => document.getElementById(id);
-const REFRESH_MS = 10000;
+const REFRESH_MS = 10000, ERRORS_MS = 60000, FRESH_MS = 3600 * 1000, COPIED_MS = 2000;
 const SFX_LABELS = { start: "Départ", near: "Frôlé", death: "Mort", record: "Record", first: "1re place" };
 const store = {
   get: () => storage.get(KEYS.adminToken),
   set: (v) => storage.set(KEYS.adminToken, v || null)
 };
 
+document.documentElement.dataset.version = VERSION;
 if (window.top !== window) document.documentElement.classList.add("embedded");
 
 let token = store.get();
@@ -19,6 +20,7 @@ let data = null;
 let timer = null;
 let retry = null;
 let scope = "event";
+const opened = new Set();
 const STATUS = { open: "Soirée en cours", upcoming: "Prochaine soirée", closed: "Dernière soirée" };
 
 const day = (ms) => new Date(ms).toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "2-digit" }) + " à " + hour(ms);
@@ -26,13 +28,28 @@ const hour = (ms) => new Date(ms).toLocaleTimeString("fr-FR", { hour: "2-digit",
 const toInput = (ms) => new Date(ms - new Date(ms).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 const fromInput = (value) => (value ? new Date(value).getTime() : NaN);
 
-function ago(ms) {
+function since(ms) {
   const min = Math.floor((Date.now() - ms) / 60000);
-  if (min < 5) return "actif à l'instant";
-  if (min < 60) return "vu il y a " + min + " min";
-  if (min < 1440) return "vu il y a " + Math.floor(min / 60) + " h";
-  return "vu il y a " + Math.floor(min / 1440) + " j";
+  if (min < 1) return "à l'instant";
+  if (min < 60) return "il y a " + min + " min";
+  if (min < 1440) return "il y a " + Math.floor(min / 60) + " h";
+  return "il y a " + Math.floor(min / 1440) + " j";
 }
+
+const ago = (ms) => (Date.now() - ms < 5 * 60000 ? "actif à l'instant" : "vu " + since(ms));
+
+const KINDS = {
+  erreur: "Erreur",
+  promesse: "Promesse rejetée",
+  fichier: "Fichier pas chargé",
+  csp: "Bloqué par la sécurité",
+  blocage: "Jeu bloqué au chargement"
+};
+const BROWSERS = [
+  [/Instagram/, "Instagram"], [/FBAN|FBAV|FB_IAB/, "Facebook"], [/Snapchat/, "Snapchat"], [/musical_ly|BytedanceWebview/, "TikTok"],
+  [/SamsungBrowser/, "Samsung Internet"], [/EdgiOS|EdgA|Edg\//, "Edge"], [/OPR\//, "Opera"], [/CriOS|Chrome\//, "Chrome"],
+  [/FxiOS|Firefox\//, "Firefox"], [/Safari\//, "Safari"]
+];
 
 const SUSPECT_LABELS = { high: "à vérifier : loin devant le 2e", slow: "à vérifier : partie ralentie, mise en pause ou envoyée en retard" };
 
@@ -63,6 +80,8 @@ function signOut() {
   token = null;
   me = null;
   store.set(null);
+  $("errors").replaceChildren();
+  opened.clear();
   clearInterval(timer);
   clearTimeout(retry);
   show("login");
@@ -202,6 +221,151 @@ async function loadTeam() {
   }
 }
 
+function system(ua, platform) {
+  const ios = ua.match(/OS (\d+)_(\d+)/) || ua.match(/Version\/(\d+)\.(\d+)/);
+  if ((platform === "iPhone" || platform === "iPad") && ios) return "iOS " + ios[1] + "." + ios[2];
+  const android = ua.match(/Android (\d+(?:\.\d+)?)/);
+  if (android) return "Android " + android[1];
+  return /Windows/.test(ua) ? "Windows" : /Mac OS X/.test(ua) ? "macOS" : /Linux/.test(ua) ? "Linux" : "";
+}
+
+function deviceLabel(d) {
+  const browser = BROWSERS.find(([re]) => re.test(d.ua));
+  return [d.platform, system(d.ua, d.platform), browser ? browser[1] : "", d.standalone ? "appli installée" : ""].filter(Boolean).join(", ");
+}
+
+function spread(g) {
+  const where = Object.entries(g.platforms).sort((a, b) => b[1] - a[1]).map(([p, n]) => p + " " + n).join(", ");
+  return g.count + " fois, " + g.sessions + (g.sessions > 1 ? " sessions" : " session") + (where ? " (" + where + ")" : "");
+}
+
+function versionLabel(g) {
+  return (g.last.version || "inconnue") + (g.versions > 1 ? ", vue sur " + g.versions + " versions" : "");
+}
+
+function reportText(g) {
+  const l = g.last;
+  return [
+    KINDS[g.kind] + " : " + g.message,
+    "Où : " + (g.source || "inconnu"),
+    spread(g),
+    "Première fois : " + day(g.firstAt) + ", dernière : " + day(g.lastAt),
+    "Version : " + versionLabel(g) + (g.onCurrent ? ", encore là sur la version en ligne" : ", pas revue depuis la dernière mise en ligne"),
+    "Page : " + l.page,
+    "Appareil : " + deviceLabel(l) + ", écran " + l.device,
+    "Navigateur : " + l.ua,
+    "",
+    "Avant l'erreur :",
+    l.trail || "Rien de noté.",
+    "",
+    "Pile d'appels :",
+    l.stack || "Pas de pile pour ce type d'erreur."
+  ].join("\n");
+}
+
+function copyText(text) {
+  const fallback = () => {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.append(area);
+    area.select();
+    const done = document.execCommand("copy");
+    area.remove();
+    return done;
+  };
+  if (!navigator.clipboard) return Promise.resolve(fallback());
+  return navigator.clipboard.writeText(text).then(() => true, fallback);
+}
+
+function errorItem(g) {
+  const li = document.createElement("li");
+  li.className = Date.now() - g.lastAt < FRESH_MS ? "fresh" : "";
+  const box = document.createElement("details");
+  box.open = opened.has(g.id);
+  box.addEventListener("toggle", () => {
+    if (box.open) opened.add(g.id);
+    else opened.delete(g.id);
+  });
+  const head = document.createElement("summary");
+  head.append(
+    cell("span", "kind", KINDS[g.kind] + ", " + since(g.lastAt)),
+    cell("span", "name", g.message),
+    cell("span", "meta", spread(g)),
+    cell("span", "meta", (g.source || "fichier inconnu") + ", " + (g.onCurrent ? "encore là sur la version en ligne" : "pas revue depuis la dernière mise en ligne"))
+  );
+  const l = g.last, facts = document.createElement("dl");
+  for (const [label, value] of [
+    ["Première fois", day(g.firstAt)], ["Dernière fois", day(g.lastAt)], ["Version", versionLabel(g)],
+    ["Page", l.page], ["Appareil", deviceLabel(l)], ["Écran", l.device]
+  ]) facts.append(cell("dt", "", label), cell("dd", "", value || "inconnu"));
+  const copyBtn = cell("button", "btn ghost small", "Copier le rapport");
+  copyBtn.type = "button";
+  copyBtn.addEventListener("click", async () => {
+    copyBtn.textContent = (await copyText(reportText(g))) ? "Copié" : "Copie refusée";
+    setTimeout(() => { copyBtn.textContent = "Copier le rapport"; }, COPIED_MS);
+  });
+  const fixBtn = cell("button", "btn ghost small", "Marquer corrigé");
+  fixBtn.type = "button";
+  fixBtn.addEventListener("click", async () => {
+    if (!confirm("Retirer cette erreur de la liste ? Elle reviendra si elle se reproduit.")) return;
+    fixBtn.disabled = true;
+    try {
+      await call("DELETE", "/api/admin/errors/" + g.id);
+      opened.delete(g.id);
+      await loadErrors();
+    } catch (e) {
+      say($("errorsMsg"), e.message, true);
+      fixBtn.disabled = false;
+    }
+  });
+  const actions = document.createElement("div");
+  actions.className = "row";
+  actions.append(copyBtn, fixBtn);
+  const body = document.createElement("div");
+  body.className = "body";
+  body.append(
+    facts,
+    cell("p", "eyebrow", "Avant l'erreur"), cell("pre", "", l.trail || "Rien de noté."),
+    cell("p", "eyebrow", "Pile d'appels"), cell("pre", "", l.stack || "Pas de pile pour ce type d'erreur."),
+    actions
+  );
+  box.append(head, body);
+  li.append(box);
+  return li;
+}
+
+async function loadErrorCount() {
+  try {
+    const r = await call("GET", "/api/admin/errors/recent");
+    $("errorsSummary").textContent = r.day
+      ? (r.day > 1 ? r.day + " erreurs différentes" : "1 erreur") + " ces dernières 24 h."
+      : "Aucune erreur ces dernières 24 h.";
+    say($("errorsAlert"), r.hour ? (r.hour > 1 ? r.hour + " erreurs différentes" : "1 erreur") + " dans la dernière heure (trait rouge)." : "", true);
+  } catch (e) {
+    say($("errorsMsg"), e.message, true);
+  }
+}
+
+async function loadErrors() {
+  const btn = $("errorsBtn");
+  btn.disabled = true;
+  try {
+    const r = await call("GET", "/api/admin/errors");
+    $("errors").replaceChildren(...r.groups.map(errorItem));
+    $("errorsEmpty").hidden = r.groups.length > 0;
+    btn.textContent = "Actualiser la liste";
+    say($("errorsMsg"), "");
+  } catch (e) {
+    say($("errorsMsg"), e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+  await loadErrorCount();
+}
+
 async function boot() {
   try {
     me = (await call("GET", "/api/admin/me")).admin;
@@ -215,9 +379,10 @@ async function boot() {
   }
   $("who").textContent = me.name + ", " + (me.role === "owner" ? "propriétaire" : "admin");
   $("teamCard").hidden = me.role !== "owner";
+  $("errorsCard").hidden = me.role !== "owner";
   show("app");
   await load();
-  if (me.role === "owner") await loadTeam();
+  if (me.role === "owner") await Promise.all([loadTeam(), loadErrorCount()]);
   clearInterval(timer);
   timer = setInterval(() => {
     if (!document.hidden) load();
@@ -362,13 +527,21 @@ $("logoutBtn").addEventListener("click", async () => {
   signOut();
 });
 
+$("errorsBtn").addEventListener("click", loadErrors);
+
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && me) load();
+  if (document.hidden || !me) return;
+  load();
+  if (me.role === "owner") loadErrorCount();
 });
 
 setInterval(() => {
   if (me) tick();
 }, 1000);
+
+setInterval(() => {
+  if (me && me.role === "owner" && !document.hidden) loadErrorCount();
+}, ERRORS_MS);
 
 prepareSfx();
 $("sfxList").replaceChildren(...Object.entries(SFX_LABELS).map(([name, label]) => {

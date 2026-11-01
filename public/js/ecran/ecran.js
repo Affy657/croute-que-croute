@@ -1,11 +1,13 @@
 import { fmtCs, clock } from "../shared/format.js";
 import { rain, bounce } from "../app/party.js";
 import { timeout } from "../shared/timeout.js";
+import { VERSION } from "../version.js";
 
 const POLL_MS = 10000, FETCH_MS = 8000, ROWS = 10, FEED_ROWS = 4, IDLE_MS = 3000, SOON_MS = 24 * 3600 * 1000, CROWN_MS = 6000;
 const $ = (id) => document.getElementById(id);
 let board = null, offset = 0, shown = null, idleTimer = null, lock = null, seen = null, crownTimer = null, busy = false, stale = false;
 
+document.documentElement.dataset.version = VERSION;
 const now = () => Date.now() + offset;
 
 function when(ms) {
