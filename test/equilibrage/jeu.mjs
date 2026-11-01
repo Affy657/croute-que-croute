@@ -51,8 +51,8 @@ export function solverPilot(sim) {
   };
 }
 
-export function playHuman(seed, { rt, spd, lapse }, limit) {
-  const sim = createSim(mulberry32(seed));
+export function playHuman(seed, { rt, spd, lapse }, limit, { t0 = 0, setup, tick } = {}) {
+  const sim = createSim(mulberry32(seed), { t0 });
   const luck = mulberry32(seed ^ 0x5bd1e995);
   const s = sim.state, seen = new WeakSet(), spawns = [];
   let path = null, tPlan = 0, lastPlan = -1, killer = null, frozen = 0, count = 0;
@@ -63,7 +63,8 @@ export function playHuman(seed, { rt, spd, lapse }, limit) {
       spawns.push({ id: sideOf(s.last, s.warns[s.warns.length - 1]?.obs[0]?.kind), t: s.t });
     }
   };
-  while (!s.dead && s.t < limit) {
+  if (setup) setup(sim);
+  while (!s.dead && s.t < limit && !(tick && tick(sim))) {
     if (frozen <= 0 && lapse && luck() < field.STEP / lapse) frozen = LAPSE_S;
     if (frozen > 0) {
       frozen -= field.STEP;

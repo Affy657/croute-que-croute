@@ -18,7 +18,8 @@
     "equilibrage:attaques": "node test/equilibrage/attaques.mjs",
     "equilibrage:vides": "node test/equilibrage/vides.mjs",
     "equilibrage:invariants": "node test/equilibrage/invariants.mjs",
-    "equilibrage:variante": "node test/equilibrage/variante.mjs"
+    "equilibrage:variante": "node test/equilibrage/variante.mjs",
+    "equilibrage:combos": "node test/equilibrage/combos.mjs"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",

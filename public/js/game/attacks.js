@@ -76,7 +76,7 @@ function topWall({ rnd }, at, v, gap = 50, gc = rnd(70, FW - 70)) {
   return items;
 }
 
-function sideWall({ rnd }, side, at, v, gap = 50, gc = rnd(100, FH * 0.62)) {
+function sideWall({ rnd }, side, at, v, gap = 50, gc = rnd(100, FH - 100)) {
   const dir = side === "left" ? 1 : -1;
   const x0 = side === "left" ? -M : FW + M;
   const items = [];
@@ -98,7 +98,7 @@ function wallSeries(g) {
   const { t, rng, rnd, pick } = g;
   const side = pick(["left", "right", "top"]);
   const v = 150 * speedMul(t);
-  const [lo, hi] = side === "top" ? [70, FW - 70] : [100, FH * 0.62];
+  const [lo, hi] = side === "top" ? [70, FW - 70] : [100, FH - 100];
   const items = [];
   let gc = rnd(lo, hi);
   for (let i = 0; i < seriesSize(t); i++) {
@@ -123,7 +123,7 @@ function fan({ t, toast, pick }) {
   const n = t >= 54 ? 5 : t >= 38 ? 4 : 3;
   const spread = 0.9;
   const v = 200 * speedMul(t);
-  const base = Math.atan2(toast.y - p.y, toast.x - p.x);
+  const base = Math.atan2(toast.y - p.y, toast.x - p.x) + (n % 2 ? 0 : (spread / (n - 1) / 2) * pick([1, -1]));
   const w = inside(p);
   const obs = [];
   for (let i = 0; i < n; i++) {
@@ -139,16 +139,16 @@ function cross({ t, toast, rnd }) {
   return starts.map((p) => aimedFrom(p, toast, at, v));
 }
 
-const rollingCount = (t) => (t >= 60 ? 3 : t >= 36 ? 2 : 1);
+const rollingCount = (t) => (t >= 36 ? 2 : 1);
 
 function rolling({ t, rnd, pick }) {
-  const top = 80, range = FH * 0.6 - top, v = 110 * speedMul(t);
+  const top = 80, range = FH - 80 - top, v = 110 * speedMul(t);
   const items = [];
   let y = rnd(top, top + range);
   for (let i = 0; i < rollingCount(t); i++) {
     const side = pick(["left", "right"]);
     const dir = side === "left" ? 1 : -1;
-    items.push({ x: side === "left" ? 10 : FW - 10, y, a: dir > 0 ? 0 : Math.PI, at: t + 0.7 + i * ROLLING_GAP, obs: [projectile("rolling", side === "left" ? -M : FW + M, y, dir * v, 0)] });
+    items.push({ x: side === "left" ? 10 : FW - 10, y, a: dir > 0 ? 0 : Math.PI, at: t + 0.7 + i * ROLLING_GAP, obs: [projectile("rolling", side === "left" ? -M : FW + M, y, dir * v, 0, 0, { bounces: 1 })] });
     y = top + ((y - top + rnd(60, range - 60)) % range);
   }
   return items;
@@ -184,19 +184,19 @@ export const ATTACKS = [
     info: "Un couteau lancé droit sur toi, du haut ou d'un côté. Bouge pendant l'alerte et c'est esquivé. Dès 25 s, il tourne sur lui-même une fois sur trois." },
   { id: "rain", name: "Pluie de fourchettes", from: 3, weight: 1.4, cost: 1.5, speed: 190, make: rain, growsUntil: 60, growth: "pluie max : 8 fourchettes",
     info: "4 fourchettes tombent du haut à la suite, un peu en biais. Une de plus toutes les 15 s, jusqu'à 8." },
-  { id: "cleaver", name: "Hachoir", from: 8, weight: 0.9, cost: 1.3, speed: 300, make: cleaver, growsUntil: 55, growth: "hachoirs par 3",
+  { id: "cleaver", name: "Hachoir", avoids: ["rain", "slant", "downpour", "cross"], from: 8, weight: 0.9, cost: 1.3, speed: 300, make: cleaver, growsUntil: 55, growth: "hachoirs par 3",
     info: "Tombe tout droit et très vite dans ta colonne, avec 0,9 s d'alerte. Change de colonne. Un 2e suit juste à côté dès 30 s, un 3e dès 55 s." },
   { id: "wall", name: "Mur", kin: "wall", shuns: ["rolling"], from: 12, weight: 1.1, cost: 1.7, speed: 150, make: wall,
     info: "Une rangée serrée avec un seul trou, par le haut ou par un côté. L'alerte te montre déjà où est le trou." },
-  { id: "rolling", name: "Rouleau à pâtisserie", shuns: ["wall", "walls"], from: 16, weight: 0.8, cost: 1.6, speed: 110, make: rolling, growsUntil: 60, growth: "rouleaux par 3",
-    info: "Un gros rouleau debout traverse lentement l'écran par un côté. Passe au-dessus ou en dessous. 2 d'affilée dès 36 s, 3 dès 60 s." },
+  { id: "rolling", name: "Rouleau à pâtisserie", shuns: ["wall", "walls"], from: 16, weight: 0.8, cost: 1.6, speed: 110, make: rolling, growsUntil: 36, growth: "rouleaux par 2",
+    info: "Un gros rouleau debout traverse lentement l'écran par un côté, rebondit sur l'autre bord et revient. Passe au-dessus ou en dessous. 2 d'affilée dès 36 s." },
   { id: "fan", name: "Éventail", from: 22, weight: 1.1, cost: 1.5, speed: 200, make: fan, growsUntil: 54, growth: "éventail max : 5 couteaux",
-    info: "3 à 5 couteaux en cône depuis le même point, visés sur toi. Sors du cône par le côté." },
+    info: "3 à 5 couteaux en cône depuis le même point, dont un toujours sur toi. Sors du cône par le côté." },
   { id: "whisk", name: "Fouet", lab: true, from: 4, weight: 0.7, cost: 1.3, speed: 100, make: whisk,
     info: "Un fouet qui tourne descend lentement vers toi et prend beaucoup de place." },
   { id: "walls", name: "Murs en série", kin: "wall", shuns: ["rolling"], solo: true, calm: true, from: 28, weight: 0.6, cost: 1, speed: 150, make: wallSeries, growsUntil: 60, growth: "murs en série par 3",
     info: "2 murs d'affilée (3 dès 60 s), toujours du même côté ou du haut, chacun avec son trou et son alerte juste avant. Rien d'autre ne tombe pendant la série." },
-  { id: "cross", name: "Croix", solo: true, from: 32, weight: 0.7, cost: 1.6, speed: 190, make: cross,
+  { id: "cross", name: "Croix", solo: true, avoids: ["cleaver"], from: 32, weight: 0.7, cost: 1.6, speed: 190, make: cross,
     info: "4 couteaux d'un coup, depuis les deux coins du haut et les deux côtés, tous sur toi. Écarte-toi du point visé." },
   { id: "bread", name: "Couteau à pain", from: 38, weight: 0.7, cost: 1.2, speed: 240, make: bread,
     info: "Lancé d'un coin du haut, il rebondit sur le bord d'en face puis fonce sur toi. Suis la pointe de l'alerte et anticipe le rebond." },
@@ -211,7 +211,7 @@ export const ATTACKS = [
 export function pickAttack(t, rng, last = null, streak = 0, active = new Set()) {
   const open = ATTACKS.filter((a) => !a.lab && t > a.from && !(a.shuns && a.shuns.some((id) => active.has(id))));
   const prev = ATTACKS.find((a) => a.id === last), kin = prev && prev.kin;
-  const allowed = open.filter((a) => (a.id !== last || (!a.solo && streak < MAX_STREAK)) && !(kin && a.kin === kin && a.id !== last));
+  const allowed = open.filter((a) => (a.id !== last || (!a.solo && streak < MAX_STREAK)) && !(kin && a.kin === kin && a.id !== last) && !(a.avoids && a.avoids.includes(last)));
   const pool = allowed.length ? allowed : open;
   const weight = (a) => a.weight * (a.id === last ? REPEAT_FACTOR ** streak : 1);
   let r = rng() * pool.reduce((s, a) => s + weight(a), 0);
