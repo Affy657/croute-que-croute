@@ -306,6 +306,14 @@ Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du c
 - Revoir le design du tableau de bord admin.
 - Pages Infos, reste de la critique du 31/10/2026 : boutons des Crédits pleine largeur ; une seule sortie (croix ou « Retour ») pour tous les écrans de ce type ; aperçus des attaques figés quand le téléphone demande moins d'animations.
 
+### Ajouté par Adrien le 01/11/2026
+
+- Rouleau à pâtisserie qui fait des allers-retours sur l'écran.
+- Débloquer des fonds de jeu tirés des affiches des soirées.
+- Toucher une bière (par exemple les canettes 8.6 et Maximator qui passent déjà en étoile filante) pour mettre un effet « bourré » sur le jeu.
+- Skin Tung Tung Tung Sahur pour la tartine (le personnage de la planète drôle).
+- Débloquer des musiques (à rapprocher des morceaux des collègues DJ, plus haut).
+
 ## Idées pour plus tard
 
 - Vibration au frôlé.
