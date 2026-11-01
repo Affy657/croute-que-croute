@@ -1586,7 +1586,7 @@ function ringFront(ctx, now, C) {
 const AURAS = { heat: { back: auraHeat }, volt: { back: auraVolt }, neon: { back: auraNeon }, ring: { back: ringBack, front: ringFront } };
 
 export function drawAura(ctx, t, C = PALETTE) {
-  const aura = AURAS[t.aura];
+  const aura = Object.hasOwn(AURAS, t.aura) && AURAS[t.aura];
   if (!aura) return;
   ctx.save();
   ctx.translate(t.x, t.y);
@@ -1597,7 +1597,7 @@ export function drawAura(ctx, t, C = PALETTE) {
 
 export function drawToast(ctx, t, splat, C = PALETTE, aura = true) {
   const w = 40, h = 42, bread = GEAR[t.bread], round = t.bread === "hitbox", s = round ? HIT_R / ROUND_R : 1;
-  const body = round ? roundPath : (c) => toastPath(c, w, h), front = !splat && AURAS[t.aura] && AURAS[t.aura].front;
+  const body = round ? roundPath : (c) => toastPath(c, w, h), front = !splat && Object.hasOwn(AURAS, t.aura) && AURAS[t.aura].front;
   if (aura && !splat) drawAura(ctx, t, C);
   ctx.save();
   ctx.translate(t.x, t.y);

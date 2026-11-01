@@ -1,3 +1,5 @@
+import { GEAR, SPREADS } from "../public/js/shared/palette.js";
+
 const LIGATURES: Record<string, string> = { "œ": "oe", "Œ": "OE", "æ": "ae", "Æ": "AE", "ß": "ss", "ø": "o", "Ø": "O" };
 
 const stripAccents = (text: string) =>
@@ -33,7 +35,9 @@ export function cleanLinkCode(raw: unknown) {
 }
 
 const LOOK_SLOTS = ["head", "side", "bread", "aura", "spread"] as const;
-const LOOK_KIND = /^[a-z0-9]{1,20}$/;
+const GEAR_SLOT = new Map(Object.entries(GEAR).map(([kind, g]) => [kind, g.slot]));
+const lookKind = (slot: string, kind: unknown) =>
+  typeof kind === "string" && (slot === "spread" ? Object.hasOwn(SPREADS, kind) : GEAR_SLOT.get(kind) === slot) ? kind : null;
 const LOOK_MAX = 99;
 
 const lookCount = (raw: unknown) => (typeof raw === "number" && Number.isInteger(raw) && raw >= 0 && raw <= LOOK_MAX ? raw : 0);
@@ -42,7 +46,7 @@ export function cleanLook(raw: unknown): string | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   const own = (r.own && typeof r.own === "object" ? r.own : {}) as Record<string, unknown>;
-  const kinds = LOOK_SLOTS.map((s) => [s, typeof r[s] === "string" && LOOK_KIND.test(r[s] as string) ? r[s] : null]);
+  const kinds = LOOK_SLOTS.map((s) => [s, lookKind(s, r[s])]);
   return JSON.stringify({
     ...Object.fromEntries(kinds),
     ach: lookCount(r.ach),

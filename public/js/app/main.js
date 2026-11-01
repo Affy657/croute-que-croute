@@ -656,8 +656,9 @@ ach.onUnlock((a, synced) => {
   else if (!ui.menu.hidden) renderMenu();
 });
 ach.checkOutfit(S.toast);
+const typing = () => (!ui.joinForm.hidden && !!ui.pseudo.value.trim()) || (!ui.linkForm.hidden && !!ui.linkInput.value.trim());
 api.on("update", () => {
-  if (S.mode === "menu" && !boardOpen && !infoOpen && !settingsOpen && !achOpen) api.applyUpdate();
+  if (S.mode === "menu" && !boardOpen && !infoOpen && !settingsOpen && !achOpen && !typing()) api.applyUpdate();
 });
 audio.onAudioChange(() => renderControls(playing()));
 onInstallChange(maybeSuggest);

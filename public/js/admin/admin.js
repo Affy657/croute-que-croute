@@ -203,11 +203,14 @@ async function loadTeam() {
         btn.type = "button";
         btn.addEventListener("click", async () => {
           if (!confirm("Retirer l'accès de " + a.name + " ? Son téléphone sera déconnecté.")) return;
+          btn.disabled = true;
           try {
             await call("POST", "/api/admin/team/" + a.id + "/revoke");
             await loadTeam();
           } catch (e) {
             say($("teamMsg"), e.message, true);
+          } finally {
+            btn.disabled = false;
           }
         });
         li.append(btn);

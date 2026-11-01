@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 
-const BASE = process.argv[2] || "http://127.0.0.1:8787";
+const BASE = process.argv[2] || "";
 if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(BASE)) {
-  console.error("Les tests d'API ne tournent qu'en local.");
+  console.error("Les tests d'API ne tournent qu'en local, sur une base à part : npm run test:api.");
   process.exit(1);
 }
 const KEY = readFileSync(".dev.vars", "utf8").match(/ADMIN_KEY=(\w+)/)[1];
@@ -34,8 +34,21 @@ if (!r.data.event || r.data.event.status !== "open") {
 r = await call("GET", "/api/admin/players", { key: KEY });
 check("une soirée est ouverte pour le test", r.data.event && r.data.event.status === "open", r.data.event);
 
+const joinAs = async (name) => (await call("POST", "/api/join", { body: { pseudo: name, clientId: hex(32) } })).data.token;
+const startRun = async (tok) => (await call("POST", "/api/runs", { token: tok })).data.runId;
+const slowName = "Lent" + hex(5), highName = "Haut" + hex(5);
+const [slowTok, highTok] = [await joinAs(slowName), await joinAs(highName)];
+const [slowRun, highRun] = [await startRun(slowTok), await startRun(highTok)];
+const slowSince = Date.now();
+
 r = await call("POST", "/api/admin/events", { key: KEY, body: { name: "Écrasement", closesAt: Date.now() + 3600 * 1000 } });
 check("nouvelle soirée refusée tant que la soirée en cours est ouverte", r.status === 409, r);
+r = await call("POST", "/api/admin/events", { key: KEY, body: { name: "Passée", closesAt: Date.now() - 1000 } });
+check("soirée qui finit dans le passé refusée", r.status === 400, r);
+r = await call("POST", "/api/admin/events", { key: KEY, body: { name: "À l'envers", opensAt: Date.now() + 2 * 3600 * 1000, closesAt: Date.now() + 3600 * 1000 } });
+check("soirée qui finit avant de commencer refusée", r.status === 400, r);
+r = await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: Date.now() + 2 * 3600 * 1000, closesAt: Date.now() + 3600 * 1000 } });
+check("modification de la soirée : fin avant le début refusée", r.status === 400, r);
 
 const eventName = (await call("GET", "/api/board")).data.event.name;
 r = await call("PATCH", "/api/admin/events/current", { key: KEY, body: { name: "  Soirée renommée  " } });
@@ -91,6 +104,11 @@ r = await call("POST", `/api/runs/${runId}`, { token, body: { score: 100, combo:
 check("renvoi du même score = même réponse, sans doublon", r.status === 200 && r.data.improved && r.data.eventImproved && r.data.best === 100, r);
 r = await call("POST", `/api/runs/${runId}`, { token, body: { score: 120 } });
 check("autre score sur la même partie refusé", r.status === 409, r);
+{
+  const theirs = await startRun(await joinAs("Autre" + hex(4)));
+  r = await call("POST", `/api/runs/${theirs}`, { token, body: { score: 50 } });
+  check("score envoyé sur la partie d'un autre joueur refusé", r.status === 404, r);
+}
 
 r = await call("GET", "/api/board", { token });
 check("classements général et soirée : le joueur y est", r.status === 200 && r.data.me.best === 100 && r.data.me.eventBest === 100 && r.data.me.rank >= 1 && r.data.me.eventRank >= 1 && r.data.top.some((x) => x.me) && r.data.eventTop.some((x) => x.me), r.data.me);
@@ -131,6 +149,10 @@ check("classements général et soirée : le joueur y est", r.status === 200 && 
   r = await call("PUT", "/api/me/look", { token: fresh, body: { look: { ...look, aura: "ring", own: { aura: 2 } } } });
   const id = (await call("GET", "/api/board", { token: fresh })).data.me.id, shown = (await call("GET", `/api/players/${id}`)).data.look;
   check("aura gardée dans la tenue et montrée sur la fiche", r.status === 200 && !!shown && shown.aura === "ring" && shown.own.aura === 2, shown);
+  const odd = (await call("POST", "/api/join", { body: { pseudo: "Odd" + hex(4), clientId: hex(32) } })).data.token;
+  r = await call("PUT", "/api/me/look", { token: odd, body: { look: { spread: "constructor", head: "ring", side: "bat", bread: "hitbox", aura: "constructor", ach: 0, own: {} } } });
+  const oddId = (await call("GET", "/api/board", { token: odd })).data.me.id, worn = (await call("GET", `/api/players/${oddId}`)).data.look;
+  check("tenue : seuls les objets qui existent, dans le bon emplacement", r.status === 200 && worn.spread === null && worn.head === null && worn.aura === null && worn.side === "bat" && worn.bread === "hitbox", worn);
 }
 
 {
@@ -189,6 +211,7 @@ r = await call("GET", "/api/admin/players", { key: KEY });
 const row = r.data.players.find((p) => p.pseudo === pseudo);
 check("admin : nombre de parties terminées", row && row.runs === 1 && row.suspect === null, row);
 
+const beforeBan = await startRun(token);
 let limited = 0;
 for (let i = 0; i < 25; i++) if ((await call("POST", "/api/runs", { token })).status === 429) limited++;
 check("trop de parties d'affilée freinées (429)", limited > 0, { limited });
@@ -198,9 +221,18 @@ r = await call("GET", "/api/board", { token });
 check("joueur retiré absent des deux classements", r.data.me.rank === null && r.data.me.eventRank === null && r.data.me.banned && !r.data.top.some((x) => x.me) && !r.data.eventTop.some((x) => x.me), r.data.me);
 r = await call("GET", `/api/players/${row.id}`);
 check("joueur retiré sans fiche", r.status === 404, r);
+r = await call("GET", "/api/feed");
+check("joueur retiré absent du fil de l'écran géant", r.status === 200 && Array.isArray(r.data.items) && !r.data.items.some((i) => i.pseudo === pseudo), r.data);
+r = await call("POST", "/api/runs", { token });
+check("joueur retiré : nouvelle partie refusée (403)", r.status === 403, r);
+r = await call("POST", `/api/runs/${beforeBan}`, { token, body: { score: 500 } });
+check("joueur retiré : partie lancée avant le retrait, finie après, sans effet", r.status === 200 && r.data.best === 100 && !r.data.improved && !r.data.eventImproved && r.data.rank === null && r.data.eventRank === null, r.data);
 
 r = await call("GET", "/api/admin/players?scope=general", { key: KEY });
 check("admin : classement général disponible", r.status === 200 && r.data.scope === "general" && r.data.players.some((p) => p.pseudo === pseudo), r.data.scope);
+await call("POST", `/api/admin/players/${row.id}/ban`, { key: KEY, body: { banned: false } });
+r = await call("GET", "/api/board", { token });
+check("joueur remis : de retour dans les classements avec son record", !r.data.me.banned && r.data.me.best === 100 && r.data.me.rank >= 1 && r.data.me.eventRank >= 1 && r.data.top.some((x) => x.me), r.data.me);
 
 const pcPseudo = "PC" + hex(6);
 r = await call("POST", "/api/join", { body: { pseudo: pcPseudo, clientId: hex(32) } });
@@ -227,7 +259,6 @@ check("admin : classement PC disponible", r.status === 200 && r.data.scope === "
     const id = (await call("POST", "/api/runs", { token: tok })).data.runId;
     return call("POST", `/api/runs/${id}`, { token: tok, body: { score, device } });
   };
-  const joinAs = async (name) => (await call("POST", "/api/join", { body: { pseudo: name, clientId: hex(32) } })).data.token;
   const nameA = "Fus" + hex(5), nameB = "Ion" + hex(5), look = { spread: "butter", ach: 0, own: {} };
   const [tokA, tokB] = [await joinAs(nameA), await joinAs(nameB)];
   await play(tokA, 100, "mobile");
@@ -280,6 +311,35 @@ r = await call("POST", "/api/errors", { body: errorReport([{ ...boom, kind: "inv
 check("type d'erreur inconnu refusé", r.status === 400, r);
 r = await call("POST", "/api/errors", { body: errorReport([{ ...boom, stack: "x".repeat(70000) }]) });
 check("rapport d'erreurs trop gros refusé", r.status === 413, r);
+{
+  const noisy = hex(16), five = (tag) => ["a", "b", "c", "d", "e"].map((x) => ({ ...boom, message: `TypeError: ${tag} ${x}` }));
+  for (const tag of ["bavard un", "bavard deux"]) await call("POST", "/api/errors", { body: { ...errorReport(five(tag)), session: noisy } });
+  r = await call("POST", "/api/errors", { body: { ...errorReport(five("bavard trois")), session: noisy } });
+  check("un téléphone qui envoie trop d'erreurs est freiné", r.status === 429, r);
+  r = await call("POST", "/api/errors", { body: errorReport([{ ...boom, message: "TypeError: autre téléphone" }]) });
+  check("les autres téléphones envoient encore leurs erreurs", r.status === 200, r);
+}
+
+{
+  const tokF = await joinAs("Fin" + hex(5)), late = await startRun(tokF);
+  await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: Date.now() - 3 * 3600 * 1000, closesAt: Date.now() - 6 * 60 * 1000 } });
+  r = await call("POST", `/api/runs/${late}`, { token: tokF, body: { score: 40 } });
+  check("partie finie plus de 5 min après la fin de la soirée : hors soirée", r.status === 200 && r.data.best === 40 && r.data.eventBest === null && !r.data.eventImproved, r.data);
+  r = await call("POST", "/api/admin/events", { key: KEY, body: { name: "Soirée rattrapage", opensAt: Date.now() - 1000, closesAt: Date.now() + 3600 * 1000 } });
+  const inTime = await startRun(tokF);
+  await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: Date.now() - 3600 * 1000, closesAt: Date.now() - 60 * 1000 } });
+  r = await call("POST", `/api/runs/${inTime}`, { token: tokF, body: { score: 30 } });
+  check("partie finie moins de 5 min après la fin : compte pour la soirée", r.status === 200 && r.data.eventBest === 30 && r.data.eventImproved, r.data);
+}
+
+{
+  await wait(Math.max(0, 47000 - (Date.now() - slowSince)));
+  await call("POST", `/api/runs/${slowRun}`, { token: slowTok, body: { score: 10 } });
+  r = await call("POST", `/api/runs/${highRun}`, { token: highTok, body: { score: 6000 } });
+  const flags = Object.fromEntries((await call("GET", "/api/admin/players?scope=general", { key: KEY })).data.players.map((p) => [p.pseudo, p.suspect]));
+  check("admin : partie mise en pause signalée", flags[slowName] === "slow", flags[slowName]);
+  check("admin : 1er très loin devant le 2e signalé", r.status === 200 && flags[highName] === "high", [r.status, flags[highName]]);
+}
 
 console.log(results.join("\n"));
 console.log(results.filter((l) => l.startsWith("FAIL")).length + " échec(s) sur " + results.length);

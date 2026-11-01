@@ -6,6 +6,7 @@ const SHELL = [
   "/js/app/api.js", "/js/app/audio.js", "/js/app/catalog.js", "/js/app/input.js", "/js/app/sprites.js", "/js/app/scene.js", "/js/app/planets.js", "/js/app/screens.js", "/js/app/install.js", "/js/app/settings.js", "/js/app/party.js", "/js/app/achievements.js", "/js/app/toppings.js", "/js/app/gear.js", "/js/app/profile.js", "/js/app/account.js", "/js/app/guide.js", "/js/app/diag.js", "/js/app/loader.js", "/js/app/main.js"
 ];
 const FONTS = ["https://fonts.googleapis.com", "https://fonts.gstatic.com"];
+const NET_MS = 3000;
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -41,15 +42,17 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/music/") || url.pathname.startsWith("/admin")) return;
 
-  event.respondWith(
-    fetch(req, { cache: "no-cache" })
-      .then((res) => {
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(req, copy));
-        }
-        return res;
-      })
-      .catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || (req.mode === "navigate" ? caches.match("/") : Response.error())))
-  );
+  let settled = false;
+  const net = fetch(req, { cache: "no-cache" }).then((res) => {
+    settled = true;
+    if (res.ok) {
+      const copy = res.clone();
+      caches.open(CACHE).then((cache) => cache.put(req, copy));
+    }
+    return res;
+  });
+  const saved = () => caches.match(req, { ignoreSearch: true });
+  const slow = new Promise((resolve) => setTimeout(resolve, NET_MS)).then(() => (settled ? net : saved().then((hit) => hit || net)));
+  event.waitUntil(net.catch(() => {}));
+  event.respondWith(Promise.race([net, slow]).catch(() => saved().then((hit) => hit || (req.mode === "navigate" ? caches.match("/") : Response.error()))));
 });

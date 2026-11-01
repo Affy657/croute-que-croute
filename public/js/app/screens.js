@@ -129,7 +129,7 @@ export function renderMenu() {
   if (!b && !net.online) info = "Hors ligne";
   else if (me && me.banned) info = "Retiré du classement";
   else if (b && isOpen() && onPc()) info = "Sur PC : hors classement de la soirée";
-  else if (b && !isOpen() && recent && b.eventTop[0]) info = "Bravo " + b.eventTop[0].pseudo + " !";
+  else if (b && !isOpen() && recent && serverNow() >= recent.finalAt && b.eventTop[0]) info = "Bravo " + b.eventTop[0].pseudo + " !";
   setText(ui.menuInfo, info);
   ui.menuAch.textContent = achLabel();
   setCountdown(ui.menuCountdown);
