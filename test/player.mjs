@@ -156,6 +156,24 @@ check("classements général et soirée : le joueur y est", r.status === 200 && 
   check("plus aucun autre appareil", r.status === 200 && r.data.removed === 0, r.data);
 }
 
+{
+  const raw = (method, path, headers) => fetch(BASE + path, { method, headers: { "x-app-version": VERSION, ...headers } });
+  let res = await raw("GET", "/api/board", { authorization: "Bearer " + token });
+  const set = res.headers.get("set-cookie") || "";
+  check("clé du joueur gardée dans un cookie protégé", (set.match(/cv_cle=([a-f0-9]{48})/) || [])[1] === token && /HttpOnly/i.test(set) && /SameSite=Strict/i.test(set) && /Path=\/api/i.test(set), set);
+  res = await raw("GET", "/api/board", { authorization: "Bearer " + token, cookie: "cv_cle=" + token });
+  check("cookie déjà à jour : pas renvoyé", !res.headers.get("set-cookie"), res.headers.get("set-cookie"));
+  res = await raw("POST", "/api/resume", { cookie: "autre=1; cv_cle=" + token });
+  let body = await res.json();
+  check("appli installée sans clé : compte repris grâce au cookie", res.status === 200 && body.token === token, body);
+  res = await raw("POST", "/api/resume", { cookie: "cv_cle=" + first });
+  body = await res.json();
+  check("cookie d'un appareil sorti : rien repris, cookie effacé", res.status === 200 && body.token === null && /Max-Age=0/i.test(res.headers.get("set-cookie") || ""), body);
+  res = await raw("POST", "/api/resume", {});
+  body = await res.json();
+  check("sans cookie : rien repris", res.status === 200 && body.token === null, body);
+}
+
 r = await call("GET", "/api/admin/players", { key: KEY });
 const row = r.data.players.find((p) => p.pseudo === pseudo);
 check("admin : nombre de parties terminées", row && row.runs === 1 && row.suspect === null, row);

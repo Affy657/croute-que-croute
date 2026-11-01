@@ -1,4 +1,4 @@
-import { json, fail, readJson, clientIp, outdated, updateRequired, tooFast, allowed } from "../http";
+import { json, fail, readJson, bearer, clientIp, outdated, updateRequired, tooFast, allowed, keyCookie, withKey } from "../http";
 import { randomToken, sha256 } from "../security";
 import { cleanPseudo, pseudoKey, cleanClientId, cleanLook, cleanProgress, mergeProgress, type Progress } from "../validate";
 import {
@@ -54,7 +54,7 @@ export async function board({ req, env }: Ctx) {
     generalCount(env, pc, false, "pc"),
     me && !me.banned ? generalRank(env, pc, me.id, me.pc_best, me.pc_best_at, "pc") : null,
   ]);
-  return json({
+  const res = json({
     now,
     version: env.APP_VERSION,
     event: view.open ? eventInfo(view.open, "open") : eventInfo(view.recent, "closed"),
@@ -83,6 +83,16 @@ export async function board({ req, env }: Ctx) {
         }
       : null,
   });
+  const token = bearer(req);
+  return me && keyCookie(req) !== token ? withKey(res, token) : res;
+}
+
+export async function resume({ req, env }: Ctx) {
+  const token = keyCookie(req);
+  if (!/^[a-f0-9]{48}$/.test(token)) return json({ token: null });
+  if (!(await allowed(env.JOIN_IP_LIMIT, "resume:" + clientIp(req)))) return tooFast();
+  const known = await env.DB.prepare("SELECT 1 FROM sessions WHERE token_hash = ?").bind(await sha256(token)).first();
+  return known ? json({ token }) : withKey(json({ token: null }), null);
 }
 
 interface FeedRow {

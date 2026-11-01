@@ -28,6 +28,18 @@ export const updateRequired = () => fail(426, "Nouvelle version du jeu : recharg
 
 export const tooFast = () => fail(429, "Doucement : réessaie dans quelques secondes.");
 
+const KEY_COOKIE = "cv_cle", KEY_COOKIE_S = 400 * 24 * 3600;
+
+export function keyCookie(req: Request) {
+  const pair = (req.headers.get("cookie") ?? "").split(";").map((p) => p.trim()).find((p) => p.startsWith(KEY_COOKIE + "="));
+  return pair ? pair.slice(KEY_COOKIE.length + 1) : "";
+}
+
+export function withKey(res: Response, token: string | null) {
+  res.headers.append("set-cookie", `${KEY_COOKIE}=${token ?? ""}; Max-Age=${token ? KEY_COOKIE_S : 0}; Path=/api; Secure; HttpOnly; SameSite=Strict`);
+  return res;
+}
+
 export async function allowed(limiter: RateLimit | undefined, key: string) {
   if (!limiter) return true;
   try {

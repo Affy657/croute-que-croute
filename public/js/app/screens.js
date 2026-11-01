@@ -34,7 +34,8 @@ export const ui = {
   renameCard: $("renameCard"), renameForm: $("renameForm"), newPseudo: $("newPseudo"), renameNote: $("renameNote"),
   picker: $("picker"), pickToast: $("pickToast"), pickLabel: $("pickLabel"), pickPrev: $("pickPrev"), pickNext: $("pickNext"), pickName: $("pickName"), pickCount: $("pickCount"), pickSkins: $("pickSkins"), pickDot: $("pickDot"),
   gearRows: $("gearRows"), profile: $("profile"), profileName: $("profileName"), profileBack: $("profileBack"), testCard: $("testCard"), godTabs: $("godTabs"), godPill: $("godPill"),
-  installPop: $("installPop"), installPopText: $("installPopText"), installYes: $("installYes"), installLater: $("installLater")
+  installPop: $("installPop"), installPopText: $("installPopText"), installYes: $("installYes"), installLater: $("installLater"),
+  versionNote: $("versionNote")
 };
 
 const PAGES = ["menu", "over", "board", "hud", "info", "settings", "qr", "link", "ach", "profile"];
