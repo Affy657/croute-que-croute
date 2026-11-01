@@ -304,7 +304,7 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 | 0.41 | 01/11 | page Succès avec progression |  |
 | 0.42 | 01/11 | remontée des erreurs des joueurs |  |
 | 0.43 | 01/11 | rouleau en aller-retour, enchaînements rééquilibrés, même trou pour tous les murs | 1 |
-| 0.44 | à venir | numéros de version, compte gardé dans l'appli installée, plus de mise à jour en partie, rouleaux espacés et jamais plus de 2, hachoir jamais deux fois d'affilée, mur par un côté après une pluie | |
+| 0.44 | 01/11 | numéros de version, compte gardé dans l'appli installée, plus de mise à jour en partie, rouleaux espacés et jamais plus de 2, hachoir jamais deux fois d'affilée, mur par un côté après une pluie | |
 
 ## Erreurs des joueurs
 
@@ -401,7 +401,6 @@ Après :
 Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du compte multi-appareils finis.
 
 - Revoir le design du tableau de bord admin.
-- Pages Infos, reste de la critique du 31/10/2026 : boutons des Crédits pleine largeur ; une seule sortie (croix ou « Retour ») pour tous les écrans de ce type ; aperçus des attaques figés quand le téléphone demande moins d'animations.
 
 ### Ajouté par Adrien le 01/11/2026
 
@@ -418,15 +417,7 @@ Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du c
 - Vibration au frôlé.
 - Dernier quart d'heure : 15 min avant la fermeture, l'accueil et l'écran géant passent en rouge, compte à rebours en grand.
 - Compteur de la salle sur l'écran géant : temps cumulé de toutes les parties de la soirée. Une ligne écrite en plus par partie.
-- Nouvelles attaques vers 65 s, pour que les meilleurs découvrent encore quelque chose (la dernière arrive à 54 s) : cuillère boomerang qui traverse puis revient, pince de deux couteaux qui se referment, spirale de fourchettes.
-- Même partie pour tous : une seule suite d'attaques par soirée, identique pour tout le monde. La plus tryhard, mais elle change l'esprit du classement.
-- Une phase après 60 s (« mode sérieux »), ou des moments calmes et des pics calés sur les drops du morceau.
-- Suites d'attaques calées sur la musique, ou tirées parmi des enchaînements déjà écrits qui reviennent : analyser d'abord le morceau pour caler au moins les montées et les drops.
-- Partage du score en story Insta.
-- Montrer les fonctionnalités petit à petit, pour ne pas surcharger les premières parties. Le bouton « Skins », lui, est visible dès le départ depuis l'ajout de la tartine nature (31/10/2026). À étendre au reste (succès, classement de soirée, infos).
-- À brainstormer : un score de complétion quelque part, qui dit à quel point on a fait le jeu à 100 % ou non.
 - Connexion avec Google, en plus du compte multi-appareils : gratuit (projet Google Cloud à créer), mais demande une page de confidentialité (l'e-mail du joueur est une donnée perso) et d'autoriser le script de Google dans la politique de sécurité du site.
-- Planètes mises de côté le 31/10/2026 : planète qui dort (bonnet de nuit de la tartine, bulle au nez, « Z ») et tartine astronaute qui dérive en faisant coucou. Leur code est dans le commit 0e9166b. Boule de Noël accrochée à un fil qui ne mène nulle part, sous les flocons : son code est dans le commit 35a699d. Le mur de son et l'île au trésor ont été retirés, leur rendu n'était pas assez bon.
 - Pas retenues pour l'instant : thème de soirée choisi par l'admin, tartine du designer ou redessinée (Adrien garde la tartine actuelle, pistes dans `maquettes/`), étoiles au rythme de la musique, son d'annonce par attaque, couche de tension, podium de fin de soirée sur l'écran géant.
 
 ## Bon à savoir
