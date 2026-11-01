@@ -34,13 +34,14 @@ export function cleanLinkCode(raw: unknown) {
   return code.length === LINK_LENGTH && [...code].every((c) => LINK_CHARS.includes(c)) ? code : null;
 }
 
-const LOOK_SLOTS = ["head", "side", "bread", "aura", "spread"] as const;
+export const LOOK_SLOTS = ["head", "side", "bread", "aura", "spread"] as const;
 const GEAR_SLOT = new Map(Object.entries(GEAR).map(([kind, g]) => [kind, g.slot]));
 const lookKind = (slot: string, kind: unknown) =>
   typeof kind === "string" && (slot === "spread" ? Object.hasOwn(SPREADS, kind) : GEAR_SLOT.get(kind) === slot) ? kind : null;
 const LOOK_MAX = 99;
 
 const lookCount = (raw: unknown) => (typeof raw === "number" && Number.isInteger(raw) && raw >= 0 && raw <= LOOK_MAX ? raw : 0);
+const lookAt = (raw: unknown) => (typeof raw === "number" && Number.isInteger(raw) && raw >= 0 && raw < PROGRESS_AT_MAX ? raw : 0);
 
 export function cleanLook(raw: unknown): string | null {
   if (!raw || typeof raw !== "object") return null;
@@ -51,6 +52,7 @@ export function cleanLook(raw: unknown): string | null {
     ...Object.fromEntries(kinds),
     ach: lookCount(r.ach),
     own: Object.fromEntries(LOOK_SLOTS.map((s) => [s, lookCount(own[s])])),
+    at: lookAt(r.at),
   });
 }
 

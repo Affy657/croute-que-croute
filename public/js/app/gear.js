@@ -31,6 +31,10 @@ export function chooseGear(slot, kind) {
   for (const fn of listeners) fn(slot, kind);
 }
 
+export function setOutfit(look) {
+  for (const slot of Object.keys(KEY)) store.set(KEY[slot], Object.hasOwn(GEAR, look[slot]) && GEAR[look[slot]].slot === slot ? look[slot] : null);
+}
+
 export function stepGear(slot, dir) {
   const list = [null, ...gearOwned(slot)], i = list.indexOf(chosenGear(slot));
   chooseGear(slot, list[(i + dir + list.length) % list.length]);

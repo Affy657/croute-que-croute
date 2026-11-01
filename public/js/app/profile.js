@@ -1,9 +1,10 @@
 import { fmtCs, ord } from "../shared/format.js";
 import { SLOTS, SPREADS, GEAR } from "../shared/palette.js";
-import { call, canCompete, net } from "./api.js";
+import { store, KEYS } from "../shared/store.js";
+import { call, canCompete, net, on, serverNow } from "./api.js";
 import { drawToast } from "./sprites.js";
-import { outfit, gearOwned, gearTotal } from "./gear.js";
-import { chosen, owned, toppingList, addToppings } from "./toppings.js";
+import { outfit, gearOwned, gearTotal, setOutfit } from "./gear.js";
+import { chosen, owned, toppingList, addToppings, setTopping } from "./toppings.js";
 import { progress, forSync, absorb } from "./achievements.js";
 
 const SEND_MS = 1500, TOAST_SCALE = 1.8, TOAST_Y = 0.53, BAR_MIN = 6, PODIUM = 3, BLANK = " ", NONE = "-";
@@ -14,10 +15,28 @@ const ui = { name: $("profileName"), since: $("profileSince"), last: $("profileL
 const ctx = ui.canvas.getContext("2d");
 const toast = { x: 0, y: 0, tilt: 0, thrust: 0.35, scars: [], spread: "butter", head: null, side: null, bread: null, aura: null };
 let shown = null, sent = null, timer = null, ready = false;
+const adopted = [];
+
+const outfitAt = () => {
+  const raw = store.get(KEYS.outfitAt);
+  return raw === null ? -1 : Number(raw) || 0;
+};
+
+export const stampOutfit = () => store.set(KEYS.outfitAt, Math.round(serverNow()));
+export const onAdopt = (fn) => adopted.push(fn);
+
+export function adoptLook(look) {
+  const at = look && Number.isInteger(look.at) ? look.at : 0;
+  if (!look || at <= outfitAt()) return;
+  setOutfit(look);
+  setTopping(look.spread);
+  store.set(KEYS.outfitAt, at);
+  for (const fn of adopted) fn();
+}
 
 export function myLook() {
   const own = Object.fromEntries(Object.keys(SLOTS).map((slot) => [slot, gearOwned(slot).length]));
-  return { ...outfit(), spread: chosen(), ach: progress().got, own: { ...own, spread: owned().length } };
+  return { ...outfit(), spread: chosen(), ach: progress().got, own: { ...own, spread: owned().length }, at: Math.max(0, outfitAt()) };
 }
 
 export function shareLook() {
@@ -31,6 +50,7 @@ export function shareLook() {
       if (!r || !r.progress) return;
       absorb(r.progress);
       addToppings(r.progress.toppings);
+      adoptLook(r.look);
     }).catch(() => { if (sent === key) sent = null; });
   }, SEND_MS);
 }
@@ -39,6 +59,11 @@ export function resync() {
   sent = null;
   shareLook();
 }
+
+on("board", () => {
+  const me = net.board && net.board.me;
+  if (me) adoptLook(me.look);
+});
 
 function el(tag, cls, text) {
   const node = document.createElement(tag);

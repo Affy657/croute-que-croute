@@ -38,8 +38,10 @@ export function addToppings(list) {
   const mine = load(), more = (Array.isArray(list) ? list : []).filter((k) => SPREADS[k] && !SPREADS[k].free && !mine.includes(k));
   if (!more.length) return;
   store.set(KEYS.toppings, JSON.stringify([...new Set([...mine, ...more])]));
-  for (const fn of listeners) fn(chosen());
+  for (const fn of listeners) fn(chosen(), true);
 }
+
+export const setTopping = (kind) => store.set(KEYS.topping, Object.hasOwn(SPREADS, kind) ? kind : null);
 
 export function chooseTopping(kind) {
   if (!unlocked(kind)) return;
