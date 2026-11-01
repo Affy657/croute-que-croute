@@ -2,7 +2,7 @@ import { json, fail, allowed, tooFast } from "../http";
 import { sha256 } from "../security";
 import type { Ctx } from "../router";
 
-const BODY_MAX = 64 * 1024, BATCH = 5, TRAIL_LINES = 30, COUNT_MAX = 100000, HOUR_ROWS = 60;
+const BODY_MAX = 64 * 1024, BATCH = 5, TRAIL_LINES = 30, COUNT_MAX = 100000, HOUR_ROWS = 60, SESSION_ROWS = 10;
 const KEEP_MS = 14 * 24 * 3600 * 1000, KEEP_ROWS = 2000, GROUPS = 50, RECENT_ROWS = 200;
 const HOUR_MS = 3600 * 1000, DAY_MS = 24 * HOUR_MS;
 const KINDS = ["erreur", "promesse", "fichier", "csp", "blocage"];
@@ -75,14 +75,16 @@ export async function collect({ req, env }: Ctx) {
   if (!found.length) return fail(400, "Rapport invalide.");
   if (!(await allowed(env.ERROR_LIMIT, "toutes"))) return tooFast();
   const now = Date.now();
-  const used = await env.DB.prepare(`SELECT COUNT(*) AS n FROM (SELECT 1 FROM client_errors WHERE created_at > ? LIMIT ${HOUR_ROWS})`)
-    .bind(now - HOUR_MS)
-    .first<{ n: number }>();
-  const room = HOUR_ROWS - (used?.n ?? 0);
+  const session = /^[a-f0-9]{16}$/.test(String(body.session)) ? String(body.session) : "";
+  const used = await env.DB.prepare(
+    `SELECT COUNT(*) AS n, SUM(session = ?2) AS mine FROM (SELECT session FROM client_errors WHERE created_at > ?1 LIMIT ${HOUR_ROWS})`,
+  )
+    .bind(now - HOUR_MS, session)
+    .first<{ n: number; mine: number | null }>();
+  const room = Math.min(HOUR_ROWS - (used?.n ?? 0), SESSION_ROWS - (used?.mine ?? 0));
   if (room <= 0) return tooFast();
   const rows: ErrorRow[] = await Promise.all(found.slice(0, room).map(async (e) => ({ ...e, fingerprint: await fingerprint(e.kind, e.message, e.source) })));
   const platform = PLATFORMS.includes(body.platform as string) ? (body.platform as string) : "PC";
-  const session = /^[a-f0-9]{16}$/.test(String(body.session)) ? String(body.session) : "";
   if (env.APP_VERSION === "dev") for (const e of rows) console.log(`[erreur] ${e.kind} x${e.count} ${e.message} ${e.source}`);
   await env.DB.batch([
     env.DB.prepare("DELETE FROM client_errors WHERE created_at < ?").bind(now - KEEP_MS),

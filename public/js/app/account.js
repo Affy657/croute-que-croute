@@ -112,7 +112,11 @@ async function checkMerge(code) {
   ui.mergeForm.hidden = false;
   ui.mergeInput.value = code;
   try {
-    await linkWith(code);
+    const r = await linkWith(code);
+    ui.mergeForm.hidden = true;
+    ui.mergeInput.value = "";
+    renderSettings();
+    resetMerge(`Cet appareil n'était plus connecté à son ancien compte : tu joues maintenant en ${quoted(r.pseudo)}.`);
   } catch (e) {
     const m = e.data && e.data.merge;
     if (!m) return setText(ui.mergeNote, e.status ? e.message : OFFLINE);

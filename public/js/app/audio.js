@@ -30,14 +30,14 @@ export const prefs = {
   musicLevel: level(KEYS.musicVolume), sfxLevel: level(KEYS.sfxVolume)
 };
 const listeners = [], buffers = {}, lastPlayed = {};
-let ctx = null, master = null, music = null, song = null, play = null, stale = false;
+let ctx = null, master = null, music = null, song = null, songLoad = null, songFailed = false, play = null, stale = false;
 let running = false, hidden = false, runTime = 0, synced = -Infinity, previewTimer = null, watch = null, tracer = null, tailUntil = 0;
 
 const note = (...parts) => tracer && tracer(parts.join(" "));
 export const traceAudio = (fn) => { tracer = fn; };
 export const audioParts = () => ({ ctx, musicGain: music, song: !!song, playing: !!play, preview: !!(play && play.preview), running, hidden, stale, tail: performance.now() < tailUntil, heard: play ? heard(play) : null });
 
-export const musicAvailable = () => !!song;
+export const musicAvailable = () => !!song || (!!ctx && !songFailed);
 export const onAudioChange = (fn) => listeners.push(fn);
 const changed = () => listeners.forEach((fn) => fn());
 
@@ -121,9 +121,7 @@ function stitch(full) {
   return { buffer: out, loopStart: (length - (last[1] - last[0])) / rate, loopEnd: length / rate };
 }
 
-export async function initAudio() {
-  ensureContext();
-  if (!ctx) return;
+async function fetchSong() {
   for (const url of MUSIC_FILES) {
     try {
       const res = await fetch(url);
@@ -135,8 +133,21 @@ export async function initAudio() {
       note("musique échec", url, e.message);
     }
   }
+  songFailed = !song;
   changed();
   reconcile();
+}
+
+function loadSong() {
+  if (ctx && !songLoad) songLoad = fetchSong();
+  return songLoad;
+}
+
+export async function initAudio() {
+  ensureContext();
+  if (!ctx) return;
+  if (prefs.music) await loadSong();
+  else changed();
 }
 
 const songAt = (t) => (t < song.loopStart ? t : song.loopStart + ((t - song.loopStart) % (song.loopEnd - song.loopStart)));
@@ -288,6 +299,7 @@ export function toggleMusic() {
   prefs.music = !prefs.music;
   note("bouton musique", prefs.music ? "allumé" : "coupé");
   store.set(KEYS.musicOff, prefs.music ? null : "1");
+  if (prefs.music) loadSong();
   applyLevels();
   reconcile();
   changed();

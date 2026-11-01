@@ -82,7 +82,7 @@ function tick() {
   const el = $("countdown"), v = view(), t = now(), next = board.next;
   if (v.ev && v.ev.status === "open") setCountdown("Fin dans ", v.ev.closesAt - t);
   else if (v.ev && t < v.ev.finalAt) setCountdown("Résultats dans ", v.ev.finalAt - t);
-  else if (next && next.opensAt - t < SOON_MS) setCountdown("Début dans ", next.opensAt - t);
+  else if (next && next.opensAt - t < SOON_MS) setCountdown(v.ev ? "Prochaine soirée dans " : "Début dans ", next.opensAt - t);
   else if (next) {
     el.textContent = "Prochaine soirée " + when(next.opensAt);
     el.hidden = false;

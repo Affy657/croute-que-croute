@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 
-const BASE = process.argv[2] || "http://127.0.0.1:8787";
+const BASE = process.argv[2] || "";
 if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(BASE)) {
-  console.error("Les tests d'API ne tournent qu'en local.");
+  console.error("Les tests d'API ne tournent qu'en local, sur une base à part : npm run test:api.");
   process.exit(1);
 }
 const KEY = readFileSync(".dev.vars", "utf8").match(/ADMIN_KEY=(\w+)/)[1];
@@ -96,6 +96,15 @@ check("propriétaire retire Esteban", r.status === 200, r);
 r = await call("GET", "/api/admin/me", { token: admin });
 check("le téléphone d'Esteban est déconnecté", r.status === 401, r);
 
+r = await call("POST", "/api/admin/invites", { body: { name: "Lou", role: "owner" }, token: owner });
+const lou = (await call("POST", "/api/admin/accept", { body: { invite: new URL(r.data.url).hash.split("=")[1] } })).data.token;
+r = await call("POST", "/api/admin/invites", { body: { name: "Zoé", role: "admin" }, token: lou });
+const fromLou = new URL(r.data.url).hash.split("=")[1];
+const louId = (await call("GET", "/api/admin/team", { token: owner })).data.team.filter((a) => a.name === "Lou").pop().id;
+await call("POST", `/api/admin/team/${louId}/revoke`, { token: owner });
+r = await call("POST", "/api/admin/accept", { body: { invite: fromLou } });
+check("propriétaire retiré : son invitation pas encore utilisée a expiré (410)", r.status === 410, r);
+
 r = await call("GET", "/api/admin/players", { key: KEY });
 check("la clé admin marche toujours pour les scripts", r.status === 200, r);
 
@@ -105,6 +114,14 @@ check("jeton inconnu = 401", r.status === 401, r);
 r = await call("POST", "/api/admin/logout", { token: owner });
 r = await call("GET", "/api/admin/me", { token: owner });
 check("déconnexion du propriétaire", r.status === 401, r);
+
+r = await call("GET", "/api/admin/me", { key: "mauvaise-cle" });
+check("mauvaise clé admin = 401", r.status === 401, r);
+let slowed = false;
+for (let i = 0; i < 40 && !slowed; i++) slowed = (await call("GET", "/api/admin/me", { key: "mauvaise-cle" })).status === 429;
+check("essais de clé admin en rafale freinés (429)", slowed);
+r = await call("GET", "/api/admin/players", { key: KEY });
+check("la bonne clé passe toujours, même freinée", r.status === 200, r);
 
 console.log(results.join("\n"));
 console.log(results.filter((l) => l.startsWith("FAIL")).length + " échec(s) sur " + results.length);
