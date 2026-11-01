@@ -9,7 +9,7 @@ export const FAMILIES = [["time", "Survie"], ["play", "Adresse"], ["collect", "C
 const TIMES = [[10, "t10"], [30, "t30"], [60, "t60"], [90, "t90"], [120, "t120"], [150, "t150"]];
 const NEARS = [[20, "near20"]];
 const RUNS = [[10, "runs10"], [50, "runs50"], [100, "runs100"]];
-const SIX_SEVEN_S = 67, STILL_S = 3, COMBO = 5, COMBO_MAX = 10, CAREFUL_S = 60, NIGHT_UNTIL_H = 3, EXPRESS_CS = 200, TOP = 10, FRIDGE = 4;
+const SIX_SEVEN_S = 67, STILL_S = 3, COMBO = 5, COMBO_MAX = 10, CAREFUL_S = 60, NIGHT_UNTIL_H = 3, EXPRESS_CS = 200, TOP = 10, FRIDGE = 4, WIN_MIN = 10;
 const COMBOS = [[COMBO, "combo5"], [COMBO_MAX, "combo10"]];
 const LIVE = ATTACKS.filter((a) => !a.lab);
 const WEAPONS = Object.keys(PROJECTILES).filter((k) => !PROJECTILES[k].lab);
@@ -39,7 +39,7 @@ export const ACHIEVEMENTS = [
   { id: "runs100", family: "loyal", name: "Accro à la croûte", desc: "Jouer 100 parties", gear: "crustless" },
   { id: "event1", family: "event", name: "Première soirée", desc: "Jouer pendant une soirée Space Tartinade" },
   { id: "top10", family: "event", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée", gear: "neon" },
-  { id: "eventWin", family: "event", name: "Tartine d'or", desc: "Finir 1er d'une soirée", gear: "crown" },
+  { id: "eventWin", family: "event", name: "Tartine d'or", desc: "Être 1er d'un classement d'au moins " + WIN_MIN + " joueurs (soirée, Mobile ou PC)", gear: "crown" },
   { id: "pumpkin", family: "sky", name: "Des bonbons ou un sort", desc: "Toucher la planète citrouille sur l'accueil", hint: "une citrouille passe parfois.", gear: "witch" },
   { id: "ahoy", family: "sky", name: "À l'abordage", desc: "Toucher la planète pirate sur l'accueil", hint: "un navire croise parfois au large.", gear: "pirate" },
   { id: "hoho", family: "sky", name: "Ho ho ho", desc: "Toucher le père Noël sur l'accueil", hint: "un traîneau traverse parfois.", gear: "santa" },
@@ -249,8 +249,8 @@ export function onBoard(b) {
     });
   }
   for (const [s, id] of TIMES) if (top >= s * 100) unlock(id, true);
-  const final = b && b.event && b.event.status === "closed" && b.now >= (b.event.finalAt || b.event.closesAt);
-  if (final && b.me && !b.me.banned && b.me.eventRank === 1) unlock("eventWin");
+  const first = (rank, count) => rank === 1 && count >= WIN_MIN;
+  if (b && b.me && !b.me.banned && (first(b.me.eventRank, b.eventCount) || first(b.me.rank, b.count) || first(b.me.pcRank, b.pcCount))) unlock("eventWin");
   checkSky(true);
 }
 

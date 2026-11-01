@@ -13,7 +13,7 @@ const SLACK_MS = 15000;
 const MAX_SCORE = 15 * 60 * 100;
 const TOP = 50;
 const FEED_MS = 15 * 60 * 1000, FEED_SIZE = 6;
-const CARD_MS = 10000, CARD_RECORDS = 10, EXPRESS_CS = 200, SIX_SEVEN_CS = 6700, EVENT_TOP = 10, MAX_COMBO = 99;
+const CARD_MS = 10000, CARD_RECORDS = 10, EXPRESS_CS = 200, SIX_SEVEN_CS = 6700, EVENT_TOP = 10, WIN_MIN = 10, MAX_COMBO = 99;
 const PROGRESS_TRIES = 3;
 const BAD_PSEUDO = "Pseudo de 2 à 16 caractères : lettres, chiffres, espaces, tirets.";
 
@@ -268,14 +268,16 @@ async function loadCard(env: Env, id: string) {
       `SELECT ev.name, ev.closes_at AS closesAt, 1 + (
          SELECT COUNT(*) FROM entries o JOIN profiles q ON q.id = o.player_id
          WHERE o.event_id = e.event_id AND q.banned = 0 AND o.best > 0 AND (o.best > e.best OR (o.best = e.best AND o.best_at < e.best_at))
-       ) AS place
+       ) AS place, (
+         SELECT COUNT(*) FROM entries o JOIN profiles q ON q.id = o.player_id WHERE o.event_id = e.event_id AND q.banned = 0 AND o.best > 0
+       ) AS players
        FROM entries e JOIN events ev ON ev.id = e.event_id
        WHERE e.player_id = ? AND e.best > 0 ORDER BY place ASC, ev.opens_at DESC`,
     )
       .bind(p.id)
-      .all<{ name: string; closesAt: number; place: number }>(),
+      .all<{ name: string; closesAt: number; place: number; players: number }>(),
   ]);
-  const now = Date.now(), places = top.results;
+  const places = top.results;
   const records = (pc: boolean) =>
     steps.results.filter((r) => !!r.pc === pc && r.score <= (pc ? p.pc_best : p.best)).slice(-CARD_RECORDS).map((r) => ({ score: r.score, pc, at: r.at }));
   return {
@@ -299,7 +301,7 @@ async function loadCard(env: Env, id: string) {
       express: totals?.low != null && totals.low < EXPRESS_CS,
       sixSeven: !!totals?.six,
       top10: places.some((e) => e.place <= EVENT_TOP),
-      eventWin: places.some((e) => e.place === 1 && now > e.closesAt + GRACE_MS),
+      eventWin: [...places.map((e) => [e.place, e.players]), [rank, count], [pcRank, pcCount]].some(([place, n]) => place === 1 && (n ?? 0) >= WIN_MIN),
     },
   };
 }
