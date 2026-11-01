@@ -316,6 +316,8 @@ Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du c
 - Débloquer des musiques (à rapprocher des morceaux des collègues DJ, plus haut).
 - Refaire le skin tartine sans croûte (Accro à la croûte).
 - Ajouter des skins très stylés comme la Hitbox, qui fait envie à beaucoup de joueurs grâce à l'aura autour de la tartine.
+- Nouvel emplacement de tenue : une traînée derrière la tartine (miettes, paillettes) ou un effet de mort (la tartine éclate en confettis), à débloquer. À rapprocher des skins stylés, juste au-dessus.
+- Remonter au serveur les erreurs JavaScript des joueurs, comme les rapports de son, pour voir les bugs sur iPhone avant la soirée plutôt que pendant.
 
 ## Idées pour plus tard
 
