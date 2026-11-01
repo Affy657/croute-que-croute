@@ -51,7 +51,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
       state.next = Math.max(...state.warns.map((w) => w.at)) - t;
       return;
     }
-    const items = attack.make({ t, toast: state.toast, rng, rnd, pick });
+    const items = attack.make({ t, toast: state.toast, rng, rnd, pick, last: state.last });
     const ok = solveTimed(items);
     if (ok || !fair) {
       if (!ok) state.stats.impossible++;
