@@ -239,11 +239,11 @@ async function loadCard(env: Env, id: string) {
     generalCount(env, pc, false, "pc"),
     env.DB.prepare(
       `SELECT SUM(score) AS total, MAX(finished_at) AS last, MIN(score) AS low,
-         MAX(score > 0 AND score % 100 = 0) AS round, MAX(score >= ?2 AND score < ?2 + 100) AS six, MAX(combo) AS combo
+         MAX(score >= ?2 AND score < ?2 + 100) AS six, MAX(combo) AS combo
        FROM runs WHERE player_id = ?1 AND finished_at IS NOT NULL`,
     )
       .bind(p.id, SIX_SEVEN_CS)
-      .first<{ total: number | null; last: number | null; low: number | null; round: number | null; six: number | null; combo: number | null }>(),
+      .first<{ total: number | null; last: number | null; low: number | null; six: number | null; combo: number | null }>(),
     env.DB.prepare(
       `SELECT score, pc, at FROM (
          SELECT score, device IS 'pc' AS pc, finished_at AS at,
@@ -287,7 +287,6 @@ async function loadCard(env: Env, id: string) {
     look: p.look ? JSON.parse(p.look) : null,
     feats: {
       express: totals?.low != null && totals.low < EXPRESS_CS,
-      round: !!totals?.round,
       sixSeven: !!totals?.six,
       top10: places.some((e) => e.place <= EVENT_TOP),
       eventWin: places.some((e) => e.place === 1 && now > e.closesAt + GRACE_MS),

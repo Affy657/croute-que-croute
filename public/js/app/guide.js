@@ -80,7 +80,7 @@ function gear() {
     ...SHELVES.flatMap(([slot, title]) => [
       el("h3", null, title),
       gallery(kinds.filter((k) => GEAR[k].slot === slot).map((k) => {
-        const a = SOURCE[k], secret = a.family === "secret" && !has(a.id);
+        const a = SOURCE[k], secret = !!a.hint && !has(a.id);
         return item(toastArt({ [slot]: k }, slot === "side" ? 0.7 : 0.8), GEAR[k].name, secret ? "Succès secret" : a.desc, gearUnlocked(k));
       }))
     ])
@@ -135,7 +135,7 @@ function nights() {
     "Pendant une soirée Space Tartinade, un classement à part s'ouvre : c'est lui qui compte pour le lot.",
     "Les parties sur PC n'y comptent pas.",
     "Une partie commencée avant la fin compte encore 5 min après. Le gagnant est annoncé ensuite.",
-    "Succès à la clé : Dans le top (top 10), Tartine d'or (1er) et Fidèle du Space (3 soirées)."
+    "Succès à la clé : Première soirée, Dans le top (top 10), Tartine d'or (1er) et Fidèle du Space (3 soirées)."
   )));
 }
 
