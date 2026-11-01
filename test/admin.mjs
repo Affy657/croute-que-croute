@@ -75,6 +75,9 @@ r = await call("GET", "/api/admin/errors", { token: owner });
 check("erreur corrigée retirée de la liste", r.status === 200 && !r.data.groups.some((g) => g.id === (oopsGroup && oopsGroup.id)), r.data);
 r = await call("DELETE", `/api/admin/errors/${oopsGroup && oopsGroup.id}`, { token: owner });
 check("erreur déjà corrigée = 404", r.status === 404, r);
+let limited = false;
+for (let i = 0; i < 12 && !limited; i++) limited = (await report("c3c3c3c3c3c3c3c3", [{ ...oops, count: 1 }])).status === 429;
+check("envois d'erreurs limités par minute pour tout le monde", limited);
 
 r = await call("GET", "/api/admin/team", { token: owner });
 check("propriétaire voit l'équipe (2 personnes, lui marqué)", r.status === 200 && r.data.team.length >= 2 && r.data.team.some((a) => a.me && a.name === "Adrien"), r);

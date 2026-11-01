@@ -2,7 +2,7 @@ import { json, fail, allowed, tooFast } from "../http";
 import { sha256 } from "../security";
 import type { Ctx } from "../router";
 
-const BODY_MAX = 64 * 1024, BATCH = 5, TRAIL_LINES = 30, COUNT_MAX = 100000;
+const BODY_MAX = 64 * 1024, BATCH = 5, TRAIL_LINES = 30, COUNT_MAX = 100000, HOUR_ROWS = 60;
 const KEEP_MS = 14 * 24 * 3600 * 1000, KEEP_ROWS = 2000, GROUPS = 50, RECENT_ROWS = 200;
 const HOUR_MS = 3600 * 1000, DAY_MS = 24 * HOUR_MS;
 const KINDS = ["erreur", "promesse", "fichier", "csp", "blocage"];
@@ -42,7 +42,6 @@ interface LastRow {
   platform: string;
   standalone: number;
   ua: string;
-  created_at: number;
 }
 
 const text = (raw: unknown, max: number) => (typeof raw === "string" ? raw : "").slice(0, max);
@@ -63,6 +62,7 @@ function clean(raw: unknown): Omit<ErrorRow, "fingerprint"> | null {
 }
 
 export async function collect({ req, env }: Ctx) {
+  if (Number(req.headers.get("content-length")) > BODY_MAX) return fail(413, "Rapport trop gros.");
   const raw = await req.text();
   if (raw.length > BODY_MAX) return fail(413, "Rapport trop gros.");
   let body: Record<string, unknown>;
@@ -74,10 +74,15 @@ export async function collect({ req, env }: Ctx) {
   const found = body && Array.isArray(body.errors) ? body.errors.slice(0, BATCH).map(clean).filter((e) => e !== null) : [];
   if (!found.length) return fail(400, "Rapport invalide.");
   if (!(await allowed(env.ERROR_LIMIT, "toutes"))) return tooFast();
-  const rows: ErrorRow[] = await Promise.all(found.map(async (e) => ({ ...e, fingerprint: await fingerprint(e.kind, e.message, e.source) })));
+  const now = Date.now();
+  const used = await env.DB.prepare(`SELECT COUNT(*) AS n FROM (SELECT 1 FROM client_errors WHERE created_at > ? LIMIT ${HOUR_ROWS})`)
+    .bind(now - HOUR_MS)
+    .first<{ n: number }>();
+  const room = HOUR_ROWS - (used?.n ?? 0);
+  if (room <= 0) return tooFast();
+  const rows: ErrorRow[] = await Promise.all(found.slice(0, room).map(async (e) => ({ ...e, fingerprint: await fingerprint(e.kind, e.message, e.source) })));
   const platform = PLATFORMS.includes(body.platform as string) ? (body.platform as string) : "PC";
   const session = /^[a-f0-9]{16}$/.test(String(body.session)) ? String(body.session) : "";
-  const now = Date.now();
   if (env.APP_VERSION === "dev") for (const e of rows) console.log(`[erreur] ${e.kind} x${e.count} ${e.message} ${e.source}`);
   await env.DB.batch([
     env.DB.prepare("DELETE FROM client_errors WHERE created_at < ?").bind(now - KEEP_MS),
@@ -116,7 +121,7 @@ export async function list({ env }: Ctx) {
        FROM client_errors GROUP BY fingerprint ORDER BY last_at DESC LIMIT ?2`,
     ).bind(env.APP_VERSION, GROUPS),
     env.DB.prepare(
-      `SELECT fingerprint, kind, message, source, stack, trail, device, page, version, platform, standalone, ua, created_at
+      `SELECT fingerprint, kind, message, source, stack, trail, device, page, version, platform, standalone, ua
        FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY fingerprint ORDER BY trail <> '' DESC, id DESC) AS n FROM client_errors)
        WHERE n = 1`,
     ),
@@ -128,7 +133,6 @@ export async function list({ env }: Ctx) {
     spread.set(r.fingerprint, { ...spread.get(r.fingerprint), [r.platform]: r.n });
   }
   return json({
-    version: env.APP_VERSION,
     groups: (groups.results as GroupRow[]).map((g) => {
       const l = lastOf.get(g.fingerprint)!;
       return {
@@ -144,7 +148,6 @@ export async function list({ env }: Ctx) {
         onCurrent: !!g.current,
         platforms: spread.get(g.fingerprint) ?? {},
         last: {
-          at: l.created_at,
           stack: l.stack,
           trail: l.trail,
           device: l.device,
