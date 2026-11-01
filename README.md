@@ -304,7 +304,7 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 | 0.41 | 01/11 | page Succès avec progression |  |
 | 0.42 | 01/11 | remontée des erreurs des joueurs |  |
 | 0.43 | 01/11 | rouleau en aller-retour, enchaînements rééquilibrés, même trou pour tous les murs | 1 |
-| 0.44 | 01/11 | numéros de version, compte gardé dans l'appli installée, plus de mise à jour en partie, rouleaux espacés et jamais plus de 2, hachoir jamais deux fois d'affilée, mur par un côté après une pluie | |
+| 0.44 | 01/11 | numéros de version, compte gardé dans l'appli installée, plus de mise à jour en partie, rouleaux espacés et jamais plus de 2, hachoir jamais deux fois d'affilée, mur par un côté après une pluie | 1 (tartine sans croûte refaite) |
 
 ## Erreurs des joueurs
 
