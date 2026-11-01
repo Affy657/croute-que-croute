@@ -3,7 +3,8 @@ import { projectile } from "./projectiles.js";
 
 const MAX_STREAK = 3, REPEAT_FACTOR = 0.5;
 const SLANT = 0.55, CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55, SERIES_GAP = 0.7, SERIES_MOVE = 90, SERIES_SHIFT = 140, SERIES_NOTICE = 0.7;
-export const WALL_HOLE = 144;
+export const WALL_HOLE = 144, WALL_AWAY = 90;
+const BREATHERS = ["rolling", "bread", "slant"];
 
 const inside = (p) => ({ x: clamp(p.x, 10, FW - 10), y: clamp(p.y, 10, FH - 10) });
 
@@ -86,21 +87,27 @@ function sideWall({ rnd }, side, at, v, gc = rnd(100, FH - 100)) {
   return wallLine(gc, -16, FH + 16, 34, (y) => ({ x: side === "left" ? 10 : FW - 10, y: clamp(y, 10, FH - 10), a: dir > 0 ? 0 : Math.PI, at, obs: [projectile("knife", x0, y, dir * v, 0)] }));
 }
 
+function holeAway(rnd, lo, hi, from) {
+  const a = clamp(from - WALL_AWAY, lo, hi), b = clamp(from + WALL_AWAY, lo, hi);
+  const u = rnd(0, a - lo + hi - b);
+  return u < a - lo ? lo + u : b + u - (a - lo);
+}
+
 function wall(g) {
   const side = g.pick(["left", "right", "top"]);
   const v = 150 * speedMul(g.t), at = g.t + 0.7;
-  return side === "top" ? topWall(g, at, v) : sideWall(g, side, at, v);
+  return side === "top" ? topWall(g, at, v, holeAway(g.rnd, 70, FW - 70, g.toast.x)) : sideWall(g, side, at, v, holeAway(g.rnd, 100, FH - 100, g.toast.y));
 }
 
 const seriesSize = (t) => (t >= 60 ? 3 : 2);
 
 function wallSeries(g) {
-  const { t, rng, rnd, pick } = g;
+  const { t, toast, rng, rnd, pick } = g;
   const side = pick(["left", "right", "top"]);
   const v = 150 * speedMul(t);
   const [lo, hi] = side === "top" ? [70, FW - 70] : [100, FH - 100];
   const items = [];
-  let gc = rnd(lo, hi);
+  let gc = holeAway(rnd, lo, hi, side === "top" ? toast.x : toast.y);
   for (let i = 0; i < seriesSize(t); i++) {
     const at = t + 0.7 + i * SERIES_GAP;
     const wall = side === "top" ? topWall(g, at, v, gc) : sideWall(g, side, at, v, gc);
@@ -184,11 +191,11 @@ export const ATTACKS = [
     info: "Un couteau lancé droit sur toi, du haut ou d'un côté. Bouge pendant l'alerte et c'est esquivé. Dès 25 s, il tourne sur lui-même une fois sur trois." },
   { id: "rain", name: "Pluie de fourchettes", from: 3, weight: 1.4, cost: 1.5, speed: 190, make: rain, growsUntil: 60, growth: "pluie max : 8 fourchettes",
     info: "4 fourchettes tombent du haut à la suite, un peu en biais. Une de plus toutes les 15 s, jusqu'à 8." },
-  { id: "cleaver", name: "Hachoir", avoids: ["rain", "slant", "downpour", "cross"], from: 8, weight: 0.9, cost: 1.3, speed: 300, make: cleaver, growsUntil: 55, growth: "hachoirs par 3",
+  { id: "cleaver", name: "Hachoir", avoids: ["rain", "slant", "downpour", "cross", "wall", "walls"], from: 8, weight: 0.9, cost: 1.3, speed: 300, make: cleaver, growsUntil: 55, growth: "hachoirs par 3",
     info: "Tombe tout droit et très vite dans ta colonne, avec 0,9 s d'alerte. Change de colonne. Un 2e suit juste à côté dès 30 s, un 3e dès 55 s." },
   { id: "wall", name: "Mur", kin: "wall", solo: true, shuns: ["rolling", "wall", "walls"], from: 12, weight: 1.1, cost: 1.7, speed: 150, make: wall,
-    info: "Une rangée serrée avec un seul trou, par le haut ou par un côté. L'alerte te montre déjà où est le trou." },
-  { id: "rolling", name: "Rouleau à pâtisserie", shuns: ["wall", "walls"], from: 16, weight: 0.8, cost: 1.6, speed: 110, make: rolling, growsUntil: 36, growth: "rouleaux par 2",
+    info: "Une rangée serrée avec un seul trou, par le haut ou par un côté, jamais pile sur toi. L'alerte te montre déjà où est le trou." },
+  { id: "rolling", name: "Rouleau à pâtisserie", shuns: ["wall", "walls"], avoids: BREATHERS, from: 16, weight: 0.8, cost: 1.6, speed: 110, make: rolling, growsUntil: 36, growth: "rouleaux par 2",
     info: "Un gros rouleau debout traverse lentement l'écran par un côté, rebondit sur l'autre bord et revient. Passe au-dessus ou en dessous. 2 d'affilée dès 36 s." },
   { id: "fan", name: "Éventail", from: 22, weight: 1.1, cost: 1.5, speed: 200, make: fan, growsUntil: 54, growth: "éventail max : 5 couteaux",
     info: "3 à 5 couteaux en cône depuis le même point, dont un toujours sur toi. Sors du cône par le côté." },
@@ -196,15 +203,15 @@ export const ATTACKS = [
     info: "Un fouet qui tourne descend lentement vers toi et prend beaucoup de place." },
   { id: "walls", name: "Murs en série", kin: "wall", shuns: ["rolling", "wall", "walls"], solo: true, calm: true, from: 28, weight: 0.6, cost: 1, speed: 150, make: wallSeries, growsUntil: 60, growth: "murs en série par 3",
     info: "2 murs d'affilée (3 dès 60 s), toujours du même côté ou du haut, chacun avec son trou et son alerte juste avant. Rien d'autre ne tombe pendant la série." },
-  { id: "cross", name: "Croix", solo: true, avoids: ["cleaver"], from: 32, weight: 0.7, cost: 1.6, speed: 190, make: cross,
+  { id: "cross", name: "Croix", solo: true, avoids: ["cleaver", "wall", "walls"], from: 32, weight: 0.7, cost: 1.6, speed: 190, make: cross,
     info: "4 couteaux d'un coup, depuis les deux coins du haut et les deux côtés, tous sur toi. Écarte-toi du point visé." },
-  { id: "bread", name: "Couteau à pain", from: 38, weight: 0.7, cost: 1.2, speed: 240, make: bread,
+  { id: "bread", name: "Couteau à pain", avoids: BREATHERS, from: 38, weight: 0.7, cost: 1.2, speed: 240, make: bread,
     info: "Lancé d'un coin du haut, il rebondit sur le bord d'en face puis fonce sur toi. Suis la pointe de l'alerte et anticipe le rebond." },
-  { id: "slant", name: "Pluie en biais", from: 45, weight: 0.8, cost: 1.5, speed: 190, make: slant, growsUntil: 60, growth: "pluie en biais max : 8 fourchettes",
+  { id: "slant", name: "Pluie en biais", avoids: BREATHERS, from: 45, weight: 0.8, cost: 1.5, speed: 190, make: slant, growsUntil: 60, growth: "pluie en biais max : 8 fourchettes",
     info: "7 à 8 fourchettes tombent en biais à la suite et balaient l'écran d'un bord à l'autre." },
   { id: "corridor", name: "Couloir", lab: true, solo: true, from: 46, weight: 0.6, cost: 2.2, speed: 150, make: corridor,
     info: "Un mur d'un côté, puis un autre de l'autre côté juste derrière, chacun avec son trou. Enchaîne d'un trou à l'autre." },
-  { id: "downpour", name: "Double pluie", solo: true, from: 54, weight: 0.6, cost: 1.8, speed: 190, make: downpour,
+  { id: "downpour", name: "Double pluie", solo: true, avoids: ["rain", "slant"], from: 54, weight: 0.6, cost: 1.8, speed: 190, make: downpour,
     info: "Une rafale de 8 fourchettes (9 dès 60 s) qui tombent tout droit, une fois à gauche, une fois à droite." }
 ];
 

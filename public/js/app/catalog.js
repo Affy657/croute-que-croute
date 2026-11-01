@@ -221,7 +221,8 @@ function rulesCard() {
     "Jamais plus de 3 fois la même attaque d'affilée, et celle qui vient de sortir revient moins souvent.",
     "Jamais deux murs à la suite : un mur ou des murs en série attendent que le mur d'avant ait quitté l'écran.",
     "Croix et double pluie ne sortent jamais deux fois de suite.",
-    "Jamais de hachoir juste après une pluie de fourchettes ou une croix, ni de croix juste après un hachoir."
+    "Jamais de hachoir juste après une pluie de fourchettes, une croix ou un mur, ni de croix juste après un hachoir ou un mur, ni de double pluie juste après une pluie.",
+    "Pluie en biais, couteau à pain et rouleau ne se suivent jamais."
   ]) list.append(el("li", null, text));
   rules.append(el("h2", null, "Règles"), list);
   return rules;

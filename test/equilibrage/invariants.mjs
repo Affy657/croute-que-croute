@@ -1,4 +1,4 @@
-import { DIR, createSim, ATTACKS, WALL_HOLE, CALM_PASS, gapTo, field, mulberry32, solverPilot } from "./jeu.mjs";
+import { DIR, createSim, ATTACKS, WALL_HOLE, WALL_AWAY, CALM_PASS, gapTo, field, mulberry32, solverPilot } from "./jeu.mjs";
 
 const GAMES = Number(process.argv[2]) || 120, LIMIT = Number(process.argv[3]) || 150;
 const SOLVER_GAMES = 20, SOLVER_LIMIT = 300, TRAIN_LIMIT = 90, LINGER_S = 12, MISS_PX = 3;
@@ -91,11 +91,14 @@ function play(seed, style, { only = null, t0 = 0, limit = LIMIT, dt = STEP } = {
       }
       if (a.calm) seriesEnd = passAt(s.warns.filter((w) => w.obs[0].from === id));
       if (a.kin === "wall") {
-        const fresh = s.warns.filter((w) => !seen.has(w));
+        const fresh = s.warns.filter((w) => !seen.has(w)), first = Math.min(...fresh.map((w) => w.at));
         for (const at of new Set(fresh.map((w) => w.at))) {
-          const pos = fresh.filter((w) => w.at === at).map((w) => (w.obs[0].vx ? w.obs[0].y : w.obs[0].x)).sort((p, q) => p - q);
+          const line = fresh.filter((w) => w.at === at).map((w) => w.obs[0]), side = !!line[0].vx;
+          const pos = line.map((o) => (side ? o.y : o.x)).sort((p, q) => p - q);
           const holes = pos.slice(1).map((p, i) => p - pos[i]).filter((d) => d > 40);
+          const k = pos.findIndex((p, i) => i && p - pos[i - 1] > 40);
           if (holes.length !== 1 || Math.abs(holes[0] - WALL_HOLE) > 1e-6) report("trou de mur d'une autre taille", where({ id, holes }));
+          else if (at === first && Math.abs((pos[k] + pos[k - 1]) / 2 - (side ? s.toast.y : s.toast.x)) < WALL_AWAY - 1e-6) report("trou de mur sur la tartine", where({ id }));
         }
       }
     }
