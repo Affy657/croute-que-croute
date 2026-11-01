@@ -4,7 +4,7 @@ import { projectile } from "./projectiles.js";
 const MAX_STREAK = 3, REPEAT_FACTOR = 0.5;
 const SLANT = 0.55, CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55, SERIES_GAP = 0.7, SERIES_MOVE = 90, SERIES_SHIFT = 140, SERIES_NOTICE = 0.7, TOP_WALL_RUSH = 1.3;
 export const WALL_HOLE = 144, WALL_AWAY = 90, WALL_LOW = 430;
-const BREATHERS = ["rolling", "bread", "slant"];
+const BREATHERS = ["rolling", "bread", "slant"], RAINS = ["rain", "slant", "downpour"];
 
 const inside = (p) => ({ x: clamp(p.x, 10, FW - 10), y: clamp(p.y, 10, FH - 10) });
 
@@ -93,8 +93,10 @@ function holeAway(rnd, lo, hi, from) {
   return u < a - lo ? lo + u : b + u - (a - lo);
 }
 
+const wallSide = (g) => g.pick(RAINS.includes(g.last) ? ["left", "right"] : ["left", "right", "top"]);
+
 function wall(g) {
-  const side = g.pick(["left", "right", "top"]);
+  const side = wallSide(g);
   const v = 150 * speedMul(g.t), at = g.t + 0.7;
   return side === "top" ? topWall(g, at, v * TOP_WALL_RUSH, holeAway(g.rnd, 70, FW - 70, g.toast.x)) : sideWall(g, side, at, v, holeAway(g.rnd, 100, WALL_LOW, g.toast.y));
 }
@@ -102,8 +104,8 @@ function wall(g) {
 const seriesSize = (t) => (t >= 60 ? 3 : 2);
 
 function wallSeries(g) {
-  const { t, toast, rng, rnd, pick } = g;
-  const side = pick(["left", "right", "top"]);
+  const { t, toast, rng, rnd } = g;
+  const side = wallSide(g);
   const v = 150 * speedMul(t);
   const [lo, hi] = side === "top" ? [70, FW - 70] : [100, WALL_LOW];
   const items = [];
