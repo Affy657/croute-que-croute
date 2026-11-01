@@ -1193,6 +1193,33 @@ const HATS = {
       ctx.restore();
     }
   },
+  antennae(ctx, C) {
+    ctx.lineCap = "round";
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(side * 8, -17);
+      ctx.quadraticCurveTo(side * 9, -30, side * 14, -37);
+      ctx.strokeStyle = C.void;
+      ctx.lineWidth = 4.6;
+      ctx.stroke();
+      ctx.strokeStyle = "#7bd85a";
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+    }
+    ctx.strokeStyle = C.void;
+    ctx.lineWidth = 1.6;
+    for (const side of [-1, 1]) {
+      ctx.fillStyle = "#ffd84a";
+      ctx.beginPath();
+      ctx.arc(side * 14, -38, 4, 0, TAU);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#fff6c8";
+      ctx.beginPath();
+      ctx.arc(side * 14 - 1.3, -39.3, 1.3, 0, TAU);
+      ctx.fill();
+    }
+  },
   witch(ctx, C) {
     ctx.translate(0, -20);
     ctx.rotate(-0.14);
