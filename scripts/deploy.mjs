@@ -41,6 +41,11 @@ writeFileSync(file, `export const VERSION = "${version}";\n`);
 try {
   execSync(`npx wrangler deploy --var APP_VERSION:${version} --var APP_PREVIOUS:${board.version || "aucune"}`, { stdio: "inherit" });
   console.log(`Version en ligne : ${version}`);
+  try {
+    execSync(`git tag v${number} && git push -q origin v${number}`, { stdio: "inherit" });
+  } catch {
+    console.error(`Tag v${number} pas créé ou pas envoyé : le faire à la main.`);
+  }
 } finally {
   execSync(`git checkout -- ${file}`);
 }

@@ -250,20 +250,67 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 
 ## Versions
 
-- Ajoutées le 01/11/2026 à la demande d'Adrien : savoir sur quelle version on joue, et de quelle version vient chaque erreur. Le numéro s'affiche en bas des Paramètres (« Version 0.1.0 bêta », « Version dev » en local). Le jeu, l'admin et les erreurs des joueurs gardent aussi le commit : `0.1.0+ca1ef04`.
-- Le numéro est dans `package.json` (`version`). Le monter avant chaque mise en prod : `npm run deploy` refuse un numéro déjà en ligne ou plus petit.
+- Ajoutées le 01/11/2026 à la demande d'Adrien : savoir sur quelle version on joue, et de quelle version vient chaque erreur. Le numéro s'affiche en bas des Paramètres (« Version 0.44.0 bêta », « Version dev » en local). Le jeu, l'admin et les erreurs des joueurs gardent aussi le commit, par exemple `0.44.0+d7379fd`.
+- Le numéro est dans `package.json` (`version`). Le monter avant chaque mise en prod : `npm run deploy` refuse un numéro déjà en ligne ou plus petit. Après la mise en ligne, il pose le tag git `v0.44.0` sur le commit et l'envoie sur GitHub.
 - Quel chiffre monter (règles choisies le 01/11/2026). Si une mise en prod mélange plusieurs choses, on monte le chiffre le plus à gauche concerné, et ceux à sa droite repartent à 0.
   - 1er chiffre : 0 tant que le jeu est en bêta. Passe à 1.0.0 quand Adrien décide la sortie de bêta, par exemple pour la première soirée ouverte au public. Ensuite, seulement pour un changement qui casse l'existant : classement remis à zéro, comptes à refaire.
   - 2e chiffre : une nouveauté que le joueur voit ou peut faire. Nouvelle attaque, skin, écran, option, nouvelle règle d'enchaînement, ou attaque qui change de comportement (le rouleau qui fait l'aller-retour).
   - 3e chiffre : tout le reste. Correction de bug, réglage d'un chiffre (vitesse, taille d'un trou), texte, performances, changement invisible pour le joueur.
-- Historique :
-  - 0.1.0 (01/11/2026) : premier numéro. Compte gardé dans l'appli installée sur iPhone. Plus de mise à jour en pleine partie ni sur l'écran de mort. Trou des murs par un côté jamais dans le bas de l'écran, mur seul par le haut 1,3 fois plus rapide, après une pluie un mur arrive par un côté, rouleaux jamais collés et jamais plus de 2 à l'écran, hachoir jamais deux fois d'affilée.
+- Numéros donnés après coup le 01/11/2026 (demande d'Adrien) aux 70 mises en ligne d'avant, retrouvées avec leur commit dans les sessions de Claude Code (ligne « Version en ligne : » de `npm run deploy`). Cloudflare en compte 75 : les 5 autres n'ont pas laissé de trace. Chacune a son tag git (`v0.1.0` à `v0.43.1`) : `git show v0.26.3` montre le code de cette version, et `git describe --tags <commit>` retrouve la version d'un ancien identifiant comme `mvxswkrk-bdb42a4`. Le classement nouveauté ou correctif a été fait d'après les messages des commits.
+- Historique (une ligne par nouveauté ; la colonne de droite compte les mises en ligne de correctifs qui ont suivi) :
+
+| Version | Date | Nouveautés | Correctifs ensuite |
+|---|---|---|---|
+| 0.1 | 28/10 | première mise en ligne : jeu, classement de soirée, appli installable, musique | 2 |
+| 0.2 | 28/10 | appli admin avec invitations et rôles |  |
+| 0.3 | 28/10 | jeu et admin dans une seule appli, musique en prod |  |
+| 0.4 | 28/10 | boutons musique et sons, musique calée sur la partie |  |
+| 0.5 | 28/10 | bruitages | 1 |
+| 0.6 | 28/10 | croix, couloir, double pluie, tartinades rares | 1 |
+| 0.7 | 28/10 | soirées et classements, profil gardé, classement général | 1 |
+| 0.8 | 28/10 | nom de soirée modifiable, page Infos qui défile |  |
+| 0.9 | 28/10 | annonces des attaques en pastilles |  |
+| 0.10 | 29/10 | Paramètres, installation, partage, QR code, crédits | 1 |
+| 0.11 | 29/10 | choix des commandes : joystick ou pavé |  |
+| 0.12 | 29/10 | une seule commande : glisser partout |  |
+| 0.13 | 29/10 | confettis sur un nouveau record ou la 1re place |  |
+| 0.14 | 29/10 | volumes musique et bruitages |  |
+| 0.15 | 29/10 | alerte triche dans l'admin et l'écran géant |  |
+| 0.16 | 29/10 | succès à débloquer | 3 |
+| 0.17 | 29/10 | fil en direct sur l'écran géant, envoi du score tenace | 1 |
+| 0.18 | 29/10 | planètes des affiches en fond | 1 |
+| 0.19 | 29/10 | rival à battre, série de frôlés, entraînement, traînées |  |
+| 0.20 | 29/10 | changer de pseudo | 1 |
+| 0.21 | 29/10 | ciel qui chauffe, cicatrices, murs en série |  |
+| 0.22 | 30/10 | arrêt sur image, Tartinée par…, garnitures |  |
+| 0.23 | 30/10 | succès secrets et badge Nouveau | 1 |
+| 0.24 | 30/10 | accessoires |  |
+| 0.25 | 30/10 | étoiles filantes, prochaine soirée annoncée | 1 |
+| 0.26 | 30/10 | planètes drôles et Tung Tung Tung Sahur | 6 (réglages de difficulté, corrections, solveur plus rapide) |
+| 0.27 | 30/10 | classements Mobile et PC, succès revus |  |
+| 0.28 | 30/10 | tenue de la tartine |  |
+| 0.29 | 30/10 | tartine sans croûte |  |
+| 0.30 | 31/10 | nouvelles planètes du fond |  |
+| 0.31 | 31/10 | retours des joueurs, mains Six Seven |  |
+| 0.32 | 31/10 | fiche joueur | 2 |
+| 0.33 | 31/10 | code et QR pour jouer sur un autre appareil |  |
+| 0.34 | 31/10 | fusion de deux comptes | 3 |
+| 0.35 | 31/10 | déconnecter les autres appareils, Guide, planète pirate, son refait | 1 |
+| 0.36 | 31/10 | bonnet de Noël gagné sur le père Noël |  |
+| 0.37 | 31/10 | planète œuf de Pâques et oreilles de lapin |  |
+| 0.38 | 01/11 | sauce du chef, grille-pain secret, record hors ligne |  |
+| 0.39 | 01/11 | antennes d'alien et casque d'astronaute |  |
+| 0.40 | 01/11 | succès refaits en 7 familles |  |
+| 0.41 | 01/11 | page Succès avec progression |  |
+| 0.42 | 01/11 | remontée des erreurs des joueurs |  |
+| 0.43 | 01/11 | rouleau en aller-retour, enchaînements rééquilibrés, même trou pour tous les murs | 1 |
+| 0.44 | à venir | numéros de version, compte gardé dans l'appli installée, plus de mise à jour en partie, rouleaux espacés et jamais plus de 2, hachoir jamais deux fois d'affilée, mur par un côté après une pluie | |
 
 ## Erreurs des joueurs
 
 - Ajouté le 01/11/2026 à la demande d'Adrien, pour voir les bugs (surtout sur iPhone) avant la soirée plutôt que pendant. `public/js/errors.js`, chargé en premier dans le `<head>` du jeu, de l'admin et de l'écran géant. Script classique écrit prudemment : il attrape aussi les plantages des modules (fichier illisible par un vieux téléphone, fichiers de deux versions mélangés), que le jeu lui-même ne voit pas.
 - Ce qui remonte : les erreurs JavaScript non rattrapées, les promesses rejetées sans `catch`, les fichiers du site pas chargés, les blocages de la politique de sécurité (CSP), et « Jeu pas démarré au bout de 15 s » (accueil toujours pas prêt ; retiré si le jeu a fini par démarrer avant l'envoi). Ignoré : les extensions du navigateur, les scripts d'autres sites et « Script error. » (sans détail).
-- Avec chaque erreur : où (fichier, ligne, colonne), la pile d'appels, ce qui s'est passé avant (les 25 derniers évènements avec le temps depuis l'ouverture : écrans affichés, boutons touchés, page cachée ou visible, réseau perdu ou revenu, erreurs précédentes), la page, la version du jeu (numéro et commit, par exemple `0.1.0+ca1ef04`), iPhone, iPad, Android ou PC, le navigateur, appli installée ou non, la taille de l'écran. La version est lue dans `version.js` dès l'ouverture, pour la connaître même quand le jeu plante au chargement. Ni pseudo ni clé de joueur : juste un numéro tiré au hasard par onglet (sessionStorage), pour compter les sessions touchées.
+- Avec chaque erreur : où (fichier, ligne, colonne), la pile d'appels, ce qui s'est passé avant (les 25 derniers évènements avec le temps depuis l'ouverture : écrans affichés, boutons touchés, page cachée ou visible, réseau perdu ou revenu, erreurs précédentes), la page, la version du jeu (numéro et commit, par exemple `0.44.0+d7379fd`), iPhone, iPad, Android ou PC, le navigateur, appli installée ou non, la taille de l'écran. La version est lue dans `version.js` dès l'ouverture, pour la connaître même quand le jeu plante au chargement. Ni pseudo ni clé de joueur : juste un numéro tiré au hasard par onglet (sessionStorage), pour compter les sessions touchées.
 - Économe : la même erreur part une seule fois par page, ses répétitions sont comptées puis envoyées quand on quitte la page (`sendBeacon`). Premier envoi 3 s après la première erreur, pour grouper celles qui s'enchaînent. Au plus 5 erreurs par envoi, 3 envois par page, 10 par onglet (rechargements en boucle de `boot.js`), 20 erreurs différentes par page.
 - Serveur (`routes/errors.ts`, `POST /api/errors`) : 64 Ko au plus par envoi (refusé dès l'en-tête quand il l'annonce), 10 envois par minute pour tout le monde (`ERROR_LIMIT`, une seule clé et pas une par adresse IP), et 60 erreurs gardées par heure au plus (`HOUR_ROWS`, compté sur 60 lignes au plus avant d'écrire). Sinon une erreur sur tous les téléphones d'une soirée pourrait manger le quota gratuit d'écritures de D1, et le classement avec : chaque ligne compte pour 3 écritures (la table et ses 2 index), son effacement aussi. Au pire, moins de 2 000 écritures sur une soirée de 5 h. Revue de code du 01/11/2026 : sans le plafond par heure, c'était jusqu'à 85 000, presque tout le quota du jour. Table `client_errors`, gardée 14 jours, 2 000 lignes au plus.
 - Regroupement : même type, même message aux chiffres près et même fichier (sans la ligne, qui change à chaque version) font une seule erreur dans la liste. Le même bug vu par Safari et par Chrome fait deux erreurs, car leurs messages diffèrent.
