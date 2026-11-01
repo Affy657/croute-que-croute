@@ -46,6 +46,10 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
     const active = new Set([...state.obs.map((o) => o.from), ...state.warns.flatMap((w) => w.obs.map((o) => o.from))]);
     const attack = forced || state.queued || pickAttack(t, rng, state.last, state.streak, active);
     state.queued = null;
+    if (forced && forced.shuns && forced.shuns.some((id) => active.has(id))) {
+      state.next = 0.1;
+      return;
+    }
     if (attack.calm && state.warns.length) {
       state.queued = attack;
       state.next = Math.max(...state.warns.map((w) => w.at)) - t;
