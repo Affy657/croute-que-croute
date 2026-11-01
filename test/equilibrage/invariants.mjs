@@ -1,4 +1,4 @@
-import { DIR, createSim, ATTACKS, WALL_HOLE, WALL_AWAY, CALM_PASS, gapTo, field, mulberry32, solverPilot } from "./jeu.mjs";
+import { DIR, createSim, ATTACKS, WALL_HOLE, WALL_AWAY, WALL_LOW, CALM_PASS, gapTo, field, mulberry32, solverPilot } from "./jeu.mjs";
 
 const GAMES = Number(process.argv[2]) || 120, LIMIT = Number(process.argv[3]) || 150;
 const SOLVER_GAMES = 20, SOLVER_LIMIT = 300, TRAIN_LIMIT = 90, LINGER_S = 12, MISS_PX = 3;
@@ -98,6 +98,7 @@ function play(seed, style, { only = null, t0 = 0, limit = LIMIT, dt = STEP } = {
           const holes = pos.slice(1).map((p, i) => p - pos[i]).filter((d) => d > 40);
           const k = pos.findIndex((p, i) => i && p - pos[i - 1] > 40);
           if (holes.length !== 1 || Math.abs(holes[0] - WALL_HOLE) > 1e-6) report("trou de mur d'une autre taille", where({ id, holes }));
+          else if (side && (pos[k] + pos[k - 1]) / 2 > WALL_LOW + 1e-6) report("trou de mur trop bas", where({ id }));
           else if (at === first && Math.abs((pos[k] + pos[k - 1]) / 2 - (side ? s.toast.y : s.toast.x)) < WALL_AWAY - 1e-6) report("trou de mur sur la tartine", where({ id }));
         }
       }
