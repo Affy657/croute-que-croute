@@ -3,7 +3,7 @@ import { projectile } from "./projectiles.js";
 
 const MAX_STREAK = 3, REPEAT_FACTOR = 0.5;
 const SLANT = 0.55, CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55, SERIES_GAP = 0.7, SERIES_MOVE = 90, SERIES_SHIFT = 140, SERIES_NOTICE = 0.7;
-export const WALL_HOLE = 144, WALL_AWAY = 90;
+export const WALL_HOLE = 144, WALL_AWAY = 90, WALL_LOW = 430;
 const BREATHERS = ["rolling", "bread", "slant"];
 
 const inside = (p) => ({ x: clamp(p.x, 10, FW - 10), y: clamp(p.y, 10, FH - 10) });
@@ -81,7 +81,7 @@ function topWall({ rnd }, at, v, gc = rnd(70, FW - 70)) {
   return wallLine(gc, -18, FW + 18, 36, (x) => ({ x: clamp(x, 10, FW - 10), y: 10, a: Math.PI / 2, at, obs: [projectile("fork", x, -M, 0, v)] }));
 }
 
-function sideWall({ rnd }, side, at, v, gc = rnd(100, FH - 100)) {
+function sideWall({ rnd }, side, at, v, gc = rnd(100, WALL_LOW)) {
   const dir = side === "left" ? 1 : -1;
   const x0 = side === "left" ? -M : FW + M;
   return wallLine(gc, -16, FH + 16, 34, (y) => ({ x: side === "left" ? 10 : FW - 10, y: clamp(y, 10, FH - 10), a: dir > 0 ? 0 : Math.PI, at, obs: [projectile("knife", x0, y, dir * v, 0)] }));
@@ -96,7 +96,7 @@ function holeAway(rnd, lo, hi, from) {
 function wall(g) {
   const side = g.pick(["left", "right", "top"]);
   const v = 150 * speedMul(g.t), at = g.t + 0.7;
-  return side === "top" ? topWall(g, at, v, holeAway(g.rnd, 70, FW - 70, g.toast.x)) : sideWall(g, side, at, v, holeAway(g.rnd, 100, FH - 100, g.toast.y));
+  return side === "top" ? topWall(g, at, v, holeAway(g.rnd, 70, FW - 70, g.toast.x)) : sideWall(g, side, at, v, holeAway(g.rnd, 100, WALL_LOW, g.toast.y));
 }
 
 const seriesSize = (t) => (t >= 60 ? 3 : 2);
@@ -105,7 +105,7 @@ function wallSeries(g) {
   const { t, toast, rng, rnd, pick } = g;
   const side = pick(["left", "right", "top"]);
   const v = 150 * speedMul(t);
-  const [lo, hi] = side === "top" ? [70, FW - 70] : [100, FH - 100];
+  const [lo, hi] = side === "top" ? [70, FW - 70] : [100, WALL_LOW];
   const items = [];
   let gc = holeAway(rnd, lo, hi, side === "top" ? toast.x : toast.y);
   for (let i = 0; i < seriesSize(t); i++) {
