@@ -9,9 +9,8 @@ export const FAMILIES = [["time", "Survie"], ["play", "Adresse"], ["collect", "C
 const TIMES = [[10, "t10"], [30, "t30"], [60, "t60"], [90, "t90"], [120, "t120"], [150, "t150"]];
 const NEARS = [[20, "near20"]];
 const RUNS = [[10, "runs10"], [50, "runs50"], [100, "runs100"]];
-const SIX_SEVEN_S = 67, STILL_S = 3, COMBO = 5, COMBO_MAX = 10, CAREFUL_S = 60, NIGHT_UNTIL_H = 3, EXPRESS_CS = 200, EVENTS = 3, TOP = 10, FRIDGE = 4;
+const SIX_SEVEN_S = 67, STILL_S = 3, COMBO = 5, COMBO_MAX = 10, CAREFUL_S = 60, NIGHT_UNTIL_H = 3, EXPRESS_CS = 200, TOP = 10, FRIDGE = 4;
 const COMBOS = [[COMBO, "combo5"], [COMBO_MAX, "combo10"]];
-const EVENT_STEPS = [[1, "event1"], [EVENTS, "events3"]];
 const LIVE = ATTACKS.filter((a) => !a.lab);
 const WEAPONS = Object.keys(PROJECTILES).filter((k) => !PROJECTILES[k].lab);
 const EXTRAS = Object.values(SPREADS).filter((s) => !s.free).length;
@@ -39,7 +38,6 @@ export const ACHIEVEMENTS = [
   { id: "runs50", family: "loyal", name: "Boulangerie", desc: "Jouer 50 parties", gear: "brioche" },
   { id: "runs100", family: "loyal", name: "Accro à la croûte", desc: "Jouer 100 parties", gear: "crustless" },
   { id: "event1", family: "event", name: "Première soirée", desc: "Jouer pendant une soirée Space Tartinade" },
-  { id: "events3", family: "event", name: "Fidèle du Space", desc: "Jouer à 3 soirées" },
   { id: "top10", family: "event", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée" },
   { id: "eventWin", family: "event", name: "Tartine d'or", desc: "Finir 1er d'une soirée", gear: "crown" },
   { id: "pumpkin", family: "sky", name: "Des bonbons ou un sort", desc: "Toucher la planète citrouille sur l'accueil", hint: "une citrouille passe parfois dans le ciel de l'accueil.", gear: "witch" },
@@ -177,7 +175,7 @@ export function runStart(eventKey) {
       d.events.push(eventKey);
     });
   }
-  for (const [n, id] of EVENT_STEPS) if (data.events.length >= n) unlock(id);
+  if (data.events.length) unlock("event1");
   if (new Date().getHours() < NIGHT_UNTIL_H) unlock("night");
 }
 
@@ -238,7 +236,7 @@ export function onBoard(b) {
 }
 
 export function onHistory(c) {
-  for (const [n, id] of EVENT_STEPS) if (c.events >= n) unlock(id, true);
+  if (c.events) unlock("event1", true);
   for (const [id, done] of Object.entries(c.feats || {})) if (done && BY_ID[id]) unlock(id, true);
 }
 
