@@ -241,6 +241,17 @@ check("rapport son enregistré", r.status === 200, r);
 r = await call("POST", "/api/diag", { body: { kind: "test" } });
 check("rapport son sans journal refusé", r.status === 400, r);
 
+const boom = { kind: "erreur", message: "TypeError: test joueur", source: "/js/app/main.js:1:1", count: 1 };
+const errorReport = (errors) => ({ version: "dev", page: "/", platform: "iPhone", standalone: false, ua: "test", session: hex(16), errors });
+r = await call("POST", "/api/errors", { body: errorReport([boom]) });
+check("erreur de joueur enregistrée", r.status === 200, r);
+r = await call("POST", "/api/errors", { body: errorReport([]) });
+check("rapport d'erreurs vide refusé", r.status === 400, r);
+r = await call("POST", "/api/errors", { body: errorReport([{ ...boom, kind: "inventé" }]) });
+check("type d'erreur inconnu refusé", r.status === 400, r);
+r = await call("POST", "/api/errors", { body: errorReport([{ ...boom, stack: "x".repeat(70000) }]) });
+check("rapport d'erreurs trop gros refusé", r.status === 413, r);
+
 console.log(results.join("\n"));
 console.log(results.filter((l) => l.startsWith("FAIL")).length + " échec(s) sur " + results.length);
 process.exit(results.some((l) => l.startsWith("FAIL")) ? 1 : 0);

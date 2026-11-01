@@ -6,6 +6,7 @@
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0d0b24">
 <title>Croûte Admin</title>
+<script src="/js/errors.js"></script>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -102,6 +103,16 @@
         <ol id="players" class="list"></ol>
         <p id="playersEmpty" class="hint" hidden>Aucun joueur pour l'instant.</p>
         <p id="playersMsg" class="msg" hidden></p>
+      </section>
+
+      <section id="errorsCard" class="card" hidden>
+        <h2>Erreurs des joueurs</h2>
+        <p id="errorsSummary" class="sub">Ce qui plante chez les joueurs, sans pseudo.</p>
+        <p id="errorsAlert" class="msg error alert" hidden></p>
+        <button id="errorsBtn" class="btn ghost" type="button">Voir les erreurs</button>
+        <ul id="errors" class="errors"></ul>
+        <p id="errorsEmpty" class="hint" hidden>Aucune erreur ces 14 derniers jours.</p>
+        <p id="errorsMsg" class="msg" hidden></p>
       </section>
 
       <section id="teamCard" class="card" hidden>

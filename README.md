@@ -165,7 +165,7 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 - Premier accès avec la clé admin (`cle-admin.txt`) : elle crée un compte propriétaire et reste la clé de secours.
 - Le propriétaire invite : prénom et rôle, puis un lien à usage unique valable 48 h. Dans l'appli installée, on colle le lien dans « Lien d'invitation reçu ».
 - Rôles : propriétaire (soirées, joueurs, équipe) et admin (soirées, joueurs). Chaque téléphone connecté peut être retiré, sauf le dernier propriétaire. Le retirer annule aussi les invitations qu'il a créées et pas encore utilisées. Une connexion inutilisée pendant 30 jours expire.
-- Tableau de bord : soirée (créer, renommer, changer début et fin), classements soirée et général, bandeau rouge des records à vérifier, « Retirer » un joueur de tous les classements, écoute des bruitages.
+- Tableau de bord : soirée (créer, renommer, changer début et fin), classements soirée et général, bandeau rouge des records à vérifier, « Retirer » un joueur de tous les classements, écoute des bruitages, et pour le propriétaire les erreurs des joueurs (voir Erreurs des joueurs).
 - Les nouveaux pseudos des 15 dernières minutes apparaissent dans la liste même sans partie : on peut retirer un pseudo déplacé affiché sur l'écran géant.
 
 ## Écran géant
@@ -224,6 +224,19 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 - Petits téléphones (30/10/2026, des joueurs avaient des lags) : le jeu mesure sa fluidité. Si l'image médiane dépasse 20 ms (moins de 50 images par seconde ; 24 ms avant le 30/10/2026 au soir), il baisse sa netteté par paliers (`QUALITY` dans `scene.js` : densité 2, 1,5, 1,25 puis 1) et s'en souvient sur ce téléphone (`cv-qualite`). Densité 2 au plus pour tout le monde (avant : 2,5). La couche des annonces n'est plus effacée quand elle est déjà vide. Tartine en image : gain faible, pas fait.
 - Planètes en image (31/10/2026, il restait des joueurs avec des lags) : chaque planète du fond est dessinée dans une image à part (`art` dans `scene.js`), puis seulement collée à chaque image du jeu. Les planètes fixes ne sont dessinées qu'une fois, les animées sont redessinées 30 fois par seconde (20 puis 15 fois quand le téléphone a baissé sa netteté, `REDRAW_S`). `reach` dans `BODIES` donne la taille de l'image (anneaux, ondes, Tung et sa batte compris). Mesuré sur un PC, par image : violette 3,4 ms, citrouille 3,8, lune de Méliès 3,6, grille-pain 2,2, crêpe et enceintes environ 1 ms en direct, contre 0,1 à 0,2 ms une fois en image. Fond du jeu opaque (`alpha: false`), plus léger à afficher. Mettre les couverts en image est plus lent. Réécrire des bouts en Rust (WebAssembly) n'aiderait pas : le dessin se fait dans le navigateur, et le reste du calcul est devenu négligeable.
 
+## Erreurs des joueurs
+
+- Ajouté le 01/11/2026 à la demande d'Adrien, pour voir les bugs (surtout sur iPhone) avant la soirée plutôt que pendant. `public/js/errors.js`, chargé en premier dans le `<head>` du jeu, de l'admin et de l'écran géant. Script classique écrit prudemment : il attrape aussi les plantages des modules (fichier illisible par un vieux téléphone, fichiers de deux versions mélangés), que le jeu lui-même ne voit pas.
+- Ce qui remonte : les erreurs JavaScript non rattrapées, les promesses rejetées sans `catch`, les fichiers du site pas chargés, les blocages de la politique de sécurité (CSP), et « Jeu pas démarré au bout de 15 s » (accueil toujours pas prêt). Ignoré : les extensions du navigateur, les scripts d'autres sites et « Script error. » (sans détail).
+- Avec chaque erreur : où (fichier, ligne, colonne), la pile d'appels, ce qui s'est passé avant (les 25 derniers évènements avec le temps depuis l'ouverture : écrans affichés, boutons touchés, page cachée ou visible, réseau perdu ou revenu, erreurs précédentes), la page, la version du jeu, iPhone, iPad, Android ou PC, le navigateur, appli installée ou non, la taille de l'écran. Ni pseudo ni clé de joueur : juste un numéro tiré au hasard par onglet (sessionStorage), pour compter les sessions touchées.
+- Économe : la même erreur part une seule fois par page, ses répétitions sont comptées puis envoyées quand on quitte la page (`sendBeacon`). Premier envoi 3 s après la première erreur, pour grouper celles qui s'enchaînent. Au plus 5 erreurs par envoi, 3 envois par page, 10 par onglet (rechargements en boucle de `boot.js`), 20 erreurs différentes par page.
+- Serveur (`routes/errors.ts`, `POST /api/errors`) : 64 Ko au plus par envoi, et 10 envois par minute pour tout le monde (`ERROR_LIMIT`, une seule clé et pas une par adresse IP). Sinon une erreur sur tous les téléphones d'une soirée pourrait manger le quota gratuit d'écritures de D1, et le classement avec. Au pire, environ 3 000 envois sur une soirée de 5 h, soit 30 000 lignes écrites en comptant leur effacement. En temps normal, presque rien. Table `client_errors`, gardée 14 jours, 2 000 lignes au plus.
+- Regroupement : même type, même message aux chiffres près et même fichier (sans la ligne, qui change à chaque version) font une seule erreur dans la liste. Le même bug vu par Safari et par Chrome fait deux erreurs, car leurs messages diffèrent.
+- Lire : Admin, carte « Erreurs des joueurs » (propriétaire seulement). En haut, le nombre d'erreurs différentes des dernières 24 h, et un bandeau rouge s'il y en a eu dans la dernière heure (rafraîchi chaque minute, compté sur 200 lignes au plus pour lire peu). « Voir les erreurs » charge la liste à la demande, la plus récente en haut, avec un trait rouge si elle date de moins d'une heure : combien de fois, combien de sessions et sur quels appareils, « encore là sur la version en ligne » ou « pas revue depuis la dernière mise en ligne » (pour savoir si un correctif a marché). En dépliant : détails, ce qui s'est passé avant, pile d'appels. « Copier le rapport » met tout dans le presse-papiers, à coller à Claude. « Marquer corrigé » la retire de la liste ; elle revient si elle se reproduit.
+- En ligne de commande : `npx wrangler d1 execute croute-que-croute --remote --command "SELECT datetime(created_at / 1000, 'unixepoch') AS quand, kind, message, source, platform FROM client_errors ORDER BY id DESC LIMIT 20"`.
+- En local, chaque erreur s'affiche aussi dans le terminal du serveur de dev (lignes `[erreur]`), même depuis un téléphone sur le wifi.
+- Premier bug trouvé, pendant les essais du 01/11/2026 : la page admin ne s'affichait plus du tout, en local comme en ligne, depuis la refonte du son du 31/10/2026 (`admin.js` importait `prepareSfx`, que `audio.js` n'exportait plus). Export remis.
+
 ## Check-list d'une soirée
 
 Avant :
@@ -231,10 +244,12 @@ Avant :
 - Admin, « Nouvelle soirée » : nom, début et fin. On peut la créer plusieurs jours avant.
 - Imprimer le QR code, puis faire une partie depuis le QR code.
 - Si le lieu a un écran : `/ecran`, puis « Plein écran ».
+- Admin, « Erreurs des joueurs » : regarder ce qui plante, surtout après une mise en ligne.
 
 Pendant :
 
 - Surveiller le bandeau rouge « à vérifier » et retirer le joueur si besoin.
+- Surveiller aussi le bandeau rouge des erreurs des joueurs : copier le rapport, à corriger après la soirée.
 - Repousser la fin si la soirée glisse.
 - Ne rien mettre en ligne : le script refuse tant que la soirée est ouverte.
 
@@ -249,7 +264,7 @@ Après :
 - Limites gratuites par jour : 100 000 requêtes, 5 millions de lignes lues, 100 000 lignes écrites. Au-delà, l'API est en erreur jusqu'à 1 h du matin.
 - Pour les tenir : chaque requête passe par un index, le classement est gardé en mémoire et mis à jour sur place à chaque record, rien n'est demandé écran éteint. Estimation pour 150 joueurs sur 5 h : au plus 45 000 requêtes, 20 000 à 35 000 lignes écrites, 1 à 2 millions de lignes lues (2,5 millions quand le général aura 1 000 joueurs). Ce sont des estimations, pas des mesures.
 - Général : les 1 000 premiers en mémoire. Au-delà, la place se calcule en comptant les joueurs devant.
-- Journaux d'erreurs : gardés 3 jours dans Cloudflare, page du Worker `croute-que-croute`. En direct : `npx wrangler tail`.
+- Journaux d'erreurs du serveur : gardés 3 jours dans Cloudflare, page du Worker `croute-que-croute`. En direct : `npx wrangler tail`. Celles des téléphones : voir Erreurs des joueurs.
 - Non retenus : un cache partagé entre les copies du serveur (Durable Object, dont le quota gratuit est à peu près ce qu'une soirée consomme) et une lecture partagée entre deux demandes (risque d'erreurs côté Cloudflare, gain faible).
 - Git : une branche par changement, fusionnée dans `master` avec `--no-ff`, puis poussée sur GitHub.
 - Outils locaux (`LOCAL` dans `shared/local.js` : localhost, 127.0.0.1 ou une adresse du réseau privé comme 192.168.x.x, donc aussi un téléphone sur le wifi ; jamais l'adresse en ligne) : `?accessoires=tous`, `?succes=tous`, `?garnitures=toutes`, `?planetes=souvent`, `?etoiles=souvent` (voir plus haut), `?jeton=<jeton>` qui connecte le téléphone à ce joueur (lien donné par `npm run seed`), et le mode invincible : carte « Mode test » de Paramètres (Non / Oui, gardé le temps de l'onglet, `cv-invincible` en sessionStorage). Allumé, les couverts ne tuent plus (option `immortal` de `createSim`), et une pastille « Invincible ✕ » sous le chrono rappelle qu'il est actif : la toucher l'enlève en pleine partie, pour mourir au prochain coup. Une partie invincible compte comme une autre (record, classement local, succès), pour pouvoir tester les longues parties.
@@ -317,7 +332,6 @@ Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du c
 - Refaire le skin tartine sans croûte (Accro à la croûte).
 - Ajouter des skins très stylés comme la Hitbox, qui fait envie à beaucoup de joueurs grâce à l'aura autour de la tartine.
 - Nouvel emplacement de tenue : une traînée derrière la tartine (miettes, paillettes) ou un effet de mort (la tartine éclate en confettis), à débloquer. À rapprocher des skins stylés, juste au-dessus.
-- Remonter au serveur les erreurs JavaScript des joueurs, comme les rapports de son, pour voir les bugs sur iPhone avant la soirée plutôt que pendant.
 
 ## Idées pour plus tard
 
