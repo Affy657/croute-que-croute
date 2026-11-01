@@ -12,6 +12,7 @@ const routes: Route[] = [
   { method: "GET", path: "/api/board", run: player.board },
   { method: "GET", path: "/api/feed", run: player.feed },
   { method: "POST", path: "/api/join", run: player.join },
+  { method: "POST", path: "/api/resume", run: player.resume },
   { method: "PATCH", path: "/api/me", run: player.rename },
   { method: "PUT", path: "/api/me/look", run: player.saveLook },
   { method: "POST", path: "/api/me/link", run: link.createLink },

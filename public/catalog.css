@@ -35,6 +35,11 @@
   color: var(--ink-dim);
 }
 
+.catalog .version-note {
+  margin: 0.25rem 0 0;
+  text-align: center;
+}
+
 .catalog .ach-item {
   display: grid;
   grid-template-columns: 28px 1fr;

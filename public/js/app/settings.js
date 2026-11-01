@@ -1,5 +1,6 @@
 import { store, session, KEYS } from "../shared/store.js";
 import { LOCAL } from "../shared/local.js";
+import { VERSION } from "../version.js";
 import { installMode, promptInstall, shouldSuggest, markSuggested, onInstallChange } from "./install.js";
 import { prefs, setLevel, previewMusic, previewSfx } from "./audio.js";
 import { ui, setText } from "./screens.js";
@@ -12,6 +13,8 @@ const HINTS = {
   ios: "Touche Partager, puis « Sur l'écran d'accueil ».",
   menu: "Ouvre le menu du navigateur, puis « Installer l'appli » ou « Ajouter à l'écran d'accueil »."
 };
+const NUMBER = VERSION.split("+")[0];
+const VERSION_LABEL = `Version ${NUMBER}${NUMBER.startsWith("0.") ? " bêta" : ""}`;
 let tab = "app";
 
 export const testing = { invincible: LOCAL && session.get(KEYS.invincible) === "1" };
@@ -27,6 +30,7 @@ export function renderSettings() {
   ui.settingsBar.hidden = !admin;
   for (const b of ui.settingsTabs.children) b.setAttribute("aria-selected", String(b.dataset.tab === tab));
   ui.settingsApp.hidden = tab !== "app";
+  ui.versionNote.textContent = VERSION_LABEL;
   ui.settingsAdmin.hidden = tab !== "admin";
   ui.settings.classList.toggle("admin-mode", tab === "admin");
   if (tab === "admin") mountAdmin();

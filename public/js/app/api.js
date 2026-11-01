@@ -19,7 +19,7 @@ if (LOCAL) {
 
 export const net = { token: store.get(KEYS.playerToken), board: null, offset: 0, online: true, updatePending: false };
 let localBest = parseInt(store.get(KEYS.localBest) || "0", 10) || 0, saved = readBests();
-let boardAsked = 0, boardShown = 0, lastDevice = null;
+let boardAsked = 0, boardShown = 0, lastDevice = null, resumed = false;
 const listeners = { board: [], update: [], result: [] };
 
 function readBests() {
@@ -112,7 +112,16 @@ export function saveLocalBest(score, scope) {
   store.set(KEYS.localBest, localBest);
 }
 
+async function resume() {
+  resumed = true;
+  try {
+    const r = await call("POST", "/api/resume", null, SEND_TIMEOUT_MS);
+    if (r.token && !net.token) setToken(r.token);
+  } catch (e) {}
+}
+
 export async function refreshBoard() {
+  if (!net.token && !resumed) await resume();
   const asked = ++boardAsked, token = net.token;
   try {
     const b = await call("GET", "/api/board");
