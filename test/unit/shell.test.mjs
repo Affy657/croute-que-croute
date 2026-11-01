@@ -31,3 +31,10 @@ test("le jeu hors ligne : chaque fichier chargé par la page est dans le cache d
 test("chaque fichier du cache de sw.js existe", () => {
   assert.deepEqual(SHELL.filter((f) => f !== "/" && !existsSync("public" + f)), []);
 });
+
+test("chaque élément attendu par screens.js existe dans la page, sinon le jeu se recharge à chaque ouverture", () => {
+  const block = read("/js/app/screens.js").match(/export const ui = \{([\s\S]*?)\n\};/)[1];
+  const ids = [...block.matchAll(/\$\("([^"]+)"\)/g)].map((m) => m[1]);
+  assert.ok(ids.length > 100);
+  assert.deepEqual(ids.filter((id) => !page.includes(`id="${id}"`)), []);
+});

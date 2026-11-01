@@ -153,6 +153,20 @@ check("classements général et soirée : le joueur y est", r.status === 200 && 
   r = await call("PUT", "/api/me/look", { token: odd, body: { look: { spread: "constructor", head: "ring", side: "bat", bread: "hitbox", aura: "constructor", ach: 0, own: {} } } });
   const oddId = (await call("GET", "/api/board", { token: odd })).data.me.id, worn = (await call("GET", `/api/players/${oddId}`)).data.look;
   check("tenue : seuls les objets qui existent, dans le bon emplacement", r.status === 200 && worn.spread === null && worn.head === null && worn.aura === null && worn.side === "bat" && worn.bread === "hitbox", worn);
+  const synced = await joinAs("Synchro" + hex(4)), mine = async () => (await call("GET", "/api/board", { token: synced })).data.me.look;
+  const outfit = { head: "crown", side: "bat", bread: "toasted", aura: "ring", spread: "choco", ach: 20, own: { head: 5, side: 2, bread: 3, aura: 1, spread: 6 } };
+  await call("PUT", "/api/me/look", { token: synced, body: { look: outfit } });
+  r = await call("PUT", "/api/me/look", { token: synced, body: { look: { spread: "butter", ach: 0, own: {}, at: 0 } } });
+  let seen = await mine();
+  check("appareil neuf (tenue vide, sans date) : la tenue du compte est gardée et renvoyée", r.status === 200 && r.data.look.head === "crown" && seen.head === "crown" && seen.spread === "choco" && seen.ach === 20 && seen.own.head === 5, { sent: r.data.look, seen });
+  await call("PUT", "/api/me/look", { token: synced, body: { look: { ...outfit, head: "witch", spread: "jam", ach: 25, own: { head: 6 }, at: 5000 } } });
+  seen = await mine();
+  check("tenue changée sur un appareil : elle remplace celle du compte, compteurs au plus haut", seen.head === "witch" && seen.spread === "jam" && seen.at === 5000 && seen.ach === 25 && seen.own.head === 6 && seen.own.spread === 6, seen);
+  r = await call("PUT", "/api/me/look", { token: synced, body: { look: { ...outfit, head: "pirate", at: 4000 } } });
+  check("tenue plus ancienne d'un autre appareil : ignorée", r.data.look.head === "witch" && r.data.look.at === 5000, r.data.look);
+  await call("POST", "/api/runs", { token: synced, body: { look: { ...outfit, head: null, at: 0 } } });
+  seen = await mine();
+  check("départ de partie avec une tenue plus ancienne : celle du compte gardée", seen.head === "witch", seen);
 }
 
 {

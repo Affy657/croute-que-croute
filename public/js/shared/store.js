@@ -13,6 +13,7 @@ export const KEYS = {
   toppings: "cv-garnitures",
   topping: "cv-garniture",
   outfitSeen: "cv-tenue-vue",
+  outfitAt: "cv-tenue-at",
   gear: "cv-accessoire",
   side: "cv-cotes",
   bread: "cv-pain",

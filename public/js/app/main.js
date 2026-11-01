@@ -11,13 +11,13 @@ import { createInput } from "./input.js";
 import { burst, rain, bounce } from "./party.js";
 import * as ach from "./achievements.js";
 import { chosen, unlockTopping, chooseTopping, onTopping, stepTopping } from "./toppings.js";
-import { outfit, chooseGear, chosenGear, onGear, stepGear } from "./gear.js";
+import { outfit, chooseGear, onGear, stepGear } from "./gear.js";
 import { SPREADS, GEAR } from "../shared/palette.js";
 import { renderWeapons, renderAttacks, renderCredits, animateAttacks } from "./catalog.js";
 import { renderGuide } from "./guide.js";
 import { renderSettings, suggestInstall, leaveSettings, testing, setInvincible } from "./settings.js";
 import { onInstallChange } from "./install.js";
-import { openCard, closeCard, drawCard, myLook, shareLook } from "./profile.js";
+import { openCard, closeCard, drawCard, myLook, shareLook, stampOutfit, onAdopt } from "./profile.js";
 import { initAccount, resetAccount } from "./account.js";
 import { finishLoading } from "./loader.js";
 import {
@@ -34,6 +34,7 @@ const SCARS_MAX = 12, SCAR_JITTER = 0.3;
 const HUD_WIDEST = "000,00", HUD_PAD = 6;
 
 document.documentElement.dataset.version = VERSION;
+if (Object.values(ui).some((el) => !el)) api.applyUpdate();
 const canvas = document.getElementById("cv");
 const scene = createScene(canvas, document.getElementById("fx"));
 let sim = createSim();
@@ -635,20 +636,28 @@ api.on("board", () => {
 });
 api.on("result", ach.afterSubmit);
 api.on("board", () => ach.onBoard(api.net.board));
-onTopping((kind) => {
+onTopping((kind, synced) => {
   S.toast.spread = kind;
   renderPicker();
+  if (!synced) stampOutfit();
   shareLook();
 });
 onGear((slot, kind) => {
   S.toast[slot] = kind;
   ach.checkOutfit(S.toast);
   renderPicker();
+  stampOutfit();
   shareLook();
+});
+onAdopt(() => {
+  Object.assign(S.toast, outfit(), { spread: chosen() });
+  ach.checkOutfit(S.toast);
+  renderPicker();
 });
 ach.onUnlock((a, synced) => {
   shareLook();
-  if (a.gear && !(synced && chosenGear(GEAR[a.gear].slot))) chooseGear(GEAR[a.gear].slot, a.gear);
+  if (a.gear && !synced) chooseGear(GEAR[a.gear].slot, a.gear);
+  else Object.assign(S.toast, outfit());
   if (S.mode === "play") {
     toastAch(a);
     if (a.gear) toastAch({ name: gearLabel(a) });
