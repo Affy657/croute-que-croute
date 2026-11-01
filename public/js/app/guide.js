@@ -135,7 +135,7 @@ function nights() {
     "Pendant une soirée Space Tartinade, un classement à part s'ouvre : c'est lui qui compte pour le lot.",
     "Les parties sur PC n'y comptent pas.",
     "Une partie commencée avant la fin compte encore 5 min après. Le gagnant est annoncé ensuite.",
-    "Succès à la clé : Première soirée, Dans le top (top 10), Tartine d'or (1er) et Fidèle du Space (3 soirées)."
+    "Succès à la clé : Première soirée, Dans le top (top 10) et Tartine d'or (1er)."
   )));
 }
 
