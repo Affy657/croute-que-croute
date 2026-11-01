@@ -408,7 +408,7 @@ Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du c
 - Toucher une bière (par exemple les canettes 8.6 et Maximator qui passent déjà en étoile filante) pour mettre un effet « bourré » sur le jeu.
 - Skin Tung Tung Tung Sahur pour la tartine (le personnage de la planète drôle).
 - Débloquer des musiques (à rapprocher des morceaux des collègues DJ, plus haut).
-- Ajouter des skins très stylés comme la Hitbox, qui fait envie à beaucoup de joueurs grâce à l'aura autour de la tartine.
+- Auras (brainstorm du 01/11/2026, choix d'Adrien sur maquettes) : nouvel emplacement de tenue « Aura », qui se combine avec tout le reste. Elle est dessinée sous les couverts pour n'en cacher aucun, et ne change ni la tartine ni sa zone de touche. Chacune récompense un succès qui ne donnait rien : Surchauffe (flammes qui dansent et braises qui montent, Bien grillée), Survoltée (éclairs qui crépitent par moments, Intouchable), Néon de soirée (anneau lumineux qui tourne et change de couleur, Dans le top), Anneau planétaire (anneau et petite lune qui tournent, Tout le ciel).
 - Nouvel emplacement de tenue : une traînée derrière la tartine (miettes, paillettes) ou un effet de mort (la tartine éclate en confettis), à débloquer. À rapprocher des skins stylés, juste au-dessus.
 
 ## Idées pour plus tard
