@@ -74,7 +74,6 @@
     let e = errors.get(key);
     if (!e) {
       if (errors.size >= DISTINCT) return;
-      if (!errors.size) learnVersion();
       note(kind + " : " + message);
       e = { kind, message, source, stack: stack.split("\n").slice(0, STACK).join("\n").slice(0, 4000), trail: trail.slice(), device: device(), count: 0, sent: 0 };
       errors.set(key, e);
@@ -101,6 +100,9 @@
   function flush(leaving) {
     clearTimeout(timer);
     timer = null;
+    for (const [key, e] of errors) {
+      if (e.kind === "blocage" && !e.sent && root.dataset.ready) errors.delete(key);
+    }
     const due = [];
     for (const e of errors.values()) {
       if (due.length < BATCH && e.count > e.sent && (!e.sent || leaving)) due.push(e);
@@ -180,11 +182,19 @@
         for (const m of list) if (!m.target.hidden) note("écran " + m.target.id);
       });
       for (const el of screens) watch.observe(el, { attributes: true, attributeFilter: ["hidden"] });
-      if (game) {
+      if (game && !root.dataset.ready) {
+        const started = new MutationObserver(() => {
+          if (!root.dataset.ready) return;
+          note("jeu prêt");
+          started.disconnect();
+        });
+        started.observe(root, { attributes: true, attributeFilter: ["data-ready"] });
         setTimeout(() => {
           if (!root.dataset.ready) capture("blocage", "Jeu pas démarré au bout de " + STUCK_MS / 1000 + " s", "", "");
         }, STUCK_MS);
       }
     } catch (err) {}
   });
+
+  learnVersion();
 }
