@@ -67,6 +67,13 @@ check("ancien jeton refusé après réinscription", r.status === 200 && r.data.m
 r = await call("POST", "/api/join", { body: { pseudo: pseudo.toLowerCase(), clientId: hex(32) } });
 check("même pseudo depuis un autre téléphone refusé", r.status === 409, r);
 
+r = await call("POST", "/api/runs", { token, version: "precedente" });
+check("partie lancée par la version d'avant acceptée (mise à jour pendant la partie)", r.status === 201 && !!r.data.runId, r);
+r = await call("POST", "/api/runs", { token, version: "vieille" });
+check("partie lancée par une plus vieille version refusée (426)", r.status === 426, r);
+r = await call("PATCH", "/api/me", { token, version: "precedente", body: { pseudo } });
+check("version d'avant refusée hors départ de partie (426)", r.status === 426, r);
+
 r = await call("POST", "/api/runs", { token });
 check("début de partie, comptée pour la soirée", r.status === 201 && r.data.runId && r.data.event === true, r);
 const tooHigh = r.data.runId;

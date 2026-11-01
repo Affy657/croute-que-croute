@@ -11,6 +11,7 @@ interface __BaseEnv_Env {
 	SOUND_LIMIT: RateLimit;
 	ERROR_LIMIT: RateLimit;
 	APP_VERSION: "dev";
+	APP_PREVIOUS: "";
 	ADMIN_KEY: string;
 }
 declare namespace Cloudflare {

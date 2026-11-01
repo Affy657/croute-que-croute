@@ -22,7 +22,10 @@ export function bearer(req: Request) {
 
 export const clientIp = (req: Request) => req.headers.get("cf-connecting-ip") ?? "local";
 
-export const outdated = (req: Request, env: Env) => req.headers.get("x-app-version") !== env.APP_VERSION;
+export function outdated(req: Request, env: Env, previousOk = false) {
+  const version = req.headers.get("x-app-version");
+  return version !== env.APP_VERSION && !(previousOk && !!version && version === env.APP_PREVIOUS);
+}
 
 export const updateRequired = () => fail(426, "Nouvelle version du jeu : recharge la page.");
 

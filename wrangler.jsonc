@@ -11,7 +11,8 @@
     "directory": "./public"
   },
   "vars": {
-    "APP_VERSION": "dev"
+    "APP_VERSION": "dev",
+    "APP_PREVIOUS": ""
   },
   "ratelimits": [
     { "name": "JOIN_LIMIT", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } },

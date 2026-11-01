@@ -158,7 +158,6 @@ function start(train = null) {
   S.run = train ? null : api.startRun({ look: myLook() });
   const open = api.openEvent();
   if (!train) ach.runStart(open ? String(open.opensAt) : null);
-  if (S.run) S.run.then((r) => { if (r.status === 426 && S.mode === "play") api.applyUpdate(); });
   const lead = api.leader(S.scope);
   S.goal = train ? { best: 0, lead: 0, reached: 0 } : { best: api.standing(S.scope).best, lead: S.run && lead && !lead.me ? lead.best : 0, reached: 0 };
   input.reset();

@@ -181,7 +181,7 @@ export async function rename({ req, env }: Ctx) {
 }
 
 export async function startRun({ req, env }: Ctx) {
-  if (outdated(req, env)) return updateRequired();
+  if (outdated(req, env, true)) return updateRequired();
   const now = Date.now();
   const me = await findProfile(req, env);
   if (!me) return fail(401, "Joueur inconnu.");
