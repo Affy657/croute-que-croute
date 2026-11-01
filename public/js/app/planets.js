@@ -484,11 +484,32 @@ function stage(ctx, r, clock) {
   ctx.restore();
 }
 
-const POP_S = 6, POP_UP = 0.7, SLOTS = [[0.08, -0.74, 0.12, 1], [-0.08, -0.55, 0, -1]];
+const POP_S = 6, DROP_S = 0.5, POP_AT = 5, SNAP_S = 0.12, EJECT = 0.6, SHOWN_AT = 3.5, WISPS = 3;
+const SLOTS = [[0.08, -0.74, 0.12, 1], [-0.08, -0.55, 0, -1]];
 
-function popped(clock, delay) {
-  const k = (((clock - delay) % POP_S) + POP_S) % POP_S;
-  return k < POP_UP ? Math.sin((k / POP_UP) * Math.PI) : 0;
+const hex = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+
+function mix(a, b, t) {
+  const A = hex(a), B = hex(b);
+  return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(",")})`;
+}
+
+const cycle = (clock, delay) => (((clock + SHOWN_AT - delay) % POP_S) + POP_S) % POP_S;
+
+function grill(clock, delay) {
+  const k = cycle(clock, delay);
+  if (k < DROP_S) {
+    const e = k / DROP_S;
+    return { done: 0, lift: -0.35 * (1 - e) * (1 - e), fade: e, turn: 0 };
+  }
+  if (k < POP_AT) return { done: (k - DROP_S) / (POP_AT - DROP_S), lift: 0, fade: 1, turn: 0 };
+  const e = (k - POP_AT) / (POP_S - POP_AT);
+  return { done: 1, lift: EJECT * Math.sin((e * Math.PI) / 2), fade: 1 - e * e, turn: e };
+}
+
+function lever(clock) {
+  const k = cycle(clock, 0);
+  return k < DROP_S ? 1 - k / DROP_S : k < POP_AT ? 0 : Math.min(1, (k - POP_AT) / SNAP_S);
 }
 
 function chrome(ctx, r) {
@@ -529,7 +550,7 @@ function chrome(ctx, r) {
   ctx.stroke();
 }
 
-function bread(ctx, x, y, w, a) {
+function bread(ctx, x, y, w, a, done) {
   const T = SKY.toaster, k = w / 40;
   ctx.save();
   ctx.translate(x, y);
@@ -537,15 +558,15 @@ function bread(ctx, x, y, w, a) {
   ctx.scale(k, k);
   ctx.lineWidth /= k;
   toastPath(ctx, 40, 42);
-  ctx.fillStyle = T.crust;
+  ctx.fillStyle = mix(T.rawCrust, T.crust, done);
   ctx.fill();
   ctx.stroke();
   ctx.translate(0, 2);
   ctx.scale(0.78, 0.78);
   toastPath(ctx, 40, 42);
   const g = ctx.createRadialGradient(-8, -10, 2, 0, 0, 30);
-  g.addColorStop(0, T.crumb);
-  g.addColorStop(1, T.toasted);
+  g.addColorStop(0, mix(T.raw, T.crumb, done));
+  g.addColorStop(1, mix(T.raw, T.toasted, done));
   ctx.fillStyle = g;
   ctx.fill();
   ctx.restore();
@@ -564,8 +585,19 @@ function slot(ctx, x, y, w, r) {
   ctx.stroke();
 }
 
+function steam(ctx, x, y, r, clock, heat, seed) {
+  const base = ctx.globalAlpha;
+  ctx.fillStyle = SKY.toaster.smoke;
+  for (let j = 0; j < WISPS; j++) {
+    const p = (((clock * 0.5 + j / WISPS + seed) % 1) + 1) % 1;
+    ctx.globalAlpha = base * heat * (1 - p) * 0.75;
+    disc(ctx, x + Math.sin(p * 7 + j * 2) * r * 0.06, y - r * (0.3 + p * 0.55), r * (0.05 + p * 0.09));
+  }
+  ctx.globalAlpha = base;
+}
+
 function toaster(ctx, r, clock) {
-  const T = SKY.toaster, w = r * 0.56, hop = popped(clock, 0);
+  const T = SKY.toaster, w = r * 0.56, hop = lever(clock);
   chrome(ctx, r);
   onSphere(ctx, r, 0.86, 0.12, () => {
     ctx.fillStyle = T.slot;
@@ -587,7 +619,7 @@ function toaster(ctx, r, clock) {
     ctx.stroke();
   });
   for (const [x, y, delay, turn] of SLOTS) {
-    const up = popped(clock, delay);
+    const g = grill(clock, delay);
     slot(ctx, x * r, y * r, w * 0.64, r);
     ctx.strokeStyle = INK;
     ctx.lineWidth = ink(r);
@@ -595,8 +627,10 @@ function toaster(ctx, r, clock) {
     ctx.beginPath();
     ctx.rect(-r * 2, -r * 4, 4 * r, r * (4 + y));
     ctx.clip();
-    bread(ctx, x * r, (y - 0.04 - 0.55 * up) * r, w, turn * 0.22 * up);
+    ctx.globalAlpha *= g.fade;
+    bread(ctx, x * r, (y - 0.04 - g.lift) * r, w, turn * 0.4 * g.turn, g.done);
     ctx.restore();
+    if (g.lift === 0) steam(ctx, x * r, y * r, r, clock, g.done, delay);
   }
   ctx.fillStyle = T.bakelite;
   ctx.strokeStyle = INK;
@@ -1563,7 +1597,7 @@ export const BODIES = {
   ],
   rare: [
     { draw: stage, name: "Tung Tung Tung Sahur", r: 0.05, reach: 3.9 }, { draw: cheese, name: "Lune en fromage", r: 0.1, reach: 1.5 },
-    { draw: toaster, name: "Grille-pain", r: 0.1, reach: 1.9 },
+    { draw: toaster, key: "toaster", name: "Grille-pain", r: 0.1, reach: 1.9 },
     { draw: pumpkin, key: "pumpkin", name: "Citrouille", r: 0.09, reach: 2.1 }, { draw: melies, name: "Lune de Méliès", r: 0.1, reach: 1.4 },
     { draw: pirate, key: "pirate", name: "Planète pirate", r: 0.07, reach: 2.25 }, { draw: egg, key: "egg", name: "Œuf de Pâques", r: 0.08, reach: 1.7 }
   ]

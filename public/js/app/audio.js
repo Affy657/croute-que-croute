@@ -288,8 +288,7 @@ export function toggleMusic() {
   note("bouton musique", prefs.music ? "allumé" : "coupé");
   store.set(KEYS.musicOff, prefs.music ? null : "1");
   applyLevels();
-  if (prefs.music && !running) previewMusic();
-  else reconcile();
+  reconcile();
   changed();
 }
 

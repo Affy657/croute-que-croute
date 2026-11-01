@@ -632,6 +632,20 @@ const TOPPINGS = {
     ctx.stroke();
     dots(ctx, C.void, [[4.9, -0.2, 1.5]]);
   },
+  sauce(ctx) {
+    ctx.fillStyle = "#d9d3c4";
+    wavy(ctx, 0.6, 2.4, 12.8, 10.8, 0.14, 6);
+    ctx.fill();
+    ctx.fillStyle = "#f7f4ec";
+    wavy(ctx, 0, 1.6, 12.4, 10.4, 0.14, 6);
+    ctx.fill();
+    for (const [x, len] of [[-7, 10], [2, 14], [8, 7]]) drip(ctx, x, 8, len, 2);
+    ctx.fillStyle = "#ffffff";
+    oval(ctx, -4.5, -4.5, 4.5, 1.5, -0.4);
+    ctx.fill();
+    dots(ctx, "#ffffff", [[5, -2, 1.2], [-1, 5, 0.9], [9, 3, 0.7]]);
+    dots(ctx, "#f7f4ec", [[-11, -9, 1.3], [12, -10, 0.9]]);
+  },
   dog(ctx, C) {
     ctx.fillStyle = "#4a2611";
     line(ctx, DOG_BACK);

@@ -7,7 +7,7 @@ import { LOCAL } from "../shared/local.js";
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const POP_LIFE = 0.7, PUCK_R = 30, PUCK_LIFT = 110, GRAB_S = 0.6, FIELD_FADE = 5;
-const TOUR = ["rare", "normal", "wild", "normal", "normal", "normal", "wild", "normal"], SIDES = [0.8, 0.22], TOUCH_REACH = 1.8, PASSER_REACH = 0.6;
+const TOUR = ["rare", "normal", "wild", "normal", "normal", "normal", "wild", "normal"], SIDES = [0.8, 0.22], TOUCH_REACH = 1.8, PASSER_REACH = 0.6, SKIN_ODDS = 0.2;
 const SKY_SPEED = 20, SKY_GAP = 0.5, SKY_TOP = 0.3, SKY_LOOP = SKY_GAP * TOUR.length;
 const HEAT_EASE = 0.7, HEAT_LOW = 0.45, HEAT_FIELD = 0.85;
 const HINT = "Pose ton doigt où tu veux";
@@ -48,7 +48,9 @@ export function createScene(canvas, overlay) {
   let stars = [], sky = 0, shake = 0, parts = [], pops = [], fieldA = 0, heat = 0, heatKey = "", heatFill = null;
   let comet = null, cometIn = rnd(...COMET_FIRST);
   const deal = Object.fromEntries(Object.entries(BODIES).map(([kind, list]) => [kind, dealer(list, kind === "normal" ? 2 : 1)]));
-  const nextPasser = dealer(Object.keys(PASSERS)), slots = [], slotY = [], arts = [], pick = (i) => deal[ODD ? "rare" : TOUR[i]]();
+  const skin = dealer(BODIES.rare.filter((b) => b.key)), plain = dealer(BODIES.rare.filter((b) => !b.key));
+  const rare = () => (Math.random() < SKIN_ODDS ? skin : plain)();
+  const nextPasser = dealer(Object.keys(PASSERS)), slots = [], slotY = [], arts = [], pick = (i) => (ODD ? deal.rare() : TOUR[i] === "rare" ? rare() : deal[TOUR[i]]());
   let quality = Math.min(QUALITY.length - 1, Number(store.get(KEYS.quality)) || 0), frames = [], settle = SETTLE, fxDirty = true;
 
   function resize() {

@@ -18,9 +18,23 @@ if (LOCAL) {
 }
 
 export const net = { token: store.get(KEYS.playerToken), board: null, offset: 0, online: true, updatePending: false };
-let localBest = parseInt(store.get(KEYS.localBest) || "0", 10) || 0;
+let localBest = parseInt(store.get(KEYS.localBest) || "0", 10) || 0, saved = readBests();
 let boardAsked = 0, boardShown = 0, lastDevice = null;
 const listeners = { board: [], update: [], result: [] };
+
+function readBests() {
+  try {
+    const b = JSON.parse(store.get(KEYS.myBests) || "null");
+    return b && typeof b === "object" ? b : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function keepBests(me) {
+  saved = { best: me.best || 0, pcBest: me.pcBest || 0 };
+  store.set(KEYS.myBests, JSON.stringify(saved));
+}
 
 export const on = (name, fn) => listeners[name].push(fn);
 const emit = (name, value) => listeners[name].forEach((fn) => fn(value));
@@ -72,7 +86,7 @@ export const onPc = () => (lastDevice || guessDevice()) === "pc";
 export const myScope = () => (onPc() ? "pc" : isOpen() ? "event" : "general");
 
 export function standing(scope = myScope()) {
-  if (!registered()) return { best: localBest, rank: null, count: 0 };
+  if (!registered()) return { best: net.token && saved ? (scope === "pc" ? saved.pcBest : saved.best) : localBest, rank: null, count: 0 };
   const { me } = net.board;
   if (scope === "event") return { best: me.eventBest || 0, rank: me.eventRank, count: net.board.eventCount, rival: me.eventRival };
   if (scope === "pc") return { best: me.pcBest || 0, rank: me.pcRank, count: net.board.pcCount, rival: me.pcRival };
@@ -86,8 +100,14 @@ export function leader(scope = myScope()) {
   return (b && (scope === "event" ? b.eventTop || [] : scope === "pc" ? b.pcTop || [] : b.top)[0]) || null;
 }
 
-export function saveLocalBest(score) {
-  if (registered() || score <= localBest) return;
+export function saveLocalBest(score, scope) {
+  if (registered()) return;
+  if (net.token && saved) {
+    const key = scope === "pc" ? "pcBest" : "best";
+    if (score > saved[key]) keepBests({ ...saved, [key]: score });
+    return;
+  }
+  if (score <= localBest) return;
   localBest = score;
   store.set(KEYS.localBest, localBest);
 }
@@ -102,6 +122,7 @@ export async function refreshBoard() {
     net.online = true;
     if (net.token && !b.me) setToken(null);
     net.board = b;
+    if (b.me) keepBests(b.me);
     if (b.version && b.version !== VERSION) requestUpdate();
   } catch (e) {
     net.online = false;
@@ -174,6 +195,7 @@ function applyResult(r) {
   if (me) {
     Object.assign(me, { best: r.best, rank: r.rank, rival: r.rival, pcBest: r.pcBest, pcRank: r.pcRank, pcRival: r.pcRival });
     Object.assign(net.board, { count: r.count, pcCount: r.pcCount });
+    keepBests(me);
     if (r.eventBest !== null) {
       Object.assign(me, { eventBest: r.eventBest, eventRank: r.eventRank, eventRival: r.eventRival });
       net.board.eventCount = r.eventCount;
