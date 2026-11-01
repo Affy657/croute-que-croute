@@ -1,5 +1,6 @@
-import { fmtCs, ord, clock } from "../shared/format.js";
-import { net, serverNow, registered, isOpen, openEvent, recentEvent, upcomingEvent, standing, knownBest, onPc } from "./api.js";
+import { fmtCs, ord, clock, when } from "../shared/format.js";
+import { countdown, champion } from "../shared/banner.js";
+import { net, serverNow, registered, isOpen, recentEvent, upcomingEvent, standing, knownBest, onPc } from "./api.js";
 import { prefs, musicAvailable } from "./audio.js";
 import { progress } from "./achievements.js";
 import { PROJECTILES } from "../game/projectiles.js";
@@ -64,20 +65,13 @@ export function setDigits(el, text) {
   });
 }
 
-const SOON_MS = 24 * 3600 * 1000;
 let boardScope = null, shownScope = "general";
 
-function when(ms) {
-  const d = new Date(ms);
-  const day = d.toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "2-digit" });
-  return day + " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
-}
-
 function setCountdown(el) {
-  const open = openEvent(), next = upcomingEvent(), now = serverNow();
-  const [label, target] = open ? ["Fin dans ", open.closesAt] : next && next.opensAt - now < SOON_MS ? ["Début dans ", next.opensAt] : [null, 0];
-  el.hidden = !label;
-  if (!label) return;
+  const now = serverNow(), c = countdown(net.board, now);
+  el.hidden = !c;
+  if (!c) return;
+  const { label, target } = c;
   if (!el.timer) {
     el.timer = document.createElement("span");
     el.timer.className = "digits";
@@ -125,11 +119,11 @@ export function renderMenu() {
   const mine = standing();
   fillStats(ui.menuStats, ui.menuBestBox, ui.menuBest, ui.menuRankBox, ui.menuRank, needJoin() ? 0 : mine.best, mine.rank, mine.count);
   let info = "";
-  const recent = recentEvent();
+  const champ = champion(b, serverNow());
   if (!b && !net.online) info = "Hors ligne";
   else if (me && me.banned) info = "Retiré du classement";
   else if (b && isOpen() && onPc()) info = "Sur PC : hors classement de la soirée";
-  else if (b && !isOpen() && recent && serverNow() >= recent.finalAt && b.eventTop[0]) info = "Bravo " + b.eventTop[0].pseudo + " !";
+  else if (champ) info = "Bravo " + champ + " !";
   setText(ui.menuInfo, info);
   ui.menuAch.textContent = achLabel();
   setCountdown(ui.menuCountdown);

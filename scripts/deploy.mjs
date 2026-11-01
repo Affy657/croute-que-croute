@@ -56,6 +56,11 @@ try {
   } catch {
     console.error(`Tag v${number} pas créé ou pas envoyé : le faire à la main.`);
   }
+  try {
+    execSync(`node scripts/verif.mjs ${version}`, { stdio: "inherit" });
+  } catch {
+    console.error(`La version ${version} est en ligne, mais la vérification a trouvé un problème (voir au-dessus).`);
+  }
 } finally {
   execSync(`git checkout -- ${file}`);
 }

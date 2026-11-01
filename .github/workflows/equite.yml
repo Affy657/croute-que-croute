@@ -1,0 +1,23 @@
+name: Équité
+
+on:
+  push:
+    branches: [master]
+    paths: ["public/js/game/**", "test/fairness.mjs"]
+  workflow_dispatch:
+
+concurrency:
+  group: equite
+  cancel-in-progress: true
+
+jobs:
+  robot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Robot d'équité (0 mort attendu)
+        run: npm test
