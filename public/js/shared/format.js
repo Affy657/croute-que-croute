@@ -7,3 +7,9 @@ export function clock(ms) {
   const ss = String(sec).padStart(2, "0");
   return h > 0 ? h + ":" + String(m).padStart(2, "0") + ":" + ss : m + ":" + ss;
 }
+
+export function when(ms) {
+  const d = new Date(ms);
+  const day = d.toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "2-digit" });
+  return day + " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
+}

@@ -1,20 +1,15 @@
 import { fmtCs, clock } from "../shared/format.js";
+import { screenBanner } from "../shared/banner.js";
 import { rain, bounce } from "../app/party.js";
 import { timeout } from "../shared/timeout.js";
 import { VERSION } from "../version.js";
 
-const POLL_MS = 10000, FETCH_MS = 8000, ROWS = 10, FEED_ROWS = 4, IDLE_MS = 3000, SOON_MS = 24 * 3600 * 1000, CROWN_MS = 6000;
+const POLL_MS = 10000, FETCH_MS = 8000, ROWS = 10, FEED_ROWS = 4, IDLE_MS = 3000, CROWN_MS = 6000;
 const $ = (id) => document.getElementById(id);
 let board = null, offset = 0, shown = null, idleTimer = null, lock = null, seen = null, crownTimer = null, busy = false, stale = false;
 
 document.documentElement.dataset.version = VERSION;
 const now = () => Date.now() + offset;
-
-function when(ms) {
-  const d = new Date(ms);
-  const day = d.toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "2-digit" });
-  return day + " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
-}
 
 function view() {
   const ev = board.event;
@@ -79,18 +74,12 @@ function setCountdown(label, ms) {
 
 function tick() {
   if (!board) return;
-  const el = $("countdown"), v = view(), t = now(), next = board.next;
-  if (v.ev && v.ev.status === "open") setCountdown("Fin dans ", v.ev.closesAt - t);
-  else if (v.ev && t < v.ev.finalAt) setCountdown("Résultats dans ", v.ev.finalAt - t);
-  else if (next && next.opensAt - t < SOON_MS) setCountdown(v.ev ? "Prochaine soirée dans " : "Début dans ", next.opensAt - t);
-  else if (next) {
-    el.textContent = "Prochaine soirée " + when(next.opensAt);
+  const el = $("countdown"), t = now(), s = screenBanner(board, t);
+  if (!s) el.hidden = true;
+  else if (s.label) setCountdown(s.label, s.target - t);
+  else {
+    el.textContent = s.text;
     el.hidden = false;
-  } else if (v.ev && v.top[0]) {
-    el.textContent = "Bravo " + v.top[0].pseudo + " !";
-    el.hidden = false;
-  } else {
-    el.hidden = true;
   }
 }
 

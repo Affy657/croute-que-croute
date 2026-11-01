@@ -2,6 +2,8 @@ import { PALETTE, SPREADS, GEAR } from "../shared/palette.js";
 import { FW, FH, HIT_R, NEAR, clamp } from "../game/field.js";
 import { PROJECTILES } from "../game/projectiles.js";
 
+const own = (map, key) => (Object.hasOwn(map, key) ? map[key] : null);
+
 export function rr(ctx, x, y, w, h, r) {
   if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
   else ctx.rect(x, y, w, h);
@@ -70,7 +72,7 @@ function spreadOn(ctx, x, y, kind) {
   ctx.ellipse(x, y, 7, 2.6, 0.05, 0, Math.PI * 2);
   ctx.fill();
   if (!kind) return;
-  if (SMEARS[kind]) {
+  if (own(SMEARS, kind)) {
     SMEARS[kind](ctx, x, y);
     return;
   }
@@ -734,7 +736,7 @@ const TOPPINGS = {
 
 function topping(ctx, kind, C) {
   ctx.save();
-  (TOPPINGS[kind] || TOPPINGS.butter)(ctx, C);
+  (own(TOPPINGS, kind) || TOPPINGS.butter)(ctx, C);
   ctx.restore();
 }
 
@@ -1350,7 +1352,7 @@ const HATS = {
 };
 
 export function hat(ctx, kind, C) {
-  if (!HATS[kind]) return;
+  if (!own(HATS, kind)) return;
   ctx.save();
   HATS[kind](ctx, C);
   ctx.restore();
@@ -1586,7 +1588,7 @@ function ringFront(ctx, now, C) {
 const AURAS = { heat: { back: auraHeat }, volt: { back: auraVolt }, neon: { back: auraNeon }, ring: { back: ringBack, front: ringFront } };
 
 export function drawAura(ctx, t, C = PALETTE) {
-  const aura = Object.hasOwn(AURAS, t.aura) && AURAS[t.aura];
+  const aura = own(AURAS, t.aura);
   if (!aura) return;
   ctx.save();
   ctx.translate(t.x, t.y);
@@ -1596,8 +1598,8 @@ export function drawAura(ctx, t, C = PALETTE) {
 }
 
 export function drawToast(ctx, t, splat, C = PALETTE, aura = true) {
-  const w = 40, h = 42, bread = GEAR[t.bread], round = t.bread === "hitbox", s = round ? HIT_R / ROUND_R : 1;
-  const body = round ? roundPath : (c) => toastPath(c, w, h), front = !splat && Object.hasOwn(AURAS, t.aura) && AURAS[t.aura].front;
+  const w = 40, h = 42, bread = own(GEAR, t.bread), round = t.bread === "hitbox", s = round ? HIT_R / ROUND_R : 1;
+  const body = round ? roundPath : (c) => toastPath(c, w, h), front = !splat && own(AURAS, t.aura)?.front;
   if (aura && !splat) drawAura(ctx, t, C);
   ctx.save();
   ctx.translate(t.x, t.y);
@@ -1606,7 +1608,7 @@ export function drawToast(ctx, t, splat, C = PALETTE, aura = true) {
   if (round && !splat) nearZone(ctx, C);
   ctx.scale(s, s);
   if (!splat) thrusters(ctx, t, w, h, C);
-  if (!splat && SIDES[t.side]) SIDES[t.side](ctx, t, C);
+  if (!splat && own(SIDES, t.side)) SIDES[t.side](ctx, t, C);
   body(ctx);
   ctx.fillStyle = bread ? bread.crust : C.crust;
   ctx.fill();
@@ -1628,13 +1630,13 @@ export function drawToast(ctx, t, splat, C = PALETTE, aura = true) {
     ctx.fill();
   }
   ctx.globalAlpha = 1;
-  if (BREADS[t.bread]) BREADS[t.bread](ctx, w, h, C);
+  if (own(BREADS, t.bread)) BREADS[t.bread](ctx, w, h, C);
   ctx.save();
   ctx.scale(round ? ROUND_SPREAD : 1, round ? ROUND_SPREAD : 1);
   topping(ctx, t.spread, C);
   ctx.restore();
   if (front) {
-    const reach = SIDE_REACH[t.side] || (round ? 0 : w / 2 + OUTLINE), near = (HIT_R + NEAR) / s;
+    const reach = own(SIDE_REACH, t.side) || (round ? 0 : w / 2 + OUTLINE), near = (HIT_R + NEAR) / s;
     ctx.save();
     body(ctx);
     if (reach) ctx.rect(-reach, -SIDE_BAND, reach * 2, SIDE_BAND * 2);

@@ -15,6 +15,8 @@
     "check": "tsc --noEmit",
     "test": "node test/fairness.mjs 100 150",
     "test:api": "node test/api.mjs",
+    "test:unit": "node --test \"test/unit/*.test.mjs\"",
+    "verif": "node scripts/verif.mjs",
     "equilibrage": "node test/equilibrage/comparer.mjs",
     "equilibrage:attaques": "node test/equilibrage/attaques.mjs",
     "equilibrage:vides": "node test/equilibrage/vides.mjs",

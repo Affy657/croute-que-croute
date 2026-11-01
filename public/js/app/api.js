@@ -3,6 +3,7 @@ import { store, session, KEYS } from "../shared/store.js";
 import { guessDevice } from "./input.js";
 import { LOCAL } from "../shared/local.js";
 import { timeout } from "../shared/timeout.js";
+import { openOf, recentOf, upcomingOf } from "../shared/banner.js";
 
 const RELOAD_GAP = 15000;
 const UPDATED = "Partie pas comptée : le jeu a été mis à jour, il se recharge quand tu rejoues.";
@@ -61,24 +62,10 @@ export async function call(method, path, body, timeoutMs) {
 export const serverNow = () => Date.now() + net.offset;
 export const registered = () => !!(net.board && net.board.me);
 
-export function openEvent() {
-  const b = net.board;
-  if (!b) return null;
-  const now = serverNow();
-  return [b.event, b.next].find((e) => e && now >= e.opensAt && now < e.closesAt) || null;
-}
-
+export const openEvent = () => openOf(net.board, serverNow());
 export const isOpen = () => !!openEvent();
-
-export function recentEvent() {
-  const e = net.board && net.board.event;
-  return e && !isOpen() && serverNow() >= e.closesAt ? e : null;
-}
-
-export function upcomingEvent() {
-  const e = net.board && net.board.next;
-  return e && serverNow() < e.opensAt ? e : null;
-}
+export const recentEvent = () => recentOf(net.board, serverNow());
+export const upcomingEvent = () => upcomingOf(net.board, serverNow());
 
 export const canCompete = () => registered() && !net.board.me.banned;
 
