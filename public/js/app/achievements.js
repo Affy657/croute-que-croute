@@ -30,7 +30,7 @@ export const ACHIEVEMENTS = [
   { id: "runs50", family: "loyal", name: "Boulangerie", desc: "Jouer 50 parties", gear: "brioche" },
   { id: "runs100", family: "loyal", name: "Accro à la croûte", desc: "Jouer 100 parties", gear: "crustless" },
   { id: "xmas", family: "loyal", name: "Joyeux Noël", desc: "Jouer en décembre" },
-  { id: "events3", family: "loyal", name: "Fidèle du Space", desc: "Jouer à 3 soirées", gear: "astronaut" },
+  { id: "events3", family: "loyal", name: "Fidèle du Space", desc: "Jouer à 3 soirées" },
   { id: "top10", family: "loyal", name: "Dans le top", desc: "Entrer dans le top 10 d'une soirée" },
   { id: "eventWin", family: "loyal", name: "Tartine d'or", desc: "Finir 1er d'une soirée", gear: "crown" },
   { id: "express", family: "secret", name: "Tartinée express", desc: "Se faire tartiner en moins de 2 s", hint: "il y a des records qu'on ne cherche pas.", gear: "halo" },
@@ -43,9 +43,11 @@ export const ACHIEVEMENTS = [
   { id: "ahoy", family: "secret", name: "À l'abordage", desc: "Toucher la planète pirate sur l'accueil", hint: "un navire croise parfois au large de l'accueil.", gear: "pirate" },
   { id: "hoho", family: "secret", name: "Ho ho ho", desc: "Toucher le père Noël sur l'accueil", hint: "un traîneau traverse parfois le ciel de l'accueil.", gear: "santa" },
   { id: "eggHunt", family: "secret", name: "Chasse aux œufs", desc: "Toucher l'œuf de Pâques sur l'accueil", hint: "un lapin sautille parfois dans le ciel de l'accueil.", gear: "bunny" },
-  { id: "toaster", family: "secret", name: "Ding !", desc: "Toucher le grille-pain sur l'accueil", hint: "ça sent le pain grillé dans le ciel de l'accueil.", gear: "toasted" }
+  { id: "toaster", family: "secret", name: "Ding !", desc: "Toucher le grille-pain sur l'accueil", hint: "ça sent le pain grillé dans le ciel de l'accueil.", gear: "toasted" },
+  { id: "ufo", family: "secret", name: "Rencontre du 3e type", desc: "Toucher la soucoupe volante sur l'accueil", hint: "quelqu'un fait parfois coucou depuis le ciel de l'accueil.", gear: "antennae" },
+  { id: "roadTrip", family: "secret", name: "Road trip spatial", desc: "Toucher la voiture de l'espace sur l'accueil", hint: "une voiture rouge roule parfois dans le ciel de l'accueil.", gear: "astronaut" }
 ];
-const SKY_TOUCH = { pumpkin: "pumpkin", pirate: "ahoy", santa: "hoho", egg: "eggHunt", toaster: "toaster" };
+const SKY_TOUCH = { pumpkin: "pumpkin", pirate: "ahoy", santa: "hoho", egg: "eggHunt", toaster: "toaster", saucer: "ufo", tesla: "roadTrip" };
 const BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
 
 const blank = () => ({ got: {}, attacks: [], events: [], runs: 0 });

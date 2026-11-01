@@ -34,6 +34,7 @@ export const GEAR = {
   nightcap: { slot: "head", name: "Bonnet de nuit" },
   dog: { slot: "head", name: "Oreilles de chien" },
   bunny: { slot: "head", name: "Oreilles de lapin" },
+  antennae: { slot: "head", name: "Antennes d'alien" },
   boosters: { slot: "side", name: "Boosters" },
   cutlery: { slot: "side", name: "Couteau et fourchette" },
   sixseven: { slot: "side", name: "Mains Six Seven" },
