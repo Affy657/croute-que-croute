@@ -41,8 +41,14 @@ export const ui = {
 
 const PAGES = ["menu", "over", "board", "hud", "info", "settings", "qr", "link", "ach", "profile"];
 const SCREENS = { menu: ["menu"], play: ["hud"], over: ["over"], board: ["board"], info: ["info"], settings: ["settings"], qr: ["qr"], link: ["link"], ach: ["ach"], profile: ["profile"] };
+const PAGE_OF = { board: "board", profile: "board", info: "info", settings: "settings", qr: "settings", link: "settings", ach: "ach" };
+let current = "menu";
+
+export const screen = () => current;
+export const openPage = () => PAGE_OF[current] || null;
 
 export function show(name) {
+  current = name;
   for (const id of PAGES) ui[id].hidden = !SCREENS[name].includes(id);
   ui.infoBtn.hidden = name !== "menu" && name !== "over";
   ui.settingsBtn.hidden = ui.infoBtn.hidden;
@@ -278,10 +284,10 @@ function renderToggle(button, on, available) {
 }
 
 export function renderControls(playing) {
-  const page = !ui.info.hidden || !ui.settings.hidden || !ui.qr.hidden || !ui.link.hidden || !ui.ach.hidden || !ui.profile.hidden;
-  ui.infoBtn.hidden = playing || page || !ui.board.hidden;
+  const page = openPage();
+  ui.infoBtn.hidden = playing || !!page;
   ui.settingsBtn.hidden = ui.infoBtn.hidden;
-  const quiet = playing || page;
+  const quiet = playing || (!!page && current !== "board");
   renderToggle(ui.music, prefs.music, !quiet && musicAvailable());
   renderToggle(ui.sfx, prefs.sfx, !quiet);
 }
