@@ -191,7 +191,7 @@ function bread({ t, toast, pick }) {
 export const ATTACKS = [
   { id: "aimed", name: "Couteau visé", from: 0, weight: 2.5, cost: 1, speed: 230, make: aimed, growsUntil: 25, growth: "le couteau visé se met à tourner",
     info: "Un couteau lancé droit sur toi, du haut ou d'un côté. Bouge pendant l'alerte et c'est esquivé. Dès 25 s, il tourne sur lui-même une fois sur trois." },
-  { id: "rain", name: "Pluie de fourchettes", from: 3, weight: 1.4, cost: 1.5, speed: 190, make: rain, growsUntil: 60, growth: "pluie max : 8 fourchettes",
+  { id: "rain", name: "Pluie de fourchettes", waits: ["downpour", "cleaver"], from: 3, weight: 1.4, cost: 1.5, speed: 190, make: rain, growsUntil: 60, growth: "pluie max : 8 fourchettes",
     info: "4 fourchettes tombent du haut à la suite, un peu en biais. Une de plus toutes les 15 s, jusqu'à 8." },
   { id: "cleaver", name: "Hachoir", solo: true, avoids: ["rain", "slant", "downpour", "cross", "wall", "walls"], from: 8, weight: 0.9, cost: 1.3, speed: 300, make: cleaver, growsUntil: 55, growth: "hachoirs par 3",
     info: "Tombe tout droit et très vite dans ta colonne, avec 0,9 s d'alerte. Change de colonne. Un 2e suit juste à côté dès 30 s, un 3e dès 55 s." },
@@ -213,12 +213,12 @@ export const ATTACKS = [
     info: "7 à 8 fourchettes tombent en biais à la suite et balaient l'écran d'un bord à l'autre." },
   { id: "corridor", name: "Couloir", lab: true, solo: true, from: 46, weight: 0.6, cost: 2.2, speed: 150, make: corridor,
     info: "Un mur d'un côté, puis un autre de l'autre côté juste derrière, chacun avec son trou. Enchaîne d'un trou à l'autre." },
-  { id: "downpour", name: "Double pluie", solo: true, avoids: ["rain", "slant"], from: 54, weight: 0.6, cost: 1.8, speed: 190, make: downpour,
+  { id: "downpour", name: "Double pluie", solo: true, avoids: ["rain", "slant"], waits: ["downpour", "cleaver"], from: 54, weight: 0.6, cost: 1.8, speed: 190, make: downpour,
     info: "Une rafale de 8 fourchettes (9 dès 60 s) qui tombent tout droit, une fois à gauche, une fois à droite." }
 ];
 
-export function pickAttack(t, rng, last = null, streak = 0, active = new Set()) {
-  const open = ATTACKS.filter((a) => !a.lab && t > a.from && !(a.shuns && a.shuns.some((id) => active.has(id))));
+export function pickAttack(t, rng, last = null, streak = 0, active = new Set(), fresh = new Set()) {
+  const open = ATTACKS.filter((a) => !a.lab && t > a.from && !(a.shuns && a.shuns.some((id) => active.has(id))) && !(a.waits && a.waits.some((id) => fresh.has(id))));
   const prev = ATTACKS.find((a) => a.id === last), kin = prev && prev.kin;
   const allowed = open.filter((a) => (a.id !== last || (!a.solo && streak < MAX_STREAK)) && !(kin && a.kin === kin && a.id !== last) && !(a.avoids && a.avoids.includes(last)));
   const pool = allowed.length ? allowed : open;
