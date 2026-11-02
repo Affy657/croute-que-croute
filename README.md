@@ -478,6 +478,7 @@ Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du c
 
 ### Ajouté par Adrien le 02/11/2026
 
+- Préparer une diapo pour présenter le projet et la suite à l'AG du lundi 02/11/2026 à 20h, où se décide aussi l'adresse du jeu (voir plus haut).
 - Page `/tech` comme sur Movie Picker (movie-picker.fr/tech) : le dossier technique publié dans le jeu, avec des chiffres relevés dans le dépôt plutôt qu'estimés.
 
 ## Idées pour plus tard
