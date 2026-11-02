@@ -458,6 +458,11 @@ Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du c
 - Débloquer des musiques (à rapprocher des morceaux des collègues DJ, plus haut).
 - Nouvel emplacement de tenue : une traînée derrière la tartine (miettes, paillettes) ou un effet de mort (la tartine éclate en confettis), à débloquer. À rapprocher des skins stylés, juste au-dessus.
 
+### Ajouté par Adrien le 02/11/2026
+
+- Enchaînement pluie de fourchettes puis hachoir (celui qui tombe du ciel) : peut-être un peu trop compliqué. C'était la pire paire à 45 s avant les réglages du 01/11/2026 (+3,8 morts pour 100, voir Équilibrage). À remesurer avec `npm run equilibrage:combos` avant de décider.
+- Page `/tech` comme sur Movie Picker (movie-picker.fr/tech) : le dossier technique publié dans le jeu, avec des chiffres relevés dans le dépôt plutôt qu'estimés.
+
 ## Idées pour plus tard
 
 - Vibration au frôlé.
