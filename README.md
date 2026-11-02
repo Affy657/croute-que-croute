@@ -462,6 +462,7 @@ Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du c
 
 - Enchaînement pluie de fourchettes puis hachoir (celui qui tombe du ciel) : peut-être un peu trop compliqué. C'était la pire paire à 45 s avant les réglages du 01/11/2026 (+3,8 morts pour 100, voir Équilibrage). À remesurer avec `npm run equilibrage:combos` avant de décider.
 - Page `/tech` comme sur Movie Picker (movie-picker.fr/tech) : le dossier technique publié dans le jeu, avec des chiffres relevés dans le dépôt plutôt qu'estimés.
+- Doubles pluies trop rapprochées : après une double pluie, attendre qu'elle soit assez avancée avant d'en lancer une autre, ou même une pluie simple, même si d'autres attaques sont passées entre les deux. Aujourd'hui, la règle empêche seulement deux doubles pluies de suite et une double pluie juste après une pluie (voir Attaques et Équilibrage). Mécanisme proche déjà en place : après des murs en série, l'attaque suivante attend que le dernier mur ait fait 20 % de sa traversée.
 
 ## Idées pour plus tard
 
