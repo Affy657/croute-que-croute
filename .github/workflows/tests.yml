@@ -32,3 +32,7 @@ jobs:
         run: echo "ADMIN_KEY=$(openssl rand -hex 24)" > .dev.vars
       - name: Tests de l'API
         run: npm run test:api
+      - name: Navigateur pour le test de bout en bout
+        run: npx playwright install --with-deps --only-shell chromium
+      - name: Test de bout en bout dans le navigateur
+        run: npm run test:navigateur

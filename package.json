@@ -16,6 +16,7 @@
     "test": "node test/fairness.mjs 100 150",
     "test:api": "node test/api.mjs",
     "test:unit": "node --test \"test/unit/*.test.mjs\"",
+    "test:navigateur": "node test/api.mjs test/navigateur.mjs",
     "verif": "node scripts/verif.mjs",
     "equilibrage": "node test/equilibrage/comparer.mjs",
     "equilibrage:attaques": "node test/equilibrage/attaques.mjs",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
+    "playwright": "^1.64.1",
     "typescript": "^7.0.2",
     "wrangler": "^4.156.0"
   },
