@@ -90,6 +90,7 @@ function play(seed, style, { only = null, t0 = 0, limit = LIMIT, dt = STEP } = {
         if (prev && (a.avoids || []).includes(prev)) report("attaque juste après une attaque qu'elle évite", where({ id, prev }));
         const walled = s.obs.some((o) => byId[o.from].kin === "wall") || s.warns.some((w) => seen.has(w) && byId[w.obs[0].from].kin === "wall");
         if (a.kin === "wall" && walled) report("mur lancé alors qu'un autre mur est encore là", where({ id, prev }));
+        if ((a.holds || []).some((k) => s.obs.some((o) => o.from === k) || s.warns.some((w) => seen.has(w) && w.obs[0].from === k))) report("attaque lancée pendant une attaque qu'elle laisse passer", where({ id, prev }));
         if (a.kin === "wall" && ["rain", "slant", "downpour"].includes(prev) && s.warns.some((w) => !seen.has(w) && !w.obs[0].vx)) report("mur par le haut juste après une pluie", where({ id, prev }));
       }
       if ((a.waits || []).some((k) => s.t < (until[k] ?? -Infinity) - STEP * 1.5)) report("attaque lancée avant que celle qu'elle attend soit assez avancée", where({ id, until: a.waits.map((k) => +(until[k] ?? 0).toFixed(3)) }));
