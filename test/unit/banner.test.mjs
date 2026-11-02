@@ -72,6 +72,12 @@ test("écran : soirée suivante dans plus de 24 h, sa date en toutes lettres", (
   assert.deepEqual(screenBanner(board({ next }), FINAL), { text: "Prochaine soirée " + when(next.opensAt) });
 });
 
+test("écran resté hors ligne pendant la fin : « Résultats dans » à l'heure, puis le gagnant", () => {
+  const b = board({ ev: event(START, END, "open") });
+  assert.deepEqual(screenBanner(b, END + MIN), { label: "Résultats dans ", target: FINAL });
+  assert.deepEqual(screenBanner(b, FINAL), { text: "Bravo Lou !" });
+});
+
 test("écran : rien à annoncer", () => {
   assert.equal(screenBanner(board({ ev: null }), FINAL), null);
   assert.equal(screenBanner(board({ top: [] }), FINAL), null);

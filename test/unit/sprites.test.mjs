@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { drawToast, drawProjectile, drawTrail } from "../../public/js/app/sprites.js";
 import { GEAR, SPREADS } from "../../public/js/shared/palette.js";
 import { PROJECTILES, projectile } from "../../public/js/game/projectiles.js";
+import { PASSERS } from "../../public/js/app/planets.js";
 
 const BARE = { x: 100, y: 100, tilt: 0.1, thrust: 0.4, spread: "butter", head: null, side: null, bread: null, aura: null };
 const JUNK = ["constructor", "toString", "__proto__", "hasOwnProperty", "valueOf", "inconnu", "", 42, null, undefined];
@@ -51,6 +52,26 @@ for (const kind of Object.keys(PROJECTILES)) {
     drawTrail(ctx, o);
     drawProjectile(ctx, o);
     assert.ok(log.length > 10);
+    assert.deepEqual(bad, []);
+  });
+}
+
+for (const [kind, p] of Object.entries(PASSERS).filter(([, p]) => p.trail)) {
+  test(`traînée « ${kind} » : garde la transparence de la comète`, () => {
+    const { ctx, log } = fakeCtx();
+    ctx.globalAlpha = 0.7;
+    p.trail(ctx, 120, 40);
+    const alphas = log.filter((l) => l.startsWith("globalAlpha=")).map((l) => Number(l.slice(12)));
+    assert.ok(alphas.every((a) => a <= 0.7), alphas.join(", "));
+    assert.equal(ctx.globalAlpha, 0.7);
+  });
+}
+
+for (const kind of Object.keys(PASSERS)) {
+  test(`objet qui passe « ${kind} » : se dessine, sans valeur invalide`, () => {
+    const { ctx, log, bad } = fakeCtx();
+    PASSERS[kind].draw(ctx, 40, 1.5);
+    assert.ok(log.length > 5);
     assert.deepEqual(bad, []);
   });
 }

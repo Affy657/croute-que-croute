@@ -6,6 +6,14 @@ const DOG_RIM = Array.from({ length: 120 }, (_, i) => {
   return [Math.sign(c) * Math.abs(c) ** 0.65 * 12.4 * f, 2.6 + Math.sign(sn) * Math.abs(sn) ** 0.65 * 12.6 * f];
 });
 const DOG_BACK = DOG_RIM.map(([x, y]) => [x + 0.4, y + 0.9]), DOG_FRONT = DOG_RIM;
+const CHOCO_SWIRL = Array.from({ length: 41 }, (_, i) => [Math.cos(i * 0.4) * (1 + i * 0.22), 2 + Math.sin(i * 0.4) * (1 + i * 0.22) * 0.85]);
+const HONEY_CELLS = [[-4, -2], [2, -2], [-1, 3.2]].map(([hx, hy]) => Array.from({ length: 7 }, (_, i) => [hx + Math.cos((i * Math.PI) / 3) * 3, hy + Math.sin((i * Math.PI) / 3) * 3]));
+const KETCHUP_LINE = Array.from({ length: 61 }, (_, i) => {
+  const s = i / 30 - 1, o = Math.sin(s * Math.PI * 3.5) * 5.5;
+  return [s * 11 + o * 0.67, 2 + s * 10 - o * 0.74];
+});
+const PASTE = (dy) => Array.from({ length: 51 }, (_, i) => [-12 + i * 0.48, 1 + dy + Math.sin(i * 0.36) * 4]);
+const PASTE_UNDER = PASTE(0.5), PASTE_BODY = PASTE(0), PASTE_RED = PASTE(-1.7), PASTE_BLUE = PASTE(1.7);
 
 const TOPPINGS = {
   plain() {},
@@ -46,7 +54,7 @@ const TOPPINGS = {
     ctx.strokeStyle = "#8a5636";
     ctx.lineWidth = 1.6;
     ctx.lineCap = "round";
-    line(ctx, Array.from({ length: 41 }, (_, i) => [Math.cos(i * 0.4) * (1 + i * 0.22), 2 + Math.sin(i * 0.4) * (1 + i * 0.22) * 0.85]));
+    line(ctx, CHOCO_SWIRL);
     ctx.stroke();
     ctx.fillStyle = "#c98b5a";
     oval(ctx, -5, -5, 3.5, 1.2, -0.5);
@@ -66,8 +74,8 @@ const TOPPINGS = {
     for (const [x, len] of [[-8, 9], [-1, 13], [7, 7]]) drip(ctx, x, 8, len, 1.9);
     ctx.strokeStyle = "#ffd36b";
     ctx.lineWidth = 0.8;
-    for (const [hx, hy] of [[-4, -2], [2, -2], [-1, 3.2]]) {
-      line(ctx, Array.from({ length: 7 }, (_, i) => [hx + Math.cos((i * Math.PI) / 3) * 3, hy + Math.sin((i * Math.PI) / 3) * 3]));
+    for (const cell of HONEY_CELLS) {
+      line(ctx, cell);
       ctx.stroke();
     }
     ctx.fillStyle = "#fff2c4";
@@ -87,10 +95,7 @@ const TOPPINGS = {
     dots(ctx, C.void, [[6.4, -9.3, 0.6]]);
   },
   ketchup(ctx) {
-    const squiggle = () => line(ctx, Array.from({ length: 61 }, (_, i) => {
-      const s = i / 30 - 1, o = Math.sin(s * Math.PI * 3.5) * 5.5;
-      return [s * 11 + o * 0.67, 2 + s * 10 - o * 0.74];
-    }));
+    const squiggle = () => line(ctx, KETCHUP_LINE);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.strokeStyle = "#d8231b";
@@ -106,23 +111,22 @@ const TOPPINGS = {
     dots(ctx, "#d8231b", [[12.5, 13.5, 1.6], [-12, -10, 1.1]]);
   },
   toothpaste(ctx) {
-    const wave = (dy) => line(ctx, Array.from({ length: 51 }, (_, i) => [-12 + i * 0.48, 1 + dy + Math.sin(i * 0.36) * 4]));
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.strokeStyle = "#b9cde2";
     ctx.lineWidth = 7.6;
-    wave(0.5);
+    line(ctx, PASTE_UNDER);
     ctx.stroke();
     ctx.strokeStyle = "#f7fbff";
     ctx.lineWidth = 6.4;
-    wave(0);
+    line(ctx, PASTE_BODY);
     ctx.stroke();
     ctx.lineWidth = 1.3;
     ctx.strokeStyle = "#e8303a";
-    wave(-1.7);
+    line(ctx, PASTE_RED);
     ctx.stroke();
     ctx.strokeStyle = "#2a8de0";
-    wave(1.7);
+    line(ctx, PASTE_BLUE);
     ctx.stroke();
     ctx.lineWidth = 0.5;
     ctx.strokeStyle = "#9fd3ff";

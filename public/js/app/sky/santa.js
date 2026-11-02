@@ -5,10 +5,11 @@ const SANTA = { red: "#d7263d", redDark: "#9c1528", fur: "#fff6e0", skin: "#f3c3
 const SPARKS = [[0.5, -0.06, 0.035], [0.75, 0.05, 0.025], [1.0, -0.02, 0.03], [1.3, 0.07, 0.02], [1.6, -0.05, 0.022], [1.95, 0.03, 0.016], [2.3, -0.03, 0.013]];
 
 export function stardust(ctx, len, s) {
+  const base = ctx.globalAlpha;
   for (const [k, y, r] of SPARKS) {
     const x = -s * 0.55 - k * s * 0.6;
     if (-x > len + s * 0.55) break;
-    ctx.globalAlpha = Math.max(0, 1 - k / 2.6) * 0.9;
+    ctx.globalAlpha = base * Math.max(0, 1 - k / 2.6) * 0.9;
     ctx.fillStyle = "rgb(" + GOLD + ")";
     ctx.beginPath();
     for (let i = 0; i < 8; i++) {
@@ -18,7 +19,7 @@ export function stardust(ctx, len, s) {
     ctx.closePath();
     ctx.fill();
   }
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = base;
 }
 
 function leg(ctx, s, x, y, a, line) {

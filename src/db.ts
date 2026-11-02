@@ -45,6 +45,8 @@ const above = ({ best, at }: { best: string; at: string }) => `banned = 0 AND ${
 
 let eventsCache: { at: number; rows: EventRow[] } | null = null;
 const rankingCache = new Map<string, { at: number; value: unknown }>();
+const loading = new Map<string, Promise<unknown>>();
+let generation = 0;
 
 export async function events(env: Env, now = Date.now()): Promise<EventView> {
   if (!eventsCache || now - eventsCache.at > CACHE_MS) {
@@ -99,15 +101,25 @@ export function cached<T>(key: string, maxAge: number, load: () => Promise<T>): 
   const now = Date.now();
   const hit = rankingCache.get(key);
   if (hit && now - hit.at < maxAge) return Promise.resolve(hit.value as T);
-  return load().then((value) => {
-    if (value === null) {
-      rankingCache.delete(key);
+  const pending = maxAge > 0 ? loading.get(key) : undefined;
+  if (pending) return pending as Promise<T>;
+  const gen = generation;
+  const loaded = load()
+    .then((value) => {
+      if (gen !== generation) return value;
+      if (value === null) {
+        rankingCache.delete(key);
+        return value;
+      }
+      if (rankingCache.size >= CACHE_KEEP) for (const [k, v] of rankingCache) if (now - v.at > EVENT_GENERAL_MS) rankingCache.delete(k);
+      rankingCache.set(key, { at: now, value });
       return value;
-    }
-    if (rankingCache.size >= CACHE_KEEP) for (const [k, v] of rankingCache) if (now - v.at > EVENT_GENERAL_MS) rankingCache.delete(k);
-    rankingCache.set(key, { at: now, value });
-    return value;
-  });
+    })
+    .finally(() => {
+      if (loading.get(key) === loaded) loading.delete(key);
+    });
+  if (maxAge > 0) loading.set(key, loaded);
+  return loaded;
 }
 
 export const generalRanking = (env: Env, during = false, board: Board = "general") => {
@@ -159,6 +171,8 @@ export const promoteEvent = (eventId: number, row: Ranked) => promote("event:" +
 export function forgetCaches() {
   eventsCache = null;
   rankingCache.clear();
+  loading.clear();
+  generation++;
 }
 
 export function renameCached(id: string, pseudo: string) {

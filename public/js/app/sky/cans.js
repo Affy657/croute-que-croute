@@ -234,6 +234,26 @@ export function drawCan(ctx, kind, s) {
   ctx.restore();
 }
 
+const SPRITES = new Map(), SPRITE_KEEP = 8;
+
+export function cachedCan(ctx, kind, s) {
+  const m = typeof document !== "undefined" && document.createElement && ctx.getTransform ? ctx.getTransform() : null;
+  if (!m) return drawCan(ctx, kind, s);
+  const px = Math.hypot(m.a, m.b), key = kind + ":" + Math.round(s * px);
+  let cv = SPRITES.get(key);
+  if (!cv) {
+    cv = document.createElement("canvas");
+    cv.width = Math.ceil(s * 0.4 * px) + 4;
+    cv.height = Math.ceil(s * px) + 4;
+    const g = cv.getContext("2d");
+    g.setTransform(px, 0, 0, px, cv.width / 2, cv.height / 2);
+    drawCan(g, kind, s);
+    if (SPRITES.size >= SPRITE_KEEP) SPRITES.clear();
+    SPRITES.set(key, cv);
+  }
+  ctx.drawImage(cv, -cv.width / (2 * px), -cv.height / (2 * px), cv.width / px, cv.height / px);
+}
+
 export function streak(ctx, len, s) {
   ctx.lineCap = "round";
   for (const [w, a] of [[0.25, 0.35], [0.09, 0.8]]) {

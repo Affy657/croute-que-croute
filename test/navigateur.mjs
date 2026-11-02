@@ -117,6 +117,18 @@ try {
     await click("closeBtn");
     await shown("menu");
   });
+  await step("Paramètres : « Déconnecter les autres » répond deux fois de suite", async () => {
+    await click("settingsBtn");
+    await shown("settings");
+    for (let i = 0; i < 2; i++) {
+      await click("outBtn");
+      await shown("outAsk");
+      await $("#outYes").click({ timeout: WAIT_MS });
+      await page.waitForFunction(() => document.getElementById("outAsk").hidden && document.getElementById("outNote").textContent.includes("appareil"), null, { timeout: WAIT_MS });
+    }
+    await click("closeBtn");
+    await shown("menu");
+  });
   await step("Succès : la liste s'affiche, puis retour", async () => {
     await click("menuAch");
     await shown("ach");
@@ -132,6 +144,18 @@ try {
     await $("#infoBody button.train").click();
     await shown("hud");
     if (!(await $("#hudBest").textContent()).startsWith("Entraînement")) throw new Error("pas en entraînement");
+  });
+  await step("écran géant : « Pas de réseau » quand le réseau tombe", async () => {
+    const context = await browser.newContext();
+    const other = await context.newPage();
+    await other.goto(BASE + "/ecran", { waitUntil: "networkidle" });
+    await context.setOffline(true);
+    for (let i = 0; i < 2; i++) {
+      await other.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+      await wait(500);
+    }
+    await other.locator("#offline").waitFor({ state: "visible", timeout: WAIT_MS });
+    await context.close();
   });
   for (const path of ["/ecran", "/admin"]) {
     await step(`la page ${path} s'ouvre`, async () => {

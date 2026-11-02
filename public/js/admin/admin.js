@@ -2,9 +2,10 @@ import { store as storage, KEYS } from "../shared/store.js";
 import { fmtCs, clock } from "../shared/format.js";
 import { prepareSfx, previewSfx } from "../app/audio.js";
 import { VERSION } from "../version.js";
+import { timeout } from "../shared/timeout.js";
 
 const $ = (id) => document.getElementById(id);
-const REFRESH_MS = 10000, ERRORS_MS = 60000, FRESH_MS = 3600 * 1000, COPIED_MS = 2000;
+const CALL_MS = 10000, REFRESH_MS = 10000, ERRORS_MS = 60000, FRESH_MS = 3600 * 1000, COPIED_MS = 2000;
 const SFX_LABELS = { start: "Départ", near: "Frôlé", death: "Mort", record: "Record", first: "1re place" };
 const store = {
   get: () => storage.get(KEYS.adminToken),
@@ -20,6 +21,8 @@ let data = null;
 let timer = null;
 let retry = null;
 let scope = "event";
+let loads = 0;
+let invited = new URLSearchParams(location.hash.slice(1)).get("invite");
 const opened = new Set();
 const STATUS = { open: "Soirée en cours", upcoming: "Prochaine soirée", closed: "Dernière soirée" };
 
@@ -63,10 +66,15 @@ function say(el, text, error) {
 async function call(method, path, body) {
   const headers = { "content-type": "application/json" };
   if (token) headers.authorization = "Bearer " + token;
-  const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  let res;
+  try {
+    res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined, signal: timeout(CALL_MS) });
+  } catch (e) {
+    throw new Error("Pas de réseau, réessaie.");
+  }
   const json = await res.json().catch(() => null);
   if (res.status === 401 && token) signOut();
-  if (!res.ok) throw new Error((json && json.error) || "Pas de réseau, réessaie.");
+  if (!res.ok) throw Object.assign(new Error((json && json.error) || "Pas de réseau, réessaie."), { status: res.status });
   return json;
 }
 
@@ -85,7 +93,10 @@ function signOut() {
   opened.clear();
   clearInterval(timer);
   clearTimeout(retry);
-  show("login");
+  $("inviteResult").hidden = true;
+  $("inviteUrl").value = "";
+  if (invited) showInvite(invited);
+  else show("login");
 }
 
 function onSubmit(id, fn) {
@@ -173,17 +184,17 @@ function renderPlayers() {
 }
 
 async function load() {
-  const asked = scope;
+  const asked = scope, mine = ++loads;
   try {
     const next = await call("GET", "/api/admin/players" + (asked === "event" ? "" : "?scope=" + asked));
-    if (asked !== scope) return;
+    if (asked !== scope || mine !== loads) return;
     data = next;
     for (const b of document.querySelectorAll(".scope")) b.setAttribute("aria-selected", String(b.dataset.scope === scope));
     say($("playersMsg"), "");
     renderEvent();
     renderPlayers();
   } catch (e) {
-    if (asked === scope) say($("playersMsg"), e.message, true);
+    if (asked === scope && mine === loads) say($("playersMsg"), e.message, true);
   }
 }
 
@@ -383,6 +394,10 @@ async function boot() {
     retry = setTimeout(boot, REFRESH_MS);
     return;
   }
+  if (invited) {
+    invited = null;
+    history.replaceState(null, "", "/admin");
+  }
   $("who").textContent = me.name + ", " + (me.role === "owner" ? "propriétaire" : "admin");
   $("teamCard").hidden = me.role !== "owner";
   $("errorsCard").hidden = me.role !== "owner";
@@ -410,6 +425,7 @@ onSubmit("loginForm", async () => {
 
 async function acceptInvite(invite) {
   const r = await call("POST", "/api/admin/accept", { invite });
+  invited = null;
   token = r.token;
   store.set(token);
   history.replaceState(null, "", "/admin");
@@ -468,11 +484,13 @@ for (const b of document.querySelectorAll(".scope")) {
 }
 
 onSubmit("endForm", async () => {
+  const closesAt = fromInput($("endAt").value);
+  if (closesAt <= Date.now() && !confirm("Cette fin est déjà passée : le classement de la soirée se ferme tout de suite et ne pourra plus être rouvert. Continuer ?")) return;
   try {
     await call("PATCH", "/api/admin/events/current", {
       name: $("editName").value,
       opensAt: fromInput($("startAt").value),
-      closesAt: fromInput($("endAt").value)
+      closesAt
     });
     $("endForm").hidden = true;
     say($("eventMsg"), "Soirée modifiée.");
@@ -559,7 +577,6 @@ $("sfxList").replaceChildren(...Object.entries(SFX_LABELS).map(([name, label]) =
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=" + encodeURIComponent(VERSION)).catch(() => {});
 
-const invite = new URLSearchParams(location.hash.slice(1)).get("invite");
-if (invite) showInvite(invite);
-else if (token) boot();
+if (token) boot();
+else if (invited) showInvite(invited);
 else show("login");

@@ -6,7 +6,7 @@ import { resync } from "./profile.js";
 
 const TICK_MS = 1000, RETRY_MS = 20000, QUIET = 4;
 const OUT_ASK = "Tes autres appareils sortent du compte. Pour revenir, il leur faudra un nouveau code.";
-let timer = null, until = Infinity, live = false, asked = 0, shown = "", merging = null, waiting = null, opener = () => {};
+let timer = null, until = Infinity, live = false, asked = 0, shown = "", merging = null, waiting = null, opener = () => {}, idle = () => true;
 
 const quoted = (name) => "« " + name + " »";
 
@@ -111,9 +111,11 @@ function resetMerge(note = "") {
 }
 
 async function checkMerge(code) {
+  const button = ui.mergeForm.querySelector("button[type=submit]");
   resetMerge();
   ui.mergeForm.hidden = false;
   ui.mergeInput.value = code;
+  button.disabled = true;
   try {
     const r = await linkWith(code);
     ui.mergeForm.hidden = true;
@@ -129,6 +131,8 @@ async function checkMerge(code) {
     merging = code;
     setText(ui.mergeNote, `Réunir ${quoted(m.from)} avec ${quoted(m.into)} ? Tes records, parties et succès passent sur ${quoted(m.into)}, et le pseudo ${quoted(m.from)} sera libéré.`);
     ui.mergeAsk.hidden = false;
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -161,9 +165,9 @@ async function confirmOut() {
     const s = removed > 1 ? "s" : "";
     askOut(false, removed ? `C'est fait : ${removed} appareil${s} déconnecté${s}.` : "Aucun autre appareil n'était connecté.");
   } catch (e) {
-    resetMerge(reason(e));
+    setText(ui.outNote, reason(e));
   } finally {
-    ui.mergeYes.disabled = ui.mergeNo.disabled = false;
+    ui.outYes.disabled = ui.outNo.disabled = false;
   }
 }
 
@@ -174,12 +178,24 @@ export function resetAccount() {
   askOut(false);
 }
 
+function offerLink(code) {
+  ui.linkInput.value = code;
+  setText(ui.linkError, "");
+  markInvalid(ui.linkInput, false);
+  setLinking(true);
+}
+
 function pickUp() {
-  if (!waiting || !registered()) return;
+  if (!waiting || !idle()) return;
   const code = waiting;
-  waiting = null;
-  opener();
-  checkMerge(code);
+  if (registered()) {
+    waiting = null;
+    opener();
+    checkMerge(code);
+  } else if (net.board && !net.token) {
+    waiting = null;
+    offerLink(code);
+  }
 }
 
 function linkFromUrl() {
@@ -190,14 +206,12 @@ function linkFromUrl() {
     waiting = m[1];
     return pickUp();
   }
-  ui.linkInput.value = m[1];
-  setText(ui.linkError, "");
-  markInvalid(ui.linkInput, false);
-  setLinking(true);
+  offerLink(m[1]);
 }
 
-export function initAccount(openSettings) {
+export function initAccount(openSettings, isIdle) {
   opener = openSettings;
+  idle = isIdle;
   linkFromUrl();
 }
 
