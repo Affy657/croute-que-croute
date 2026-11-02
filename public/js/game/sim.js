@@ -26,7 +26,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
   const pick = (arr) => arr[Math.floor(rng() * arr.length)];
   const forced = only && ATTACKS.find((a) => a.id === only);
   const state = {
-    t: t0, next: 0.9, tries: 0, near: 0, dead: false, last: null, streak: 0, queued: null, until: {},
+    t: t0, next: 0.9, tries: 0, near: 0, dead: false, last: null, streak: 0, queued: null, held: null, until: {},
     toast: { x: FW / 2, y },
     obs: [], warns: [],
     stats: { spawned: 0, rejected: 0, impossible: 0, solves: 0, solveMs: 0, solveMax: 0 }
@@ -46,8 +46,18 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
     const t = state.t;
     const active = new Set([...state.obs.map((o) => o.from), ...state.warns.flatMap((w) => w.obs.map((o) => o.from))]);
     const fresh = new Set(Object.keys(state.until).filter((id) => state.until[id] > t));
-    const attack = forced || state.queued || pickAttack(t, rng, state.last, state.streak, active, fresh);
+    const blocked = (a) => [...(a.holds || []), ...(a.shuns || [])].some((id) => active.has(id));
+    let attack = forced || state.queued;
+    if (!attack && state.held && !blocked(state.held)) {
+      attack = state.held;
+      state.held = null;
+    }
+    if (!attack) attack = pickAttack(t, rng, state.last, state.streak, state.held ? new Set([...active, state.held.id]) : active, fresh);
     state.queued = null;
+    if (!forced && attack.holds && attack.holds.some((id) => active.has(id))) {
+      state.held = attack;
+      attack = pickAttack(t, rng, state.last, state.streak, new Set([...active, attack.id]), fresh);
+    }
     if (forced && forced.shuns && forced.shuns.some((id) => active.has(id))) {
       state.next = 0.1;
       return;
