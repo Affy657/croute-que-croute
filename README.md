@@ -311,7 +311,7 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 | 0.44 | 01/11 | numéros de version, compte gardé dans l'appli installée, plus de mise à jour en partie, rouleaux espacés et jamais plus de 2, hachoir jamais deux fois d'affilée, mur par un côté après une pluie | 1 (tartine sans croûte refaite) |
 | 0.45 | 01/11 | auras : Surchauffe, Survoltée, Néon de soirée, Anneau planétaire | |
 | 0.46 | 01/11 | Tartine d'or : 1er d'un classement d'au moins 10 joueurs, soirée, Mobile ou PC | 1 (corrections de la revue de code) |
-| 0.47 | 01/11 | la tenue suit le compte sur tous les appareils (le dernier changement gagne) ; page et code de deux versions : rechargement ; tests du téléphone et vérification de la prod | |
+| 0.47 | 01/11 | la tenue suit le compte sur tous les appareils (le dernier changement gagne) ; page et code de deux versions : rechargement ; tests du téléphone et vérification de la prod | 1 (02/11 : types vérifiés, Worker et dépendances à jour, test navigateur, écrans et dessins réorganisés) |
 
 ## Erreurs des joueurs
 
