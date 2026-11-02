@@ -1,10 +1,10 @@
 import { clock } from "../shared/format.js";
 import { ui, show, setText, renderControls, setLinking } from "./screens.js";
-import { net, on, registered, serverNow, linkWith, newLinkCode, logoutOthers } from "./api.js";
+import { net, on, registered, serverNow, linkWith, newLinkCode, logoutOthers, reason } from "./api.js";
 import { renderSettings, copy } from "./settings.js";
 import { resync } from "./profile.js";
 
-const TICK_MS = 1000, RETRY_MS = 20000, QUIET = 4, OFFLINE = "Pas de réseau, réessaie.";
+const TICK_MS = 1000, RETRY_MS = 20000, QUIET = 4;
 const OUT_ASK = "Tes autres appareils sortent du compte. Pour revenir, il leur faudra un nouveau code.";
 let timer = null, until = Infinity, live = false, asked = 0, shown = "", merging = null, waiting = null, opener = () => {};
 
@@ -41,7 +41,7 @@ async function fetchCode() {
     tick();
   } catch (e) {
     if (mine !== asked) return;
-    setText(ui.linkFail, e.status ? e.message : OFFLINE);
+    setText(ui.linkFail, reason(e));
     drawQr(null);
     ui.linkCode.textContent = "";
     ui.linkCopy.hidden = true;
@@ -95,7 +95,7 @@ async function connect(code) {
     ui.linkInput.blur();
     setLinking(false);
   } catch (e) {
-    setText(ui.linkError, e.status ? e.message : OFFLINE);
+    setText(ui.linkError, reason(e));
   } finally {
     button.disabled = false;
   }
@@ -119,7 +119,7 @@ async function checkMerge(code) {
     resetMerge(`Cet appareil n'était plus connecté à son ancien compte : tu joues maintenant en ${quoted(r.pseudo)}.`);
   } catch (e) {
     const m = e.data && e.data.merge;
-    if (!m) return setText(ui.mergeNote, e.status ? e.message : OFFLINE);
+    if (!m) return setText(ui.mergeNote, reason(e));
     merging = code;
     setText(ui.mergeNote, `Réunir ${quoted(m.from)} avec ${quoted(m.into)} ? Tes records, parties et succès passent sur ${quoted(m.into)}, et le pseudo ${quoted(m.from)} sera libéré.`);
     ui.mergeAsk.hidden = false;
@@ -136,7 +136,7 @@ async function confirmMerge() {
     renderSettings();
     resetMerge(`Comptes réunis : tu joues en ${quoted(r.pseudo)}.`);
   } catch (e) {
-    resetMerge(e.status ? e.message : OFFLINE);
+    resetMerge(reason(e));
   } finally {
     ui.mergeYes.disabled = ui.mergeNo.disabled = false;
   }
@@ -155,7 +155,7 @@ async function confirmOut() {
     const s = removed > 1 ? "s" : "";
     askOut(false, removed ? `C'est fait : ${removed} appareil${s} déconnecté${s}.` : "Aucun autre appareil n'était connecté.");
   } catch (e) {
-    askOut(false, e.status ? e.message : OFFLINE);
+    askOut(false, reason(e));
   } finally {
     ui.outYes.disabled = ui.outNo.disabled = false;
   }

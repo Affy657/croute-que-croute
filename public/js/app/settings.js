@@ -4,7 +4,7 @@ import { VERSION } from "../version.js";
 import { installMode, promptInstall, shouldSuggest, markSuggested, onInstallChange } from "./install.js";
 import { prefs, setLevel, previewMusic, previewSfx } from "./audio.js";
 import { ui, setText } from "./screens.js";
-import { net, rename } from "./api.js";
+import { net, rename, reason } from "./api.js";
 import { controls, setSens, setAim, hasMouse } from "./input.js";
 
 const FLASH_MS = 2000;
@@ -96,7 +96,7 @@ async function renamePlayer(e) {
     ui.newPseudo.blur();
     renameNote("C'est changé.", false);
   } catch (err) {
-    renameNote(err.status ? err.message : "Pas de réseau, réessaie.", true);
+    renameNote(reason(err), true);
   } finally {
     button.disabled = false;
   }

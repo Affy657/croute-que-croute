@@ -595,7 +595,7 @@ ui.joinForm.addEventListener("submit", async (e) => {
     ui.pseudo.blur();
     maybeSuggest();
   } catch (err) {
-    setText(ui.joinError, err.status ? err.message : "Pas de réseau, réessaie.");
+    setText(ui.joinError, api.reason(err));
   } finally {
     button.disabled = false;
   }

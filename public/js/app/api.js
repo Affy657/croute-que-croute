@@ -9,6 +9,8 @@ const RELOAD_GAP = 15000;
 const UPDATED = "Partie pas comptée : le jeu a été mis à jour, il se recharge quand tu rejoues.";
 const SEND_TRIES = 3, SEND_GAP_MS = 1500, WAIT_GAP_MS = 5000, WAIT_MS = 120000, SEND_TIMEOUT_MS = 8000;
 
+export const reason = (e, offline = "Pas de réseau, réessaie.") => (e.status ? e.message : offline);
+
 if (LOCAL) {
   const params = new URLSearchParams(location.search), seeded = params.get("jeton");
   if (seeded && /^[a-f0-9]{48}$/.test(seeded)) {
@@ -164,7 +166,7 @@ export async function rename(pseudo) {
 export function startRun(body) {
   if (!net.token || (net.board && !canCompete())) return null;
   return call("POST", "/api/runs", body, SEND_TIMEOUT_MS).catch((e) => ({
-    error: e.status === 426 ? UPDATED : e.status ? e.message : "Hors ligne : score non compté",
+    error: e.status === 426 ? UPDATED : reason(e, "Hors ligne : score non compté"),
     status: e.status
   }));
 }
@@ -216,7 +218,7 @@ async function send(runId, score, device, combo, onWait, since = Date.now()) {
       if (i === SEND_TRIES - 1 && onWait) onWait();
       if (i >= SEND_TRIES - 1 && Date.now() - since > WAIT_MS) {
         clearPending(runId);
-        return { error: e.status ? e.message : "Hors ligne : score non envoyé" };
+        return { error: reason(e, "Hors ligne : score non envoyé") };
       }
       await new Promise((ok) => setTimeout(ok, i < SEND_TRIES - 1 ? SEND_GAP_MS : WAIT_GAP_MS));
     }

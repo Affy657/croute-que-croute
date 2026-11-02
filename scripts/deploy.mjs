@@ -25,11 +25,13 @@ if (!NUMBER.test(number || "")) stop(`numéro de version illisible dans package.
 if (run("git status --porcelain").trim()) stop("des changements ne sont pas enregistrés dans git.");
 if (run("git rev-parse --abbrev-ref HEAD").trim() !== "master") stop("on ne met en ligne que depuis master.");
 if (run("git rev-list --count origin/master..HEAD").trim() !== "0") stop("master n'est pas envoyé sur GitHub : git push origin master.");
-try {
-  run("npm run check");
-} catch (e) {
-  console.error(String(e.stdout || ""));
-  stop("la vérification des types échoue (npm run check).");
+for (const [cmd, why] of [["npm run check", "la vérification des types échoue"], ["npm run test:unit", "des tests unitaires échouent"]]) {
+  try {
+    run(cmd);
+  } catch (e) {
+    console.error(String(e.stdout || ""));
+    stop(`${why} (${cmd}).`);
+  }
 }
 if (!run(`npx wrangler d1 migrations list ${DB} --remote`).includes("No migrations to apply")) {
   stop("une migration n'est pas encore appliquée en ligne. Lancer d'abord npm run db:remote.");
