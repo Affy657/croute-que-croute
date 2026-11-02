@@ -28,7 +28,7 @@ export function champion(b, now) {
 
 export function screenBanner(b, now) {
   const ev = b.event, next = b.next, top = ev ? b.eventTop : b.top;
-  if (ev && ev.status === "open") return { label: "Fin dans ", target: ev.closesAt };
+  if (ev && now < ev.closesAt) return { label: "Fin dans ", target: ev.closesAt };
   if (ev && now < ev.finalAt) return { label: "Résultats dans ", target: ev.finalAt };
   if (next && next.opensAt - now < SOON_MS) return { label: ev ? "Prochaine soirée dans " : "Début dans ", target: next.opensAt };
   if (next) return { text: "Prochaine soirée " + when(next.opensAt) };

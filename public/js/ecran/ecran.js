@@ -1,12 +1,13 @@
-import { fmtCs, clock } from "../shared/format.js";
-import { screenBanner } from "../shared/banner.js";
+import { fmtCs, clock, hourOf } from "../shared/format.js";
+import { screenBanner, SOON_MS } from "../shared/banner.js";
 import { rain, bounce } from "../app/party.js";
 import { timeout } from "../shared/timeout.js";
 import { VERSION } from "../version.js";
 
-const POLL_MS = 10000, FETCH_MS = 8000, ROWS = 10, FEED_ROWS = 4, IDLE_MS = 3000, CROWN_MS = 6000;
+const POLL_MS = 10000, QUIET_POLL_MS = 60000, OFFLINE_MISSES = 2, FETCH_MS = 8000, ROWS = 10, FEED_ROWS = 4, IDLE_MS = 3000, CROWN_MS = 6000;
 const $ = (id) => document.getElementById(id);
 let board = null, offset = 0, shown = null, idleTimer = null, lock = null, seen = null, crownTimer = null, busy = false, stale = false;
+let lastOk = 0, lastAsk = 0, misses = 0;
 
 document.documentElement.dataset.version = VERSION;
 const now = () => Date.now() + offset;
@@ -73,6 +74,9 @@ function setCountdown(label, ms) {
 }
 
 function tick() {
+  const off = $("offline");
+  off.hidden = misses < OFFLINE_MISSES;
+  off.textContent = board ? "Pas de réseau : classement de " + hourOf(lastOk) : "Pas de réseau";
   if (!board) return;
   const el = $("countdown"), t = now(), s = screenBanner(board, t);
   if (!s) el.hidden = true;
@@ -117,8 +121,14 @@ function reloadSoon() {
 async function refresh() {
   if (busy) return;
   busy = true;
+  lastAsk = Date.now();
   const [next, live] = await Promise.allSettled([grab("/api/board"), grab("/api/feed")]);
   busy = false;
+  if (next.status === "fulfilled") {
+    lastOk = Date.now();
+    misses = 0;
+  } else misses++;
+  tick();
   if (next.status === "fulfilled" && (!board || next.value.now >= board.now)) {
     if (board && next.value.version !== board.version) reloadSoon();
     board = next.value;
@@ -126,6 +136,17 @@ async function refresh() {
     render();
   }
   if (live.status === "fulfilled") renderFeed(live.value.items);
+}
+
+function lively() {
+  if (!board) return true;
+  const t = now(), ev = board.event, next = board.next;
+  return !!(ev && t < ev.finalAt) || !!(next && next.opensAt - t < SOON_MS);
+}
+
+function poll() {
+  if (document.hidden || (!lively() && Date.now() - lastAsk < QUIET_POLL_MS)) return;
+  refresh();
 }
 
 async function keepAwake() {
@@ -153,11 +174,13 @@ document.addEventListener("fullscreenchange", () => {
   if (stale && !document.fullscreenElement) location.reload();
 });
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && lock === null) keepAwake();
+  if (document.hidden) return;
+  if (lock === null) keepAwake();
+  refresh();
 });
 document.addEventListener("pointermove", wake);
 wake();
 keepAwake();
 refresh();
-setInterval(refresh, POLL_MS);
+setInterval(poll, POLL_MS);
 setInterval(tick, 1000);

@@ -23,7 +23,7 @@ export function fakeCtx() {
       return (...args) => {
         log.push(k);
         if (args.some((a) => typeof a === "number" && !Number.isFinite(a))) bad.push(k);
-        return k.startsWith("create") ? gradient : undefined;
+        return k.startsWith("create") ? gradient : k === "measureText" ? { width: 6 } : undefined;
       };
     },
     set(_, k, v) {

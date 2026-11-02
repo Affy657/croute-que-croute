@@ -19,14 +19,28 @@ export function toastPath(ctx, w, h) {
 
 export const TAU = Math.PI * 2;
 
+const WAVES = new Map();
+
+function wave(wob, k) {
+  const key = wob + ":" + k;
+  let w = WAVES.get(key);
+  if (!w) {
+    w = Array.from({ length: 49 }, (_, i) => {
+      const a = (i / 48) * TAU;
+      return [Math.cos(a), Math.sin(a), 1 + wob * Math.sin(a * k + 0.7)];
+    });
+    WAVES.set(key, w);
+  }
+  return w;
+}
+
 export function wavy(ctx, cx, cy, rx, ry, wob, k) {
   ctx.beginPath();
-  for (let i = 0; i <= 48; i++) {
-    const a = (i / 48) * TAU, f = 1 + wob * Math.sin(a * k + 0.7);
-    const x = cx + Math.cos(a) * rx * f, y = cy + Math.sin(a) * ry * f;
+  wave(wob, k).forEach(([c, sn, f], i) => {
+    const x = cx + c * rx * f, y = cy + sn * ry * f;
     if (i) ctx.lineTo(x, y);
     else ctx.moveTo(x, y);
-  }
+  });
   ctx.closePath();
 }
 

@@ -461,6 +461,7 @@ function update(dt) {
 
 let last = performance.now(), acc = 0;
 function frame(now) {
+  requestAnimationFrame(frame);
   scene.pace(now - last);
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
@@ -484,7 +485,6 @@ function frame(now) {
     }
   }
   if (S.mode === "play") audio.musicRunSync(elapsed());
-  requestAnimationFrame(frame);
 }
 
 const go = (e) => {
@@ -681,7 +681,7 @@ setInterval(() => {
 showMenu();
 finishLoading(new Promise((ok) => api.on("board", ok)));
 api.refreshBoard();
-initAccount(openSettings);
+initAccount(openSettings, () => !playing());
 api.resumePending();
 if (new URLSearchParams(location.search).get("diag") === "son") session.set(KEYS.diag, "1");
 startDiag(session.get(KEYS.diag) === "1");

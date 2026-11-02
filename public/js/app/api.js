@@ -7,7 +7,7 @@ import { openOf, recentOf, upcomingOf } from "../shared/banner.js";
 
 const RELOAD_GAP = 15000;
 const UPDATED = "Partie pas comptée : le jeu a été mis à jour, il se recharge quand tu rejoues.";
-const SEND_TRIES = 3, SEND_GAP_MS = 1500, WAIT_GAP_MS = 5000, WAIT_MS = 120000, SEND_TIMEOUT_MS = 8000;
+const SEND_TRIES = 3, SEND_GAP_MS = 1500, WAIT_GAP_MS = 5000, WAIT_MS = 120000, SEND_TIMEOUT_MS = 8000, CALL_TIMEOUT_MS = 10000;
 
 export const reason = (e, offline = "Pas de réseau, réessaie.") => (e.status ? e.message : offline);
 export const badInput = (e) => [400, 404, 409].includes(e.status);
@@ -48,7 +48,7 @@ const settled = (status) => status && status < 500 && status !== 408 && status !
 export async function call(method, path, body, timeoutMs) {
   const headers = { "content-type": "application/json", "x-app-version": VERSION };
   if (net.token) headers.authorization = "Bearer " + net.token;
-  const signal = timeoutMs ? timeout(timeoutMs) : undefined;
+  const signal = timeout(timeoutMs || CALL_TIMEOUT_MS);
   const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined, signal });
   let data = null;
   try { data = await res.json(); } catch (e) {}
@@ -106,7 +106,9 @@ async function resume() {
   try {
     const r = await call("POST", "/api/resume", null, SEND_TIMEOUT_MS);
     if (r.token && !net.token) setToken(r.token);
-  } catch (e) {}
+  } catch (e) {
+    if (!e.status) resumed = false;
+  }
 }
 
 export async function refreshBoard() {

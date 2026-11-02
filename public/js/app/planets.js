@@ -1,4 +1,4 @@
-import { CANS, drawCan, streak } from "./sky/cans.js";
+import { CANS, cachedCan, streak } from "./sky/cans.js";
 import { cheese } from "./sky/cheese.js";
 import { green, moons, purple, rock } from "./sky/classic.js";
 import { egg } from "./sky/egg.js";
@@ -27,7 +27,7 @@ export const BODIES = {
 };
 
 export const PASSERS = {
-  ...Object.fromEntries(Object.keys(CANS).map((kind) => [kind, { name: CANS[kind].name, draw: (ctx, s) => drawCan(ctx, kind, s), size: 0.13, trail: streak, spin: 1 }])),
+  ...Object.fromEntries(Object.keys(CANS).map((kind) => [kind, { name: CANS[kind].name, draw: (ctx, s) => cachedCan(ctx, kind, s), size: 0.13, trail: streak, spin: 1 }])),
   tesla: { name: "Tesla dans l'espace", draw: roadster, size: 0.17, spin: 0.35 },
   saucer: { name: "Soucoupe volante", draw: saucer, size: 0.15, flat: true },
   santa: { name: "Père Noël", draw: santa, size: 0.2, span: 1.5, trail: stardust, flat: true }

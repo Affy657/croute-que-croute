@@ -8,8 +8,8 @@ export function clock(ms) {
   return h > 0 ? h + ":" + String(m).padStart(2, "0") + ":" + ss : m + ":" + ss;
 }
 
+export const hourOf = (ms) => new Date(ms).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
+
 export function when(ms) {
-  const d = new Date(ms);
-  const day = d.toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "2-digit" });
-  return day + " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
+  return new Date(ms).toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "2-digit" }) + " à " + hourOf(ms);
 }
