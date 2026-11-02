@@ -107,6 +107,7 @@ function resetMerge(note = "") {
   merging = null;
   ui.mergeAsk.hidden = true;
   setText(ui.mergeNote, note);
+  markInvalid(ui.mergeInput, false);
 }
 
 async function checkMerge(code) {
@@ -121,7 +122,10 @@ async function checkMerge(code) {
     resetMerge(`Cet appareil n'était plus connecté à son ancien compte : tu joues maintenant en ${quoted(r.pseudo)}.`);
   } catch (e) {
     const m = e.data && e.data.merge;
-    if (!m) return setText(ui.mergeNote, reason(e));
+    if (!m) {
+      setText(ui.mergeNote, reason(e));
+      return markInvalid(ui.mergeInput, badInput(e));
+    }
     merging = code;
     setText(ui.mergeNote, `Réunir ${quoted(m.from)} avec ${quoted(m.into)} ? Tes records, parties et succès passent sur ${quoted(m.into)}, et le pseudo ${quoted(m.from)} sera libéré.`);
     ui.mergeAsk.hidden = false;
@@ -157,9 +161,9 @@ async function confirmOut() {
     const s = removed > 1 ? "s" : "";
     askOut(false, removed ? `C'est fait : ${removed} appareil${s} déconnecté${s}.` : "Aucun autre appareil n'était connecté.");
   } catch (e) {
-    askOut(false, reason(e));
+    resetMerge(reason(e));
   } finally {
-    ui.outYes.disabled = ui.outNo.disabled = false;
+    ui.mergeYes.disabled = ui.mergeNo.disabled = false;
   }
 }
 

@@ -18,7 +18,7 @@ main {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-lg);
 }
 
 .embedded {
@@ -26,7 +26,7 @@ main {
 }
 
 .embedded main {
-  padding: 0 0 16px;
+  padding: 0 0 var(--space-lg);
 }
 
 .embedded .top {
@@ -36,14 +36,14 @@ main {
 .stack {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-lg);
 }
 
 .top {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-md);
   flex-wrap: wrap;
 }
 
@@ -52,17 +52,17 @@ h2 {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  line-height: 1.05;
+  line-height: var(--leading-tight);
 }
 
 h1 {
-  font-size: 1.6rem;
+  font-size: var(--text-4xl);
   color: var(--mustard);
   text-shadow: 0 3px 0 var(--jam);
 }
 
 h2 {
-  font-size: 1.2rem;
+  font-size: var(--text-3xl);
 }
 
 p {
@@ -77,8 +77,8 @@ p {
 .card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
+  gap: var(--space-md);
+  padding: var(--space-lg);
   border-radius: var(--radius-lg);
   background: var(--card);
 }
@@ -86,7 +86,7 @@ p {
 .eyebrow {
   font-family: var(--font-display);
   font-size: var(--text-sm);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--track-lg);
   color: var(--ink-dim);
 }
 
@@ -99,15 +99,15 @@ p {
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .stat {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 10px 4px;
+  gap: var(--space-2xs);
+  padding: var(--space-md) var(--space-xs);
   border-radius: var(--radius-md);
   background: var(--row);
 }
@@ -115,19 +115,19 @@ p {
 .stat-label {
   font-family: var(--font-display);
   font-size: var(--text-xs);
-  letter-spacing: 0.1em;
+  letter-spacing: var(--track-lg);
   color: var(--ink-dim);
 }
 
 .stat-value {
   font-family: var(--font-display);
-  font-size: 1.4rem;
+  font-size: var(--text-3xl);
   color: var(--mustard);
 }
 
 .row {
   display: flex;
-  gap: 8px;
+  gap: var(--space-sm);
   flex-wrap: wrap;
 }
 
@@ -138,7 +138,7 @@ p {
 .form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 label {
@@ -152,7 +152,7 @@ select {
   box-sizing: border-box;
   width: 100%;
   font: inherit;
-  padding: 10px 12px;
+  padding: var(--space-md);
   border: 1px solid var(--ink-dim);
   border-radius: var(--radius-md);
   background: var(--void);
@@ -161,8 +161,8 @@ select {
 
 .btn {
   font-family: var(--font-display);
-  font-size: 1rem;
-  padding: 12px 16px;
+  font-size: var(--text-xl);
+  padding: var(--space-md) var(--space-lg);
   border: 0;
   border-radius: var(--radius-md);
   background: var(--mustard);
@@ -188,7 +188,7 @@ a.btn {
 
 .btn.small {
   font-size: var(--text-sm);
-  padding: 6px 10px;
+  padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm);
 }
 
@@ -198,6 +198,17 @@ a.btn {
 
 .btn:disabled {
   opacity: 0.45;
+}
+
+@media (hover: hover) {
+  .btn:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+
+  .btn.ghost:hover:not(:disabled) {
+    filter: none;
+    border-color: var(--ink);
+  }
 }
 
 input:focus-visible,
@@ -217,7 +228,7 @@ select:focus-visible,
 }
 
 .msg.alert {
-  padding: 10px 12px;
+  padding: var(--space-md);
   border-radius: var(--radius-md);
   background: var(--jam-deep);
   color: var(--ink);
@@ -229,15 +240,15 @@ select:focus-visible,
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-sm);
 }
 
 .list li {
   display: grid;
   grid-template-columns: 2rem 1fr auto;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: var(--space-md);
+  padding: var(--space-md);
   border-radius: var(--radius-md);
   background: var(--row);
 }
@@ -279,7 +290,7 @@ select:focus-visible,
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-sm);
 }
 
 .errors li {
@@ -295,8 +306,8 @@ select:focus-visible,
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 10px 40px 10px 12px;
+  gap: var(--space-2xs);
+  padding: var(--space-md) var(--space-2xl) var(--space-md) var(--space-md);
   list-style: none;
   cursor: pointer;
 }
@@ -327,7 +338,7 @@ select:focus-visible,
 .errors .kind {
   font-family: var(--font-display);
   font-size: var(--text-sm);
-  letter-spacing: 0.06em;
+  letter-spacing: var(--track-md);
   color: var(--mustard);
 }
 
@@ -345,14 +356,14 @@ select:focus-visible,
 .errors .body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 12px 12px;
+  gap: var(--space-sm);
+  padding: 0 var(--space-md) var(--space-md);
 }
 
 .errors dl {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 4px 12px;
+  gap: var(--space-xs) var(--space-md);
   margin: 0;
   font-size: var(--text-lg);
 }
@@ -370,7 +381,7 @@ select:focus-visible,
   margin: 0;
   max-height: 260px;
   overflow: auto;
-  padding: 10px;
+  padding: var(--space-md);
   border-radius: var(--radius-sm);
   background: var(--void);
   font: 0.75rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
