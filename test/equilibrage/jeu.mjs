@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 export const DIR = resolve(process.env.GAME || "public/js/game");
 const load = (file) => import(pathToFileURL(resolve(DIR, file)).href);
-export const { createSim, CALM_PASS } = await load("sim.js");
+export const { createSim, CALM_PASS, WAIT_PASS } = await load("sim.js");
 export const { solve } = await load("solver.js");
 export const { ATTACKS, WALL_HOLE, WALL_AWAY, WALL_LOW, ROLLING_APART } = await load("attacks.js");
 export const { gapTo } = await load("projectiles.js");

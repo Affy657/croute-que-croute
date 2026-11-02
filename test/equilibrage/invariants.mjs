@@ -1,4 +1,4 @@
-import { DIR, createSim, ATTACKS, WALL_HOLE, WALL_AWAY, WALL_LOW, ROLLING_APART, CALM_PASS, gapTo, field, mulberry32, solverPilot } from "./jeu.mjs";
+import { DIR, createSim, ATTACKS, WALL_HOLE, WALL_AWAY, WALL_LOW, ROLLING_APART, CALM_PASS, WAIT_PASS, gapTo, field, mulberry32, solverPilot } from "./jeu.mjs";
 
 const GAMES = Number(process.argv[2]) || 120, LIMIT = Number(process.argv[3]) || 150;
 const SOLVER_GAMES = 20, SOLVER_LIMIT = 300, TRAIN_LIMIT = 90, LINGER_S = 12, MISS_PX = 3;
@@ -14,13 +14,13 @@ const report = (key, info) => {
 };
 let games = 0, steps = 0, maxObs = 0, deepest = 0;
 
-function passAt(items) {
+function passAt(items, part = CALM_PASS) {
   let end = 0;
   for (const w of items) {
     for (const o of w.obs) {
       const tx = o.vx > 0 ? (FW + M - o.x) / o.vx : o.vx < 0 ? (o.x + M) / -o.vx : Infinity;
       const ty = o.vy > 0 ? (FH + M - o.y) / o.vy : o.vy < 0 ? (o.y + M) / -o.vy : Infinity;
-      end = Math.max(end, w.at + CALM_PASS * Math.min(tx, ty));
+      end = Math.max(end, w.at + part * Math.min(tx, ty));
     }
   }
   return end;
@@ -49,6 +49,7 @@ function play(seed, style, { only = null, t0 = 0, limit = LIMIT, dt = STEP } = {
     : () => ({ x: 0, y: 0 });
   const where = (extra) => ({ seed, style, only, t: +s.t.toFixed(3), ...extra });
   let seriesEnd = -Infinity, guard = 0;
+  const until = {};
   games++;
   while (!s.dead && s.t < t0 + limit && guard++ < 2000 + (limit / STEP) * 2) {
     const { x: mx, y: my } = move();
@@ -91,6 +92,9 @@ function play(seed, style, { only = null, t0 = 0, limit = LIMIT, dt = STEP } = {
         if (a.kin === "wall" && walled) report("mur lancé alors qu'un autre mur est encore là", where({ id, prev }));
         if (a.kin === "wall" && ["rain", "slant", "downpour"].includes(prev) && s.warns.some((w) => !seen.has(w) && !w.obs[0].vx)) report("mur par le haut juste après une pluie", where({ id, prev }));
       }
+      if ((a.waits || []).some((k) => s.t < (until[k] ?? -Infinity) - STEP * 1.5)) report("attaque lancée avant que celle qu'elle attend soit assez avancée", where({ id, until: a.waits.map((k) => +(until[k] ?? 0).toFixed(3)) }));
+      const mine = s.warns.filter((w) => !seen.has(w));
+      until[id] = Math.max(until[id] ?? -Infinity, passAt(mine, WAIT_PASS));
       if (a.calm) seriesEnd = passAt(s.warns.filter((w) => w.obs[0].from === id));
       const rolls = s.warns.filter((w) => !seen.has(w) && w.obs[0].kind === "rolling").map((w) => w.y);
       if (rolls.length === 2 && Math.abs(rolls[0] - rolls[1]) < ROLLING_APART - 1e-6) report("rouleaux trop proches", where({ id, rolls }));

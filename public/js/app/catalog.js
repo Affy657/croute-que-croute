@@ -224,6 +224,7 @@ function rulesCard() {
     "Jamais deux murs à la suite : un mur ou des murs en série attendent que le mur d'avant ait quitté l'écran.",
     "Hachoir, croix et double pluie ne sortent jamais deux fois de suite.",
     "Jamais de hachoir juste après une pluie de fourchettes, une croix ou un mur, ni de croix juste après un hachoir ou un mur, ni de double pluie juste après une pluie.",
+    "Après une double pluie ou un hachoir, pas de pluie de fourchettes ni de double pluie tant qu'ils ne sont pas à mi-chemin.",
     "Pluie en biais, couteau à pain et rouleau ne se suivent jamais.",
     "Juste après une pluie, un mur arrive toujours par un côté, jamais par le haut.",
     "Jamais plus de 2 rouleaux à l'écran, et jamais collés l'un à l'autre."

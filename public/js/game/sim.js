@@ -4,18 +4,18 @@ import { moveProjectile, sprinkleRare, gapTo } from "./projectiles.js";
 import { solve } from "./solver.js";
 
 const TRIES = 5, REACT = 0.1, SWEEP = 6, MOVE_MAX = 10 * (FW + FH);
-export const CALM_PASS = 0.2;
+export const CALM_PASS = 0.2, WAIT_PASS = 0.5;
 export const GAP_START = 0.95, GAP_SLOPE = 0.005625, GAP_MIN = 0.5;
 const mortal = () => false;
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
-function passAt(items) {
+function passAt(items, part = CALM_PASS) {
   let end = 0;
   for (const w of items) {
     for (const o of w.obs) {
       const tx = o.vx > 0 ? (FW + M - o.x) / o.vx : o.vx < 0 ? (o.x + M) / -o.vx : Infinity;
       const ty = o.vy > 0 ? (FH + M - o.y) / o.vy : o.vy < 0 ? (o.y + M) / -o.vy : Infinity;
-      end = Math.max(end, w.at + CALM_PASS * Math.min(tx, ty));
+      end = Math.max(end, w.at + part * Math.min(tx, ty));
     }
   }
   return end;
@@ -26,7 +26,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
   const pick = (arr) => arr[Math.floor(rng() * arr.length)];
   const forced = only && ATTACKS.find((a) => a.id === only);
   const state = {
-    t: t0, next: 0.9, tries: 0, near: 0, dead: false, last: null, streak: 0, queued: null,
+    t: t0, next: 0.9, tries: 0, near: 0, dead: false, last: null, streak: 0, queued: null, until: {},
     toast: { x: FW / 2, y },
     obs: [], warns: [],
     stats: { spawned: 0, rejected: 0, impossible: 0, solves: 0, solveMs: 0, solveMax: 0 }
@@ -45,10 +45,16 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
   function spawn() {
     const t = state.t;
     const active = new Set([...state.obs.map((o) => o.from), ...state.warns.flatMap((w) => w.obs.map((o) => o.from))]);
-    const attack = forced || state.queued || pickAttack(t, rng, state.last, state.streak, active);
+    const fresh = new Set(Object.keys(state.until).filter((id) => state.until[id] > t));
+    const attack = forced || state.queued || pickAttack(t, rng, state.last, state.streak, active, fresh);
     state.queued = null;
     if (forced && forced.shuns && forced.shuns.some((id) => active.has(id))) {
       state.next = 0.1;
+      return;
+    }
+    if (attack.waits && attack.waits.some((id) => fresh.has(id))) {
+      if (!forced) state.queued = attack;
+      state.next = Math.max(...attack.waits.map((id) => state.until[id] || 0)) - t;
       return;
     }
     if (attack.calm && state.warns.length) {
@@ -70,6 +76,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
       state.tries = 0;
       state.streak = attack.id === state.last ? state.streak + 1 : 1;
       state.last = attack.id;
+      state.until[attack.id] = Math.max(state.until[attack.id] || 0, passAt(items, WAIT_PASS));
       const gap = Math.max(GAP_MIN, GAP_START - t * GAP_SLOPE);
       state.next = gap * attack.cost * rnd(0.85, 1.15);
       if (attack.calm) state.next = Math.max(state.next, passAt(items) - t);
