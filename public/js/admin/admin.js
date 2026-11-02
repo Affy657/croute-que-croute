@@ -45,6 +45,7 @@ const KINDS = {
   csp: "Bloqué par la sécurité",
   blocage: "Jeu bloqué au chargement"
 };
+/** @type {[RegExp, string][]} */
 const BROWSERS = [
   [/Instagram/, "Instagram"], [/FBAN|FBAV|FB_IAB/, "Facebook"], [/Snapchat/, "Snapchat"], [/musical_ly|BytedanceWebview/, "TikTok"],
   [/SamsungBrowser/, "Samsung Internet"], [/EdgiOS|EdgA|Edg\//, "Edge"], [/OPR\//, "Opera"], [/CriOS|Chrome\//, "Chrome"],

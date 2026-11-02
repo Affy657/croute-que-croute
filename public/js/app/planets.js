@@ -1726,6 +1726,7 @@ function ship(ctx, w, cy) {
     ctx.lineTo(x, top);
     ctx.stroke();
   }
+  /** @type {[number, number, [number, number][]][]} */
   const MASTS = [[-0.18, 0.09, [[-0.44, -0.31], [-0.26, -0.11], [-0.06, 0.05]]], [0.02, 0.11, [[-0.54, -0.39], [-0.34, -0.15], [-0.1, 0.05]]], [0.2, 0.08, [[-0.36, -0.23], [-0.18, -0.03]]]];
   ctx.fillStyle = "#c9cccb";
   for (const [x, half, rows] of MASTS) for (const [y0, y1] of rows) sail(ctx, x, y0, y1, half);

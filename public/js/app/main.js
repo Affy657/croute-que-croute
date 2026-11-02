@@ -47,7 +47,7 @@ let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, la
 let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
 let settingsOpen = false, settingsFrom = "menu";
 let achOpen = false, achFrom = "menu";
-let cardOpen = false, historyFor = null;
+let cardOpen = null, historyFor = null;
 
 const playing = () => S.mode === "play" || S.mode === "dying";
 const elapsed = () => sim.state.t - S.t0;
@@ -170,7 +170,7 @@ function start(train = null) {
   ui.godPill.hidden = !testing.invincible;
   if (train) ui.hudBest.textContent = "Entraînement : " + train.name;
   avoidHud();
-  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   audio.musicRunStart();
   audio.playSfx("start");
   return true;
@@ -293,7 +293,7 @@ function openBoardCard(row) {
 
 function closeBoardCard() {
   const id = cardOpen;
-  cardOpen = false;
+  cardOpen = null;
   closeCard();
   show("board");
   renderControls(false);

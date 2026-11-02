@@ -124,7 +124,9 @@ export function startDiag(asked) {
       if (name !== "pageshow") send();
     });
   }
-  document.addEventListener("pointerup", (e) => log(`toucher ${e.target.id || e.target.className || e.target.tagName}`), { passive: true, capture: true });
+  document.addEventListener("pointerup", (e) => {
+    if (e.target instanceof Element) log(`toucher ${e.target.id || e.target.className || e.target.tagName}`);
+  }, { passive: true, capture: true });
   setInterval(sample, SAMPLE_MS);
   if (asked) setInterval(send, SEND_MS);
 }

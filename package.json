@@ -12,7 +12,7 @@
     "icons": "node scripts/icons.mjs",
     "qr": "node scripts/qr.mjs",
     "types": "wrangler types",
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit && tsc -p tsconfig.navigateur.json",
     "test": "node test/fairness.mjs 100 150",
     "test:api": "node test/api.mjs",
     "test:unit": "node --test \"test/unit/*.test.mjs\"",
