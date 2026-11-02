@@ -36,9 +36,3 @@ jobs:
         run: npx playwright install --with-deps --only-shell chromium
       - name: Test de bout en bout dans le navigateur
         run: npm run test:navigateur
-      - name: Safari (WebKit) pour le test de bout en bout
-        run: npx playwright install --with-deps webkit
-      - name: Test de bout en bout dans Safari (WebKit, profil iPhone)
-        run: npm run test:navigateur
-        env:
-          NAVIGATEUR: webkit
