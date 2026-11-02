@@ -16,6 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&display=swap">
+<link rel="stylesheet" href="/tokens.css">
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/catalog.css">
 </head>
@@ -66,14 +67,14 @@
     <p id="menuInfo" class="info" hidden></p>
     <form id="joinForm" class="join" hidden>
       <label for="pseudo" class="sr-only">Ton pseudo</label>
-      <input id="pseudo" name="pseudo" maxlength="16" placeholder="Ton pseudo" autocomplete="nickname" autocapitalize="off" spellcheck="false" required>
+      <input id="pseudo" aria-describedby="joinError" name="pseudo" maxlength="16" placeholder="Ton pseudo" autocomplete="nickname" autocapitalize="off" spellcheck="false" required>
       <p id="joinError" class="note error" hidden></p>
       <button class="cta" type="submit">C'est parti</button>
       <button id="haveAccount" class="ghost" type="button">J'ai déjà un compte</button>
     </form>
     <form id="linkForm" class="join" hidden>
       <label for="linkInput" class="sr-only">Code de ton autre appareil</label>
-      <input id="linkInput" name="code" maxlength="9" placeholder="Code à 8 caractères" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required>
+      <input id="linkInput" aria-describedby="linkError" name="code" maxlength="9" placeholder="Code à 8 caractères" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required>
       <p id="linkError" class="note error" hidden></p>
       <button class="cta" type="submit">Connecter</button>
       <button id="newAccount" class="ghost" type="button">Nouveau joueur</button>
@@ -216,7 +217,7 @@
       <p class="sub">Ton record et ta place te suivent.</p>
       <form id="renameForm" class="rename">
         <label for="newPseudo" class="sr-only">Nouveau pseudo</label>
-        <input id="newPseudo" name="pseudo" maxlength="16" autocomplete="nickname" autocapitalize="off" spellcheck="false" required>
+        <input id="newPseudo" aria-describedby="renameNote" name="pseudo" maxlength="16" autocomplete="nickname" autocapitalize="off" spellcheck="false" required>
         <button class="ghost" type="submit">Changer</button>
       </form>
       <p id="renameNote" class="note" hidden></p>

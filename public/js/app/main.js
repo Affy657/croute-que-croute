@@ -21,7 +21,7 @@ import { openCard, closeCard, drawCard, myLook, shareLook, stampOutfit, onAdopt 
 import { initAccount, resetAccount } from "./account.js";
 import { finishLoading } from "./loader.js";
 import {
-  ui, show, screen, openPage, setText, setDigits, tickCountdowns, renderMenu, renderPicker, openPicker, pickerIsOpen, renderBoard, renderOver, renderOverStats, renderRival, renderKiller,
+  ui, show, screen, openPage, setText, markInvalid, setDigits, tickCountdowns, renderMenu, renderPicker, openPicker, pickerIsOpen, renderBoard, renderOver, renderOverStats, renderRival, renderKiller,
   renderHud, renderControls, renderAll, setBoardScope, achLabel
 } from "./screens.js";
 
@@ -572,6 +572,7 @@ ui.joinForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const button = ui.joinForm.querySelector("button");
   setText(ui.joinError, "");
+  markInvalid(ui.pseudo, false);
   button.disabled = true;
   try {
     await api.join(ui.pseudo.value);
@@ -579,6 +580,7 @@ ui.joinForm.addEventListener("submit", async (e) => {
     maybeSuggest();
   } catch (err) {
     setText(ui.joinError, api.reason(err));
+    markInvalid(ui.pseudo, api.badInput(err));
   } finally {
     button.disabled = false;
   }

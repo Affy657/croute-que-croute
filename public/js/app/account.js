@@ -1,6 +1,6 @@
 import { clock } from "../shared/format.js";
-import { ui, show, setText, renderControls, setLinking } from "./screens.js";
-import { net, on, registered, serverNow, linkWith, newLinkCode, logoutOthers, reason } from "./api.js";
+import { ui, show, setText, markInvalid, renderControls, setLinking } from "./screens.js";
+import { net, on, registered, serverNow, linkWith, newLinkCode, logoutOthers, reason, badInput } from "./api.js";
 import { renderSettings, copy } from "./settings.js";
 import { resync } from "./profile.js";
 
@@ -88,6 +88,7 @@ function closeLink() {
 async function connect(code) {
   const button = ui.linkForm.querySelector("button[type=submit]");
   setText(ui.linkError, "");
+  markInvalid(ui.linkInput, false);
   button.disabled = true;
   try {
     await linkWith(code);
@@ -96,6 +97,7 @@ async function connect(code) {
     setLinking(false);
   } catch (e) {
     setText(ui.linkError, reason(e));
+    markInvalid(ui.linkInput, badInput(e));
   } finally {
     button.disabled = false;
   }
@@ -186,6 +188,7 @@ function linkFromUrl() {
   }
   ui.linkInput.value = m[1];
   setText(ui.linkError, "");
+  markInvalid(ui.linkInput, false);
   setLinking(true);
 }
 
@@ -214,6 +217,7 @@ on("board", pickUp);
 ui.linkBack.addEventListener("click", closeLink);
 ui.haveAccount.addEventListener("click", () => {
   setText(ui.linkError, "");
+  markInvalid(ui.linkInput, false);
   setLinking(true);
   ui.linkInput.focus();
 });

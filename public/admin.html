@@ -17,6 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&display=swap">
+<link rel="stylesheet" href="/tokens.css">
 <link rel="stylesheet" href="/admin.css">
 </head>
 <body>
@@ -62,9 +63,9 @@
         <h2 id="eventName">Aucune soirée</h2>
         <p id="eventEnd" class="sub"></p>
         <div class="stats">
-          <p class="stat"><span class="label">Joueurs</span><span id="statPlayers" class="value">0</span></p>
-          <p class="stat"><span class="label">Parties</span><span id="statRuns" class="value">0</span></p>
-          <p class="stat"><span class="label">Record</span><span id="statBest" class="value">-</span></p>
+          <p class="stat"><span class="stat-label">Joueurs</span><span id="statPlayers" class="stat-value">0</span></p>
+          <p class="stat"><span class="stat-label">Parties</span><span id="statRuns" class="stat-value">0</span></p>
+          <p class="stat"><span class="stat-label">Record</span><span id="statBest" class="stat-value">-</span></p>
         </div>
         <div class="row">
           <button id="editEndBtn" class="btn ghost" type="button">Modifier</button>
@@ -101,7 +102,7 @@
         </div>
         <p id="suspectAlert" class="msg error alert" hidden></p>
         <ol id="players" class="list"></ol>
-        <p id="playersEmpty" class="hint" hidden>Aucun joueur pour l'instant.</p>
+        <p id="playersEmpty" class="note" hidden>Aucun joueur pour l'instant.</p>
         <p id="playersMsg" class="msg" hidden></p>
       </section>
 
@@ -111,7 +112,7 @@
         <p id="errorsAlert" class="msg error alert" hidden></p>
         <button id="errorsBtn" class="btn ghost" type="button">Voir les erreurs</button>
         <ul id="errors" class="errors"></ul>
-        <p id="errorsEmpty" class="hint" hidden>Aucune erreur ces 14 derniers jours.</p>
+        <p id="errorsEmpty" class="note" hidden>Aucune erreur ces 14 derniers jours.</p>
         <p id="errorsMsg" class="msg" hidden></p>
       </section>
 

@@ -3,8 +3,8 @@ import { LOCAL } from "../shared/local.js";
 import { VERSION } from "../version.js";
 import { installMode, promptInstall, shouldSuggest, markSuggested, onInstallChange } from "./install.js";
 import { prefs, setLevel, previewMusic, previewSfx } from "./audio.js";
-import { ui, setText } from "./screens.js";
-import { net, rename, reason } from "./api.js";
+import { ui, setText, markInvalid } from "./screens.js";
+import { net, rename, reason, badInput } from "./api.js";
 import { controls, setSens, setAim, hasMouse } from "./input.js";
 
 const FLASH_MS = 2000;
@@ -40,6 +40,7 @@ export function renderSettings() {
   ui.linkCard.hidden = !me;
   if (me && document.activeElement !== ui.newPseudo) ui.newPseudo.value = me.pseudo;
   setText(ui.renameNote, "");
+  markInvalid(ui.newPseudo, false);
   const mode = installMode();
   ui.installCard.hidden = mode === "installed";
   ui.installHint.textContent = HINTS[mode] || "";
@@ -90,6 +91,7 @@ async function renamePlayer(e) {
   const button = ui.renameForm.querySelector("button");
   button.disabled = true;
   renameNote("", false);
+  markInvalid(ui.newPseudo, false);
   try {
     await rename(pseudo);
     ui.newPseudo.value = net.board.me ? net.board.me.pseudo : pseudo;
@@ -97,6 +99,7 @@ async function renamePlayer(e) {
     renameNote("C'est changé.", false);
   } catch (err) {
     renameNote(reason(err), true);
+    markInvalid(ui.newPseudo, badInput(err));
   } finally {
     button.disabled = false;
   }

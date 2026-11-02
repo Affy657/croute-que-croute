@@ -60,6 +60,11 @@ export function setText(el, text) {
   el.hidden = !text;
 }
 
+export function markInvalid(input, on) {
+  if (on) input.setAttribute("aria-invalid", "true");
+  else input.removeAttribute("aria-invalid");
+}
+
 export function setDigits(el, text) {
   const chars = [...text];
   if (el.children.length !== chars.length) el.replaceChildren(...chars.map(() => document.createElement("span")));
