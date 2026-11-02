@@ -1,4 +1,5 @@
-import { chromium } from "playwright";
+import { readFileSync } from "node:fs";
+import { chromium, devices, webkit } from "playwright";
 
 const BASE = process.argv[2] || "";
 if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(BASE)) {
@@ -6,6 +7,8 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(BASE)) {
   process.exit(1);
 }
 const RUN_MS = 90000, WAIT_MS = 15000, MUSIC = /\/music\//;
+const SAFARI = process.env.NAVIGATEUR === "webkit";
+const KEY = readFileSync(".dev.vars", "utf8").match(/ADMIN_KEY=(\w+)/)[1];
 const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
 const hex = (n) => Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join("");
 const results = [], problems = [];
@@ -35,14 +38,24 @@ for (let i = 0; i < 60; i++) {
   try { await fetch(BASE + "/api/board"); break; } catch { await wait(500); }
 }
 
-const browser = await chromium.launch(process.platform === "win32" ? { channel: "msedge" } : {});
-const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+const browser = SAFARI ? await webkit.launch() : await chromium.launch(process.platform === "win32" ? { channel: "msedge" } : {});
+const page = await browser.newPage(SAFARI ? devices["iPhone 13"] : { viewport: { width: 390, height: 844 } });
 watch(page);
 const $ = (css) => page.locator(css).first();
 const shown = (id, timeout = WAIT_MS) => $("#" + id).waitFor({ state: "visible", timeout });
 const click = (id) => $("#" + id).click();
 const filled = (css) => page.waitForFunction((s) => document.querySelector(s)?.textContent.trim(), css, { timeout: WAIT_MS });
 const pseudo = "Nav" + hex(6);
+
+function dialog(p, accept) {
+  return Promise.race([
+    new Promise((ok) => p.once("dialog", (d) => {
+      ok(d.message());
+      return accept ? d.accept() : d.dismiss();
+    })),
+    wait(WAIT_MS).then(() => { throw new Error("aucune demande de confirmation"); })
+  ]);
+}
 
 try {
   await step("la page se charge et propose de choisir un pseudo", async () => {
@@ -145,6 +158,23 @@ try {
     await shown("hud");
     if (!(await $("#hudBest").textContent()).startsWith("Entraînement")) throw new Error("pas en entraînement");
   });
+  await step("écran géant sans soirée proche : une demande par minute, pas toutes les 10 s", async () => {
+    const context = await browser.newContext();
+    const other = await context.newPage();
+    await other.clock.install();
+    let asks = 0;
+    other.on("request", (r) => {
+      if (new URL(r.url()).pathname === "/api/board") asks++;
+    });
+    await other.goto(BASE + "/ecran", { waitUntil: "networkidle" });
+    asks = 0;
+    for (let i = 0; i < 12; i++) {
+      await other.clock.runFor(10000);
+      await wait(200);
+    }
+    await context.close();
+    if (asks < 1 || asks > 3) throw new Error(asks + " demande(s) du classement en 2 min");
+  });
   await step("écran géant : « Pas de réseau » quand le réseau tombe", async () => {
     const context = await browser.newContext();
     const other = await context.newPage();
@@ -156,6 +186,68 @@ try {
     }
     await other.locator("#offline").waitFor({ state: "visible", timeout: WAIT_MS });
     await context.close();
+  });
+  let admin;
+  const at = (ms) => admin.evaluate((t) => {
+    const d = new Date(t);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  }, ms);
+  const status = () => admin.locator("#eventStatus").textContent();
+  await step("admin : connexion avec la clé", async () => {
+    admin = await browser.newPage();
+    watch(admin);
+    await admin.goto(BASE + "/admin");
+    await admin.fill("#loginName", "Navigateur");
+    await admin.fill("#loginKey", KEY);
+    await admin.locator("#loginForm button").first().click();
+    await admin.locator("#app").waitFor({ state: "visible", timeout: WAIT_MS });
+  });
+  await step("admin : retirer un joueur demande confirmation, « Annuler » ne retire rien, puis réintégré", async () => {
+    const row = admin.locator("#players li", { hasText: pseudo });
+    for (const scope of ["general", "pc"]) {
+      await admin.locator(`.scope[data-scope="${scope}"]`).click();
+      if (await row.waitFor({ timeout: 4000 }).then(() => true, () => false)) break;
+    }
+    const out = () => row.evaluate((li) => li.classList.contains("out"));
+    let asked = dialog(admin, false);
+    await row.locator("button").click();
+    if (!(await asked).includes(pseudo)) throw new Error("mauvaise question");
+    await wait(500);
+    if (await out()) throw new Error("retiré sans confirmation");
+    asked = dialog(admin, true);
+    await row.locator("button").click();
+    await asked;
+    await admin.waitForFunction((p) => [...document.querySelectorAll("#players li.out")].some((li) => li.textContent.includes(p)), pseudo, { timeout: WAIT_MS });
+    await row.locator("button", { hasText: "Réintégrer" }).click();
+    await admin.waitForFunction((p) => [...document.querySelectorAll("#players li:not(.out)")].some((li) => li.textContent.includes(p)), pseudo, { timeout: WAIT_MS });
+  });
+  await step("admin : créer une soirée", async () => {
+    await admin.locator("#newEventBtn").click();
+    await admin.fill("#eventNameInput", "Soirée du navigateur");
+    await admin.fill("#eventStartInput", await at(Date.now() - 3600000));
+    await admin.fill("#eventEndInput", await at(Date.now() + 3600000));
+    await admin.locator("#eventForm button").click();
+    await admin.waitForFunction(() => document.getElementById("eventName").textContent === "Soirée du navigateur", null, { timeout: WAIT_MS });
+    if ((await status()) !== "Soirée en cours") throw new Error(await status());
+  });
+  await step("admin : fin déjà passée, confirmation demandée, « Annuler » laisse la soirée ouverte", async () => {
+    let patched = 0;
+    admin.on("request", (r) => {
+      if (r.method() === "PATCH") patched++;
+    });
+    await admin.locator("#editEndBtn").click();
+    await admin.fill("#endAt", await at(Date.now() - 120000));
+    let asked = dialog(admin, false);
+    await admin.locator("#endForm button").click();
+    if (!(await asked).includes("déjà passée")) throw new Error("mauvaise question");
+    await wait(500);
+    if (patched || (await admin.locator("#endForm").isHidden()) || (await status()) !== "Soirée en cours") throw new Error("soirée modifiée sans confirmation");
+    asked = dialog(admin, true);
+    await admin.locator("#endForm button").click();
+    await asked;
+    await admin.waitForFunction(() => document.getElementById("eventStatus").textContent === "Dernière soirée", null, { timeout: WAIT_MS });
+    await admin.close();
   });
   for (const path of ["/ecran", "/admin"]) {
     await step(`la page ${path} s'ouvre`, async () => {
@@ -169,6 +261,6 @@ try {
 check("aucune erreur dans la console, aucun fichier manquant", !problems.length, problems.slice(0, 5));
 await browser.close();
 
-console.log(results.join("\n"));
+console.log((SAFARI ? "WebKit, profil iPhone" : "Chromium") + "\n" + results.join("\n"));
 console.log(results.filter((l) => l.startsWith("FAIL")).length + " échec(s) sur " + results.length);
 process.exit(results.some((l) => l.startsWith("FAIL")) ? 1 : 0);

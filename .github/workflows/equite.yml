@@ -3,7 +3,7 @@ name: Équité
 on:
   push:
     branches: [master]
-    paths: ["public/js/game/**", "test/fairness.mjs"]
+    paths: ["public/js/game/**", "test/fairness.mjs", "test/equilibrage/jeu.mjs", "test/equilibrage/invariants.mjs"]
   workflow_dispatch:
 
 concurrency:
@@ -21,3 +21,5 @@ jobs:
           node-version: 26
       - name: Robot d'équité (0 mort attendu)
         run: npm test
+      - name: Règles du jeu toujours tenues (invariants)
+        run: node test/equilibrage/invariants.mjs 10 60
