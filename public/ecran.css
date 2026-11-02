@@ -38,7 +38,7 @@ body.idle {
   margin: 0;
   font-weight: 400;
   font-size: 5.6vh;
-  line-height: 1;
+  line-height: var(--leading-none);
   color: var(--jam);
   text-shadow: 0 0.5vh 0 var(--void), 0 0.5vh 0 var(--mustard);
 }
@@ -248,14 +248,14 @@ body.idle {
 
 .crown-label {
   font-size: 6vh;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--track-md);
   color: var(--jam);
 }
 
 .crown-name {
   max-width: 100%;
   font-size: min(15vh, 7vw);
-  line-height: 1.05;
+  line-height: var(--leading-tight);
   color: var(--mustard);
   text-shadow: 0 1vh 0 var(--jam);
   overflow-wrap: anywhere;
