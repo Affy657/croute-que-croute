@@ -6,6 +6,7 @@ import { GEAR, SPREADS } from "../public/js/shared/palette.js";
 const DB = "croute-que-croute", FILE = ".wrangler/seed.sql", GAME = "http://localhost:8787";
 const DAY = 86400000, HOUR = 3600000, NOW = Date.now(), CHUNK = 100, MIN_CS = 250;
 const OPEN = process.argv.includes("--soiree");
+const PERSIST = process.argv.includes("--persist-to") ? process.argv[process.argv.indexOf("--persist-to") + 1] : null;
 const NAMES = [
   "Biscotte", "Croissant", "Pain Perdu", "Baguette", "Pistache", "Miette", "Tartinator", "Crouton", "Bretzel", "Ciabatta", "Focaccia",
   "Panini", "Bagel", "Muffin", "Gaufre", "Madeleine", "Chouquette", "Crumble", "Fougasse", "Beignet", "Kouign", "Canele"
@@ -33,7 +34,7 @@ const at20 = (daysAgo) => {
 const sha = (text) => createHash("sha256").update(text).digest("hex");
 const keyOf = (pseudo) => pseudo.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 const sql = (v) => (v === null || v === undefined ? "NULL" : typeof v === "number" ? String(v) : "'" + String(v).replace(/'/g, "''") + "'");
-const local = (args) => execSync(`npx wrangler d1 ${args} ${DB} --local`, { stdio: ["ignore", "pipe", "pipe"] }).toString();
+const local = (args) => execSync(`npx wrangler d1 ${args} ${DB} --local${PERSIST ? ` --persist-to "${PERSIST}"` : ""}`, { stdio: ["ignore", "pipe", "pipe"] }).toString();
 
 const events = [
   { id: 9001, name: "Space Tartinade test 1", opens: at20(15) },
@@ -120,7 +121,7 @@ for (const p of players) {
     entries.set(event.id, e);
   });
   const m = best.mobile || { score: 0, at: null, elapsed: null }, c = best.pc || { score: 0, at: null, elapsed: null };
-  rows.profiles.push([p.id, p.pseudo, keyOf(p.pseudo), sha(p.token), null, m.score, m.at, m.elapsed, p.runs.length, p.banned, Math.round(p.joined), c.score, c.at, c.elapsed, p.look ? JSON.stringify(p.look) : null]);
+  rows.profiles.push([p.id, p.pseudo, keyOf(p.pseudo), sha(p.token), m.score, m.at, m.elapsed, p.runs.length, p.banned, Math.round(p.joined), c.score, c.at, c.elapsed, p.look ? JSON.stringify(p.look) : null]);
   rows.sessions.push([sha(p.token), p.id, null, Math.round(p.joined)]);
   for (const [eventId, e] of entries) rows.entries.push([eventId, p.id, e.best, e.at, e.elapsed, e.runs]);
 }
@@ -142,7 +143,7 @@ const script = [
   "DELETE FROM profiles WHERE id LIKE 'seed-%';",
   `DELETE FROM events WHERE id IN (${SEED_EVENTS});`,
   ...insert("events", "id, name, opens_at, closes_at, created_at", events.map((e) => [e.id, e.name, e.opens, e.closes, e.opens - DAY])),
-  ...insert("profiles", "id, pseudo, pseudo_key, token, client_id, best, best_at, best_elapsed, run_count, banned, created_at, pc_best, pc_best_at, pc_best_elapsed, look", rows.profiles),
+  ...insert("profiles", "id, pseudo, pseudo_key, token, best, best_at, best_elapsed, run_count, banned, created_at, pc_best, pc_best_at, pc_best_elapsed, look", rows.profiles),
   ...insert("sessions", "token_hash, player_id, client_hash, created_at", rows.sessions),
   ...insert("runs", "id, player_id, event_id, started_at, finished_at, score, device, combo", rows.runs),
   ...insert("entries", "event_id, player_id, best, best_at, best_elapsed, run_count", rows.entries)

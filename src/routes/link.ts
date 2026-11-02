@@ -12,7 +12,7 @@ const better = (col: string, best: string, at: string) => `${col} = CASE WHEN ${
 const MERGE_PROFILE = `UPDATE profiles AS a SET
   ${["best", "best_at", "best_elapsed"].map((c) => better(c, "best", "best_at")).join(", ")},
   ${["pc_best", "pc_best_at", "pc_best_elapsed"].map((c) => better(c, "pc_best", "pc_best_at")).join(", ")},
-  run_count = a.run_count + b.run_count, created_at = MIN(a.created_at, b.created_at), progress = ?3
+  run_count = a.run_count + b.run_count, created_at = MIN(a.created_at, b.created_at), steps = NULL, progress = ?3
   FROM profiles AS b WHERE a.id = ?1 AND b.id = ?2`;
 const MERGE_ENTRIES = `INSERT INTO entries (event_id, player_id, best, best_at, best_elapsed, run_count)
   SELECT event_id, ?1, best, best_at, best_elapsed, run_count FROM entries WHERE player_id = ?2
@@ -62,10 +62,10 @@ export async function useLink({ req, env }: Ctx) {
   const hash = await sha256(code), now = Date.now();
   const [link, me] = await Promise.all([
     env.DB.prepare(
-      "SELECT l.player_id AS id, p.pseudo, p.banned FROM links l JOIN profiles p ON p.id = l.player_id WHERE l.code_hash = ? AND l.expires_at > ?",
+      "SELECT l.player_id AS id, l.expires_at, p.pseudo, p.banned FROM links l JOIN profiles p ON p.id = l.player_id WHERE l.code_hash = ? AND l.expires_at > ?",
     )
       .bind(hash, now)
-      .first<{ id: string; pseudo: string; banned: number }>(),
+      .first<{ id: string; expires_at: number; pseudo: string; banned: number }>(),
     findProfile(req, env),
   ]);
   if (!link) return fail(404, UNKNOWN);
@@ -73,18 +73,23 @@ export async function useLink({ req, env }: Ctx) {
   if (me && (me.banned || link.banned)) return fail(403, "Impossible de réunir un compte retiré du classement.");
   if (me && body.merge !== true) return json({ error: "Cet appareil a déjà un compte.", merge: { from: me.pseudo, into: link.pseudo } }, 409);
   if (!(await env.DB.prepare("DELETE FROM links WHERE code_hash = ?").bind(hash).run()).meta.changes) return fail(404, UNKNOWN);
-  if (me) {
-    await mergeInto(env, link.id, me.id);
-    return json({ pseudo: link.pseudo, merged: true });
+  try {
+    if (me) {
+      await mergeInto(env, link.id, me.id);
+      return json({ pseudo: link.pseudo, merged: true });
+    }
+    const clientId = cleanClientId(body.clientId);
+    const token = randomToken();
+    const [tokenHash, clientHash] = await Promise.all([sha256(token), clientId ? sha256(clientId) : null]);
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM sessions WHERE player_id = ?1 AND client_hash IN (?2, ?3)").bind(link.id, clientHash, clientId),
+      env.DB.prepare("INSERT INTO sessions (token_hash, player_id, client_hash, created_at) VALUES (?, ?, ?, ?)").bind(tokenHash, link.id, clientHash, now),
+    ]);
+    return json({ token, pseudo: link.pseudo });
+  } catch (e) {
+    await env.DB.prepare("INSERT OR IGNORE INTO links (code_hash, player_id, expires_at) VALUES (?, ?, ?)").bind(hash, link.id, link.expires_at).run().catch(() => null);
+    throw e;
   }
-  const clientId = cleanClientId(body.clientId);
-  const token = randomToken();
-  const [tokenHash, clientHash] = await Promise.all([sha256(token), clientId ? sha256(clientId) : null]);
-  await env.DB.batch([
-    env.DB.prepare("DELETE FROM sessions WHERE player_id = ?1 AND client_hash IN (?2, ?3)").bind(link.id, clientHash, clientId),
-    env.DB.prepare("INSERT INTO sessions (token_hash, player_id, client_hash, created_at) VALUES (?, ?, ?, ?)").bind(tokenHash, link.id, clientHash, now),
-  ]);
-  return json({ token, pseudo: link.pseudo });
 }
 
 export async function logoutOthers({ req, env }: Ctx) {
