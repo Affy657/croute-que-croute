@@ -12,9 +12,11 @@ const KEY = readFileSync(".dev.vars", "utf8").match(/ADMIN_KEY=(\w+)/)[1];
 const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
 const hex = (n) => Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join("");
 const results = [], problems = [];
+let current = "";
 const check = (name, ok, detail) => results.push(`${ok ? "OK  " : "FAIL"} ${name}${ok ? "" : " -> " + JSON.stringify(detail)}`);
 
 async function step(name, run) {
+  current = name;
   try {
     await run();
     check(name, true);
@@ -25,9 +27,10 @@ async function step(name, run) {
 }
 
 function watch(page) {
-  page.on("pageerror", (e) => problems.push(`${page.url()} : ${e.message}`));
+  page.on("pageerror", (e) => problems.push(`[${current}] ${page.url()} : ${e.message}`));
   page.on("console", (m) => {
-    if (m.type() === "error" && !m.text().startsWith("Failed to load resource")) problems.push(`${page.url()} : ${m.text()}`);
+    const { url, lineNumber } = m.location();
+    if (m.type() === "error" && !m.text().startsWith("Failed to load resource")) problems.push(`[${current}] ${page.url()} : ${m.text()}${url ? ` (${url}:${lineNumber})` : ""}`);
   });
   page.on("response", (r) => {
     if ((r.status() === 404 || r.status() >= 500) && !MUSIC.test(r.url())) problems.push(`${r.status()} ${r.url()}`);
