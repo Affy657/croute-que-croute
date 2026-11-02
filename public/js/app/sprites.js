@@ -791,8 +791,11 @@ function sideBoosters(ctx, t, C) {
   }
 }
 
+/** @type {[string, number][]} */
+const SIDE_CUTLERY = [["fork", -1], ["knife", 1]];
+
 function sideCutlery(ctx, t, C) {
-  for (const [kind, side] of [["fork", -1], ["knife", 1]]) {
+  for (const [kind, side] of SIDE_CUTLERY) {
     ctx.save();
     ctx.translate(side * 25, -2);
     ctx.rotate(-Math.PI / 2 + side * 0.2);

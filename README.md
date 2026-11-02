@@ -349,7 +349,8 @@ Après :
 
 ## Technique
 
-- Cloudflare, offre gratuite (0 €), compte d'Adrien : Workers pour le site et l'API, base D1 (SQLite) en Europe de l'Ouest. Jeu en JavaScript sans compilation, API en TypeScript.
+- Cloudflare, offre gratuite (0 €), compte d'Adrien : Workers pour le site et l'API, base D1 (SQLite) en Europe de l'Ouest. Jeu en JavaScript sans compilation (types vérifiés quand même, voir Tests), API en TypeScript.
+- Environnement du Worker : date de compatibilité 2026-10-23 dans `wrangler.jsonc`, la plus récente que connaît wrangler en local, pour que les tests locaux tournent comme la prod. Compatibilité Node.js coupée (`no_nodejs_compat`) : elle est activée d'office à partir du 04/08/2026 et le serveur n'en a pas besoin. Pour monter la date : la changer, `npm run types`, puis `npm run test:api`.
 - Limites gratuites par jour : 100 000 requêtes, 5 millions de lignes lues, 100 000 lignes écrites. Au-delà, l'API est en erreur jusqu'à 1 h du matin.
 - Pour les tenir : chaque requête passe par un index, le classement est gardé en mémoire et mis à jour sur place à chaque record, rien n'est demandé écran éteint. Estimation pour 150 joueurs sur 5 h : au plus 45 000 requêtes, 20 000 à 35 000 lignes écrites, 1 à 2 millions de lignes lues (2,5 millions quand le général aura 1 000 joueurs). Ce sont des estimations, pas des mesures.
 - Général : les 1 000 premiers en mémoire. Au-delà, la place se calcule en comptant les joueurs devant.
@@ -382,14 +383,15 @@ Après :
 | `npm run test:unit` | Tests du code du téléphone, sans serveur (moins d'une seconde, voir Tests) |
 | `npm run test:api` | Tests de l'API sur une base neuve à part (serveur lancé seul sur le port 8790, effacé à la fin) : ni les données ni le serveur de `npm run dev` ne sont touchés. Refuse si le port est déjà pris ; autre port : `TEST_PORT=8796 npm run test:api`. `test/player.mjs` et `test/admin.mjs` ne se lancent pas seuls. Environ 1 min : deux parties attendent 47 s pour tester les alertes de l'admin |
 | `npm run equilibrage` et suivantes | Mesurer le dosage du jeu avec le robot « humain » (voir Équilibrage) |
-| `npm run check` | Vérifier les types de l'API |
+| `npm run check` | Vérifier les types de l'API et du code du navigateur (voir Tests) |
 | `npm run db:remote` | Appliquer les migrations en ligne, avant `npm run deploy` |
-| `npm run deploy` | Mettre en ligne. Refuse si git n'est pas à jour, hors de `master` ou si `master` n'est pas envoyé sur GitHub, si le serveur ne compile pas, si une migration manque en ligne, si la prod ne répond pas normalement, si le numéro de version n'a pas monté ou si une soirée est ouverte (`npm run deploy -- --pendant-soiree` en urgence). Vérifie la prod à la fin (`npm run verif`) |
+| `npm run deploy` | Mettre en ligne. Refuse si git n'est pas à jour, hors de `master` ou si `master` n'est pas envoyé sur GitHub, si la vérification des types échoue, si une migration manque en ligne, si la prod ne répond pas normalement, si le numéro de version n'a pas monté ou si une soirée est ouverte (`npm run deploy -- --pendant-soiree` en urgence). Vérifie la prod à la fin (`npm run verif`) |
 | `npm run verif` | Vérifier la prod, en lecture seule (voir Tests). `npm run verif -- 0.46.1+373facb` exige aussi cette version |
 | `npm run icons`, `npm run qr` | Regénérer les icônes et les QR codes |
 
 ## Tests
 
+- `npm run check` : les types, avec TypeScript. L'API (`tsconfig.json`) et le code du navigateur, jeu, écran géant et admin (`tsconfig.navigateur.json`, mode souple, le JavaScript de `public/js` vérifié tel quel). Attrape un import qui n'existe plus (la page admin blanche du 01/11/2026), une fonction mal appelée, un nom mal tapé. Les éléments de la page (`getElementById`, `querySelector`) ne sont pas typés (`navigateur.d.ts`), et 6 tableaux ont une annotation `/** @type */` parce que TypeScript devine mal leur type.
 - `npm run test:api` : le serveur. Chaque route avec son cas normal et ses refus (inscription, parties, scores, soirées, liaison d'appareils, tenue du compte, fusion, admin, erreurs, limites).
 - `npm run test:unit` : le code du téléphone, dans Node (`node --test`, sans dépendance). `test/unit/env.mjs` remplace ce que le navigateur fournit : stockage, adresse de la page, faux contexte de dessin qui note chaque appel.
   - `sprites.test.mjs` : chaque objet de `GEAR`, chaque garniture et chaque arme se dessine, sans coordonnée invalide. Un nom inventé (`constructor`, `toString`, `__proto__`, inconnu, vide) ne plante pas et ne dessine rien.
@@ -398,7 +400,8 @@ Après :
   - `shell.test.mjs` : chaque fichier chargé par la page du jeu est dans le cache hors ligne (`SHELL` de `sw.js`), et chaque fichier du cache existe. Sinon le jeu ne démarre plus hors ligne. Et chaque élément attendu par `screens.js` existe dans `index.html` : sinon le jeu se rechargerait à chaque ouverture.
   - `sync.test.mjs` : la tenue entre appareils. Un appareil neuf prend celle du compte sans rien écraser, une tenue plus récente remplace, une plus ancienne est ignorée, un objet pas encore reçu est porté dès que son succès arrive, et les garnitures reçues du serveur ne datent pas la tenue.
 - `npm run verif` : la prod, en lecture seule. Le jeu et le serveur ont la même version, l'en-tête CSP est là, et les pages, l'écran géant, l'admin et chaque fichier du cache hors ligne répondent. Après une mise en ligne, réessaie pendant 30 s le temps que la nouvelle version arrive partout.
-- GitHub (`.github/workflows/`, onglet Actions du dépôt) : à chaque envoi sur `master` qui touche au code, compilation, `test:unit` et `test:api` avec une clé admin tirée au hasard (`tests.yml`, 1 min 15 s mesurée le 01/11/2026, comptée 2 min par GitHub qui arrondit à la minute). Le robot d'équité seulement quand `public/js/game/` change (`equite.yml`, 1 min 40 s), ou à la main depuis l'onglet Actions. Un envoi qui arrive pendant des tests en cours les annule. Dépôt privé : 2 000 min gratuites par mois, soit environ 30 envois de code par jour.
+- GitHub (`.github/workflows/`, onglet Actions du dépôt) : à chaque envoi sur `master` qui touche au code et sur chaque pull request, `npm run check`, `test:unit` et `test:api` avec une clé admin tirée au hasard (`tests.yml`, 1 min 15 s mesurée le 01/11/2026, comptée 2 min par GitHub qui arrondit à la minute). Le robot d'équité seulement quand `public/js/game/` change (`equite.yml`, 1 min 40 s), ou à la main depuis l'onglet Actions. Un envoi qui arrive pendant des tests en cours les annule. Dépôt privé : 2 000 min gratuites par mois, soit environ 30 envois de code par jour.
+- Dépendances : Dependabot (`.github/dependabot.yml`) ouvre une fois par mois une pull request qui regroupe les mises à jour npm, et une pour les actions GitHub. Les tests y tournent. La fusionner sur GitHub si c'est vert, puis `git pull` avant de continuer en local (sinon le prochain envoi de `master` sur GitHub est refusé).
 - Règle : chaque bug corrigé reçoit un test qui l'aurait attrapé, côté téléphone aussi.
 - Pas automatisé, à voir sur un vrai téléphone : le dessin au-delà du « ne plante pas », le son, la vibration, l'installation de l'appli et la fluidité.
 

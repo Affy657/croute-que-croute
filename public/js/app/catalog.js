@@ -59,7 +59,9 @@ function hitbox(ctx, scale, shapes) {
   off.height = ctx.canvas.height;
   const o = off.getContext("2d");
   o.setTransform(ctx.getTransform());
-  for (const [width, color, dash] of [[6, PALETTE.void, []], [2.4, PALETTE.mustard, [3, 3]]]) {
+  /** @type {[number, string, number[]][]} */
+  const strokes = [[6, PALETTE.void, []], [2.4, PALETTE.mustard, [3, 3]]];
+  for (const [width, color, dash] of strokes) {
     o.setLineDash(dash.map((d) => d / scale));
     o.lineWidth = width / scale;
     o.strokeStyle = color;

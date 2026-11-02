@@ -26,10 +26,10 @@ if (run("git status --porcelain").trim()) stop("des changements ne sont pas enre
 if (run("git rev-parse --abbrev-ref HEAD").trim() !== "master") stop("on ne met en ligne que depuis master.");
 if (run("git rev-list --count origin/master..HEAD").trim() !== "0") stop("master n'est pas envoyé sur GitHub : git push origin master.");
 try {
-  run("npx tsc --noEmit");
+  run("npm run check");
 } catch (e) {
   console.error(String(e.stdout || ""));
-  stop("le serveur ne compile pas (npm run check).");
+  stop("la vérification des types échoue (npm run check).");
 }
 if (!run(`npx wrangler d1 migrations list ${DB} --remote`).includes("No migrations to apply")) {
   stop("une migration n'est pas encore appliquée en ligne. Lancer d'abord npm run db:remote.");

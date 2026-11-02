@@ -6,6 +6,7 @@ import { owned } from "./toppings.js";
 import { LOCAL } from "../shared/local.js";
 
 export const FAMILIES = [["time", "Survie"], ["play", "Adresse"], ["collect", "Collection"], ["loyal", "Habitué"], ["event", "Soirées"], ["sky", "Le ciel", "Touche ce qui passe dans le ciel de l'accueil."], ["secret", "Secrets"]];
+/** @type {[number, string][]} */
 const TIMES = [[10, "t10"], [30, "t30"], [60, "t60"], [90, "t90"], [120, "t120"], [150, "t150"]];
 const NEARS = [[20, "near20"]];
 const RUNS = [[10, "runs10"], [50, "runs50"], [100, "runs100"]];
@@ -14,6 +15,7 @@ const COMBOS = [[COMBO, "combo5"], [COMBO_MAX, "combo10"]];
 const LIVE = ATTACKS.filter((a) => !a.lab);
 const WEAPONS = Object.keys(PROJECTILES).filter((k) => !PROJECTILES[k].lab);
 const EXTRAS = Object.values(SPREADS).filter((s) => !s.free).length;
+/** @type {[number, string][]} */
 const TOPPINGS = [[FRIDGE, "top4"], [EXTRAS, "topAll"]];
 const SKY_TOUCH = { pumpkin: "pumpkin", pirate: "ahoy", santa: "hoho", egg: "eggHunt", toaster: "toaster", saucer: "ufo", tesla: "roadTrip" };
 const SKY_IDS = Object.values(SKY_TOUCH);

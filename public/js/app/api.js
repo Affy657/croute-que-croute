@@ -50,9 +50,7 @@ export async function call(method, path, body, timeoutMs) {
   let data = null;
   try { data = await res.json(); } catch (e) {}
   if (!res.ok) {
-    const err = new Error((data && data.error) || "Erreur réseau.");
-    err.status = res.status;
-    err.data = data;
+    const err = Object.assign(new Error((data && data.error) || "Erreur réseau."), { status: res.status, data });
     if (res.status === 426) requestUpdate();
     throw err;
   }

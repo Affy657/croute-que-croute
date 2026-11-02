@@ -4,10 +4,11 @@ on:
   push:
     branches: [master]
     paths-ignore: ["README.md", "affiches/**", "maquettes/**", "qr/**", "public/music/**", "public/sfx/**", "public/icons/**"]
+  pull_request:
   workflow_dispatch:
 
 concurrency:
-  group: tests
+  group: tests-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -23,7 +24,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Compilation du serveur
+      - name: Vérification des types
         run: npm run check
       - name: Tests unitaires
         run: npm run test:unit

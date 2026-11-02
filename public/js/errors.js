@@ -126,7 +126,7 @@
     }
   }
 
-  addEventListener("error", (e) => {
+  const failed = (e) => {
     try {
       if (e instanceof ErrorEvent) {
         const err = e.error;
@@ -139,7 +139,8 @@
         capture("fichier", el.tagName.toLowerCase() + " pas chargé", String(url).split(/[?#]/)[0], "");
       }
     } catch (err) {}
-  }, true);
+  };
+  addEventListener("error", failed, true);
 
   addEventListener("unhandledrejection", (e) => {
     try {
@@ -159,7 +160,7 @@
 
   addEventListener("pointerup", (e) => {
     try {
-      const el = e.target && e.target.closest && e.target.closest(CLICKABLE);
+      const el = e.target instanceof Element && e.target.closest(CLICKABLE);
       if (el) note("clic " + (el.id ? "#" + el.id : el.tagName.toLowerCase() + (el.classList[0] ? "." + el.classList[0] : "")));
     } catch (err) {}
   }, { capture: true, passive: true });
@@ -179,7 +180,7 @@
       const screens = document.querySelectorAll(SCREENS);
       for (const el of screens) if (!el.hidden) note("écran " + el.id);
       const watch = new MutationObserver((list) => {
-        for (const m of list) if (!m.target.hidden) note("écran " + m.target.id);
+        for (const m of list) if (m.target instanceof HTMLElement && !m.target.hidden) note("écran " + m.target.id);
       });
       for (const el of screens) watch.observe(el, { attributes: true, attributeFilter: ["hidden"] });
       if (game && !root.dataset.ready) {

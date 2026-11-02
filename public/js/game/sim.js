@@ -6,6 +6,7 @@ import { solve } from "./solver.js";
 const TRIES = 5, REACT = 0.1, SWEEP = 6, MOVE_MAX = 10 * (FW + FH);
 export const CALM_PASS = 0.2;
 export const GAP_START = 0.95, GAP_SLOPE = 0.005625, GAP_MIN = 0.5;
+const mortal = () => false;
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
 function passAt(items) {
@@ -20,7 +21,7 @@ function passAt(items) {
   return end;
 }
 
-export function createSim(rng = Math.random, { fair = true, react = REACT, only = null, t0 = 0, y = FH * 0.7, immortal = () => false } = {}) {
+export function createSim(rng = Math.random, { fair = true, react = REACT, only = null, t0 = 0, y = FH * 0.7, immortal = mortal } = {}) {
   const rnd = (a, b) => a + rng() * (b - a);
   const pick = (arr) => arr[Math.floor(rng() * arr.length)];
   const forced = only && ATTACKS.find((a) => a.id === only);
