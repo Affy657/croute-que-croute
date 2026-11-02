@@ -15,9 +15,9 @@ A.onUnlock((a, synced) => heard.push({ id: a.id, synced }));
 const heardOf = (id) => heard.filter((h) => h.id === id);
 
 let ended = 0;
-function play(score, killer = null, eventKey = null) {
+function play(score, killer = null, eventKey = null, device = "mobile") {
   A.runStart(eventKey);
-  A.runEnd(score, killer);
+  A.runEnd(score, killer, device);
   ended++;
 }
 const tick = (t, near = 0, moved = true, dt = 0.016, obs = []) => A.runTick({ t, near, obs }, moved, dt);
@@ -173,10 +173,21 @@ test("Dans le top : top 10 de la soirée, pas sur une erreur", () => {
   assert.ok(has("top10"));
 });
 
-test("Première soirée : partie lancée pendant une soirée", () => {
+test("Première soirée : pas pour une partie jouée sur PC pendant la soirée", () => {
+  play(5000, null, "soiree-1", "pc");
   assert.ok(!has("event1"));
+  A.runStart("soiree-1");
+  assert.ok(!has("event1"), "pas avant de savoir si la partie se joue au doigt ou à la souris");
+  A.runEnd(5000, null, "pc");
+  ended++;
+  assert.ok(!has("event1"));
+  assert.deepEqual(stored().events, []);
+});
+
+test("Première soirée : partie jouée sur téléphone pendant une soirée", () => {
   play(5000, null, "soiree-1");
   assert.ok(has("event1"));
+  assert.deepEqual(stored().events, ["soiree-1"]);
 });
 
 test("Le frigo est plein : 4 garnitures gagnées", () => {
