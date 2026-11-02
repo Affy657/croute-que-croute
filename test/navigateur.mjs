@@ -68,6 +68,13 @@ try {
     await $("#joinForm button").click();
     await shown("play");
   });
+  if (SAFARI) {
+    await step("iPhone : « Installe le jeu » proposé une fois, « Plus tard » le ferme", async () => {
+      await shown("installPop");
+      await click("installLater");
+      await $("#installPop").waitFor({ state: "hidden", timeout: WAIT_MS });
+    });
+  }
   await step("une partie se lance et finit sur l'écran de fin", async () => {
     await click("play");
     await shown("hud");
