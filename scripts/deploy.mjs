@@ -1,9 +1,9 @@
 import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
+import { blocked } from "./garde.mjs";
 
 const PROD = "https://croute-que-croute.tartine-sauvage.workers.dev";
 const DB = "croute-que-croute";
-const URGENT = "--pendant-soiree";
 const NUMBER = /^\d+\.\d+\.\d+$/;
 const FULL = /^\d+\.\d+\.\d+\+[0-9a-f]+$/;
 
@@ -39,10 +39,8 @@ if (!run(`npx wrangler d1 migrations list ${DB} --remote`).includes("No migratio
 const board = await fetch(PROD + "/api/board").then((r) => (r.ok ? r.json() : null)).catch(() => null);
 if (!board) stop("impossible de savoir si une soirée est ouverte.");
 if (!FULL.test(board.version || "")) stop(`version en ligne illisible : ${String(board.version).slice(0, 40)}.`);
-if (board.event && board.now < board.event.finalAt && !process.argv.includes(URGENT)) {
-  const why = board.event.status === "open" ? "est ouverte" : "compte encore ses dernières parties (5 min après la fin)";
-  stop(`la soirée « ${board.event.name} » ${why}. En cas d'urgence seulement : npm run deploy -- ${URGENT}`);
-}
+const busy = blocked(board, process.argv);
+if (busy) stop(busy);
 const online = board.version.split("+")[0];
 if (!newer(number, online)) stop(`la version ${online} est en ligne et package.json dit ${number} : monter le numéro (voir Versions dans le README).`);
 

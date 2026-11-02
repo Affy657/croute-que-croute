@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { drawToast, drawProjectile, drawTrail } from "../../public/js/app/sprites.js";
 import { GEAR, SPREADS } from "../../public/js/shared/palette.js";
 import { PROJECTILES, projectile } from "../../public/js/game/projectiles.js";
-import { PASSERS } from "../../public/js/app/planets.js";
+import { BODIES, PASSERS } from "../../public/js/app/planets.js";
 
 const BARE = { x: 100, y: 100, tilt: 0.1, thrust: 0.4, spread: "butter", head: null, side: null, bread: null, aura: null };
 const JUNK = ["constructor", "toString", "__proto__", "hasOwnProperty", "valueOf", "inconnu", "", 42, null, undefined];
@@ -64,6 +64,19 @@ for (const [kind, p] of Object.entries(PASSERS).filter(([, p]) => p.trail)) {
     const alphas = log.filter((l) => l.startsWith("globalAlpha=")).map((l) => Number(l.slice(12)));
     assert.ok(alphas.every((a) => a <= 0.7), alphas.join(", "));
     assert.equal(ctx.globalAlpha, 0.7);
+  });
+}
+
+for (const [group, list] of Object.entries(BODIES)) {
+  list.forEach((b, i) => {
+    test(`planète ${b.name ? "« " + b.name + " »" : group + " n° " + (i + 1)} : se dessine, immobile ou en mouvement, sans valeur invalide`, () => {
+      for (const clock of [0, 1.5]) {
+        const { ctx, log, bad } = fakeCtx();
+        b.draw(ctx, 40, clock);
+        assert.ok(log.length > 5);
+        assert.deepEqual(bad, []);
+      }
+    });
   });
 }
 
