@@ -106,7 +106,7 @@ function die(killer) {
     S.submit = null;
     return;
   }
-  ach.runEnd(S.score, S.killer);
+  ach.runEnd(S.score, S.killer, device);
   const before = api.standing(S.scope);
   S.newBest = S.score > before.best;
   S.prevRank = before.rank;

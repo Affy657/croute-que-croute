@@ -180,16 +180,9 @@ export function countToppings() {
 }
 
 export function runStart(eventKey) {
-  run = { still: 0 };
+  run = { still: 0, eventKey };
   fresh = [];
   countToppings();
-  if (eventKey && !data.events.includes(eventKey)) {
-    change((d) => {
-      if (d.events.includes(eventKey)) return false;
-      d.events.push(eventKey);
-    });
-  }
-  if (data.events.length) unlock("event1");
   if (new Date().getHours() < NIGHT_UNTIL_H) unlock("night");
 }
 
@@ -217,13 +210,16 @@ export function runTick(state, moved, dt) {
   }
 }
 
-export function runEnd(score, killer) {
+export function runEnd(score, killer, device) {
   if (!run) return;
+  const { eventKey } = run;
   run = null;
   change((d) => {
     d.runs++;
     d.best = Math.max(d.best, score);
+    if (eventKey && device !== "pc" && !d.events.includes(eventKey)) d.events.push(eventKey);
   });
+  if (data.events.length) unlock("event1");
   countRuns(data.runs);
   if (score < EXPRESS_CS) unlock("express");
   if (Math.floor(score / 100) === SIX_SEVEN_S) unlock("sixSeven");
