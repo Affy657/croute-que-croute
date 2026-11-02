@@ -119,6 +119,11 @@ check("classements général et soirée : le joueur y est", r.status === 200 && 
   check("fiche : record, progression et meilleur frôlé", card.status === 200 && card.data.best === 100 && card.data.combo === 7 && card.data.records.some((x) => !x.pc && x.score === 100), card.data);
   const none = await call("GET", "/api/players/inconnu-" + hex(8));
   check("fiche d'un joueur inconnu = 404", none.status === 404, none);
+  const solo = await joinAs("Fiche" + hex(4)), soloId = (await call("GET", "/api/board", { token: solo })).data.me.id;
+  const before = (await call("GET", `/api/players/${soloId}`, { token: solo })).data;
+  await call("POST", `/api/runs/${await startRun(solo)}`, { token: solo, body: { score: 10, combo: 3 } });
+  const after = (await call("GET", `/api/players/${soloId}`, { token: solo })).data;
+  check("sa propre fiche suit la partie qui vient de finir", before.runs === 0 && after.runs === 1 && after.played === 10 && after.combo === 3 && after.feats.express && after.records.length === 1, { before, after });
 }
 
 {
