@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body);
   text-align: left;
 }
 
@@ -11,13 +11,13 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  border-radius: 16px;
-  background: #1a1640;
+  border-radius: var(--radius-lg);
+  background: var(--card);
 }
 
 .catalog h2 {
   margin: 0;
-  font-family: "Bungee", "Arial Black", sans-serif;
+  font-family: var(--font-display);
   font-weight: 400;
   font-size: 1.1rem;
   line-height: 1.1;
@@ -31,7 +31,7 @@
 }
 
 .catalog .sub {
-  font-size: 0.9rem;
+  font-size: var(--text-lg);
   color: var(--ink-dim);
 }
 
@@ -58,7 +58,7 @@
 }
 
 .catalog .ach-gear {
-  font-size: 0.85rem;
+  font-size: var(--text-lg);
   color: var(--ink-dim);
 }
 
@@ -95,8 +95,8 @@
   flex: 1;
   max-width: 140px;
   height: 6px;
-  border-radius: 999px;
-  background: rgba(255, 246, 224, 0.12);
+  border-radius: var(--radius-pill);
+  background: var(--line);
   overflow: hidden;
 }
 
@@ -108,7 +108,7 @@
 }
 
 .ach-of {
-  font-size: 0.8rem;
+  font-size: var(--text-md);
   color: var(--ink-dim);
   font-variant-numeric: tabular-nums;
 }
@@ -138,11 +138,11 @@
 .catalog .ach-new {
   display: inline-block;
   padding: 0.15em 0.6em;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--mustard);
   color: var(--void);
   font-family: var(--font-display);
-  font-size: 0.65rem;
+  font-size: var(--text-xs);
   font-weight: 400;
   letter-spacing: 0.06em;
   vertical-align: 0.15em;
@@ -170,7 +170,7 @@
   align-items: center;
   gap: 4px;
   padding: 10px 6px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--row);
   text-align: center;
 }
@@ -180,7 +180,7 @@
 }
 
 .catalog .weapon .meta {
-  font-size: 0.8rem;
+  font-size: var(--text-md);
   color: var(--ink-dim);
 }
 
@@ -190,7 +190,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 0.9rem;
+  font-size: var(--text-lg);
   color: var(--ink-dim);
 }
 
@@ -208,7 +208,7 @@
   min-height: 44px;
   box-sizing: border-box;
   padding: 12px 16px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   list-style: none;
   cursor: pointer;
   touch-action: manipulation;
@@ -246,7 +246,7 @@
 
 .catalog .fold-tag {
   font-family: var(--font-display);
-  font-size: 0.85rem;
+  font-size: var(--text-md);
   color: var(--ink-dim);
   white-space: nowrap;
 }
@@ -256,21 +256,12 @@
   mask-image: linear-gradient(90deg, transparent, #000 30%);
 }
 
-.catalog .badge {
-  font-family: var(--font-display);
-  font-size: 0.62rem;
-  letter-spacing: 0.08em;
+.catalog .fold-tag.lab {
   padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--mustard);
-  color: var(--void);
-  white-space: nowrap;
-}
-
-.catalog .badge.lab {
-  background: transparent;
   border: 2px dashed var(--ink-dim);
-  color: var(--ink-dim);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
 }
 
 .catalog .fold-body {
@@ -284,7 +275,7 @@
   margin: 4px 0 -4px;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 0.85rem;
+  font-size: var(--text-lg);
   color: var(--ink-dim);
 }
 
@@ -293,7 +284,7 @@
 }
 
 .catalog .gallery.tight .name {
-  font-size: 0.85rem;
+  font-size: var(--text-md);
   line-height: 1.2;
 }
 
@@ -315,7 +306,7 @@
 
 .catalog .attack-body canvas {
   flex: none;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .catalog .attack-text {
@@ -339,18 +330,18 @@
   display: flex;
   flex-direction: column;
   padding: 6px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--row);
 }
 
-.catalog .fact .label {
-  font-size: 0.72rem;
+.catalog .fact-label {
+  font-size: var(--text-sm);
   color: var(--ink-dim);
 }
 
-.catalog .fact .value {
+.catalog .fact-value {
   font-family: var(--font-display);
-  font-size: 0.9rem;
+  font-size: var(--text-lg);
   color: var(--mustard);
 }
 
@@ -372,7 +363,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 0.9rem;
+  font-size: var(--text-lg);
 }
 
 .catalog .timeline li {
@@ -398,7 +389,7 @@
   flex-direction: column;
   gap: 4px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--row);
 }
 
@@ -407,19 +398,19 @@
 }
 
 .catalog .tile-label {
-  font-size: 0.8rem;
+  font-size: var(--text-md);
   color: var(--ink-dim);
 }
 
 .catalog .tile-value {
-  font-family: "Bungee", "Arial Black", sans-serif;
+  font-family: var(--font-display);
   font-size: 1.3rem;
   line-height: 1.1;
   color: var(--mustard);
 }
 
 .catalog .tile-sub {
-  font-size: 0.8rem;
+  font-size: var(--text-md);
   color: var(--ink-dim);
   overflow-wrap: anywhere;
 }
@@ -454,20 +445,20 @@
 }
 
 .catalog .spark-col span {
-  font-size: 0.75rem;
+  font-size: var(--text-sm);
   color: var(--ink-dim);
 }
 
 .catalog .spark-col.last span {
   padding: 0 5px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--row);
   color: var(--ink);
 }
 
 .catalog h2 .card-tag {
   margin-left: 0.5em;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 0.8rem;
+  font-family: var(--font-body);
+  font-size: var(--text-md);
   color: var(--ink-dim);
 }

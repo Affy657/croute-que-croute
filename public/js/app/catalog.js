@@ -211,7 +211,7 @@ const level = (value, steps) => steps.find(([min]) => value >= min)[1];
 
 export function stat(label, value) {
   const row = el("div", "fact");
-  row.append(el("span", "label", label), el("span", "value", value));
+  row.append(el("span", "fact-label", label), el("span", "fact-value", value));
   return row;
 }
 
@@ -283,7 +283,7 @@ export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
       text.append(go);
     }
     body.append(cv, text);
-    const card = fold(attack.name, attack.lab ? el("span", "badge lab", "Prototype") : el("span", "fold-tag", `${attack.from} s`), body);
+    const card = fold(attack.name, attack.lab ? el("span", "fold-tag lab", "Prototype") : el("span", "fold-tag", `${attack.from} s`), body);
     const p = { attack, card, cv, ctx: cv.getContext("2d") };
     restart(p);
     card.addEventListener("toggle", () => {

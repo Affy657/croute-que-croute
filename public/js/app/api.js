@@ -10,6 +10,7 @@ const UPDATED = "Partie pas comptée : le jeu a été mis à jour, il se recharg
 const SEND_TRIES = 3, SEND_GAP_MS = 1500, WAIT_GAP_MS = 5000, WAIT_MS = 120000, SEND_TIMEOUT_MS = 8000;
 
 export const reason = (e, offline = "Pas de réseau, réessaie.") => (e.status ? e.message : offline);
+export const badInput = (e) => [400, 404, 409].includes(e.status);
 
 if (LOCAL) {
   const params = new URLSearchParams(location.search), seeded = params.get("jeton");
