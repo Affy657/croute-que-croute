@@ -86,6 +86,12 @@ try {
     await shown("menu");
     await shown("play");
   });
+  await step("Classement depuis l'accueil, puis retour", async () => {
+    await click("menuBoard");
+    await shown("board");
+    await click("boardBack");
+    await shown("menu");
+  });
   await step("Infos : les 4 onglets s'affichent, puis retour", async () => {
     await click("infoBtn");
     await shown("info");

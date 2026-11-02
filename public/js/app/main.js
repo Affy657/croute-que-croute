@@ -21,7 +21,7 @@ import { openCard, closeCard, drawCard, myLook, shareLook, stampOutfit, onAdopt 
 import { initAccount, resetAccount } from "./account.js";
 import { finishLoading } from "./loader.js";
 import {
-  ui, show, setText, setDigits, tickCountdowns, renderMenu, renderPicker, openPicker, pickerIsOpen, renderBoard, renderOver, renderOverStats, renderRival, renderKiller,
+  ui, show, screen, openPage, setText, setDigits, tickCountdowns, renderMenu, renderPicker, openPicker, pickerIsOpen, renderBoard, renderOver, renderOverStats, renderRival, renderKiller,
   renderHud, renderControls, renderAll, setBoardScope, achLabel
 } from "./screens.js";
 
@@ -43,11 +43,9 @@ const S = {
   newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general", guess: false, held: false,
   toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35, scars: [], spread: chosen(), ...outfit() }, gotToppings: [], menuY: FH * 0.55, menuAt: 0
 };
-let boardOpen = false, boardFrom = "menu", boardTimer = null, wasOpen = null, lastShown = "";
-let infoOpen = false, infoFrom = "menu", infoTab = "attacks";
-let settingsOpen = false, settingsFrom = "menu";
-let achOpen = false, achFrom = "menu";
-let cardOpen = null, historyFor = null;
+let boardTimer = null, wasOpen = null, lastShown = "";
+let pageFrom = "menu", infoTab = "attacks";
+let cardId = null, historyFor = null;
 
 const playing = () => S.mode === "play" || S.mode === "dying";
 const elapsed = () => sim.state.t - S.t0;
@@ -145,7 +143,8 @@ function backTo(from) {
 }
 
 function start(train = null) {
-  if (boardOpen || infoOpen || settingsOpen || achOpen || (!train && (!ui.joinForm.hidden || !ui.linkForm.hidden)) || !ui.installPop.hidden) return false;
+  const page = openPage();
+  if ((page && !(train && page === "info")) || (!train && (!ui.joinForm.hidden || !ui.linkForm.hidden)) || !ui.installPop.hidden) return false;
   if (S.mode !== "menu" && S.mode !== "over") return false;
   if (S.mode === "over" && ui.again.disabled) return false;
   if (api.net.updatePending && api.applyUpdate()) return false;
@@ -193,7 +192,7 @@ function avoidHud() {
 
 window.addEventListener("resize", () => {
   if (S.mode === "play") avoidHud();
-  if (boardOpen) renderBoard();
+  if (openPage() === "board") renderBoard();
 });
 
 function cheer() {
@@ -272,18 +271,17 @@ function showOver() {
 }
 
 function openBoard(from) {
-  boardOpen = true;
-  boardFrom = from;
+  pageFrom = from;
   setBoardScope(null);
   show("board");
   renderBoard();
   api.refreshBoard();
   clearInterval(boardTimer);
-  boardTimer = setInterval(() => { if (!document.hidden) api.refreshBoard(); }, BOARD_POLL_MS);
+  boardTimer = setInterval(() => { if (!document.hidden && openPage() === "board") api.refreshBoard(); }, BOARD_POLL_MS);
 }
 
 function openBoardCard(row) {
-  cardOpen = row.dataset.id;
+  cardId = row.dataset.id;
   show("profile");
   renderControls(false);
   ui.profile.scrollTop = 0;
@@ -292,8 +290,8 @@ function openBoardCard(row) {
 }
 
 function closeBoardCard() {
-  const id = cardOpen;
-  cardOpen = null;
+  const id = cardId;
+  cardId = null;
   closeCard();
   show("board");
   renderControls(false);
@@ -306,13 +304,7 @@ function closeBoardCard() {
 
 function closeBoard() {
   clearInterval(boardTimer);
-  boardOpen = false;
-  if (boardFrom === "over") {
-    show("over");
-    renderAll();
-  } else {
-    showMenu();
-  }
+  backTo(pageFrom);
 }
 
 function renderInfo() {
@@ -327,30 +319,23 @@ function renderInfo() {
 }
 
 function openInfo() {
-  infoOpen = true;
-  infoFrom = S.mode === "over" ? "over" : "menu";
+  pageFrom = S.mode === "over" ? "over" : "menu";
   show("info");
   renderControls(false);
   renderInfo();
 }
 
 function closeInfo() {
-  infoOpen = false;
   animateAttacks(false);
-  backTo(infoFrom);
+  backTo(pageFrom);
 }
 
 function train(attack) {
-  infoOpen = false;
-  animateAttacks(false);
-  if (start(attack)) return;
-  infoOpen = true;
-  animateAttacks(true);
+  if (start(attack)) animateAttacks(false);
 }
 
 function openSettings() {
-  settingsOpen = true;
-  settingsFrom = S.mode === "over" ? "over" : "menu";
+  pageFrom = S.mode === "over" ? "over" : "menu";
   show("settings");
   renderControls(false);
   resetAccount();
@@ -393,8 +378,7 @@ function toastAch(a) {
 }
 
 function openAch() {
-  achOpen = true;
-  achFrom = S.mode === "over" ? "over" : "menu";
+  pageFrom = S.mode === "over" ? "over" : "menu";
   show("ach");
   renderControls(false);
   ach.renderAchievements(ui.achList, ui.achCount);
@@ -402,14 +386,12 @@ function openAch() {
 }
 
 function closeAch() {
-  achOpen = false;
-  backTo(achFrom);
+  backTo(pageFrom);
 }
 
 function closeSettings() {
-  settingsOpen = false;
   leaveSettings();
-  backTo(settingsFrom);
+  backTo(pageFrom);
 }
 
 function menuToastY() {
@@ -487,8 +469,9 @@ function frame(now) {
     update(STEP);
     acc -= STEP;
   }
-  if (cardOpen) drawCard(S.clock);
-  else if (!infoOpen && !settingsOpen && !achOpen) scene.render({ clock: S.clock, world: sim.state, toast: S.mode === "over" ? null : S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null, dying: S.mode === "dying" });
+  const page = openPage();
+  if (screen() === "profile") drawCard(S.clock);
+  else if (!page || page === "board") scene.render({ clock: S.clock, world: sim.state, toast: S.mode === "over" ? null : S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null, dying: S.mode === "dying" });
   if (playing()) {
     const cs = Math.floor(elapsed() * 100), s = fmtCs(cs);
     if (s !== lastShown) {
@@ -533,7 +516,7 @@ ui.boardList.addEventListener("keydown", (e) => {
 ui.profileBack.addEventListener("click", closeBoardCard);
 ui.infoBtn.addEventListener("click", openInfo);
 ui.infoBack.addEventListener("click", closeInfo);
-ui.closeBtn.addEventListener("click", () => (settingsOpen ? closeSettings() : achOpen ? closeAch() : closeInfo()));
+ui.closeBtn.addEventListener("click", () => (screen() === "settings" ? closeSettings() : screen() === "ach" ? closeAch() : closeInfo()));
 ui.menuAch.addEventListener("click", openAch);
 ui.menu.addEventListener("click", (e) => {
   if (e.target.closest("button, a, input, label, select, .picker")) return;
@@ -667,7 +650,7 @@ ach.onUnlock((a, synced) => {
 ach.checkOutfit(S.toast);
 const typing = () => (!ui.joinForm.hidden && !!ui.pseudo.value.trim()) || (!ui.linkForm.hidden && !!ui.linkInput.value.trim());
 api.on("update", () => {
-  if (S.mode === "menu" && !boardOpen && !infoOpen && !settingsOpen && !achOpen && !typing()) api.applyUpdate();
+  if (screen() === "menu" && !typing()) api.applyUpdate();
 });
 audio.onAudioChange(() => renderControls(playing()));
 onInstallChange(maybeSuggest);
@@ -685,7 +668,7 @@ setInterval(() => {
 }, 1000);
 
 setInterval(() => {
-  if (S.mode === "menu" && !boardOpen && !document.hidden) api.refreshBoard();
+  if (S.mode === "menu" && openPage() !== "board" && !document.hidden) api.refreshBoard();
 }, MENU_POLL_MS);
 
 {
