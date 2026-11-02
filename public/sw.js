@@ -3,7 +3,9 @@ const SHELL = [
   "/", "/style.css", "/catalog.css", "/manifest.webmanifest", "/icons/icon-192.png", "/qr.svg",
   "/js/version.js", "/js/errors.js", "/js/boot.js", "/js/shared/store.js", "/js/shared/format.js", "/js/shared/palette.js", "/js/shared/local.js", "/js/shared/timeout.js", "/js/shared/banner.js",
   "/js/game/field.js", "/js/game/projectiles.js", "/js/game/attacks.js", "/js/game/solver.js", "/js/game/sim.js",
-  "/js/app/api.js", "/js/app/audio.js", "/js/app/catalog.js", "/js/app/input.js", "/js/app/sprites.js", "/js/app/scene.js", "/js/app/planets.js", "/js/app/screens.js", "/js/app/install.js", "/js/app/settings.js", "/js/app/party.js", "/js/app/achievements.js", "/js/app/toppings.js", "/js/app/gear.js", "/js/app/profile.js", "/js/app/account.js", "/js/app/guide.js", "/js/app/diag.js", "/js/app/loader.js", "/js/app/main.js"
+  "/js/app/api.js", "/js/app/audio.js", "/js/app/catalog.js", "/js/app/input.js", "/js/app/sprites.js", "/js/app/scene.js", "/js/app/planets.js", "/js/app/screens.js", "/js/app/install.js", "/js/app/settings.js", "/js/app/party.js", "/js/app/achievements.js", "/js/app/toppings.js", "/js/app/gear.js", "/js/app/profile.js", "/js/app/account.js", "/js/app/guide.js", "/js/app/diag.js", "/js/app/loader.js", "/js/app/main.js",
+  "/js/app/art/auras.js", "/js/app/art/breads.js", "/js/app/art/cutlery.js", "/js/app/art/hats.js", "/js/app/art/kit.js", "/js/app/art/sides.js", "/js/app/art/spreads.js",
+  "/js/app/sky/cans.js", "/js/app/sky/cheese.js", "/js/app/sky/classic.js", "/js/app/sky/egg.js", "/js/app/sky/kit.js", "/js/app/sky/melies.js", "/js/app/sky/music.js", "/js/app/sky/pancake.js", "/js/app/sky/pirate.js", "/js/app/sky/pumpkin.js", "/js/app/sky/santa.js", "/js/app/sky/toaster.js", "/js/app/sky/tung.js", "/js/app/sky/vehicles.js"
 ];
 const FONTS = ["https://fonts.googleapis.com", "https://fonts.gstatic.com"];
 const NET_MS = 3000;
