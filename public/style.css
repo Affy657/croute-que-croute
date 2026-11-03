@@ -36,20 +36,20 @@ body {
 }
 
 #party {
-  z-index: 40;
+  z-index: var(--z-party);
 }
 
 .loader {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: var(--z-top);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: var(--space-2xl);
   background: var(--void);
-  transition: opacity 0.3s ease 0.2s;
+  transition: opacity var(--dur-base) ease var(--dur-fast);
 }
 
 .loader.done {
@@ -87,7 +87,7 @@ body {
   height: 100%;
   border-radius: inherit;
   background: var(--mustard);
-  transition: width 0.25s ease-out;
+  transition: width var(--dur-base) ease-out;
 }
 
 @keyframes loader-bob {
@@ -107,7 +107,7 @@ body {
 }
 
 .cheer {
-  animation: cheer 0.7s ease-out;
+  animation: cheer var(--dur-pop) ease-out;
 }
 
 @keyframes cheer {
@@ -203,13 +203,13 @@ h1 {
   font-size: clamp(2.2rem, min(12vw, 7vh), 4.2rem);
   font-size: clamp(2.2rem, min(12vw, 7svh), 4.2rem);
   color: var(--mustard);
-  text-shadow: 0 4px 0 var(--jam);
+  text-shadow: var(--lift-lg) var(--jam);
 }
 
 h2 {
   font-size: clamp(2rem, 9vw, 3rem);
   color: var(--jam);
-  text-shadow: 0 3px 0 var(--mustard);
+  text-shadow: var(--lift-md) var(--mustard);
 }
 
 h2.page-title {
@@ -218,7 +218,7 @@ h2.page-title {
 
 .info-head .page-title,
 .board-head .page-title {
-  min-height: 44px;
+  min-height: var(--tap);
   display: flex;
   align-items: center;
 }
@@ -306,8 +306,8 @@ h2.page-title {
 .more .ghost {
   flex: 1 1 calc(50% - 0.4rem);
   max-width: calc(50% - 0.3rem);
-  min-height: 44px;
-  padding: 0.5em 0.6em;
+  min-height: var(--tap);
+  padding: var(--inset-y-md) var(--inset-sm);
   font-size: clamp(0.85rem, 4.3vw, 1rem);
 }
 
@@ -343,7 +343,7 @@ h2.page-title {
   top: -24px;
   width: 48px;
   height: 48px;
-  border: 2px solid var(--ink-dim);
+  border: var(--border) solid var(--ink-dim);
   border-radius: 50%;
   background: var(--veil);
   cursor: pointer;
@@ -363,7 +363,7 @@ h2.page-title {
   flex: none;
   width: 40px;
   height: 40px;
-  border: 2px solid var(--ink-dim);
+  border: var(--border) solid var(--ink-dim);
   border-radius: 50%;
   background: var(--veil);
   cursor: pointer;
@@ -378,8 +378,8 @@ h2.page-title {
   margin: auto;
   width: 11px;
   height: 11px;
-  border-left: 3px solid var(--mustard);
-  border-bottom: 3px solid var(--mustard);
+  border-left: var(--border-thick) solid var(--mustard);
+  border-bottom: var(--border-thick) solid var(--mustard);
   transform: translateX(2px) rotate(45deg);
 }
 
@@ -452,8 +452,8 @@ h2.page-title {
   top: calc(var(--drop) - 9px);
   left: 50%;
   transform: translateX(-50%);
-  min-height: 44px;
-  padding: 0.3em 1.3em;
+  min-height: var(--tap);
+  padding: var(--inset-y-sm) var(--inset-lg);
   font-size: var(--text-md);
 }
 
@@ -463,7 +463,7 @@ h2.page-title {
   right: -5px;
   width: 14px;
   height: 14px;
-  border: 2px solid var(--void);
+  border: var(--border) solid var(--void);
   border-radius: 50%;
   background: var(--mustard);
 }
@@ -472,34 +472,34 @@ h2.page-title {
   font-family: var(--font-display);
   font-size: clamp(1.3rem, 3.8vh, 1.6rem);
   font-size: clamp(1.3rem, 3.8svh, 1.6rem);
-  padding: 0.6em 1.7em;
-  border: 3px solid var(--void);
+  padding: var(--inset-y-lg) var(--inset-xl);
+  border: var(--border-thick) solid var(--void);
   border-radius: var(--radius-lg);
   background: var(--mustard);
   color: var(--void);
-  box-shadow: 0 6px 0 var(--jam);
+  box-shadow: var(--lift-xl) var(--jam);
   cursor: pointer;
   touch-action: none;
 }
 
 .cta:active {
   transform: translateY(4px);
-  box-shadow: 0 2px 0 var(--jam);
+  box-shadow: var(--lift-sm) var(--jam);
 }
 
 .cta:disabled,
 .ghost:disabled {
-  opacity: 0.45;
+  opacity: var(--opacity-disabled);
   cursor: default;
 }
 
 .ghost {
   box-sizing: border-box;
-  min-height: 44px;
+  min-height: var(--tap);
   font-family: var(--font-display);
   font-size: var(--text-xl);
-  padding: 0.5em 1.3em;
-  border: 2px solid var(--ink-dim);
+  padding: var(--inset-y-md) var(--inset-lg);
+  border: var(--border) solid var(--ink-dim);
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--ink);
@@ -529,7 +529,7 @@ h2.page-title {
 @media (hover: hover) {
   .cta:hover:not(:disabled):not(:active) {
     transform: translateY(2px);
-    box-shadow: 0 4px 0 var(--jam);
+    box-shadow: var(--lift-lg) var(--jam);
   }
 
   .ghost:hover:not(:disabled) {
@@ -549,9 +549,9 @@ h2.page-title {
 .join input,
 .rename input {
   box-sizing: border-box;
-  min-height: 44px;
-  padding: 0.4em 0.7em;
-  border: 2px solid var(--mustard);
+  min-height: var(--tap);
+  padding: var(--inset-y-md) var(--inset-md);
+  border: var(--border) solid var(--mustard);
   border-radius: var(--radius-md);
   background: var(--void);
   color: var(--ink);
@@ -565,7 +565,7 @@ h2.page-title {
 .join input::placeholder,
 .rename input::placeholder {
   color: var(--ink-dim);
-  opacity: 0.7;
+  opacity: var(--opacity-placeholder);
 }
 
 .join input:focus-visible,
@@ -581,8 +581,8 @@ h2.page-title {
 
 .join input {
   width: 100%;
-  padding: 0.5em 0.8em;
-  border-width: 3px;
+  padding: var(--inset-y-md) var(--inset-md);
+  border-width: var(--border-thick);
   border-radius: var(--radius-lg);
   font-size: var(--text-3xl);
   text-align: center;
@@ -604,7 +604,7 @@ h2.page-title {
   left: 64px;
   right: 64px;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
-  height: 44px;
+  height: var(--tap);
   margin: 0;
   display: flex;
   align-items: center;
@@ -626,7 +626,7 @@ h2.page-title {
 }
 
 .badge {
-  padding: 0.3em 0.9em;
+  padding: var(--inset-y-sm) var(--inset-md);
   border-radius: var(--radius-pill);
   background: var(--jam-deep);
   font-size: var(--text-md);
@@ -654,14 +654,14 @@ h2.page-title {
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 10px);
   right: max(12px, env(safe-area-inset-right, 0px));
-  z-index: 10;
+  z-index: var(--z-corner);
   box-sizing: border-box;
-  width: 44px;
-  height: 44px;
+  width: var(--tap);
+  height: var(--tap);
   display: grid;
   place-items: center;
   padding: 0;
-  border: 2px solid var(--ink-dim);
+  border: var(--border) solid var(--ink-dim);
   border-radius: 50%;
   background: var(--veil);
   color: var(--ink);
@@ -689,7 +689,7 @@ h2.page-title {
 
 .card-actions.pair .ghost {
   min-width: 0;
-  padding-inline: 0.3em;
+  padding-inline: var(--inset-xs);
   font-size: min(1rem, calc(6cqi - 1px));
   white-space: nowrap;
 }
@@ -720,7 +720,7 @@ h2.page-title {
 
 .slider input {
   width: 100%;
-  height: 44px;
+  height: var(--tap);
   margin: 0;
   accent-color: var(--mustard);
   touch-action: pan-x;
@@ -738,7 +738,7 @@ h2.page-title {
 
 .rename .ghost {
   flex: none;
-  padding-inline: 0.9em;
+  padding-inline: var(--inset-md);
 }
 
 a.ghost {
@@ -770,7 +770,7 @@ a.ghost {
 .pop {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  z-index: var(--z-pop);
   display: grid;
   place-items: center;
   padding: var(--space-lg);
@@ -785,7 +785,7 @@ a.ghost {
   align-items: center;
   gap: var(--space-lg);
   padding: var(--space-xl) var(--space-lg);
-  border: 2px solid var(--row);
+  border: var(--border) solid var(--row);
   border-radius: var(--radius-lg);
   background: var(--void);
   text-align: center;
@@ -818,7 +818,7 @@ a.ghost {
 .info-bar {
   position: sticky;
   top: calc(-16px - env(safe-area-inset-top, 0px));
-  z-index: 1;
+  z-index: var(--z-raise);
   width: 100%;
   display: flex;
   justify-content: center;
@@ -892,7 +892,7 @@ a.ghost {
 #time {
   font-size: var(--text-6xl);
   line-height: var(--leading-tight);
-  text-shadow: 0 3px 0 var(--void);
+  text-shadow: var(--lift-md) var(--void);
 }
 
 #hudBest {
@@ -907,7 +907,7 @@ a.ghost {
 }
 
 #time.lap span {
-  animation: lap 0.7s ease-out;
+  animation: lap var(--dur-pop) ease-out;
 }
 
 @keyframes lap {
@@ -928,8 +928,8 @@ a.ghost {
   width: max-content;
   max-width: calc(100vw - 32px);
   margin: var(--space-sm) auto 0;
-  padding: 0.35em 0.9em;
-  border: 2px solid var(--mustard);
+  padding: var(--inset-y-sm) var(--inset-md);
+  border: var(--border) solid var(--mustard);
   border-radius: var(--radius-pill);
   background: var(--veil);
   color: var(--mustard);
@@ -947,7 +947,7 @@ a.ghost {
   top: 100%;
   left: 50%;
   translate: -50% 0;
-  z-index: 20;
+  z-index: var(--z-toast);
   box-sizing: border-box;
   max-width: calc(100vw - 32px);
   margin: clamp(0.5rem, 1.8svh, 0.9rem) 0 0;
@@ -956,12 +956,12 @@ a.ghost {
 }
 
 .try {
-  padding-inline: 1.2em;
+  padding-inline: var(--inset-lg);
 }
 
 .ach-line {
   max-width: 100%;
-  padding: 0.2em 0.4em;
+  padding: var(--inset-y-xs) var(--inset-xs);
   border: 0;
   background: none;
   color: var(--mustard);
@@ -1015,10 +1015,10 @@ a.ghost {
 }
 
 .board-tabs button {
-  min-height: 44px;
+  min-height: var(--tap);
   font-family: var(--font-display);
   font-size: var(--text-md);
-  padding: 0.5em 1.2em;
+  padding: var(--inset-y-md) var(--inset-lg);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -1028,7 +1028,7 @@ a.ghost {
 }
 
 #infoTabs button {
-  padding-inline: 0.4em;
+  padding-inline: var(--inset-xs);
 }
 
 .board-tabs button[aria-selected="true"] {
@@ -1092,10 +1092,10 @@ a.ghost {
   position: sticky;
   top: 0;
   bottom: 0;
-  z-index: 1;
+  z-index: var(--z-raise);
   background: var(--mustard);
   color: var(--void);
-  box-shadow: 0 0 0 0.35rem var(--void);
+  box-shadow: var(--ring-lg) var(--void);
 }
 
 .board-list li.podium .pos {
@@ -1121,7 +1121,7 @@ a.ghost {
 
 .board-list li.p1 {
   padding: var(--space-md);
-  box-shadow: inset 0 0 0 2px var(--mustard);
+  box-shadow: var(--ring-inset) var(--mustard);
 }
 
 .board-list li.p1 .name,
@@ -1130,15 +1130,15 @@ a.ghost {
 }
 
 .board-list li.p2 {
-  box-shadow: inset 0 0 0 2px var(--steel);
+  box-shadow: var(--ring-inset) var(--steel);
 }
 
 .board-list li.p3 {
-  box-shadow: inset 0 0 0 2px var(--bronze);
+  box-shadow: var(--ring-inset) var(--bronze);
 }
 
 .board-list li.me.podium .pos {
-  box-shadow: 0 0 0 2px var(--void);
+  box-shadow: var(--ring-sm) var(--void);
 }
 
 .board-list li.gap {
@@ -1235,15 +1235,15 @@ a.ghost {
 }
 
 .rank.p1 {
-  box-shadow: inset 0 0 0 2px var(--mustard);
+  box-shadow: var(--ring-inset) var(--mustard);
 }
 
 .rank.p2 {
-  box-shadow: inset 0 0 0 2px var(--steel);
+  box-shadow: var(--ring-inset) var(--steel);
 }
 
 .rank.p3 {
-  box-shadow: inset 0 0 0 2px var(--bronze);
+  box-shadow: var(--ring-inset) var(--bronze);
 }
 
 .rank-place {
@@ -1339,7 +1339,7 @@ a.ghost {
   top: calc(env(safe-area-inset-top) + 64px);
   left: 8px;
   right: 8px;
-  z-index: 50;
+  z-index: var(--z-top);
   padding: var(--space-sm);
   border-radius: var(--radius-md);
   background: var(--veil-deep);
@@ -1362,7 +1362,7 @@ a.ghost {
 
 .diag button {
   padding: var(--space-xs) var(--space-md);
-  border: 1px solid var(--ink-dim);
+  border: var(--border-thin) solid var(--ink-dim);
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--ink);

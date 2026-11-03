@@ -44,12 +44,12 @@
   flex-direction: column;
   gap: var(--space-md);
   padding-top: var(--space-md);
-  border-top: 1px solid var(--line);
+  border-top: var(--border-thin) solid var(--line);
 }
 
 #outRow .ghost {
   flex: 1;
-  padding-inline: 0.6em;
+  padding-inline: var(--inset-sm);
 }
 
 .catalog .slider-ends {
@@ -171,7 +171,7 @@
 
 .catalog .ach-new {
   display: inline-block;
-  padding: 0.15em 0.6em;
+  padding: var(--inset-y-xs) var(--inset-sm);
   border-radius: var(--radius-pill);
   background: var(--mustard);
   color: var(--void);
@@ -184,7 +184,7 @@
 
 .catalog .ach-item.locked .ach-star {
   color: var(--ink-dim);
-  opacity: 0.6;
+  opacity: var(--opacity-locked);
 }
 
 .catalog .ach-item.locked .ach-name,
@@ -220,7 +220,7 @@
 
 .catalog .rules {
   margin: 0;
-  padding-left: 1.1em;
+  padding-left: var(--space-lg);
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
@@ -239,7 +239,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  min-height: 44px;
+  min-height: var(--tap);
   box-sizing: border-box;
   padding: var(--space-md) var(--space-lg);
   border-radius: var(--radius-lg);
@@ -263,10 +263,10 @@
   width: 8px;
   height: 8px;
   margin: 0 var(--space-xs) 0 var(--space-2xs);
-  border-right: 2.5px solid var(--ink-dim);
-  border-bottom: 2.5px solid var(--ink-dim);
+  border-right: var(--border) solid var(--ink-dim);
+  border-bottom: var(--border) solid var(--ink-dim);
   transform: translateY(-2px) rotate(45deg);
-  transition: transform 0.2s ease;
+  transition: transform var(--dur-fast) ease;
 }
 
 .catalog .fold[open] .fold-head::after {
@@ -298,7 +298,7 @@
 
 .catalog .fold-tag.lab {
   padding: var(--space-xs) var(--space-md);
-  border: 2px dashed var(--ink-dim);
+  border: var(--border) dashed var(--ink-dim);
   border-radius: var(--radius-pill);
   font-size: var(--text-xs);
   letter-spacing: var(--track-md);
@@ -330,7 +330,7 @@
 
 .catalog .weapon.locked canvas {
   filter: grayscale(1);
-  opacity: 0.6;
+  opacity: var(--opacity-locked);
 }
 
 .catalog .weapon.locked .name {

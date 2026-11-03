@@ -54,7 +54,7 @@ h2 {
 h1 {
   font-size: var(--text-4xl);
   color: var(--mustard);
-  text-shadow: 0 3px 0 var(--jam);
+  text-shadow: var(--lift-md) var(--jam);
 }
 
 h2 {
@@ -149,13 +149,15 @@ select {
   width: 100%;
   font: inherit;
   padding: var(--space-md);
-  border: 1px solid var(--ink-dim);
+  border: var(--border-thin) solid var(--ink-dim);
   border-radius: var(--radius-md);
   background: var(--void);
   color: var(--ink);
 }
 
 .btn {
+  box-sizing: border-box;
+  min-height: var(--tap);
   font-family: var(--font-display);
   font-size: var(--text-xl);
   padding: var(--space-md) var(--space-lg);
@@ -167,14 +169,16 @@ select {
 }
 
 a.btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-decoration: none;
 }
 
 .btn.ghost {
   background: transparent;
   color: var(--ink);
-  border: 2px solid var(--ink-dim);
+  border: var(--border) solid var(--ink-dim);
 }
 
 .btn.danger {
@@ -193,7 +197,8 @@ a.btn {
 }
 
 .btn:disabled {
-  opacity: 0.45;
+  opacity: var(--opacity-disabled);
+  cursor: default;
 }
 
 @media (hover: hover) {
@@ -208,10 +213,14 @@ a.btn {
 }
 
 input:focus-visible,
-select:focus-visible,
-.btn:focus-visible {
+select:focus-visible {
   outline: var(--focus);
   outline-offset: 2px;
+}
+
+.btn:focus-visible {
+  outline: var(--focus);
+  outline-offset: 4px;
 }
 
 .msg {
@@ -250,11 +259,11 @@ select:focus-visible,
 }
 
 .list li.out {
-  opacity: 0.45;
+  opacity: var(--opacity-disabled);
 }
 
 .list li.suspect {
-  box-shadow: inset 3px 0 0 var(--jam);
+  box-shadow: var(--bar-inset) var(--jam);
 }
 
 .list .pos {
@@ -282,7 +291,7 @@ select:focus-visible,
   margin-right: 0.4em;
   border-radius: 50%;
   background: var(--mustard);
-  box-shadow: 0 0 0 3px var(--mustard-soft);
+  box-shadow: var(--ring-md) var(--mustard-soft);
   vertical-align: 0.1em;
 }
 
@@ -306,7 +315,7 @@ select:focus-visible,
 }
 
 .errors li.fresh {
-  box-shadow: inset 3px 0 0 var(--jam);
+  box-shadow: var(--bar-inset) var(--jam);
 }
 
 .errors summary {
