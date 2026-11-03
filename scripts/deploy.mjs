@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
-import { blocked } from "./garde.mjs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { blocked, CHECKS, checkFailed, drift, ignored, ignoredPaths, NO_GITHUB } from "./garde.mjs";
 
 const PROD = "https://croute-que-croute.tartine-sauvage.workers.dev";
 const DB = "croute-que-croute";
@@ -11,6 +11,14 @@ const run = (cmd) => execSync(cmd).toString();
 const stop = (why) => {
   console.error(`Mise en ligne refusée : ${why}`);
   process.exit(1);
+};
+const quiet = (cmd) => {
+  try {
+    execSync(cmd, { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
 };
 const parts = (v) => v.split(".").map(Number);
 const newer = (a, b) => {
@@ -25,12 +33,35 @@ if (!NUMBER.test(number || "")) stop(`numéro de version illisible dans package.
 if (run("git status --porcelain").trim()) stop("des changements ne sont pas enregistrés dans git.");
 if (run("git rev-parse --abbrev-ref HEAD").trim() !== "master") stop("on ne met en ligne que depuis master.");
 if (run("git rev-list --count origin/master..HEAD").trim() !== "0") stop("master n'est pas envoyé sur GitHub : git push origin master.");
+const installed = (name) => {
+  const file = `node_modules/${name}/package.json`;
+  return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")).version : null;
+};
+const stale = drift(JSON.parse(readFileSync("package-lock.json", "utf8")), installed);
+if (stale.length) stop(`node_modules ne suit pas package-lock.json (${stale.join(", ")}). Arrêter le serveur local, puis npm ci.`);
 for (const [cmd, why] of [["npm run check", "la vérification des types échoue"], ["npm run test:unit", "des tests unitaires échouent"]]) {
   try {
     run(cmd);
   } catch (e) {
     console.error(String(e.stdout || ""));
     stop(`${why} (${cmd}).`);
+  }
+}
+if (process.argv.includes(NO_GITHUB)) {
+  console.error("Tests de GitHub et Safari pas vérifiés (" + NO_GITHUB + ").");
+} else {
+  const head = run("git rev-parse HEAD").trim();
+  const skip = ignoredPaths(readFileSync(".github/workflows/tests.yml", "utf8"));
+  const fits = (sha) => sha === head || (quiet(`git merge-base --is-ancestor ${sha} HEAD`) && run(`git diff --name-only ${sha} HEAD`).split(/\r?\n/).filter(Boolean).every((f) => ignored(f, skip)));
+  for (const [file, name] of CHECKS) {
+    let runs;
+    try {
+      runs = JSON.parse(run(`gh run list --workflow ${file} --branch master --limit 30 --json headSha,status,conclusion`));
+    } catch {
+      stop(`impossible de lire les tests de GitHub (gh). Si GitHub ne répond pas : npm run deploy -- ${NO_GITHUB}`);
+    }
+    const why = checkFailed(name, file, runs, fits);
+    if (why) stop(why);
   }
 }
 if (!run(`npx wrangler d1 migrations list ${DB} --remote`).includes("No migrations to apply")) {

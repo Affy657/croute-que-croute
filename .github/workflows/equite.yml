@@ -20,6 +20,6 @@ jobs:
         with:
           node-version: 26
       - name: Robot d'équité (0 mort attendu)
-        run: npm test
+        run: npm run equite
       - name: Règles du jeu toujours tenues (invariants)
         run: node test/equilibrage/invariants.mjs 10 60
