@@ -65,7 +65,7 @@ const findLink = (env: Env, hash: string, now: number) =>
 async function openSession(env: Env, link: LinkRow, clientId: string | null, clientHash: string | null, now: number) {
   const token = randomToken();
   await env.DB.batch([
-    env.DB.prepare("DELETE FROM sessions WHERE player_id = ?1 AND client_hash IN (?2, ?3)").bind(link.id, clientHash, clientId),
+    env.DB.prepare("DELETE FROM sessions WHERE player_id = ?1 AND client_hash IN (?2, ?3) AND created_at < ?4").bind(link.id, clientHash, clientId, now),
     env.DB.prepare("INSERT INTO sessions (token_hash, player_id, client_hash, created_at) VALUES (?, ?, ?, ?)").bind(await sha256(token), link.id, clientHash, now),
   ]);
   return json({ token, pseudo: link.pseudo });
@@ -88,9 +88,10 @@ export async function useLink({ req, env }: Ctx) {
   if (me && me.id === link.id) return fail(409, "Cet appareil est déjà sur ce compte.");
   if (me && (me.banned || link.banned)) return fail(403, "Impossible de réunir un compte retiré du classement.");
   if (me && body.merge !== true) return json({ error: "Cet appareil a déjà un compte.", merge: { from: me.pseudo, into: link.pseudo } }, 409);
-  const claim = me || !retryHash
-    ? env.DB.prepare("DELETE FROM links WHERE code_hash = ?").bind(hash)
-    : env.DB.prepare("UPDATE links SET code_hash = ?1, expires_at = ?2 WHERE code_hash = ?3").bind(retryHash, now + RETRY_MS, hash);
+  const retry = !me && !!retryHash;
+  const claim = retry
+    ? env.DB.prepare("UPDATE links SET code_hash = ?1, expires_at = ?2 WHERE code_hash = ?3").bind(retryHash, now + RETRY_MS, hash)
+    : env.DB.prepare("DELETE FROM links WHERE code_hash = ?").bind(hash);
   if (!(await claim.run()).meta.changes) return fail(404, UNKNOWN);
   try {
     if (me) {
@@ -99,7 +100,10 @@ export async function useLink({ req, env }: Ctx) {
     }
     return await openSession(env, link, clientId, clientHash, now);
   } catch (e) {
-    await env.DB.prepare("INSERT OR IGNORE INTO links (code_hash, player_id, expires_at) VALUES (?, ?, ?)").bind(hash, link.id, link.expires_at).run().catch(() => null);
+    const undo = retry
+      ? env.DB.prepare("UPDATE links SET code_hash = ?1, expires_at = ?2 WHERE code_hash = ?3").bind(hash, link.expires_at, retryHash)
+      : env.DB.prepare("INSERT OR IGNORE INTO links (code_hash, player_id, expires_at) VALUES (?, ?, ?)").bind(hash, link.id, link.expires_at);
+    await undo.run().catch(() => null);
     throw e;
   }
 }
