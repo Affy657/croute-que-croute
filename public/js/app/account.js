@@ -103,29 +103,38 @@ async function connect(code) {
   }
 }
 
-function resetMerge(note = "") {
+function say(node, text, error = false) {
+  setText(node, text);
+  node.classList.toggle("error", error);
+}
+
+function showMerge(on) {
+  ui.mergeForm.hidden = ui.mergeHelp.hidden = !on;
+}
+
+function resetMerge(note = "", error = false) {
   merging = null;
   ui.mergeAsk.hidden = true;
-  setText(ui.mergeNote, note);
+  say(ui.mergeNote, note, error);
   markInvalid(ui.mergeInput, false);
 }
 
 async function checkMerge(code) {
   const button = ui.mergeForm.querySelector("button[type=submit]");
   resetMerge();
-  ui.mergeForm.hidden = false;
+  showMerge(true);
   ui.mergeInput.value = code;
   button.disabled = true;
   try {
     const r = await linkWith(code);
-    ui.mergeForm.hidden = true;
+    showMerge(false);
     ui.mergeInput.value = "";
     renderSettings();
     resetMerge(`Cet appareil n'était plus connecté à son ancien compte : tu joues maintenant en ${quoted(r.pseudo)}.`);
   } catch (e) {
     const m = e.data && e.data.merge;
     if (!m) {
-      setText(ui.mergeNote, reason(e));
+      say(ui.mergeNote, reason(e), true);
       return markInvalid(ui.mergeInput, badInput(e));
     }
     merging = code;
@@ -138,7 +147,7 @@ async function checkMerge(code) {
 }
 
 function merged(pseudo) {
-  ui.mergeForm.hidden = true;
+  showMerge(false);
   ui.mergeInput.value = "";
   renderSettings();
   resetMerge(`Comptes réunis : tu joues en ${quoted(pseudo)}.`);
@@ -154,7 +163,7 @@ async function confirmMerge() {
     if (!e.status) await refreshBoard();
     const me = net.board && net.board.me;
     if (!e.status && me && me.pseudo === mergeInto) merged(me.pseudo);
-    else resetMerge(reason(e));
+    else resetMerge(reason(e), true);
   } finally {
     ui.mergeYes.disabled = ui.mergeNo.disabled = false;
   }
@@ -163,7 +172,7 @@ async function confirmMerge() {
 function askOut(on, note = "") {
   ui.outRow.hidden = on;
   ui.outAsk.hidden = !on;
-  setText(ui.outNote, on ? OUT_ASK : note);
+  say(ui.outNote, on ? OUT_ASK : note);
 }
 
 async function confirmOut() {
@@ -173,7 +182,7 @@ async function confirmOut() {
     const s = removed > 1 ? "s" : "";
     askOut(false, removed ? `C'est fait : ${removed} appareil${s} déconnecté${s}.` : "Aucun autre appareil n'était connecté.");
   } catch (e) {
-    setText(ui.outNote, reason(e));
+    say(ui.outNote, reason(e), true);
   } finally {
     ui.outYes.disabled = ui.outNo.disabled = false;
   }
@@ -181,7 +190,7 @@ async function confirmOut() {
 
 export function resetAccount() {
   resetMerge();
-  ui.mergeForm.hidden = true;
+  showMerge(false);
   ui.mergeInput.value = "";
   askOut(false);
 }
@@ -224,7 +233,8 @@ ui.linkBtn.addEventListener("click", openLink);
 ui.linkCopy.addEventListener("click", () => copy(ui.linkCopy, shown, "Code copié"));
 ui.mergeBtn.addEventListener("click", () => {
   resetMerge();
-  ui.mergeForm.hidden = !ui.mergeForm.hidden;
+  askOut(false);
+  showMerge(ui.mergeForm.hidden);
   if (!ui.mergeForm.hidden) ui.mergeInput.focus();
 });
 ui.mergeForm.addEventListener("submit", (e) => {
@@ -233,7 +243,11 @@ ui.mergeForm.addEventListener("submit", (e) => {
 });
 ui.mergeYes.addEventListener("click", confirmMerge);
 ui.mergeNo.addEventListener("click", () => resetMerge());
-ui.outBtn.addEventListener("click", () => askOut(true));
+ui.outBtn.addEventListener("click", () => {
+  resetMerge();
+  showMerge(false);
+  askOut(true);
+});
 ui.outNo.addEventListener("click", () => askOut(false));
 ui.outYes.addEventListener("click", confirmOut);
 on("board", pickUp);

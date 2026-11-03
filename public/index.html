@@ -279,15 +279,15 @@
     </section>
     <section id="linkCard" class="card" hidden>
       <h2>Autre appareil</h2>
-      <p class="sub">Joue avec ton compte sur un autre téléphone ou un PC.</p>
-      <p class="sub">Déjà un pseudo sur chaque appareil ? Tu peux les réunir : affiche ton code sur l'appareil dont tu gardes le pseudo, puis touche «&nbsp;J'ai un code&nbsp;» sur l'autre. Tu gardes le meilleur record des deux, toutes tes parties et tous tes succès.</p>
+      <p class="sub">Joue avec ton compte sur un autre téléphone ou un PC. Un pseudo sur chaque appareil ? «&nbsp;J'ai&nbsp;un&nbsp;code&nbsp;» les réunit.</p>
       <div class="card-actions pair">
-        <button id="linkBtn" class="ghost" type="button">Afficher mon code</button>
+        <button id="linkBtn" class="ghost" type="button">Mon code</button>
         <button id="mergeBtn" class="ghost" type="button">J'ai un code</button>
       </div>
+      <p id="mergeHelp" class="sub" hidden>Tape le code affiché sur ton autre appareil. Tu gardes son pseudo, le meilleur record des deux, toutes tes parties et tous tes succès. Pour garder plutôt le pseudo d'ici, touche «&nbsp;Mon&nbsp;code&nbsp;» et tape-le sur l'autre.</p>
       <form id="mergeForm" class="rename" hidden>
         <label for="mergeInput" class="sr-only">Code de ton autre appareil</label>
-        <input id="mergeInput" aria-describedby="mergeNote" name="code" maxlength="9" placeholder="Code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required>
+        <input id="mergeInput" aria-describedby="mergeHelp mergeNote" name="code" maxlength="9" placeholder="Code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required>
         <button class="ghost" type="submit">Valider</button>
       </form>
       <p id="mergeNote" class="note" hidden></p>
@@ -295,13 +295,15 @@
         <button id="mergeYes" class="ghost" type="button">Réunir</button>
         <button id="mergeNo" class="ghost" type="button">Annuler</button>
       </div>
-      <div id="outRow" class="card-actions">
-        <button id="outBtn" class="ghost" type="button">Déconnecter les autres</button>
-      </div>
-      <p id="outNote" class="note" hidden></p>
-      <div id="outAsk" class="card-actions pair" hidden>
-        <button id="outYes" class="ghost" type="button">Déconnecter</button>
-        <button id="outNo" class="ghost" type="button">Annuler</button>
+      <div class="card-foot">
+        <div id="outRow" class="card-actions">
+          <button id="outBtn" class="ghost" type="button">Déconnecter les autres</button>
+        </div>
+        <p id="outNote" class="note" hidden></p>
+        <div id="outAsk" class="card-actions pair" hidden>
+          <button id="outYes" class="ghost danger" type="button">Déconnecter</button>
+          <button id="outNo" class="ghost" type="button">Annuler</button>
+        </div>
       </div>
     </section>
     <section class="card">
@@ -312,6 +314,7 @@
     <section class="card">
       <h2>Contrôles</h2>
       <label class="slider"><span>Sensibilité</span><input id="sensVol" type="range" min="8" max="28" step="1"></label>
+      <p class="slider-ends"><span>Lent</span><span>Rapide</span></p>
       <div id="mouseRow" class="slider" hidden>
         <span>Souris</span>
         <div id="mouseTabs" class="board-tabs" role="tablist" aria-label="Souris">
@@ -343,7 +346,7 @@
       <h2>Partager le jeu</h2>
       <p class="sub">Envoie le lien, ou montre le QR code à quelqu'un à côté de toi.</p>
       <div class="card-actions pair">
-        <button id="shareBtn" class="ghost" type="button">Partager le lien</button>
+        <button id="shareBtn" class="ghost" type="button">Partager</button>
         <button id="qrBtn" class="ghost" type="button">QR code</button>
       </div>
     </section>

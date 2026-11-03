@@ -200,11 +200,32 @@ try {
     await click("closeBtn");
     await shown("menu");
   });
+  await step("Paramètres, Autre appareil : un seul parcours ouvert à la fois, erreur du code en rouge", async () => {
+    await click("settingsBtn");
+    await shown("settings");
+    await click("mergeBtn");
+    await shown("mergeHelp");
+    await click("outBtn");
+    await shown("outAsk");
+    if (await $("#mergeForm").isVisible()) throw new Error("le code de fusion reste ouvert sous la confirmation");
+    await click("mergeBtn");
+    await shown("mergeForm");
+    if (await $("#outAsk").isVisible()) throw new Error("la confirmation reste ouverte sous le code de fusion");
+    await page.fill("#mergeInput", "ABCD");
+    await $("#mergeForm button").click({ timeout: WAIT_MS });
+    await page.waitForFunction(() => {
+      const note = document.getElementById("mergeNote");
+      return note.textContent && note.classList.contains("error");
+    }, null, { timeout: WAIT_MS });
+    await click("closeBtn");
+    await shown("menu");
+  });
   const apiHeaders = { "content-type": "application/json", "x-app-version": "dev" };
   const joinApi = async (name) => (await (await fetch(BASE + "/api/join", { method: "POST", headers: apiHeaders, body: JSON.stringify({ pseudo: name, clientId: hex(32) }) })).json()).token;
   const codeOf = async (tok) => (await (await fetch(BASE + "/api/me/link", { method: "POST", headers: { ...apiHeaders, authorization: "Bearer " + tok } })).json()).code;
-  const freshPage = async (token) => {
-    const context = await browser.newContext(SAFARI ? devices["iPhone 13"] : { viewport: { width: 390, height: 844 } });
+  const freshPage = async (token, viewport) => {
+    const base = SAFARI ? devices["iPhone 13"] : { viewport: { width: 390, height: 844 } };
+    const context = await browser.newContext(viewport ? { ...base, viewport } : base);
     await context.addInitScript((t) => {
       localStorage.setItem("cv-install-asked", "1");
       if (t) localStorage.setItem("cv-token", t);
@@ -213,6 +234,21 @@ try {
     watch(p);
     return { context, p };
   };
+  await step("Paramètres sur un écran de 320 px : chaque bouton lisible et sur une ligne", async () => {
+    const { context, p } = await freshPage(await joinApi("Petit" + hex(4)), { width: 320, height: 568 });
+    try {
+      await p.goto(BASE + "/");
+      await p.locator("#settingsBtn").click({ timeout: WAIT_MS });
+      await p.locator("#linkCard").waitFor({ state: "visible", timeout: WAIT_MS });
+      await p.evaluate(() => document.fonts.ready);
+      const tight = await p.evaluate(() => [...document.querySelectorAll("#settingsApp .ghost")]
+        .filter((b) => b.offsetParent && (b.scrollWidth > b.clientWidth || b.offsetHeight > 48 || parseFloat(getComputedStyle(b).fontSize) < 13))
+        .map((b) => b.textContent));
+      if (tight.length) throw new Error("boutons serrés : " + tight.join(", "));
+    } finally {
+      await context.close();
+    }
+  });
   await step("code de liaison scanné sur un appareil dont le compte revient par le cookie : « Réunir » proposé", async () => {
     const kept = await joinApi("Cookie" + hex(4)), code = await codeOf(await joinApi("Lien" + hex(4)));
     const { context, p } = await freshPage(null);
