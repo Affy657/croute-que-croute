@@ -40,7 +40,7 @@ const eventInfo = (e: EventRow | null, status: string) =>
   e ? { name: e.name, opensAt: e.opens_at, closesAt: e.closes_at, finalAt: e.closes_at + LATE_MS, status } : null;
 
 const topOf = (list: Ranked[], me: Profile | null) =>
-  list.slice(0, TOP).map((row, i) => ({ rank: i + 1, id: row.id, pseudo: row.pseudo, best: row.best, me: me?.id === row.id }));
+  list.slice(0, TOP).map((row, i) => ({ rank: i + 1, id: row.id, pseudo: row.pseudo, best: row.best, at: row.at, me: me?.id === row.id }));
 
 export async function board({ req, env }: Ctx) {
   const now = Date.now();
@@ -139,7 +139,7 @@ async function screenTop(env: Env, shown: EventRow | null, during: boolean) {
   }
   const from = "FROM entries e JOIN profiles p ON p.id = e.player_id WHERE e.event_id = ?1 AND e.best > 0 AND p.banned = 0";
   const [rows, n] = await env.DB.batch([
-    env.DB.prepare(`SELECT p.id, p.pseudo, e.best ${from} ORDER BY e.best DESC, e.best_at ASC LIMIT ?2`).bind(shown.id, SCREEN_TOP),
+    env.DB.prepare(`SELECT p.id, p.pseudo, e.best, e.best_at AS at ${from} ORDER BY e.best DESC, e.best_at ASC LIMIT ?2`).bind(shown.id, SCREEN_TOP),
     env.DB.prepare(`SELECT COUNT(*) AS n ${from}`).bind(shown.id),
   ]);
   return { list: rows.results as Ranked[], count: (n.results[0] as { n: number }).n };
@@ -436,65 +436,76 @@ async function standing(env: Env, me: Profile, eventId: number | null, mobile: M
   };
 }
 
+const readRun = (env: Env, id: string, playerId: string) =>
+  env.DB.prepare("SELECT id, event_id, started_at, finished_at, score, device FROM runs WHERE id = ? AND player_id = ?").bind(id, playerId).first<RunRow>();
+
+const ours = (run: string, at: string) => `EXISTS (SELECT 1 FROM runs WHERE id = ${run} AND finished_at = ${at})`;
+
+async function recorded(env: Env, me: Profile, run: RunRow, score: number) {
+  if (run.score !== score) return fail(409, "Partie déjà enregistrée.");
+  const event = run.event_id && run.device === "mobile" ? await eventById(env, run.event_id) : null;
+  const eventId = event && run.finished_at! <= event.closes_at + LATE_MS ? event.id : null;
+  const set = (best: number, at: number | null): Mark => ({ best, at, improved: at === run.finished_at });
+  const entry = eventId ? await entryMark(env, eventId, me.id) : { best: 0, at: null };
+  return json(await standing(env, me, eventId, set(me.best, me.best_at), set(me.pc_best, me.pc_best_at), entry.best, entry.at === run.finished_at));
+}
+
 export async function finishRun({ req, env, params, exec }: Ctx) {
   const now = Date.now();
   const me = await findProfile(req, env);
   if (!me) return fail(401, "Joueur inconnu.");
-  const run = await env.DB.prepare("SELECT id, event_id, started_at, finished_at, score, device FROM runs WHERE id = ? AND player_id = ?")
-    .bind(params[0], me.id)
-    .first<RunRow>();
+  const run = await readRun(env, params[0], me.id);
   if (!run) return fail(404, "Partie inconnue.");
   const body = await readJson(req);
   const score = body.score;
   if (typeof score !== "number" || !Number.isInteger(score) || score < 0 || score > MAX_SCORE) return fail(400, "Score invalide.");
-  const device = (run.finished_at ? run.device : body.device) === "pc" ? "pc" : "mobile";
+  if (run.finished_at) return recorded(env, me, run, score);
+  const device = body.device === "pc" ? "pc" : "mobile";
   const combo = typeof body.combo === "number" && Number.isInteger(body.combo) && body.combo >= 0 && body.combo <= MAX_COMBO ? body.combo : null;
   const event = run.event_id && device === "mobile" ? await eventById(env, run.event_id) : null;
   const eventId = event && now <= event.closes_at + LATE_MS ? event.id : null;
   const mine = () => (eventId ? entryBest(env, eventId, me.id) : Promise.resolve(0));
-  if (run.finished_at) {
-    if (run.score !== score) return fail(409, "Partie déjà enregistrée.");
-    const set = (best: number, at: number | null): Mark => ({ best, at, improved: at === run.finished_at });
-    const entry = eventId ? await entryMark(env, eventId, me.id) : { best: 0, at: null };
-    return json(await standing(env, me, eventId, set(me.best, me.best_at), set(me.pc_best, me.pc_best_at), entry.best, entry.at === run.finished_at));
-  }
   const elapsed = now - run.started_at;
   if (score * 10 > elapsed + SLACK_MS) return fail(422, "Score refusé.");
-  const saved = await env.DB.prepare("UPDATE runs SET finished_at = ?, score = ?, device = ?, combo = ? WHERE id = ? AND finished_at IS NULL")
-    .bind(now, score, device, combo, run.id)
-    .run();
-  if (!saved.meta.changes) return json(await standing(env, me, eventId, keptMobile(me), keptPc(me), await mine(), false));
   const statements = [
+    env.DB.prepare("UPDATE runs SET finished_at = ?, score = ?, device = ?, combo = ? WHERE id = ? AND finished_at IS NULL")
+      .bind(now, score, device, combo, run.id),
     env.DB.prepare(
       `UPDATE profiles SET run_count = run_count + 1, played = played + ?2, last_at = ?3, lowest = MIN(COALESCE(lowest, ?2), ?2),
-         six_seven = MAX(six_seven, ?2 >= ?4 AND ?2 < ?4 + 100), best_combo = MAX(best_combo, COALESCE(?5, 0)) WHERE id = ?1`,
-    ).bind(me.id, score, now, SIX_SEVEN_CS, combo),
+         six_seven = MAX(six_seven, ?2 >= ?4 AND ?2 < ?4 + 100), best_combo = MAX(best_combo, COALESCE(?5, 0)) WHERE id = ?1 AND ${ours("?6", "?3")}`,
+    ).bind(me.id, score, now, SIX_SEVEN_CS, combo, run.id),
     device === "pc"
       ? env.DB.prepare(
           `UPDATE profiles SET pc_best = ?1, pc_best_at = ?2, pc_best_elapsed = ?3, steps = json_insert(steps, '$.pc[#]', json_array(?1, ?2))
-           WHERE id = ?4 AND pc_best < ?1 AND banned = 0`,
-        ).bind(score, now, elapsed, me.id)
+           WHERE id = ?4 AND pc_best < ?1 AND banned = 0 AND ${ours("?5", "?2")}`,
+        ).bind(score, now, elapsed, me.id, run.id)
       : env.DB.prepare(
           `UPDATE profiles SET best = ?1, best_at = ?2, best_elapsed = ?3, steps = json_insert(steps, '$.mobile[#]', json_array(?1, ?2))
-           WHERE id = ?4 AND best < ?1 AND banned = 0`,
-        ).bind(score, now, elapsed, me.id),
+           WHERE id = ?4 AND best < ?1 AND banned = 0 AND ${ours("?5", "?2")}`,
+        ).bind(score, now, elapsed, me.id, run.id),
   ];
   if (eventId) {
     statements.push(
       env.DB.prepare(
-        "INSERT INTO entries (event_id, player_id, run_count) VALUES (?, ?, 1) ON CONFLICT (event_id, player_id) DO UPDATE SET run_count = run_count + 1",
-      ).bind(eventId, me.id),
+        `INSERT INTO entries (event_id, player_id, run_count) SELECT ?1, ?2, 1 WHERE ${ours("?3", "?4")}
+         ON CONFLICT (event_id, player_id) DO UPDATE SET run_count = run_count + 1`,
+      ).bind(eventId, me.id, run.id, now),
     );
     if (!me.banned) {
       statements.push(
-        env.DB.prepare("UPDATE entries SET best = ?1, best_at = ?2, best_elapsed = ?3 WHERE event_id = ?4 AND player_id = ?5 AND best < ?1")
-          .bind(score, now, elapsed, eventId, me.id),
+        env.DB.prepare(`UPDATE entries SET best = ?1, best_at = ?2, best_elapsed = ?3 WHERE event_id = ?4 AND player_id = ?5 AND best < ?1 AND ${ours("?6", "?2")}`)
+          .bind(score, now, elapsed, eventId, me.id, run.id),
       );
     }
   }
   const results = await env.DB.batch(statements);
-  const improved = !me.banned && results[1].meta.changes > 0;
-  const eventImproved = !!eventId && !me.banned && results[3].meta.changes > 0;
+  if (!results[0].meta.changes) {
+    const [done, fresh] = await Promise.all([readRun(env, run.id, me.id), findProfile(req, env)]);
+    if (!done || !fresh) return fail(404, "Partie inconnue.");
+    return recorded(env, fresh, done, score);
+  }
+  const improved = !me.banned && results[2].meta.changes > 0;
+  const eventImproved = !!eventId && !me.banned && results[4].meta.changes > 0;
   if (eventImproved || (!eventId && improved && device === "mobile")) tell(env, exec);
   const eventBest = eventImproved ? score : await mine();
   const mark = { best: score, at: now, improved: true };

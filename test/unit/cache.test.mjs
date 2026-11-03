@@ -31,6 +31,27 @@ test("classement demandé par plusieurs téléphones en même temps : une seule 
   assert.equal(load.reads, 1);
 });
 
+test("lecture abandonnée par le serveur (requête coupée) : au bout de 5 s, le classement est relu au lieu d'attendre pour toujours", async () => {
+  const stuck = () => new Promise(() => {});
+  const real = Date.now;
+  try {
+    cached("coupe", 10000, stuck);
+    const t = real();
+    Date.now = () => t + 4000;
+    const fresh = slow();
+    const waiting = cached("coupe", 10000, fresh.load);
+    assert.equal(fresh.load.reads, 0);
+    Date.now = () => t + 6000;
+    const later = cached("coupe", 10000, fresh.load);
+    assert.equal(fresh.load.reads, 1);
+    fresh.release(["Lou"]);
+    assert.deepEqual(await later, ["Lou"]);
+    void waiting;
+  } finally {
+    Date.now = real;
+  }
+});
+
 test("lecture commencée avant un changement (joueur retiré, soirée modifiée) : son résultat n'est pas gardé", async () => {
   const old = slow();
   const before = cached("change", 10000, old.load);

@@ -126,7 +126,7 @@ export async function players({ req, env }: Ctx) {
   const [best, at, elapsed] = board === "pc" ? ["pc_best", "pc_best_at", "pc_best_elapsed"] : ["best", "best_at", "best_elapsed"];
   const cols = `id, pseudo, ${best} AS best, banned, run_count, ${elapsed} AS best_elapsed FROM profiles`;
   const joined = env.DB.prepare(
-    `SELECT ${cols} INDEXED BY profiles_joined WHERE created_at > ? AND best = 0 AND pc_best = 0 AND banned = 0 ORDER BY created_at DESC LIMIT 50`,
+    `SELECT ${cols} INDEXED BY profiles_joined WHERE created_at > ? AND banned = 0 ORDER BY created_at DESC LIMIT 50`,
   ).bind(now - JOINED_MS);
   let rows: PlayerAdminRow[] = [], fresh: PlayerAdminRow[] = [];
   if (general) {
@@ -147,9 +147,10 @@ export async function players({ req, env }: Ctx) {
       joined,
     ]);
     rows = entries.results;
-    const listed = new Set(rows.map((p) => p.id));
-    fresh = recent.results.filter((p) => !listed.has(p.id));
+    fresh = recent.results;
   }
+  const listed = new Set(rows.map((p) => p.id));
+  fresh = fresh.filter((p) => !listed.has(p.id));
   const firstOut = rows.findIndex((p) => p.banned);
   const shown = firstOut < 0 ? [...rows, ...fresh] : [...rows.slice(0, firstOut), ...fresh, ...rows.slice(firstOut)];
   const ahead = farAhead(rows);

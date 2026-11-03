@@ -105,6 +105,16 @@ check("renvoi du même score = même réponse, sans doublon", r.status === 200 &
 r = await call("POST", `/api/runs/${runId}`, { token, body: { score: 120 } });
 check("autre score sur la même partie refusé", r.status === 409, r);
 {
+  const tok = await joinAs("Double" + hex(4)), run = await startRun(tok);
+  await wait(1200);
+  const both = await Promise.all([1, 2].map(() => call("POST", `/api/runs/${run}`, { token: tok, body: { score: 110 } })));
+  const id = (await call("GET", "/api/board", { token: tok })).data.me.id;
+  const card = await call("GET", "/api/players/" + id);
+  check("même score envoyé deux fois en même temps : « record » dans les deux réponses, partie comptée une fois",
+    both.every((x) => x.status === 200 && x.data.improved && x.data.best === 110 && x.data.eventImproved && x.data.eventBest === 110) && card.data.runs === 1,
+    [...both.map((x) => x.data), card.data.runs]);
+}
+{
   const theirs = await startRun(await joinAs("Autre" + hex(4)));
   r = await call("POST", `/api/runs/${theirs}`, { token, body: { score: 50 } });
   check("score envoyé sur la partie d'un autre joueur refusé", r.status === 404, r);
@@ -265,6 +275,8 @@ r = await call("GET", "/api/board", { token: pcToken });
 check("partie sur PC : seulement au classement PC", r.data.pcTop.some((x) => x.me) && !r.data.top.some((x) => x.me) && !r.data.eventTop.some((x) => x.me) && r.data.me.pcRank > 0, r.data.me);
 r = await call("GET", `/api/players/${r.data.me.id}`);
 check("fiche : frôlé hors limites ignoré, record PC dans la progression", r.status === 200 && r.data.combo === 0 && r.data.pcBest === 100 && r.data.records.some((x) => x.pc && x.score === 100), r.data);
+r = await call("GET", "/api/admin/players", { key: KEY });
+check("admin, onglet Soirée : nouveau pseudo qui a joué sur PC listé une fois (l'écran géant l'affiche)", r.status === 200 && r.data.players.filter((p) => p.pseudo === pcPseudo).length === 1, r.data.players.map((p) => p.pseudo));
 r = await call("POST", "/api/runs", { token: pcToken });
 const phoneRun = r.data.runId;
 await wait(1000);
@@ -395,6 +407,9 @@ check("rapport d'erreurs trop gros refusé", r.status === 413, r);
   await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: Date.now() - 3600 * 1000, closesAt: Date.now() - 5000 } });
   r = await call("POST", `/api/runs/${inTime}`, { token: tokF, body: { score: 20 } });
   check("score arrivé 5 s après la fin (réseau) : compte pour la soirée", r.status === 200 && r.data.eventBest === 20 && r.data.eventImproved, r.data);
+  await wait(11000);
+  r = await call("POST", `/api/runs/${inTime}`, { token: tokF, body: { score: 20 } });
+  check("même score renvoyé 16 s après la fin (réponse perdue) : toujours compté pour la soirée", r.status === 200 && r.data.eventBest === 20 && r.data.eventImproved, r.data);
 }
 
 {

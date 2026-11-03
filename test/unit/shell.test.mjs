@@ -33,6 +33,11 @@ test("chaque module du jeu est préchargé par la page, sans fichier en trop, po
   assert.deepEqual(preloaded.sort(), modules(["/js/app/main.js"]).sort());
 });
 
+test("iPhone d'avant iOS 15.4 : pas de Object.hasOwn dans le code du navigateur, sinon la tartine et les couverts ne se dessinent plus", () => {
+  const files = modules(["/js/app/main.js", "/js/ecran/ecran.js", "/js/admin/admin.js"]).concat(scripts);
+  assert.deepEqual(files.filter((f) => read(f).includes("Object.hasOwn")), []);
+});
+
 test("chaque fichier du cache de sw.js existe", () => {
   assert.deepEqual(SHELL.filter((f) => f !== "/" && !existsSync("public" + f)), []);
 });

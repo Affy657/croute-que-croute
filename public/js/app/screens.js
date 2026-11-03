@@ -1,6 +1,6 @@
 import { fmtCs, ord, clock, when } from "../shared/format.js";
 import { countdown, champion, closing } from "../shared/banner.js";
-import { net, serverNow, registered, isOpen, recentEvent, upcomingEvent, standing, knownBest, onPc } from "./api.js";
+import { net, serverNow, registered, joinReady, isOpen, recentEvent, upcomingEvent, standing, knownBest, onPc } from "./api.js";
 import { prefs, musicAvailable } from "./audio.js";
 import { progress } from "./achievements.js";
 import { PROJECTILES } from "../game/projectiles.js";
@@ -110,7 +110,7 @@ function fillStats(box, bestBox, bestEl, rankBox, rankEl, best, rank, count) {
   box.hidden = !best && !rank;
 }
 
-export const needJoin = () => !!net.board && !registered();
+export const needJoin = () => !!net.board && !registered() && joinReady();
 
 let linking = false;
 

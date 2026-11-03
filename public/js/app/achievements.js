@@ -170,9 +170,11 @@ export const has = (id) => !!data.got[id];
 export const runUnlocked = () => fresh.slice();
 export const progress = () => ({ got: ACHIEVEMENTS.filter((a) => data.got[a.id]).length, total: ACHIEVEMENTS.length });
 
-function countRuns(n) {
-  for (const [k, id] of RUNS) if (n >= k) unlock(id);
+function countRuns(n, synced = false) {
+  for (const [k, id] of RUNS) if (n >= k) unlock(id, synced);
 }
+
+const first = (rank, count) => rank === 1 && count >= WIN_MIN;
 
 export function countToppings() {
   const n = extras();
@@ -234,11 +236,13 @@ export function runEnd(score, killer, device) {
 }
 
 export function afterSubmit(r) {
-  if (r && !r.error && r.eventRank && r.eventRank <= TOP) unlock("top10");
+  if (!r || r.error) return;
+  if (r.eventRank && r.eventRank <= TOP) unlock("top10");
+  if (first(r.eventRank, r.eventCount) || first(r.rank, r.count) || first(r.pcRank, r.pcCount)) unlock("eventWin");
 }
 
 export function onBoard(b) {
-  if (b && b.me) countRuns(Math.max(data.runs, b.me.runs || 0));
+  if (b && b.me) countRuns(Math.max(data.runs, b.me.runs || 0), true);
   const top = b && b.me ? Math.max(b.me.best || 0, b.me.pcBest || 0) : 0;
   if (b && b.me && (b.me.runs > data.runs || top > data.best)) {
     change((d) => {
@@ -247,8 +251,7 @@ export function onBoard(b) {
     });
   }
   for (const [s, id] of TIMES) if (top >= s * 100) unlock(id, true);
-  const first = (rank, count) => rank === 1 && count >= WIN_MIN;
-  if (b && b.me && !b.me.banned && (first(b.me.eventRank, b.eventCount) || first(b.me.rank, b.count) || first(b.me.pcRank, b.pcCount))) unlock("eventWin");
+  if (b && b.me && !b.me.banned && (first(b.me.eventRank, b.eventCount) || first(b.me.rank, b.count) || first(b.me.pcRank, b.pcCount))) unlock("eventWin", true);
   checkSky(true);
 }
 

@@ -3,6 +3,7 @@ import { SLOTS, SPREADS, GEAR } from "../shared/palette.js";
 import { store, KEYS } from "../shared/store.js";
 import { call, canCompete, net, on, serverNow } from "./api.js";
 import { drawToast } from "./sprites.js";
+import { own } from "./art/kit.js";
 import { outfit, gearOwned, gearTotal, setOutfit } from "./gear.js";
 import { chosen, owned, toppingList, addToppings, setTopping } from "./toppings.js";
 import { progress, forSync, absorb } from "./achievements.js";
@@ -10,7 +11,7 @@ import { progress, forSync, absorb } from "./achievements.js";
 const SEND_MS = 1500, TOAST_SCALE = 1.8, TOAST_Y = 0.53, BAR_MIN = 6, PODIUM = 3, BLANK = " ", NONE = "-";
 const SHELVES = [["head", "Chapeaux"], ["side", "Côtés"], ["bread", "Pains"], ["aura", "Auras"], ["spread", "Garnitures"]];
 const $ = (id) => document.getElementById(id);
-const wearable = (slot, kind) => (Object.hasOwn(GEAR, kind) && GEAR[kind].slot === slot ? kind : null);
+const wearable = (slot, kind) => (own(GEAR, kind)?.slot === slot ? kind : null);
 const ui = { name: $("profileName"), since: $("profileSince"), last: $("profileLast"), canvas: $("profileToast"), ranks: $("profileRanks"), body: $("profileBody") };
 const ctx = ui.canvas.getContext("2d");
 const toast = { x: 0, y: 0, tilt: 0, thrust: 0.35, scars: [], spread: "butter", head: null, side: null, bread: null, aura: null };
@@ -153,7 +154,7 @@ function render(c) {
   ui.since.textContent = since(c.joinedAt);
   ui.last.textContent = c.lastAt ? "Dernière partie " + ago(c.now - c.lastAt) : "";
   ui.last.hidden = !c.lastAt;
-  Object.assign(toast, { spread: "butter", head: null, side: null, bread: null, aura: null }, c.look ? { spread: Object.hasOwn(SPREADS, c.look.spread) ? c.look.spread : "butter", head: wearable("head", c.look.head), side: wearable("side", c.look.side), bread: wearable("bread", c.look.bread), aura: wearable("aura", c.look.aura) } : {});
+  Object.assign(toast, { spread: "butter", head: null, side: null, bread: null, aura: null }, c.look ? { spread: own(SPREADS, c.look.spread) ? c.look.spread : "butter", head: wearable("head", c.look.head), side: wearable("side", c.look.side), bread: wearable("bread", c.look.bread), aura: wearable("aura", c.look.aura) } : {});
   showToast(true);
   ui.ranks.replaceChildren(rankBadge("Mobile", c.best, c.rank, c.count), rankBadge("PC", c.pcBest, c.pcRank, c.pcCount));
   const cards = [

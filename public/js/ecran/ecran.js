@@ -5,12 +5,12 @@ import { timeout } from "../shared/timeout.js";
 import { VERSION } from "../version.js";
 
 const TICK_MS = 1000, FAST_POLL_MS = 2000, FALLBACK_FULL_MS = 15000, SAFE_POLL_MS = 60000, QUIET_POLL_MS = 60000, PUSH_GAP_MS = 1000, OFFLINE_MISSES = 2, FETCH_MS = 8000, ROWS = 10, FEED_ROWS = 6, IDLE_MS = 3000, CROWN_MS = 6000;
-const LAST_MS = 60000, LONG_WIN = 16, MOVE_MS = 700, PING_MS = 25000, PONG_MS = 10000, RETRY_MS = [1000, 2000, 5000, 10000, 30000];
+const LAST_MS = 60000, LONG_WIN = 16, MOVE_MS = 700, PING_MS = 25000, PONG_MS = 10000, RETRY_MS = [1000, 2000, 5000, 10000, 30000], RECHECK_MS = 11000;
 const $ = (id) => document.getElementById(id);
 const calm = matchMedia("(prefers-reduced-motion: reduce)");
 let board = null, offset = 0, shown = null, idleTimer = null, lock = null, seen = null, crownTimer = null, busy = false, again = false, stale = false;
 let lastOk = 0, lastAsk = 0, lastFull = 0, misses = 0, ended = null;
-let socket = null, live = false, tries = 0, retryTimer = null, pingTimer = null, pongTimer = null, pushTimer = null, lastPush = 0;
+let socket = null, live = false, tries = 0, retryTimer = null, pingTimer = null, pongTimer = null, pushTimer = null, lastPush = 0, recheckTimer = null, opened = null;
 
 document.documentElement.dataset.version = VERSION;
 const now = () => Date.now() + offset;
@@ -57,13 +57,13 @@ function render() {
       if (!shown.bests.has(r.best)) rows[i].classList.add("up");
     });
     const first = top[0];
-    if (first && shown.first && first.pseudo !== shown.first.pseudo && first.best > shown.first.best) {
+    if (first && shown.first && first.pseudo !== shown.first.pseudo && first.best > shown.first.best && !(first.at <= shown.now)) {
       bounce(rows[0]);
       crown(first);
       rain();
     }
   }
-  shown = { title: name, first: top[0] || null, bests: new Set(top.map((r) => r.best)) };
+  shown = { title: name, first: top[0] || null, bests: new Set(top.map((r) => r.best)), now: board.now };
   $("list").replaceChildren(...rows);
   if (!calm.matches) slide(rows, before);
   $("empty").hidden = rows.length > 0;
@@ -97,6 +97,10 @@ function tick() {
   off.textContent = board ? "Pas de réseau : classement de " + hourOf(lastOk) : "Pas de réseau";
   if (!board) return;
   const el = $("countdown"), t = now(), s = screenBanner(board, t);
+  if (board.next && t >= board.next.opensAt && opened !== board.next.opensAt) {
+    opened = board.next.opensAt;
+    refresh(true);
+  }
   const hot = !!(s && s.final), win = !!(s && s.win);
   $("title").textContent = title();
   el.classList.toggle("final", hot);
@@ -179,6 +183,11 @@ async function refresh(full) {
 const lively = () => !board || liveScreen(board, now());
 
 function push() {
+  clearTimeout(recheckTimer);
+  recheckTimer = setTimeout(() => {
+    recheckTimer = null;
+    if (!document.hidden) refresh(true);
+  }, RECHECK_MS);
   if (pushTimer) return;
   pushTimer = setTimeout(() => {
     pushTimer = null;

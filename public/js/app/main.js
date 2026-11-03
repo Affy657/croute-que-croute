@@ -595,7 +595,7 @@ ui.joinForm.addEventListener("submit", async (e) => {
 
 window.addEventListener("keydown", (e) => {
   if (e.target instanceof Element && e.target.closest("input, button, select, textarea, a")) return;
-  if (e.code !== "Space" && e.code !== "Enter") return;
+  if ((e.code !== "Space" && e.code !== "Enter") || openPage()) return;
   if ((S.mode === "menu" || S.mode === "over") && start(replay())) e.preventDefault();
 });
 
