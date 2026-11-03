@@ -53,11 +53,20 @@
 }
 
 .catalog .slider-ends {
-  display: flex;
-  justify-content: space-between;
-  margin: calc(-1 * var(--space-md)) 0 0 calc(6rem + var(--space-md));
+  display: grid;
+  grid-template-columns: 6rem 1fr 1fr;
+  column-gap: var(--space-md);
+  margin: calc(-1 * var(--space-md)) 0 0;
   font-size: var(--text-md);
   color: var(--ink-dim);
+}
+
+.catalog .slider-ends span:first-child {
+  grid-column: 2;
+}
+
+.catalog .slider-ends span:last-child {
+  text-align: right;
 }
 
 .catalog .version-note {
