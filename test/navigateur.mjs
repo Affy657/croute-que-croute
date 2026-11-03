@@ -72,6 +72,24 @@ try {
     await $("#joinForm button").click();
     await shown("play");
   });
+  await step("accueil : les planètes avancent à chaque image, sans à-coups", async () => {
+    const seen = await page.evaluate(() => new Promise((done) => {
+      const draw = CanvasRenderingContext2D.prototype.drawImage, heights = new Map();
+      CanvasRenderingContext2D.prototype.drawImage = function (img, x, y, ...rest) {
+        if (this.canvas.id === "cv" && img instanceof HTMLCanvasElement) {
+          if (!heights.has(img)) heights.set(img, []);
+          heights.get(img).push(y);
+        }
+        return draw.call(this, img, x, y, ...rest);
+      };
+      setTimeout(() => {
+        CanvasRenderingContext2D.prototype.drawImage = draw;
+        const ys = [...heights.values()].sort((a, b) => b.length - a.length)[0] || [];
+        done({ frames: ys.length, still: ys.slice(1).filter((y, i) => y === ys[i]).length });
+      }, 1500);
+    }));
+    if (seen.frames < 30 || seen.still > seen.frames / 10) throw new Error(`${seen.still} images sans bouger sur ${seen.frames}`);
+  });
   await step("accueil : les calques des annonces et des confettis sont retirés tant qu'ils sont vides", async () => {
     const shownLayers = await page.evaluate(() => ["fx", "party"].filter((id) => !document.getElementById(id).hidden));
     if (shownLayers.length) throw new Error("calques affichés : " + shownLayers.join(", "));

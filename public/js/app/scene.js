@@ -171,7 +171,7 @@ export function createScene(canvas, overlay) {
       const y = skyY(i) * H;
       if (y < -u * 0.3 || y > H + u * 0.3) return;
       const img = art(i, b, b.r * u, clock);
-      ctx.drawImage(img, Math.round(W * SIDES[i % 2] * dpr - img.width / 2), Math.round(y * dpr - img.height / 2));
+      ctx.drawImage(img, Math.round(W * SIDES[i % 2] * dpr - img.width / 2), y * dpr - img.height / 2);
     });
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
