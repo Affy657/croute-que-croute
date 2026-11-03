@@ -24,6 +24,33 @@ test("partie lancée avec une hauteur invalide (fenêtre de 0 px) : la tartine p
   assert.ok(sim.state.dead);
 });
 
+function offlineWorker(cached) {
+  const source = readFileSync(new URL("../../public/sw.js", import.meta.url), "utf8");
+  const handlers = {};
+  const self = { location: { href: "https://jeu.test/sw.js?v=1.0.0", origin: "https://jeu.test" }, addEventListener: (type, fn) => { handlers[type] = fn; }, skipWaiting() {}, clients: { claim: async () => {} } };
+  const caches = { open: async () => ({ put() {} }), match: async (req) => cached[typeof req === "string" ? req : new URL(req.url).pathname] };
+  new Function("self", "caches", "fetch", source)(self, caches, async () => { throw new TypeError("Failed to fetch"); });
+  return (path, mode = "navigate") => {
+    let answer = null;
+    handlers.fetch({ request: { method: "GET", url: "https://jeu.test" + path, mode }, respondWith: (p) => { answer = p; }, waitUntil() {} });
+    return answer;
+  };
+}
+
+test("cache hors ligne : l'écran géant ne retombe jamais sur la page du jeu", async () => {
+  const game = new Response("jeu"), screen = new Response("écran");
+  assert.equal(await offlineWorker({ "/": game, "/ecran": screen })("/ecran"), screen);
+  assert.equal((await offlineWorker({ "/": game })("/ecran")).type, "error");
+  assert.equal(await offlineWorker({ "/": game })("/lien"), game);
+});
+
+test("cache hors ligne : l'admin et ses scripts passent toujours par le réseau, jamais par une vieille copie", () => {
+  const ask = offlineWorker({});
+  assert.equal(ask("/js/admin/admin.js", "same-origin"), null);
+  assert.equal(ask("/admin"), null);
+  assert.notEqual(ask("/js/app/main.js", "same-origin"), null);
+});
+
 test("cache hors ligne : un fichier raté pendant l'installation n'empêche pas de garder les autres", async () => {
   const source = readFileSync(new URL("../../public/sw.js", import.meta.url), "utf8");
   const shell = JSON.parse(source.match(/const SHELL = (\[[\s\S]*?\]);/)[1]);

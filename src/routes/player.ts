@@ -403,9 +403,9 @@ export async function card({ req, env, params }: Ctx) {
 }
 
 async function standing(env: Env, me: Profile, eventId: number | null, mobile: Mark, pc: Mark, eventBest: number, eventImproved: boolean) {
-  if (mobile.improved) promoteGeneral({ id: me.id, pseudo: me.pseudo, best: mobile.best });
-  if (pc.improved) promoteGeneral({ id: me.id, pseudo: me.pseudo, best: pc.best }, "pc");
-  if (eventId && eventImproved) promoteEvent(eventId, { id: me.id, pseudo: me.pseudo, best: eventBest });
+  if (!me.banned && mobile.improved) promoteGeneral({ id: me.id, pseudo: me.pseudo, best: mobile.best });
+  if (!me.banned && pc.improved) promoteGeneral({ id: me.id, pseudo: me.pseudo, best: pc.best }, "pc");
+  if (!me.banned && eventId && eventImproved) promoteEvent(eventId, { id: me.id, pseudo: me.pseudo, best: eventBest });
   const [general, pcList, eventList] = await Promise.all([
     generalRanking(env, !!eventId),
     generalRanking(env, !!eventId, "pc"),

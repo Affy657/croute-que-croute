@@ -49,6 +49,7 @@ export const openPage = () => PAGE_OF[current] || null;
 
 export function show(name) {
   current = name;
+  if (name !== "menu" && pickerOpen) openPicker(false);
   for (const id of PAGES) ui[id].hidden = !SCREENS[name].includes(id);
   ui.infoBtn.hidden = name !== "menu" && name !== "over";
   ui.settingsBtn.hidden = ui.infoBtn.hidden;

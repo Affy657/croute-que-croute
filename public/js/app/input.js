@@ -94,6 +94,9 @@ export function createInput(canvas, { active, scale, view, toast }) {
     if (e.pointerType === "mouse") mouse = { x: e.clientX, y: e.clientY };
   });
 
+  window.addEventListener("pointerout", (e) => {
+    if (e.pointerType === "mouse" && !e.relatedTarget) mouse = null;
+  });
   window.addEventListener("pointerup", end);
   window.addEventListener("pointercancel", end);
   document.addEventListener("touchmove", (e) => {

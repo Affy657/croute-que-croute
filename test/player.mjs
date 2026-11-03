@@ -219,6 +219,21 @@ check("classements général et soirée : le joueur y est", r.status === 200 && 
 }
 
 {
+  const owner = await joinAs("Lien" + hex(5)), device = hex(32);
+  const code = (await call("POST", "/api/me/link", { token: owner })).data.code;
+  const first = await call("POST", "/api/link", { body: { code, clientId: device } });
+  r = await call("POST", "/api/link", { body: { code, clientId: device } });
+  check("code de liaison : réponse perdue, le même appareil réessaie et se connecte", first.status === 200 && r.status === 200 && !!r.data.token && r.data.token !== first.data.token && r.data.pseudo === first.data.pseudo, r.data);
+  const [lost, kept] = await Promise.all([call("GET", "/api/board", { token: first.data.token }), call("GET", "/api/board", { token: r.data.token })]);
+  check("code de liaison : une seule clé gardée pour l'appareil qui a réessayé", lost.data.me === null && !!kept.data.me, [lost.data.me, kept.data.me]);
+  r = await call("POST", "/api/link", { body: { code, clientId: hex(32) } });
+  check("code de liaison déjà utilisé : refusé à un autre appareil", r.status === 404, r);
+  await call("DELETE", "/api/me/devices", { token: owner });
+  r = await call("POST", "/api/link", { body: { code, clientId: device } });
+  check("code de liaison utilisé puis « Déconnecter les autres » : plus de nouvel essai", r.status === 404, r);
+}
+
+{
   const raw = (method, path, headers) => fetch(BASE + path, { method, headers: { "x-app-version": VERSION, ...headers } });
   let res = await raw("GET", "/api/board", { authorization: "Bearer " + token });
   const set = res.headers.get("set-cookie") || "";
@@ -264,6 +279,13 @@ r = await call("POST", "/api/runs", { token });
 check("joueur retiré : nouvelle partie refusée (403)", r.status === 403, r);
 r = await call("POST", `/api/runs/${beforeBan}`, { token, body: { score: 500 } });
 check("joueur retiré : partie lancée avant le retrait, finie après, sans effet", r.status === 200 && r.data.best === 100 && !r.data.improved && !r.data.eventImproved && r.data.rank === null && r.data.eventRank === null, r.data);
+{
+  const before = (await call("GET", "/api/board")).data;
+  r = await call("POST", `/api/runs/${runId}`, { token, body: { score: 100 } });
+  const after = (await call("GET", "/api/board")).data;
+  const back = (b) => b.top.some((x) => x.pseudo === row.pseudo) || b.eventTop.some((x) => x.pseudo === row.pseudo);
+  check("joueur retiré : renvoyer le score de son record ne le remet pas dans les classements", r.status === 200 && !back(after) && after.count === before.count && after.eventCount === before.eventCount, [after.count, before.count, after.eventCount, before.eventCount]);
+}
 
 r = await call("GET", "/api/admin/players?scope=general", { key: KEY });
 check("admin : classement général disponible", r.status === 200 && r.data.scope === "general" && r.data.players.some((p) => p.pseudo === pseudo), r.data.scope);
@@ -325,6 +347,11 @@ check("admin : classement PC disponible", r.status === 200 && r.data.scope === "
   await call("POST", `/api/admin/players/${(await call("GET", "/api/board", { token: tokC })).data.me.id}/ban`, { key: KEY, body: { banned: true } });
   r = await call("POST", "/api/link", { token: tokA, body: { code: (await call("POST", "/api/me/link", { token: tokC })).data.code, merge: true } });
   check("fusion avec un compte retiré refusée", r.status === 403, r);
+  const nameQ = "Qq" + hex(5), [tokP, tokQ] = [await joinAs("Pp" + hex(5)), await joinAs(nameQ)];
+  await play(tokP, 120, "mobile");
+  await call("POST", "/api/link", { token: tokP, body: { code: (await call("POST", "/api/me/link", { token: tokQ })).data.code, merge: true } });
+  const keptQ = (await call("GET", "/api/admin/players", { key: KEY })).data.players.find((x) => x.pseudo === nameQ);
+  check("fusion : le compte gardé est marqué actif dans l'admin quand l'autre vient de jouer", !!keptQ && keptQ.active === true, keptQ);
   const [tokD, tokG, tokE] = [await joinAs("Dd" + hex(5)), await joinAs("Gg" + hex(5)), await joinAs("Ee" + hex(5))];
   for (const tok of [tokD, tokG, tokE]) {
     await play(tok, 300, "mobile");
@@ -372,6 +399,22 @@ check("rapport d'erreurs trop gros refusé", r.status === 413, r);
   check("direct : l'écran se connecte en WebSocket", ws.readyState === 1, ws.readyState);
   ws.send("ping");
   check("direct : ping, pong", await until(() => heard.includes("pong")), heard);
+  {
+    const socket = (ip) => new Promise((ok) => {
+      const s = new WebSocket(BASE.replace("http", "ws") + "/api/live", { headers: { "cf-connecting-ip": ip } });
+      s.onopen = () => ok(s);
+      s.onerror = () => ok(null);
+    });
+    const ip = "10.77." + Math.floor(Math.random() * 250) + ".1", four = [];
+    for (let i = 0; i < 4; i++) {
+      four.push(await socket(ip));
+      await wait(60);
+    }
+    const fifth = await socket(ip), other = await socket(ip.replace(/1$/, "2"));
+    const oldestOut = await until(() => !!four[0] && four[0].readyState >= 2);
+    check("direct : une même adresse garde 4 écrans au plus, le plus ancien laisse sa place", four.every(Boolean) && !!fifth && !!other && oldestOut && four.slice(1).every((s) => s.readyState === 1), four.map((s) => s && s.readyState));
+    for (const s of [...four, fifth, other]) if (s) s.close();
+  }
 
   r = await call("GET", "/api/ecran");
   const before = r.data;

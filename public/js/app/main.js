@@ -201,7 +201,7 @@ function cheer() {
   const mine = S.submit, prev = S.prevRank;
   const timeout = new Promise((ok) => setTimeout(() => ok(null), CHEER_WAIT_MS));
   Promise.race([mine || Promise.resolve(null), timeout]).then((r) => {
-    if (S.submit !== mine || S.mode !== "over") return;
+    if (S.submit !== mine || S.mode !== "over" || !S.newBest) return;
     const first = r && !r.error && prev !== 1 && (S.scope === "event" ? r.eventImproved && r.eventRank === 1 : S.scope === "pc" ? r.pcImproved && r.pcRank === 1 : r.improved && r.rank === 1);
     audio.playSfx(first ? "first" : "record");
     if (!first) return;
@@ -241,6 +241,12 @@ function cheerHud(text, count, gold) {
   burst(ui.time, { count, power: 0.55, gold });
 }
 
+function celebrate() {
+  bounce(ui.final.parentElement);
+  burst(ui.final, { count: 44 });
+  cheer();
+}
+
 function showOver() {
   S.mode = "over";
   show("over");
@@ -249,11 +255,7 @@ function showOver() {
   renderKiller(S.killer);
   renderOverAch();
   if (S.train) renderOverStats(0, null, 0);
-  if (S.newBest) {
-    bounce(ui.final.parentElement);
-    burst(ui.final, { count: 44 });
-    cheer();
-  }
+  if (S.newBest) celebrate();
   const mine = S.submit;
   if (mine) {
     setText(ui.overNote, "Envoi…");
@@ -266,6 +268,12 @@ function showOver() {
       setText(ui.overNote, r.error || (S.late ? "Soirée finie : partie comptée au général" : ""));
       const now = api.standing(S.scope);
       if (r.error) return;
+      const won = !!(S.scope === "event" ? r.eventImproved : S.scope === "pc" ? r.pcImproved : r.improved);
+      if (won !== S.newBest) {
+        S.newBest = won;
+        ui.newBest.hidden = !won;
+        if (won) celebrate();
+      }
       renderOverStats(S.newBest ? 0 : now.best, now.rank, now.count);
       renderRival(S.score, now.rival);
     });
@@ -603,8 +611,13 @@ function goBack() {
   return true;
 }
 
+document.addEventListener("click", (e) => {
+  const button = e.detail && (S.mode === "menu" || S.mode === "over") && e.target instanceof Element && e.target.closest("button");
+  if (button) button.blur();
+});
+
 window.addEventListener("keydown", (e) => {
-  if (e.target instanceof Element && e.target.closest("input, select, textarea")) return;
+  if (e.target instanceof Element && e.target.closest("input:not([type=range]), select, textarea")) return;
   if (e.key === "Escape") {
     if (!e.repeat && goBack()) e.preventDefault();
     return;

@@ -72,7 +72,10 @@ function mountAdmin() {
   const frame = document.createElement("iframe");
   frame.src = "/admin";
   frame.title = "Tableau de bord admin";
-  frame.addEventListener("load", () => fitAdmin(frame));
+  frame.addEventListener("load", () => {
+    fitAdmin(frame);
+    relayEscape(frame);
+  });
   ui.settingsAdmin.replaceChildren(frame);
 }
 
@@ -82,6 +85,15 @@ function fitAdmin(frame) {
   const fit = () => { frame.style.height = page.offsetHeight + "px"; };
   new ResizeObserver(fit).observe(page);
   fit();
+}
+
+function relayEscape(frame) {
+  const win = frame.contentWindow;
+  if (!win) return;
+  win.addEventListener("keydown", (e) => {
+    const typing = e.target.closest && e.target.closest("input:not([type=range]), select, textarea");
+    if (e.key === "Escape" && !e.defaultPrevented && !typing) window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", repeat: e.repeat }));
+  });
 }
 
 export function leaveSettings() {

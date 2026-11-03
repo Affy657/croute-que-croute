@@ -24,7 +24,7 @@ if (LOCAL) {
 
 export const net = { token: store.get(KEYS.playerToken), board: null, offset: 0, online: true, updatePending: false };
 let localBest = parseInt(store.get(KEYS.localBest) || "0", 10) || 0, saved = readBests();
-let boardAsked = 0, boardShown = 0, lastDevice = null, resumed = false, resuming = null, retryTimer = null, runBests = {};
+let boardAsked = 0, boardShown = 0, lastDevice = null, resumed = false, resuming = null, retryTimer = null, runBests = {}, bestsAsked = 0;
 const listeners = { board: [], update: [], result: [] };
 
 function readBests() {
@@ -93,6 +93,7 @@ export function leader(scope = myScope()) {
 export function saveLocalBest(score, scope) {
   if (registered()) {
     runBests[scope] = Math.max(runBests[scope] || 0, score);
+    bestsAsked = boardAsked;
     return;
   }
   if (net.token && saved) {
@@ -129,6 +130,7 @@ export async function refreshBoard() {
     net.offset = b.now - Date.now();
     net.online = true;
     if (net.token && !b.me) setToken(null);
+    if (asked > bestsAsked && !pendingScores().length) runBests = {};
     net.board = b;
     if (b.me) keepBests(b.me);
     if (b.version && b.version !== VERSION) requestUpdate();
@@ -183,11 +185,11 @@ export async function rename(pseudo) {
 }
 
 export function startRun(body) {
-  if (!net.token || (net.board && !canCompete())) return null;
-  return call("POST", "/api/runs", body, SEND_TIMEOUT_MS).catch((e) => ({
-    error: e.status === 426 ? UPDATED : reason(e, "Hors ligne : score non compté"),
-    status: e.status
-  }));
+  if (!net.token || (registered() && net.board.me.banned)) return null;
+  return call("POST", "/api/runs", body, SEND_TIMEOUT_MS).catch((e) => {
+    if (e.status === 401) refreshBoard();
+    return { error: e.status === 426 ? UPDATED : reason(e, "Hors ligne : score non compté"), status: e.status };
+  });
 }
 
 function pendingScores() {
