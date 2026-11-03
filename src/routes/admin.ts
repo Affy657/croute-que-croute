@@ -147,7 +147,7 @@ export async function players({ req, env }: Ctx) {
       joined,
     ]);
     rows = entries.results;
-    fresh = recent.results;
+    fresh = recent.results.map((p) => ({ ...p, best: 0 }));
   }
   const listed = new Set(rows.map((p) => p.id));
   fresh = fresh.filter((p) => !listed.has(p.id));

@@ -162,7 +162,7 @@ export async function screen({ req, env }: Ctx) {
   const stamp = `${shown?.id ?? 0}.${marks?.a ?? 0}.${marks?.b ?? 0}`;
   if (new URL(req.url).searchParams.get("v") === stamp) return json({ ...head, stamp, same: true });
   const [{ list, count }, items] = await Promise.all([screenTop(env, shown, !!view.open), feedItems(env, view.open, now)]);
-  return json({ ...head, stamp, top: topOf(list, null), count, feed: items });
+  return json({ ...head, stamp, last: marks?.a ?? 0, top: topOf(list, null), count, feed: items });
 }
 
 export async function join({ req, env, exec }: Ctx) {

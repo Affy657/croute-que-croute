@@ -57,13 +57,13 @@ function render() {
       if (!shown.bests.has(r.best)) rows[i].classList.add("up");
     });
     const first = top[0];
-    if (first && shown.first && first.pseudo !== shown.first.pseudo && first.best > shown.first.best && !(first.at <= shown.now)) {
+    if (first && shown.first && first.pseudo !== shown.first.pseudo && first.best > shown.first.best && !(first.at <= shown.last)) {
       bounce(rows[0]);
       crown(first);
       rain();
     }
   }
-  shown = { title: name, first: top[0] || null, bests: new Set(top.map((r) => r.best)), now: board.now };
+  shown = { title: name, first: top[0] || null, bests: new Set(top.map((r) => r.best)), last: board.last };
   $("list").replaceChildren(...rows);
   if (!calm.matches) slide(rows, before);
   $("empty").hidden = rows.length > 0;
