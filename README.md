@@ -358,7 +358,7 @@ Le robot d'équité (`npm test`) joue parfaitement : il dit si le jeu est faisab
 | 0.46 | 01/11 | Tartine d'or : 1er d'un classement d'au moins 10 joueurs, soirée, Mobile ou PC | 1 (corrections de la revue de code) |
 | 0.47 | 01/11 | la tenue suit le compte sur tous les appareils (le dernier changement gagne) ; page et code de deux versions : rechargement ; tests du téléphone et vérification de la prod | 4 (02/11 : types vérifiés, Worker et dépendances à jour, test navigateur, écrans et dessins réorganisés ; puis variables de design communes, rouges plus lisibles, champ refusé en rouge ; puis espacements et tailles de texte en échelles, survol à la souris, fusion de comptes réparée après un échec ; puis fiche joueur légère et à jour juste après une partie) |
 | 0.48 | 02/11 | pluies espacées : ni pluie ni double pluie tant qu'une double pluie ou un hachoir n'est pas à mi-chemin |  |
-| 0.49 | 03/11 | grand écran en direct (WebSocket) ; 15 dernières minutes : chrono rouge qui tremble, 1er mis en valeur à la fin ; fin de soirée stricte (15 s de marge réseau) ; fil « En direct » agrandi ; mur mis de côté pendant une double pluie ; Première soirée seulement sur téléphone |  |
+| 0.49 | 03/11 | grand écran en direct (WebSocket) ; 15 dernières minutes : chrono rouge qui tremble, 1er mis en valeur à la fin ; fin de soirée stricte (15 s de marge réseau) ; fil « En direct » agrandi ; mur mis de côté pendant une double pluie ; Première soirée seulement sur téléphone | 1 (vieux téléphones : chrono moins souvent, calques vides retirés, fichiers préchargés ; planètes qui défilent sans à-coups) |
 
 ## Erreurs des joueurs
 
