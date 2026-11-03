@@ -163,6 +163,16 @@ try {
     await click("closeBtn");
     await shown("menu");
   });
+  await step("Infos, Crédits : les 5 bruitages à écouter", async () => {
+    await click("infoBtn");
+    await shown("info");
+    await page.locator('#infoTabs [data-tab="credits"]').click();
+    const sounds = page.locator("#infoBody .sfx-list button");
+    if ((await sounds.count()) !== 5) throw new Error((await sounds.count()) + " boutons de bruitages");
+    await sounds.first().click();
+    await click("infoBack");
+    await shown("menu");
+  });
   await step("Paramètres : QR code et code pour un autre appareil, puis retour", async () => {
     await click("settingsBtn");
     await shown("settings");
@@ -458,6 +468,21 @@ try {
     await admin.locator("#endForm button").click();
     await asked;
     await admin.waitForFunction(() => document.getElementById("eventStatus").textContent === "Dernière soirée", null, { timeout: WAIT_MS });
+  });
+  await step("admin dans Paramètres : la page défile d'un seul tenant, « Retour » tout en bas", async () => {
+    await admin.goto(BASE + "/");
+    await admin.waitForFunction(() => document.documentElement.dataset.ready === "1", null, { timeout: WAIT_MS });
+    if (await admin.locator("#joinForm").isVisible()) {
+      await admin.fill("#pseudo", "Adm" + hex(6));
+      await admin.locator("#joinForm button").first().click();
+    }
+    await admin.locator("#settingsBtn").click();
+    await admin.locator('#settingsTabs [data-tab="admin"]').click();
+    await admin.frameLocator("#settingsAdmin iframe").locator("#app").waitFor({ state: "visible", timeout: WAIT_MS });
+    await admin.waitForFunction(() => {
+      const frame = document.querySelector("#settingsAdmin iframe"), root = frame.contentDocument.documentElement;
+      return root.scrollHeight <= root.clientHeight && frame.getBoundingClientRect().bottom <= document.getElementById("settingsBack").getBoundingClientRect().top;
+    }, null, { timeout: WAIT_MS });
     await admin.close();
   });
   for (const path of ["/ecran", "/admin"]) {

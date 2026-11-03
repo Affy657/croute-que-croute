@@ -9,6 +9,7 @@ const INVITE_MS = 48 * 3600 * 1000;
 const SEEN_MS = 5 * 60 * 1000;
 const SESSION_MS = 30 * 24 * 3600 * 1000;
 const JOINED_MS = 15 * 60 * 1000;
+const ACTIVE_MS = 10 * 60 * 1000;
 const SUSPECT_MS = 15000, SUSPECT_RATIO = 1.15, SUSPECT_MIN = 6000, SUSPECT_LEAD = 1.3;
 
 export interface AdminAuth {
@@ -32,6 +33,7 @@ interface PlayerAdminRow {
   banned: number;
   run_count: number;
   best_elapsed: number | null;
+  last_at: number | null;
 }
 
 const keyMatches = async (env: Env, key: unknown) =>
@@ -124,7 +126,7 @@ export async function players({ req, env }: Ctx) {
   const general = !!board;
   const event = (await pendingEvent(env, now)) ?? (await lastEvent(env));
   const [best, at, elapsed] = board === "pc" ? ["pc_best", "pc_best_at", "pc_best_elapsed"] : ["best", "best_at", "best_elapsed"];
-  const cols = `id, pseudo, ${best} AS best, banned, run_count, ${elapsed} AS best_elapsed FROM profiles`;
+  const cols = `id, pseudo, ${best} AS best, banned, run_count, ${elapsed} AS best_elapsed, last_at FROM profiles`;
   const joined = env.DB.prepare(
     `SELECT ${cols} INDEXED BY profiles_joined WHERE created_at > ? AND banned = 0 ORDER BY created_at DESC LIMIT 50`,
   ).bind(now - JOINED_MS);
@@ -140,7 +142,7 @@ export async function players({ req, env }: Ctx) {
   } else if (event) {
     const [entries, recent] = await env.DB.batch<PlayerAdminRow>([
       env.DB.prepare(
-        `SELECT p.id, p.pseudo, e.best, p.banned, e.run_count, e.best_elapsed FROM entries e JOIN profiles p ON p.id = e.player_id
+        `SELECT p.id, p.pseudo, e.best, p.banned, e.run_count, e.best_elapsed, p.last_at FROM entries e JOIN profiles p ON p.id = e.player_id
          WHERE e.event_id = ?
          ORDER BY p.banned ASC, e.best DESC, e.best_at ASC`,
       ).bind(event.id),
@@ -157,7 +159,15 @@ export async function players({ req, env }: Ctx) {
   return json({
     scope: board ?? "event",
     event: event ? eventJson(event, now) : null,
-    players: shown.map((p) => ({ id: p.id, pseudo: p.pseudo, best: p.best, banned: p.banned, runs: p.run_count, suspect: suspect(p, ahead) })),
+    players: shown.map((p) => ({
+      id: p.id,
+      pseudo: p.pseudo,
+      best: p.best,
+      banned: p.banned,
+      runs: p.run_count,
+      suspect: suspect(p, ahead),
+      active: !p.banned && (p.last_at ?? 0) > now - ACTIVE_MS,
+    })),
     stats: { players: rows.length, runs: rows.reduce((n, p) => n + p.run_count, 0) },
   });
 }

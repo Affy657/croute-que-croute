@@ -4,7 +4,7 @@ import { ATTACKS } from "../game/attacks.js";
 import { GAP_START, GAP_SLOPE, GAP_MIN } from "../game/sim.js";
 import { PALETTE, SPREADS } from "../shared/palette.js";
 import { drawTrail, drawProjectile, drawWarn, drawToast } from "./sprites.js";
-import { MUSIC_CREDIT, SFX_CREDIT } from "./audio.js";
+import { MUSIC_CREDIT, SFX_CREDIT, previewSfx } from "./audio.js";
 
 const SAMPLE_T = 60, PREVIEW_SCALE = 0.5, PREVIEW_MAX_S = 6, PREVIEW_PAUSE_S = 0.6;
 const TOAST = { x: FW / 2, y: FH * 0.62, tilt: 0, thrust: 0.35 };
@@ -308,12 +308,27 @@ function credit(title, text, href, label) {
   return card;
 }
 
+const SFX_LABELS = { start: "Départ", near: "Frôlé", death: "Mort", record: "Record", first: "1re place" };
+
+function sounds() {
+  const card = credit("Bruitages", `Sons de ${SFX_CREDIT.name}. Touche un son pour l'écouter.`, SFX_CREDIT.url, `Voir ${SFX_CREDIT.name}`);
+  const list = el("div", "card-actions pair sfx-list");
+  list.append(...Object.entries(SFX_LABELS).map(([name, label]) => {
+    const btn = el("button", "ghost", label);
+    btn.type = "button";
+    btn.addEventListener("click", () => previewSfx(name));
+    return btn;
+  }));
+  card.lastChild.before(list);
+  return card;
+}
+
 export function renderCredits(root) {
   root.replaceChildren(
     credit("Collectif", "Tartine Sauvage, l'équipe derrière les soirées Space Tartinade", CREW_URL, "Suivre sur Instagram"),
     credit("Développeur", DEV.name, DEV.url, "Voir sur LinkedIn"),
     credit("Musique", `${MUSIC_CREDIT.title}, de ${MUSIC_CREDIT.artist}`, MUSIC_CREDIT.url, "Écouter sur Spotify"),
-    credit("Bruitages", `Sons de ${SFX_CREDIT.name}`, SFX_CREDIT.url, `Voir ${SFX_CREDIT.name}`)
+    sounds()
   );
 }
 

@@ -21,10 +21,6 @@ main {
   gap: var(--space-lg);
 }
 
-.embedded {
-  overscroll-behavior: contain;
-}
-
 .embedded main {
   padding: 0 0 var(--space-lg);
 }
@@ -277,6 +273,17 @@ select:focus-visible,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.list .live {
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  margin-right: 0.4em;
+  border-radius: 50%;
+  background: var(--mustard);
+  box-shadow: 0 0 0 3px var(--mustard-soft);
+  vertical-align: 0.1em;
 }
 
 .list .meta {
