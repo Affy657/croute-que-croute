@@ -749,7 +749,8 @@ a.ghost {
 }
 
 .link-qr {
-  width: min(70vw, 280px);
+  width: min(70vw, 280px, 30vh);
+  width: min(70vw, 280px, 30svh);
   border-radius: var(--radius-lg);
   image-rendering: pixelated;
 }
