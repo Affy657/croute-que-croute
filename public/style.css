@@ -299,6 +299,10 @@ h2.page-title {
   gap: var(--space-sm);
 }
 
+.keys {
+  margin: 0;
+}
+
 .more .ghost {
   flex: 1 1 calc(50% - 0.4rem);
   max-width: calc(50% - 0.3rem);
