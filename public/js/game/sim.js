@@ -27,7 +27,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
   const forced = only && ATTACKS.find((a) => a.id === only);
   const state = {
     t: t0, next: 0.9, tries: 0, near: 0, dead: false, last: null, streak: 0, queued: null, held: null, until: {},
-    toast: { x: FW / 2, y },
+    toast: { x: FW / 2, y: Number.isFinite(y) ? y : FH * 0.7 },
     obs: [], warns: [],
     stats: { spawned: 0, rejected: 0, impossible: 0, solves: 0, solveMs: 0, solveMax: 0 }
   };

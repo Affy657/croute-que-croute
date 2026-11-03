@@ -15,7 +15,7 @@ const COMET_S = 9, COMET_TAIL = 0.35, COMET_ALPHA = 0.7;
 const OFTEN = LOCAL && new URLSearchParams(location.search).get("etoiles") === "souvent";
 const COMET_FIRST = OFTEN ? [1, 2] : [30, 180], COMET_GAP = OFTEN ? [4, 6] : [120, 240];
 const ODD = LOCAL && new URLSearchParams(location.search).get("planetes") === "souvent";
-const QUALITY = [2, 1.5, 1.25, 1], REDRAW_S = [1 / 30, 1 / 20, 1 / 20, 1 / 15], SLOW_MS = 20, SAMPLE = 90, SETTLE = 60, GAP_MS = 250;
+const QUALITY = [2, 1.5, 1.25, 1], REDRAW_S = [1 / 30, 1 / 20, 1 / 20, 1 / 15], SLOW_MS = 20, SAMPLE = 90, SETTLE = 60, GAP_MS = 250, QUALITY_KEEP_MS = 12 * 3600 * 1000;
 const HEAT_RGB = HEAT.map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
 
 function dealer(list, gap = 1) {
@@ -30,6 +30,11 @@ function dealer(list, gap = 1) {
     if (recent.length > gap) recent.shift();
     return pick;
   };
+}
+
+export function savedQuality(raw, now = Date.now()) {
+  const [q, at] = String(raw || "").split(":").map(Number);
+  return now - at < QUALITY_KEEP_MS ? Math.min(QUALITY.length - 1, Math.max(0, q || 0)) : 0;
 }
 
 function heatColor(k, low = 1) {
@@ -51,7 +56,7 @@ export function createScene(canvas, overlay) {
   const skin = dealer(BODIES.rare.filter((b) => b.key)), plain = dealer(BODIES.rare.filter((b) => !b.key));
   const rare = () => (Math.random() < SKIN_ODDS ? skin : plain)();
   const nextPasser = dealer(Object.keys(PASSERS)), slots = [], slotY = [], arts = [], pick = (i) => (ODD ? deal.rare() : TOUR[i] === "rare" ? rare() : deal[TOUR[i]]());
-  let quality = Math.min(QUALITY.length - 1, Number(store.get(KEYS.quality)) || 0), frames = [], settle = SETTLE, fxDirty = true;
+  let quality = savedQuality(store.get(KEYS.quality)), frames = [], settle = SETTLE, fxDirty = true;
 
   function resize() {
     view.dpr = Math.min(window.devicePixelRatio || 1, QUALITY[quality]);
@@ -81,7 +86,7 @@ export function createScene(canvas, overlay) {
     const lower = QUALITY.findIndex((d, i) => i > quality && d < view.dpr);
     if (!slow || lower < 0) return;
     quality = lower;
-    store.set(KEYS.quality, quality);
+    store.set(KEYS.quality, quality + ":" + Date.now());
     settle = SETTLE;
     resize();
   }

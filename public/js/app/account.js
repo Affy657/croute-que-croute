@@ -1,12 +1,12 @@
 import { clock } from "../shared/format.js";
 import { ui, show, setText, markInvalid, renderControls, setLinking } from "./screens.js";
-import { net, on, registered, serverNow, linkWith, newLinkCode, logoutOthers, reason, badInput } from "./api.js";
+import { net, on, registered, joinReady, refreshBoard, serverNow, linkWith, newLinkCode, logoutOthers, reason, badInput } from "./api.js";
 import { renderSettings, copy } from "./settings.js";
 import { resync } from "./profile.js";
 
 const TICK_MS = 1000, RETRY_MS = 20000, QUIET = 4;
 const OUT_ASK = "Tes autres appareils sortent du compte. Pour revenir, il leur faudra un nouveau code.";
-let timer = null, until = Infinity, live = false, asked = 0, shown = "", merging = null, waiting = null, opener = () => {}, idle = () => true;
+let timer = null, until = Infinity, live = false, asked = 0, shown = "", merging = null, mergeInto = null, waiting = null, opener = () => {}, idle = () => true;
 
 const quoted = (name) => "« " + name + " »";
 
@@ -129,6 +129,7 @@ async function checkMerge(code) {
       return markInvalid(ui.mergeInput, badInput(e));
     }
     merging = code;
+    mergeInto = m.into;
     setText(ui.mergeNote, `Réunir ${quoted(m.from)} avec ${quoted(m.into)} ? Tes records, parties et succès passent sur ${quoted(m.into)}, et le pseudo ${quoted(m.from)} sera libéré.`);
     ui.mergeAsk.hidden = false;
   } finally {
@@ -136,17 +137,24 @@ async function checkMerge(code) {
   }
 }
 
+function merged(pseudo) {
+  ui.mergeForm.hidden = true;
+  ui.mergeInput.value = "";
+  renderSettings();
+  resetMerge(`Comptes réunis : tu joues en ${quoted(pseudo)}.`);
+}
+
 async function confirmMerge() {
   if (!merging) return;
   ui.mergeYes.disabled = ui.mergeNo.disabled = true;
   try {
     const r = await linkWith(merging, true);
-    ui.mergeForm.hidden = true;
-    ui.mergeInput.value = "";
-    renderSettings();
-    resetMerge(`Comptes réunis : tu joues en ${quoted(r.pseudo)}.`);
+    merged(r.pseudo);
   } catch (e) {
-    resetMerge(reason(e));
+    if (!e.status) await refreshBoard();
+    const me = net.board && net.board.me;
+    if (!e.status && me && me.pseudo === mergeInto) merged(me.pseudo);
+    else resetMerge(reason(e));
   } finally {
     ui.mergeYes.disabled = ui.mergeNo.disabled = false;
   }
@@ -192,7 +200,7 @@ function pickUp() {
     waiting = null;
     opener();
     checkMerge(code);
-  } else if (net.board && !net.token) {
+  } else if (net.board && joinReady()) {
     waiting = null;
     offerLink(code);
   }
@@ -202,11 +210,8 @@ function linkFromUrl() {
   const m = location.hash.match(/^#lier=([A-Za-z0-9-]{1,12})$/);
   if (!m) return;
   history.replaceState(null, "", location.pathname + location.search);
-  if (net.token) {
-    waiting = m[1];
-    return pickUp();
-  }
-  offerLink(m[1]);
+  waiting = m[1];
+  pickUp();
 }
 
 export function initAccount(openSettings, isIdle) {
