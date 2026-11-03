@@ -1,12 +1,10 @@
 import { store as storage, KEYS } from "../shared/store.js";
 import { fmtCs, clock } from "../shared/format.js";
-import { prepareSfx, previewSfx } from "../app/audio.js";
 import { VERSION } from "../version.js";
 import { timeout } from "../shared/timeout.js";
 
 const $ = (id) => document.getElementById(id);
 const CALL_MS = 10000, REFRESH_MS = 10000, ERRORS_MS = 60000, FRESH_MS = 3600 * 1000, COPIED_MS = 2000;
-const SFX_LABELS = { start: "Départ", near: "Frôlé", death: "Mort", record: "Record", first: "1re place" };
 const store = {
   get: () => storage.get(KEYS.adminToken),
   set: (v) => storage.set(KEYS.adminToken, v || null)
@@ -152,6 +150,8 @@ function renderPlayers() {
   const players = data ? data.players : [];
   const doubt = players.filter((p) => p.suspect && !p.banned).length;
   say($("suspectAlert"), doubt ? (doubt > 1 ? doubt + " records à vérifier" : "1 record à vérifier") + " (trait rouge). Regarde le détail avant de retirer quelqu'un." : "", true);
+  const active = players.filter((p) => p.active).length;
+  say($("activeNote"), active ? (active > 1 ? active + " joueurs actifs" : "1 joueur actif") + " (point jaune) : une partie finie ces 10 dernières minutes." : "");
   let rank = 0;
   $("players").replaceChildren(...players.map((p) => {
     const li = document.createElement("li");
@@ -160,8 +160,16 @@ function renderPlayers() {
     li.className = p.banned ? "out" : p.suspect ? "suspect" : "";
     const main = document.createElement("div");
     main.className = "main";
+    const name = cell("span", "name", p.pseudo);
+    if (p.active) {
+      const dot = cell("span", "live", "");
+      dot.setAttribute("role", "img");
+      dot.setAttribute("aria-label", "Actif");
+      dot.title = "Une partie finie ces 10 dernières minutes";
+      name.prepend(dot);
+    }
     main.append(
-      cell("span", "name", p.pseudo),
+      name,
       cell("span", "meta", (p.best ? fmtCs(p.best) + " s, " : "") + p.runs + (p.runs > 1 ? " parties" : " partie") + (p.banned ? ", retiré" : p.suspect ? ", " + SUSPECT_LABELS[p.suspect] : ""))
     );
     const btn = cell("button", "btn ghost small", p.banned ? "Réintégrer" : "Retirer");
@@ -566,14 +574,6 @@ setInterval(() => {
 setInterval(() => {
   if (me && me.role === "owner" && !document.hidden) loadErrorCount();
 }, ERRORS_MS);
-
-prepareSfx();
-$("sfxList").replaceChildren(...Object.entries(SFX_LABELS).map(([name, label]) => {
-  const btn = cell("button", "btn ghost small", label);
-  btn.type = "button";
-  btn.addEventListener("click", () => previewSfx(name));
-  return btn;
-}));
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=" + encodeURIComponent(VERSION)).catch(() => {});
 

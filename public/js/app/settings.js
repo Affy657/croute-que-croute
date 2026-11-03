@@ -72,7 +72,16 @@ function mountAdmin() {
   const frame = document.createElement("iframe");
   frame.src = "/admin";
   frame.title = "Tableau de bord admin";
+  frame.addEventListener("load", () => fitAdmin(frame));
   ui.settingsAdmin.replaceChildren(frame);
+}
+
+function fitAdmin(frame) {
+  const page = frame.contentDocument && frame.contentDocument.body;
+  if (!page || !window.ResizeObserver) return;
+  const fit = () => { frame.style.height = page.offsetHeight + "px"; };
+  new ResizeObserver(fit).observe(page);
+  fit();
 }
 
 export function leaveSettings() {

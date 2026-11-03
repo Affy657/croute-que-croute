@@ -113,11 +113,8 @@ function spark(records) {
   return node;
 }
 
-function progression(c) {
-  if (!c.records.length) return null;
-  const of = (pc) => c.records.filter((r) => r.pc === pc);
-  let pc = c.records[c.records.length - 1].pc, records = of(pc);
-  if (records.length < 2) records = of((pc = !pc));
+function progression(c, pc) {
+  const records = c.records.filter((r) => r.pc === pc);
   if (records.length < 2) return null;
   const node = card("Progression", spark(records));
   node.firstChild.append(el("span", "card-tag", pc ? "PC" : "Mobile"));
@@ -165,7 +162,8 @@ function render(c) {
       tile("Meilleure place", c.eventBest ? ord(c.eventBest.place) : NONE),
       tile("Meilleur frôlé", c.combo ? "x" + c.combo : NONE)
     )),
-    progression(c)
+    progression(c, false),
+    progression(c, true)
   ];
   if (c.look) {
     const shelves = SHELVES.map(([slot, label]) => tile(label, Math.min(c.look.own[slot] || 0, shelfTotal(slot)) + "/" + shelfTotal(slot)));

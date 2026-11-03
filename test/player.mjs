@@ -239,6 +239,14 @@ check("classements général et soirée : le joueur y est", r.status === 200 && 
 r = await call("GET", "/api/admin/players", { key: KEY });
 const row = r.data.players.find((p) => p.pseudo === pseudo);
 check("admin : nombre de parties terminées", row && row.runs === 1 && row.suspect === null, row);
+check("admin : joueur qui vient de finir une partie marqué actif", row && row.active === true, row);
+{
+  const idle = "Rien" + hex(5);
+  await joinAs(idle);
+  const list = (await call("GET", "/api/admin/players", { key: KEY })).data.players;
+  const found = list.find((p) => p.pseudo === idle);
+  check("admin : nouveau joueur sans partie pas marqué actif", found && found.active === false, found);
+}
 
 const beforeBan = await startRun(token);
 let limited = 0;
