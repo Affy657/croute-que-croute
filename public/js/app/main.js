@@ -29,7 +29,7 @@ const ACH_TOAST_MS = 2600, MENU_PLACE_S = 0.5, MENU_LIFT = 6, PICK_REACH = 46, P
 const DIE_S = 0.75, FREEZE_S = 0.3, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200;
 const BOARD_POLL_MS = 10000, MENU_POLL_MS = 30000;
 const ADMIN_TAPS = 5, ADMIN_TAP_MS = 3000;
-const CHAIN_S = 1.5, CHAIN_STEPS = 6, LAP_CS = 1000;
+const CHAIN_S = 1.5, CHAIN_STEPS = 6, LAP_CS = 1000, DIGITS_MS = 30;
 const SCARS_MAX = 12, SCAR_JITTER = 0.3;
 const HUD_WIDEST = "000,00", HUD_PAD = 6;
 
@@ -43,7 +43,7 @@ const S = {
   newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general", guess: false, late: false, held: false,
   toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35, scars: [], spread: chosen(), ...outfit() }, gotToppings: [], menuY: FH * 0.55, menuAt: 0
 };
-let boardTimer = null, wasOpen = null, lastShown = "";
+let boardTimer = null, wasOpen = null, lastShown = "", shownAt = 0;
 let pageFrom = "menu", infoTab = "attacks";
 let cardId = null, historyFor = null;
 
@@ -479,11 +479,12 @@ function frame(now) {
   const page = openPage();
   if (screen() === "profile") drawCard(S.clock);
   else if (!page || page === "board") scene.render({ clock: S.clock, world: sim.state, toast: S.mode === "over" ? null : S.toast, splat: S.splat, finger: S.mode === "play" ? input.finger : null, dying: S.mode === "dying" });
-  if (playing()) {
+  if (playing() && (S.mode !== "play" || now - shownAt >= DIGITS_MS)) {
     const cs = Math.floor(elapsed() * 100), s = fmtCs(cs);
     if (s !== lastShown) {
       setDigits(ui.time, s);
       lastShown = s;
+      shownAt = now;
       if (S.mode === "play") {
         cheerRun(cs);
         lap(cs);
