@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createSim } from "../../public/js/game/sim.js";
 import { STEP } from "../../public/js/game/field.js";
+import { sprinkleRare } from "../../public/js/game/projectiles.js";
+import { SPREADS } from "../../public/js/shared/palette.js";
 
 const WALLS = ["wall", "walls"];
 
@@ -33,4 +35,19 @@ test("mur tiré pendant une double pluie : mis de côté, puis lancé quand ses 
   }
   assert.ok(held > 0, "aucun mur mis de côté : le test ne vérifie rien");
   assert.ok(later > held / 2, `${later} murs lancés sur ${held} mis de côté`);
+});
+
+test("couteau garni : chaque garniture à gagner peut tomber sur un couteau, la sauce du chef comprise", () => {
+  const extras = Object.keys(SPREADS).filter((k) => !SPREADS[k].free), seen = new Set(), random = Math.random;
+  try {
+    for (let i = 0; i < 1000; i++) {
+      const knife = { kind: "knife" }, rolls = [0, 0, i / 1000];
+      Math.random = () => rolls.shift();
+      sprinkleRare([{ obs: [knife] }]);
+      seen.add(knife.spread);
+    }
+  } finally {
+    Math.random = random;
+  }
+  assert.deepEqual([...seen].sort(), extras.sort());
 });

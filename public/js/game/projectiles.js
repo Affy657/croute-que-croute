@@ -1,7 +1,8 @@
 import { FW, segDist2 } from "./field.js";
+import { SPREADS } from "../shared/palette.js";
 
 const RARE_CHANCE = 1 / 10;
-const RARE_SPREADS = ["jam", "choco", "honey", "ketchup", "toothpaste", "egg", "sardine", "slime", "dog"];
+const RARE_SPREADS = Object.keys(SPREADS).filter((k) => !SPREADS[k].free);
 
 export const PROJECTILES = {
   knife: { name: "Couteau à beurre", by: "un couteau à beurre", len: 66, rad: 5 },
