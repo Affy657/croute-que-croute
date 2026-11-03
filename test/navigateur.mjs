@@ -139,6 +139,20 @@ try {
     await click("boardBack");
     await shown("menu");
   });
+  await step("Échap fait « Retour » : classement, écran du QR code, Paramètres", async () => {
+    await click("menuBoard");
+    await shown("board");
+    await page.keyboard.press("Escape");
+    await shown("menu");
+    await click("settingsBtn");
+    await shown("settings");
+    await click("qrBtn");
+    await shown("qr");
+    await page.keyboard.press("Escape");
+    await shown("settings");
+    await page.keyboard.press("Escape");
+    await shown("menu");
+  });
   await step("Infos : les 4 onglets s'affichent, puis retour", async () => {
     await click("infoBtn");
     await shown("info");

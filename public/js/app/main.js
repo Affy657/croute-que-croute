@@ -7,7 +7,7 @@ import * as api from "./api.js";
 import * as audio from "./audio.js";
 import { startDiag } from "./diag.js";
 import { createScene } from "./scene.js";
-import { createInput } from "./input.js";
+import { createInput, hasMouse } from "./input.js";
 import { burst, rain, bounce } from "./party.js";
 import * as ach from "./achievements.js";
 import { chosen, unlockTopping, chooseTopping, onTopping, stepTopping } from "./toppings.js";
@@ -593,8 +593,23 @@ ui.joinForm.addEventListener("submit", async (e) => {
   }
 });
 
+const BACK = { board: ui.boardBack, profile: ui.profileBack, info: ui.infoBack, settings: ui.settingsBack, qr: ui.qrBack, link: ui.linkBack, ach: ui.achBack };
+
+function goBack() {
+  if (!ui.installPop.hidden) ui.installLater.click();
+  else if (pickerIsOpen()) openPicker(false);
+  else if (BACK[screen()]) BACK[screen()].click();
+  else return false;
+  return true;
+}
+
 window.addEventListener("keydown", (e) => {
-  if (e.target instanceof Element && e.target.closest("input, button, select, textarea, a")) return;
+  if (e.target instanceof Element && e.target.closest("input, select, textarea")) return;
+  if (e.key === "Escape") {
+    if (!e.repeat && goBack()) e.preventDefault();
+    return;
+  }
+  if (e.target instanceof Element && e.target.closest("button, a")) return;
   if ((e.code !== "Space" && e.code !== "Enter") || openPage()) return;
   if ((S.mode === "menu" || S.mode === "over") && start(replay())) e.preventDefault();
 });
@@ -686,6 +701,7 @@ setInterval(() => {
   for (let i = 0; i < 720; i++) warm.step(STEP, 0, 0);
 }
 
+for (const el of document.querySelectorAll(".keys")) el.hidden = !hasMouse();
 showMenu();
 finishLoading(new Promise((ok) => api.on("board", ok)));
 api.refreshBoard();
