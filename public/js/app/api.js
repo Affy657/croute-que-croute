@@ -3,7 +3,7 @@ import { store, session, KEYS } from "../shared/store.js";
 import { guessDevice } from "./input.js";
 import { LOCAL } from "../shared/local.js";
 import { timeout } from "../shared/timeout.js";
-import { openOf, recentOf, upcomingOf } from "../shared/banner.js";
+import { openOf, recentOf, upcomingOf, lateFor } from "../shared/banner.js";
 
 const RELOAD_GAP = 15000;
 const UPDATED = "Partie pas comptée : le jeu a été mis à jour, il se recharge quand tu rejoues.";
@@ -65,7 +65,7 @@ export const registered = () => !!(net.board && net.board.me);
 
 export const openEvent = () => openOf(net.board, serverNow());
 export const isOpen = () => !!openEvent();
-export const pastEvent = () => !!(net.board && net.board.event && serverNow() > net.board.event.finalAt);
+export const pastEvent = () => lateFor(net.board, serverNow());
 export const recentEvent = () => recentOf(net.board, serverNow());
 export const upcomingEvent = () => upcomingOf(net.board, serverNow());
 

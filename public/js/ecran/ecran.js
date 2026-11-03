@@ -1,16 +1,16 @@
 import { fmtCs, clock, hourOf } from "../shared/format.js";
-import { screenBanner, SOON_MS } from "../shared/banner.js";
+import { screenBanner, liveScreen } from "../shared/banner.js";
 import { rain, bounce } from "../app/party.js";
 import { timeout } from "../shared/timeout.js";
 import { VERSION } from "../version.js";
 
-const FAST_POLL_MS = 2000, SAFE_POLL_MS = 60000, QUIET_POLL_MS = 60000, OFFLINE_MISSES = 2, FETCH_MS = 8000, ROWS = 10, FEED_ROWS = 6, IDLE_MS = 3000, CROWN_MS = 6000;
+const TICK_MS = 1000, FAST_POLL_MS = 2000, FALLBACK_FULL_MS = 15000, SAFE_POLL_MS = 60000, QUIET_POLL_MS = 60000, PUSH_GAP_MS = 1000, OFFLINE_MISSES = 2, FETCH_MS = 8000, ROWS = 10, FEED_ROWS = 6, IDLE_MS = 3000, CROWN_MS = 6000;
 const LAST_MS = 60000, LONG_WIN = 16, MOVE_MS = 700, PING_MS = 25000, PONG_MS = 10000, RETRY_MS = [1000, 2000, 5000, 10000, 30000];
 const $ = (id) => document.getElementById(id);
 const calm = matchMedia("(prefers-reduced-motion: reduce)");
 let board = null, offset = 0, shown = null, idleTimer = null, lock = null, seen = null, crownTimer = null, busy = false, again = false, stale = false;
-let lastOk = 0, lastAsk = 0, misses = 0, ended = null;
-let socket = null, live = false, tries = 0, retryTimer = null, pingTimer = null, pongTimer = null;
+let lastOk = 0, lastAsk = 0, lastFull = 0, misses = 0, ended = null;
+let socket = null, live = false, tries = 0, retryTimer = null, pingTimer = null, pongTimer = null, pushTimer = null, lastPush = 0;
 
 document.documentElement.dataset.version = VERSION;
 const now = () => Date.now() + offset;
@@ -152,6 +152,7 @@ async function refresh(full) {
   }
   busy = true;
   lastAsk = Date.now();
+  if (full || !board) lastFull = lastAsk;
   const next = await grab("/api/ecran" + (!full && board ? "?v=" + encodeURIComponent(board.stamp) : "")).catch(() => null);
   busy = false;
   if (next) {
@@ -175,10 +176,15 @@ async function refresh(full) {
   }
 }
 
-function lively() {
-  if (!board) return true;
-  const t = now(), ev = board.event, next = board.next;
-  return !!(ev && t < ev.finalAt) || !!(next && next.opensAt - t < SOON_MS);
+const lively = () => !board || liveScreen(board, now());
+
+function push() {
+  if (pushTimer) return;
+  pushTimer = setTimeout(() => {
+    pushTimer = null;
+    lastPush = Date.now();
+    refresh(true);
+  }, Math.max(0, lastPush + PUSH_GAP_MS - Date.now()));
 }
 
 function quiet() {
@@ -218,7 +224,7 @@ function connect() {
   };
   ws.onmessage = (e) => {
     if (e.data === "pong") clearTimeout(pongTimer);
-    else if (!document.hidden) refresh(true);
+    else if (!document.hidden) push();
   };
   ws.onclose = () => drop(ws);
   ws.onerror = () => ws.close();
@@ -242,7 +248,7 @@ function poll() {
     return;
   }
   connect();
-  if (live ? since >= SAFE_POLL_MS : since >= FAST_POLL_MS) refresh(live);
+  if (live ? since >= SAFE_POLL_MS : since >= FAST_POLL_MS) refresh(live || Date.now() - lastFull >= FALLBACK_FULL_MS);
 }
 
 async function keepAwake() {
@@ -281,5 +287,5 @@ document.addEventListener("pointermove", wake);
 wake();
 keepAwake();
 refresh(true);
-setInterval(poll, FAST_POLL_MS);
-setInterval(tick, 1000);
+setInterval(poll, TICK_MS);
+setInterval(tick, TICK_MS);

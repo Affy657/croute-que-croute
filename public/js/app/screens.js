@@ -1,5 +1,5 @@
 import { fmtCs, ord, clock, when } from "../shared/format.js";
-import { countdown, champion } from "../shared/banner.js";
+import { countdown, champion, closing } from "../shared/banner.js";
 import { net, serverNow, registered, isOpen, recentEvent, upcomingEvent, standing, knownBest, onPc } from "./api.js";
 import { prefs, musicAvailable } from "./audio.js";
 import { progress } from "./achievements.js";
@@ -135,6 +135,7 @@ export function renderMenu() {
   else if (me && me.banned) info = "Retiré du classement";
   else if (b && isOpen() && onPc()) info = "Sur PC : hors classement de la soirée";
   else if (champ) info = "Bravo " + champ + " !";
+  else if (b && closing(b, serverNow())) info = "Soirée finie !";
   setText(ui.menuInfo, info);
   ui.menuAch.textContent = achLabel();
   setCountdown(ui.menuCountdown);

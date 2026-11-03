@@ -262,9 +262,39 @@ try {
     await fetch(BASE + "/api/runs/" + runId, { method: "POST", headers: auth, body: JSON.stringify({ score: 300 }) });
     await other.locator("#list li", { hasText: name }).first().waitFor({ timeout: WAIT_MS });
     const took = Date.now() - since;
+    await wait(1500);
+    let asks = 0;
+    other.on("request", (r) => {
+      if (new URL(r.url()).pathname === "/api/ecran") asks++;
+    });
+    for (let i = 0; i < 8; i++) {
+      await fetch(BASE + "/api/join", { method: "POST", headers, body: JSON.stringify({ pseudo: "Foule" + hex(5), clientId: hex(32) }) });
+      await wait(150);
+    }
+    await wait(1500);
     await other.close();
     if (!sockets) throw new Error("pas de WebSocket ouvert");
     if (took > 1500) throw new Error(`record affiché en ${took} ms`);
+    if (asks > 3) throw new Error(`${asks} relectures pour 8 inscriptions en 1 s`);
+  });
+  await step("écran géant sans WebSocket : le secours affiche un record, puis enlève un joueur retiré", async () => {
+    const other = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    watch(other);
+    await other.routeWebSocket(/\/api\/live$/, (ws) => ws.close());
+    await other.goto(BASE + "/ecran");
+    await other.waitForFunction(() => document.getElementById("title").textContent === "Soirée du navigateur", null, { timeout: WAIT_MS });
+    const headers = { "content-type": "application/json", "x-app-version": "dev" };
+    const name = "Secours" + hex(4);
+    const { token } = await (await fetch(BASE + "/api/join", { method: "POST", headers, body: JSON.stringify({ pseudo: name, clientId: hex(32) }) })).json();
+    const auth = { ...headers, authorization: "Bearer " + token };
+    const { runId } = await (await fetch(BASE + "/api/runs", { method: "POST", headers: auth, body: "{}" })).json();
+    await fetch(BASE + "/api/runs/" + runId, { method: "POST", headers: auth, body: JSON.stringify({ score: 400 }) });
+    const row = other.locator("#list li", { hasText: name });
+    await row.first().waitFor({ timeout: 5000 });
+    const id = await row.first().getAttribute("data-id");
+    await fetch(BASE + `/api/admin/players/${id}/ban`, { method: "POST", headers: { ...headers, "x-admin-key": KEY }, body: JSON.stringify({ banned: true }) });
+    await row.first().waitFor({ state: "detached", timeout: 20000 });
+    await other.close();
   });
   await step("admin : fin déjà passée, confirmation demandée, « Annuler » laisse la soirée ouverte", async () => {
     let patched = 0;
