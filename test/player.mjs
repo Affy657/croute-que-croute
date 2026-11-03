@@ -371,6 +371,12 @@ check("rapport d'erreurs trop gros refusé", r.status === 413, r);
   r = await call("POST", `/api/runs/${await startRun(tok)}`, { token: tok, body: { score: 50 } });
   await wait(800);
   check("direct : partie sans record, écran pas dérangé", r.status === 200 && !heard.includes("change"), heard);
+  const shownId = (await call("GET", "/api/ecran")).data.top.find((x) => x.pseudo === name).id;
+  await call("POST", `/api/admin/players/${shownId}/ban`, { key: KEY, body: { banned: true } });
+  check("direct : joueur retiré annoncé à l'écran", await until(() => heard.includes("change")), heard);
+  r = await call("GET", "/api/ecran");
+  check("écran : joueur retiré absent du top et du fil", !r.data.top.some((x) => x.pseudo === name) && !r.data.feed.some((i) => i.pseudo === name), r.data);
+  await call("POST", `/api/admin/players/${shownId}/ban`, { key: KEY, body: { banned: false } });
   ws.close();
 }
 

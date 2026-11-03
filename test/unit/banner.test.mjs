@@ -1,11 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { countdown, champion, screenBanner, openOf, SOON_MS } from "../../public/js/shared/banner.js";
+import { countdown, champion, closing, lateFor, liveScreen, screenBanner, openOf, SOON_MS } from "../../public/js/shared/banner.js";
 import { when } from "../../public/js/shared/format.js";
 
-const MIN = 60e3, HOUR = 60 * MIN, START = new Date(2026, 10, 7, 21, 0).getTime(), END = START + 4 * HOUR;
+const MIN = 60e3, HOUR = 60 * MIN, START = new Date(2026, 10, 7, 21, 0).getTime(), END = START + 4 * HOUR, FINAL = END + 15e3, SURE = FINAL + 10e3;
 const event = (opensAt = START, closesAt = END, status = "closed") => ({ name: "Space Tartinade #3", opensAt, closesAt, finalAt: closesAt + 15e3, status });
-const board = ({ ev = event(), next = null, top = [{ pseudo: "Lou" }] } = {}) => ({ event: ev, next, eventTop: ev ? top : [], top: [{ pseudo: "Adrien" }] });
+const board = ({ ev = event(), next = null, top = [{ pseudo: "Lou" }], now = SURE } = {}) => ({ now, event: ev, next, eventTop: ev ? top : [], top: [{ pseudo: "Adrien" }] });
 const screen = ({ ev = event(), next = null, top = [{ pseudo: "Lou" }] } = {}) => ({ event: ev, next, top: ev ? top : [{ pseudo: "Adrien" }] });
 
 test("date d'une soirée en toutes lettres", () => {
@@ -36,11 +36,25 @@ test("téléphone : soirée commencée avant que le classement suive, déjà com
   assert.deepEqual(countdown(b, START + MIN), { label: "Fin dans ", target: END });
 });
 
-test("téléphone : « Bravo » dès que le chrono est fini", () => {
-  const b = board();
-  assert.equal(champion(b, END - 1), null);
-  assert.equal(champion(b, END), "Lou");
-  assert.equal(champion(b, END + HOUR), "Lou");
+test("téléphone : « Soirée finie ! » dès zéro, « Bravo » seulement avec un classement relu après les derniers scores", () => {
+  const old = board({ ev: event(START, END, "open"), now: END - 5e3 });
+  assert.equal(closing(old, END - 1), false);
+  assert.equal(closing(old, END), true);
+  assert.equal(champion(old, END + HOUR), null);
+  const early = board({ now: SURE - 1 });
+  assert.equal(champion(early, END + HOUR), null);
+  assert.equal(closing(early, END + HOUR), true);
+  const sure = board({ now: SURE });
+  assert.equal(champion(sure, SURE), "Lou");
+  assert.equal(closing(sure, SURE), false);
+});
+
+test("téléphone : partie finie après les 15 s de marge, hors soirée", () => {
+  const b = board({ ev: event(START, END, "open"), now: END - 5e3 });
+  assert.equal(lateFor(b, FINAL), false);
+  assert.equal(lateFor(b, FINAL + 1), true);
+  assert.equal(lateFor(board({ ev: null }), FINAL + 1), false);
+  assert.equal(lateFor(null, FINAL + 1), false);
 });
 
 test("téléphone : pas de « Bravo » sans personne au classement", () => {
@@ -91,9 +105,12 @@ test("écran : rien à annoncer", () => {
   assert.equal(screenBanner(screen({ top: [] }), END), null);
 });
 
-test("téléphone et écran annoncent le gagnant au même moment", () => {
-  for (const at of [END - 1, END, END + 1, END + 15e3, END + HOUR]) {
-    const phone = champion(board(), at), shown = screenBanner(screen(), at);
-    assert.equal(!!phone, !!(shown && shown.win), new Date(at).toISOString());
-  }
+test("écran : direct pendant la soirée et jusqu'à 1 min après les derniers scores, ou dans les 24 h avant", () => {
+  const open = screen({ ev: event(START, END, "open") });
+  assert.equal(liveScreen(open, START + HOUR), true);
+  assert.equal(liveScreen(open, FINAL + MIN - 1), true);
+  assert.equal(liveScreen(open, FINAL + MIN), false);
+  const next = event(END + 2 * HOUR, END + 6 * HOUR, "upcoming");
+  assert.equal(liveScreen(screen({ ev: null, next }), next.opensAt - SOON_MS + 1), true);
+  assert.equal(liveScreen(screen({ ev: null, next }), next.opensAt - SOON_MS), false);
 });
