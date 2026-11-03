@@ -122,9 +122,10 @@ test("Tartinée express : moins de 2 s", () => {
   assert.ok(has("express"));
 });
 
-test("parties comptées par le serveur : Boulangerie à 50", () => {
+test("parties comptées par le serveur : Boulangerie à 50, rattrapée sans être portée (sinon la tenue du compte est effacée partout)", () => {
   A.onBoard({ me: { best: 0, pcBest: 0, runs: 50 }, count: 1, eventCount: 0, pcCount: 0 });
   assert.ok(has("runs50") && !has("runs100"));
+  assert.ok(heardOf("runs50").every((h) => h.synced));
 });
 
 test("Ouaf : couteau à la pâtée pour chien", () => {
@@ -162,6 +163,23 @@ test("Tartine d'or : 1er d'au moins 10 joueurs, jamais si retiré", () => {
   assert.ok(!has("eventWin"));
   A.onBoard(board({ eventRank: 1 }, 10));
   assert.ok(has("eventWin"));
+  assert.deepEqual(heardOf("eventWin"), [{ id: "eventWin", synced: true }]);
+});
+
+test("Tartine d'or gagnée par la partie qui vient de finir : portée tout de suite", async () => {
+  const saved = localStorage.getItem(KEYS.achievements);
+  localStorage.removeItem(KEYS.achievements);
+  try {
+    const B = await import("../../public/js/app/achievements.js?neuf");
+    const got = [];
+    B.onUnlock((a, synced) => got.push({ id: a.id, synced }));
+    B.afterSubmit({ eventRank: 1, eventCount: 9, rank: 2, count: 50 });
+    assert.ok(!B.has("eventWin"));
+    B.afterSubmit({ eventRank: 1, eventCount: 10 });
+    assert.deepEqual(got.filter((h) => h.id === "eventWin"), [{ id: "eventWin", synced: false }]);
+  } finally {
+    localStorage.setItem(KEYS.achievements, saved);
+  }
 });
 
 test("Dans le top : top 10 de la soirée, pas sur une erreur", () => {

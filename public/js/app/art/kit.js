@@ -1,4 +1,4 @@
-export const own = (map, key) => (Object.hasOwn(map, key) ? map[key] : null);
+export const own = (map, key) => (Object.prototype.hasOwnProperty.call(map, key) ? map[key] : null);
 
 export function rr(ctx, x, y, w, h, r) {
   if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);

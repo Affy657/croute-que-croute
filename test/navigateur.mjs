@@ -192,6 +192,18 @@ try {
     await shown("hud");
     if (!(await $("#hudBest").textContent()).startsWith("Entraînement")) throw new Error("pas en entraînement");
   });
+  await step("Infos ouvert après un entraînement : Espace ne relance pas l'entraînement", async () => {
+    await shown("over", RUN_MS);
+    await wait(600);
+    await click("infoBtn");
+    await shown("info");
+    await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
+    await page.keyboard.press("Space");
+    await wait(500);
+    if (!(await $("#info").isVisible()) || (await $("#hud").isVisible())) throw new Error("Infos fermé par Espace, entraînement relancé");
+    await click("infoBack");
+    await shown("over");
+  });
   await step("écran géant sans soirée proche : une demande par minute, pas toutes les 2 s", async () => {
     const context = await browser.newContext();
     const other = await context.newPage();
@@ -256,6 +268,23 @@ try {
     await row.locator("button", { hasText: "Réintégrer" }).click();
     await admin.waitForFunction((p) => [...document.querySelectorAll("#players li:not(.out)")].some((li) => li.textContent.includes(p)), pseudo, { timeout: WAIT_MS });
   });
+  await step("écran géant : à l'heure du début, la soirée s'affiche tout de suite, pas « Début dans 0:00 »", async () => {
+    const headers = { "content-type": "application/json", "x-app-version": "dev", "x-admin-key": KEY };
+    const opensAt = Date.now() + 4000;
+    const made = await fetch(BASE + "/api/admin/events", { method: "POST", headers, body: JSON.stringify({ name: "Soirée qui commence", opensAt, closesAt: opensAt + 3600000 }) });
+    if (!made.ok) throw new Error("soirée pas créée : " + made.status);
+    const other = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    watch(other);
+    try {
+      await other.goto(BASE + "/ecran");
+      await other.waitForFunction(() => document.getElementById("countdown").textContent.startsWith("Début dans"), null, { timeout: WAIT_MS });
+      await wait(Math.max(0, opensAt - Date.now()));
+      await other.waitForFunction(() => document.getElementById("title").textContent === "Soirée qui commence", null, { timeout: 4000 });
+    } finally {
+      await other.close();
+      await fetch(BASE + "/api/admin/events/current", { method: "PATCH", headers, body: JSON.stringify({ opensAt: Date.now() - 3600000, closesAt: Date.now() - 60000 }) });
+    }
+  });
   await step("admin : créer une soirée", async () => {
     await admin.locator("#newEventBtn").click();
     await admin.fill("#eventNameInput", "Soirée du navigateur");
@@ -299,6 +328,34 @@ try {
     if (!sockets) throw new Error("pas de WebSocket ouvert");
     if (took > 1500) throw new Error(`record affiché en ${took} ms`);
     if (asks > 3) throw new Error(`${asks} relectures pour 8 inscriptions en 1 s`);
+  });
+  await step("écran géant : « Nouveau n°1 » pour un vrai record, pas pour un n°1 retiré puis réintégré", async () => {
+    const other = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    watch(other);
+    try {
+      await other.goto(BASE + "/ecran");
+      await other.waitForFunction(() => document.getElementById("title").textContent === "Soirée du navigateur", null, { timeout: WAIT_MS });
+      await wait(1000);
+      const headers = { "content-type": "application/json", "x-app-version": "dev" };
+      const admin = { ...headers, "x-admin-key": KEY };
+      const name = "Roi" + hex(5);
+      const { token } = await (await fetch(BASE + "/api/join", { method: "POST", headers, body: JSON.stringify({ pseudo: name, clientId: hex(32) }) })).json();
+      const auth = { ...headers, authorization: "Bearer " + token };
+      const { runId } = await (await fetch(BASE + "/api/runs", { method: "POST", headers: auth, body: "{}" })).json();
+      await fetch(BASE + "/api/runs/" + runId, { method: "POST", headers: auth, body: JSON.stringify({ score: 900 }) });
+      await other.locator("#crownName", { hasText: name }).waitFor({ timeout: WAIT_MS });
+      await other.waitForFunction(() => document.getElementById("crown").hidden, null, { timeout: 10000 });
+      const row = other.locator("#list li", { hasText: name }).first();
+      const id = await row.getAttribute("data-id");
+      await fetch(BASE + `/api/admin/players/${id}/ban`, { method: "POST", headers: admin, body: JSON.stringify({ banned: true }) });
+      await row.waitFor({ state: "detached", timeout: WAIT_MS });
+      await fetch(BASE + `/api/admin/players/${id}/ban`, { method: "POST", headers: admin, body: JSON.stringify({ banned: false }) });
+      await other.locator("#list li", { hasText: name }).first().waitFor({ timeout: WAIT_MS });
+      await wait(500);
+      if (!(await other.locator("#crown").isHidden())) throw new Error("« Nouveau n°1 » fêté pour un joueur réintégré");
+    } finally {
+      await other.close();
+    }
   });
   await step("écran géant sans WebSocket : le secours affiche un record, puis enlève un joueur retiré", async () => {
     const other = await browser.newPage({ viewport: { width: 1280, height: 720 } });

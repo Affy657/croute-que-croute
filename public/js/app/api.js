@@ -7,7 +7,7 @@ import { openOf, recentOf, upcomingOf, lateFor } from "../shared/banner.js";
 
 const RELOAD_GAP = 15000;
 const UPDATED = "Partie pas comptée : le jeu a été mis à jour, il se recharge quand tu rejoues.";
-const SEND_TRIES = 3, SEND_GAP_MS = 1500, WAIT_GAP_MS = 5000, WAIT_MS = 120000, SEND_TIMEOUT_MS = 8000, CALL_TIMEOUT_MS = 10000;
+const SEND_TRIES = 3, SEND_GAP_MS = 1500, WAIT_GAP_MS = 5000, WAIT_MS = 120000, SEND_TIMEOUT_MS = 8000, CALL_TIMEOUT_MS = 10000, RESUME_RETRY_MS = 3000;
 
 export const reason = (e, offline = "Pas de réseau, réessaie.") => (e.status ? e.message : offline);
 export const badInput = (e) => [400, 404, 409].includes(e.status);
@@ -24,7 +24,7 @@ if (LOCAL) {
 
 export const net = { token: store.get(KEYS.playerToken), board: null, offset: 0, online: true, updatePending: false };
 let localBest = parseInt(store.get(KEYS.localBest) || "0", 10) || 0, saved = readBests();
-let boardAsked = 0, boardShown = 0, lastDevice = null, resumed = false;
+let boardAsked = 0, boardShown = 0, lastDevice = null, resumed = false, resuming = null, retryTimer = null;
 const listeners = { board: [], update: [], result: [] };
 
 function readBests() {
@@ -103,17 +103,21 @@ export function saveLocalBest(score, scope) {
 }
 
 async function resume() {
-  resumed = true;
   try {
     const r = await call("POST", "/api/resume", null, SEND_TIMEOUT_MS);
+    resumed = true;
     if (r.token && !net.token) setToken(r.token);
   } catch (e) {
-    if (!e.status) resumed = false;
+    if (e.status && e.status < 500 && e.status !== 408 && e.status !== 429) resumed = true;
   }
 }
 
+const resumeOnce = () => resuming || (resuming = resume().finally(() => { resuming = null; }));
+
+export const joinReady = () => resumed && !net.token;
+
 export async function refreshBoard() {
-  if (!net.token && !resumed) await resume();
+  if (!net.token && !resumed) await resumeOnce();
   const asked = ++boardAsked, token = net.token;
   try {
     const b = await call("GET", "/api/board");
@@ -127,6 +131,12 @@ export async function refreshBoard() {
     if (b.version && b.version !== VERSION) requestUpdate();
   } catch (e) {
     net.online = false;
+  }
+  if (!net.token && !resumed && !retryTimer) {
+    retryTimer = setTimeout(() => {
+      retryTimer = null;
+      refreshBoard();
+    }, RESUME_RETRY_MS);
   }
   emit("board");
 }

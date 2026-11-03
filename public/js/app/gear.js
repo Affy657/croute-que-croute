@@ -2,6 +2,7 @@ import { store, KEYS } from "../shared/store.js";
 import { GEAR, SLOTS } from "../shared/palette.js";
 import { ACHIEVEMENTS, has } from "./achievements.js";
 import { LOCAL } from "../shared/local.js";
+import { own } from "./art/kit.js";
 
 const listeners = [];
 const SOURCE = Object.fromEntries(ACHIEVEMENTS.filter((a) => a.gear).map((a) => [a.gear, a.id]));
@@ -32,7 +33,7 @@ export function chooseGear(slot, kind) {
 }
 
 export function setOutfit(look) {
-  for (const slot of Object.keys(KEY)) store.set(KEY[slot], Object.hasOwn(GEAR, look[slot]) && GEAR[look[slot]].slot === slot ? look[slot] : null);
+  for (const slot of Object.keys(KEY)) store.set(KEY[slot], own(GEAR, look[slot])?.slot === slot ? look[slot] : null);
 }
 
 export function stepGear(slot, dir) {

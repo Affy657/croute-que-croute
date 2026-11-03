@@ -26,6 +26,7 @@ export interface Ranked {
   id: string;
   pseudo: string;
   best: number;
+  at?: number;
 }
 
 export interface EventView {
@@ -36,6 +37,7 @@ export interface EventView {
 
 const CACHE_MS = 10000;
 const EVENT_GENERAL_MS = 60000;
+const LOAD_MS = 5000;
 export const RECENT_MS = 12 * 3600 * 1000;
 const GENERAL_LIMIT = 1000;
 const CACHE_KEEP = 300;
@@ -45,7 +47,7 @@ const above = ({ best, at }: { best: string; at: string }) => `banned = 0 AND ${
 
 let eventsCache: { at: number; rows: EventRow[] } | null = null;
 const rankingCache = new Map<string, { at: number; value: unknown }>();
-const loading = new Map<string, Promise<unknown>>();
+const loading = new Map<string, { at: number; promise: Promise<unknown> }>();
 let generation = 0;
 
 export async function events(env: Env, now = Date.now()): Promise<EventView> {
@@ -102,7 +104,7 @@ export function cached<T>(key: string, maxAge: number, load: () => Promise<T>): 
   const hit = rankingCache.get(key);
   if (hit && now - hit.at < maxAge) return Promise.resolve(hit.value as T);
   const pending = maxAge > 0 ? loading.get(key) : undefined;
-  if (pending) return pending as Promise<T>;
+  if (pending && now - pending.at < LOAD_MS) return pending.promise as Promise<T>;
   const gen = generation;
   const loaded = load()
     .then((value) => {
@@ -116,9 +118,9 @@ export function cached<T>(key: string, maxAge: number, load: () => Promise<T>): 
       return value;
     })
     .finally(() => {
-      if (loading.get(key) === loaded) loading.delete(key);
+      if (loading.get(key)?.promise === loaded) loading.delete(key);
     });
-  if (maxAge > 0) loading.set(key, loaded);
+  if (maxAge > 0) loading.set(key, { at: now, promise: loaded });
   return loaded;
 }
 

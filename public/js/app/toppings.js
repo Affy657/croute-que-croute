@@ -1,6 +1,7 @@
 import { store, KEYS } from "../shared/store.js";
 import { SPREADS } from "../shared/palette.js";
 import { LOCAL } from "../shared/local.js";
+import { own } from "./art/kit.js";
 
 const listeners = [];
 
@@ -41,7 +42,7 @@ export function addToppings(list) {
   for (const fn of listeners) fn(chosen(), true);
 }
 
-export const setTopping = (kind) => store.set(KEYS.topping, Object.hasOwn(SPREADS, kind) ? kind : null);
+export const setTopping = (kind) => store.set(KEYS.topping, own(SPREADS, kind) ? kind : null);
 
 export function chooseTopping(kind) {
   if (!unlocked(kind)) return;
