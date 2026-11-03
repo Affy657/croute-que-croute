@@ -653,7 +653,7 @@ try {
     if (asks > 3) throw new Error(`${asks} relectures pour 8 inscriptions en 1 s`);
   });
   await step("écran géant : « Nouveau n°1 » pour un vrai record, même enregistré pendant la lecture du classement d'avant, pas pour un n°1 retiré puis réintégré", async () => {
-    const other = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    const other = await browser.newPage({ viewport: { width: 1280, height: 720 }, serviceWorkers: "block" });
     watch(other);
     await other.route((url) => url.pathname === "/api/ecran", async (route) => {
       const res = await route.fetch();
