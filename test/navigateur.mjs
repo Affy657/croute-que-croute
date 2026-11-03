@@ -376,9 +376,14 @@ try {
     if (took > 1500) throw new Error(`record affiché en ${took} ms`);
     if (asks > 3) throw new Error(`${asks} relectures pour 8 inscriptions en 1 s`);
   });
-  await step("écran géant : « Nouveau n°1 » pour un vrai record, pas pour un n°1 retiré puis réintégré", async () => {
+  await step("écran géant : « Nouveau n°1 » pour un vrai record, même enregistré pendant la lecture du classement d'avant, pas pour un n°1 retiré puis réintégré", async () => {
     const other = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     watch(other);
+    await other.route((url) => url.pathname === "/api/ecran", async (route) => {
+      const res = await route.fetch();
+      const body = await res.json();
+      await route.fulfill({ response: res, json: { ...body, now: body.now + 60000 } });
+    });
     try {
       await other.goto(BASE + "/ecran");
       await other.waitForFunction(() => document.getElementById("title").textContent === "Soirée du navigateur", null, { timeout: WAIT_MS });
