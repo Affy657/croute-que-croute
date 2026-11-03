@@ -76,7 +76,7 @@ try {
     const seen = await page.evaluate(() => new Promise((done) => {
       const draw = CanvasRenderingContext2D.prototype.drawImage, heights = new Map();
       CanvasRenderingContext2D.prototype.drawImage = function (img, x, y, ...rest) {
-        if (this.canvas.id === "cv" && img instanceof HTMLCanvasElement) {
+        if (this.canvas.id === "cv" && img instanceof HTMLCanvasElement && this.getTransform().isIdentity) {
           if (!heights.has(img)) heights.set(img, []);
           heights.get(img).push(y);
         }
