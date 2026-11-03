@@ -24,7 +24,7 @@ if (LOCAL) {
 
 export const net = { token: store.get(KEYS.playerToken), board: null, offset: 0, online: true, updatePending: false };
 let localBest = parseInt(store.get(KEYS.localBest) || "0", 10) || 0, saved = readBests();
-let boardAsked = 0, boardShown = 0, lastDevice = null, resumed = false, resuming = null, retryTimer = null;
+let boardAsked = 0, boardShown = 0, lastDevice = null, resumed = false, resuming = null, retryTimer = null, runBests = {};
 const listeners = { board: [], update: [], result: [] };
 
 function readBests() {
@@ -77,10 +77,10 @@ export const myScope = () => (onPc() ? "pc" : isOpen() ? "event" : "general");
 
 export function standing(scope = myScope()) {
   if (!registered()) return { best: net.token && saved ? (scope === "pc" ? saved.pcBest : saved.best) : localBest, rank: null, count: 0 };
-  const { me } = net.board;
-  if (scope === "event") return { best: me.eventBest || 0, rank: me.eventRank, count: net.board.eventCount, rival: me.eventRival };
-  if (scope === "pc") return { best: me.pcBest || 0, rank: me.pcRank, count: net.board.pcCount, rival: me.pcRival };
-  return { best: me.best, rank: me.rank, count: net.board.count, rival: me.rival };
+  const { me } = net.board, mine = runBests[scope] || 0;
+  if (scope === "event") return { best: Math.max(me.eventBest || 0, mine), rank: me.eventRank, count: net.board.eventCount, rival: me.eventRival };
+  if (scope === "pc") return { best: Math.max(me.pcBest || 0, mine), rank: me.pcRank, count: net.board.pcCount, rival: me.pcRival };
+  return { best: Math.max(me.best, mine), rank: me.rank, count: net.board.count, rival: me.rival };
 }
 
 export const knownBest = () => standing().best;
@@ -91,7 +91,10 @@ export function leader(scope = myScope()) {
 }
 
 export function saveLocalBest(score, scope) {
-  if (registered()) return;
+  if (registered()) {
+    runBests[scope] = Math.max(runBests[scope] || 0, score);
+    return;
+  }
   if (net.token && saved) {
     const key = scope === "pc" ? "pcBest" : "best";
     if (score > saved[key]) keepBests({ ...saved, [key]: score });
@@ -143,6 +146,7 @@ export async function refreshBoard() {
 
 function setToken(token) {
   net.token = token;
+  runBests = {};
   store.set(KEYS.playerToken, token);
 }
 
@@ -173,7 +177,8 @@ export const newLinkCode = () => call("POST", "/api/me/link");
 export const logoutOthers = () => call("DELETE", "/api/me/devices");
 
 export async function rename(pseudo) {
-  await call("PATCH", "/api/me", { pseudo });
+  const r = await call("PATCH", "/api/me", { pseudo });
+  if (net.board && net.board.me && r && r.pseudo) net.board.me.pseudo = r.pseudo;
   await refreshBoard();
 }
 

@@ -612,6 +612,7 @@ for (const name of ["pointerup", "touchend", "click", "keydown"]) {
 document.addEventListener("visibilitychange", () => {
   if (document.hidden && S.mode === "play") {
     S.held = true;
+    input.reset();
     ui.holdHint.hidden = false;
   }
   audio.pauseForBackground(document.hidden || S.held);

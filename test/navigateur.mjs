@@ -176,6 +176,53 @@ try {
     await click("closeBtn");
     await shown("menu");
   });
+  const apiHeaders = { "content-type": "application/json", "x-app-version": "dev" };
+  const joinApi = async (name) => (await (await fetch(BASE + "/api/join", { method: "POST", headers: apiHeaders, body: JSON.stringify({ pseudo: name, clientId: hex(32) }) })).json()).token;
+  const codeOf = async (tok) => (await (await fetch(BASE + "/api/me/link", { method: "POST", headers: { ...apiHeaders, authorization: "Bearer " + tok } })).json()).code;
+  const freshPage = async (token) => {
+    const context = await browser.newContext(SAFARI ? devices["iPhone 13"] : { viewport: { width: 390, height: 844 } });
+    await context.addInitScript((t) => {
+      localStorage.setItem("cv-install-asked", "1");
+      if (t) localStorage.setItem("cv-token", t);
+    }, token);
+    const p = await context.newPage();
+    watch(p);
+    return { context, p };
+  };
+  await step("code de liaison scanné sur un appareil dont le compte revient par le cookie : « Réunir » proposé", async () => {
+    const kept = await joinApi("Cookie" + hex(4)), code = await codeOf(await joinApi("Lien" + hex(4)));
+    const { context, p } = await freshPage(null);
+    try {
+      await p.route("**/api/resume", async (route) => {
+        await wait(300);
+        await route.fulfill({ json: { token: kept } });
+      });
+      await p.goto(BASE + "/#lier=" + code);
+      await p.locator("#mergeAsk").waitFor({ state: "visible", timeout: WAIT_MS });
+    } finally {
+      await context.close();
+    }
+  });
+  await step("fusion faite mais réponse perdue : « Comptes réunis », pas « Pas de réseau »", async () => {
+    const code = await codeOf(await joinApi("Garde" + hex(4)));
+    const { context, p } = await freshPage(await joinApi("Part" + hex(4)));
+    try {
+      await p.goto(BASE + "/");
+      await p.locator("#settingsBtn").click({ timeout: WAIT_MS });
+      await p.locator("#mergeBtn").click({ timeout: WAIT_MS });
+      await p.fill("#mergeInput", code);
+      await p.locator("#mergeForm button").click();
+      await p.locator("#mergeAsk").waitFor({ state: "visible", timeout: WAIT_MS });
+      await p.route("**/api/link", async (route) => {
+        await route.fetch();
+        await route.abort();
+      });
+      await p.locator("#mergeYes").click();
+      await p.waitForFunction(() => document.getElementById("mergeNote").textContent.startsWith("Comptes réunis"), null, { timeout: WAIT_MS });
+    } finally {
+      await context.close();
+    }
+  });
   await step("Succès : la liste s'affiche, puis retour", async () => {
     await click("menuAch");
     await shown("ach");

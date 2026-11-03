@@ -12,7 +12,7 @@ const NET_MS = 3000;
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).catch(() => {}));
+  event.waitUntil(caches.open(CACHE).then((cache) => Promise.all(SHELL.map((url) => cache.add(url).catch(() => cache.add(url)).catch(() => {})))).catch(() => {}));
 });
 
 self.addEventListener("activate", (event) => {
