@@ -142,7 +142,7 @@ function nights() {
 function account() {
   return fold("Compte", null, () => body(bullets(
     "Pas de mot de passe : ton compte est gardé sur ton téléphone.",
-    "Pour jouer ailleurs : Paramètres, Autre appareil, Afficher mon code. Sur l'autre appareil, scanne le QR ou touche « J'ai déjà un compte » et tape le code.",
+    "Pour jouer ailleurs : Paramètres, Autre appareil, « Mon code ». Sur l'autre appareil, scanne le QR ou touche « J'ai déjà un compte » et tape le code.",
     "Succès et garnitures te suivent partout. La tenue portée et les réglages restent sur chaque appareil.",
     "Deux comptes ? « J'ai un code » les réunit en un seul.",
     "Quelqu'un d'autre est sur ton compte ? « Déconnecter les autres » le sort."
