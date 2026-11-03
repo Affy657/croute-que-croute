@@ -4,23 +4,21 @@ import { rain, bounce } from "../app/party.js";
 import { timeout } from "../shared/timeout.js";
 import { VERSION } from "../version.js";
 
-const POLL_MS = 10000, QUIET_POLL_MS = 60000, OFFLINE_MISSES = 2, FETCH_MS = 8000, ROWS = 10, FEED_ROWS = 4, IDLE_MS = 3000, CROWN_MS = 6000;
+const FAST_POLL_MS = 2000, SAFE_POLL_MS = 60000, QUIET_POLL_MS = 60000, OFFLINE_MISSES = 2, FETCH_MS = 8000, ROWS = 10, FEED_ROWS = 6, IDLE_MS = 3000, CROWN_MS = 6000;
+const LAST_MS = 60000, LONG_WIN = 16, MOVE_MS = 700, PING_MS = 25000, PONG_MS = 10000, RETRY_MS = [1000, 2000, 5000, 10000, 30000];
 const $ = (id) => document.getElementById(id);
-let board = null, offset = 0, shown = null, idleTimer = null, lock = null, seen = null, crownTimer = null, busy = false, stale = false;
-let lastOk = 0, lastAsk = 0, misses = 0;
+const calm = matchMedia("(prefers-reduced-motion: reduce)");
+let board = null, offset = 0, shown = null, idleTimer = null, lock = null, seen = null, crownTimer = null, busy = false, again = false, stale = false;
+let lastOk = 0, lastAsk = 0, misses = 0, ended = null;
+let socket = null, live = false, tries = 0, retryTimer = null, pingTimer = null, pongTimer = null;
 
 document.documentElement.dataset.version = VERSION;
 const now = () => Date.now() + offset;
-
-function view() {
-  const ev = board.event;
-  return ev
-    ? { title: ev.name, top: board.eventTop, count: board.eventCount, ev }
-    : { title: "Classement général", top: board.top, count: board.count, ev: null };
-}
+const title = () => (board.event ? board.event.name : "Classement général");
 
 function row(r) {
   const li = document.createElement("li");
+  li.dataset.id = r.id;
   for (const [cls, text] of [["pos", String(r.rank)], ["name", r.pseudo], ["val", fmtCs(r.best)]]) {
     const span = document.createElement("span");
     span.className = cls;
@@ -41,12 +39,20 @@ function crown(r) {
   crownTimer = setTimeout(() => { el.hidden = true; }, CROWN_MS);
 }
 
+function slide(rows, before) {
+  for (const li of rows) {
+    const was = before.get(li.dataset.id);
+    if (was === undefined) continue;
+    const dy = was - li.getBoundingClientRect().top;
+    if (Math.abs(dy) > 1) li.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: MOVE_MS, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
+  }
+}
+
 function render() {
-  const v = view();
-  const top = v.top.slice(0, ROWS);
-  $("title").textContent = v.title;
+  const top = board.top.slice(0, ROWS), name = title();
+  const before = new Map([...$("list").children].map((li) => [li.dataset.id, li.getBoundingClientRect().top]));
   const rows = top.map(row);
-  if (shown && shown.title === v.title) {
+  if (shown && shown.title === name) {
     top.forEach((r, i) => {
       if (!shown.bests.has(r.best)) rows[i].classList.add("up");
     });
@@ -57,10 +63,11 @@ function render() {
       rain();
     }
   }
-  shown = { title: v.title, first: top[0] || null, bests: new Set(top.map((r) => r.best)) };
+  shown = { title: name, first: top[0] || null, bests: new Set(top.map((r) => r.best)) };
   $("list").replaceChildren(...rows);
+  if (!calm.matches) slide(rows, before);
   $("empty").hidden = rows.length > 0;
-  $("players").textContent = v.count ? v.count + (v.count > 1 ? " joueurs" : " joueur") : "";
+  $("players").textContent = board.count ? board.count + (board.count > 1 ? " joueurs" : " joueur") : "";
   tick();
 }
 
@@ -73,18 +80,37 @@ function setCountdown(label, ms) {
   el.hidden = false;
 }
 
+function celebrate(t) {
+  const ev = board.event, over = !!(ev && t >= ev.closesAt);
+  $("list").classList.toggle("over", over);
+  if (over && ended === false) {
+    const first = $("list").firstElementChild;
+    if (first) bounce(first);
+    rain();
+  }
+  ended = over;
+}
+
 function tick() {
   const off = $("offline");
   off.hidden = misses < OFFLINE_MISSES;
   off.textContent = board ? "Pas de réseau : classement de " + hourOf(lastOk) : "Pas de réseau";
   if (!board) return;
   const el = $("countdown"), t = now(), s = screenBanner(board, t);
+  const hot = !!(s && s.final), win = !!(s && s.win);
+  $("title").textContent = title();
+  el.classList.toggle("final", hot);
+  el.classList.toggle("last", hot && s.target - t <= LAST_MS);
+  el.classList.toggle("win", win);
+  el.classList.toggle("long", win && s.text.length > LONG_WIN);
+  document.body.classList.toggle("hot", hot || win);
   if (!s) el.hidden = true;
   else if (s.label) setCountdown(s.label, s.target - t);
   else {
     el.textContent = s.text;
     el.hidden = false;
   }
+  celebrate(t);
 }
 
 function feedLine(item) {
@@ -105,6 +131,7 @@ function renderFeed(items) {
   });
   seen = new Set(keys);
   $("feed").replaceChildren(...rows);
+  $("live").hidden = rows.length === 0;
 }
 
 async function grab(path) {
@@ -118,24 +145,34 @@ function reloadSoon() {
   if (!document.fullscreenElement) location.reload();
 }
 
-async function refresh() {
-  if (busy) return;
+async function refresh(full) {
+  if (busy) {
+    if (full) again = true;
+    return;
+  }
   busy = true;
   lastAsk = Date.now();
-  const [next, live] = await Promise.allSettled([grab("/api/board"), grab("/api/feed")]);
+  const next = await grab("/api/ecran" + (!full && board ? "?v=" + encodeURIComponent(board.stamp) : "")).catch(() => null);
   busy = false;
-  if (next.status === "fulfilled") {
+  if (next) {
     lastOk = Date.now();
     misses = 0;
   } else misses++;
-  tick();
-  if (next.status === "fulfilled" && (!board || next.value.now >= board.now)) {
-    if (board && next.value.version !== board.version) reloadSoon();
-    board = next.value;
-    offset = board.now - Date.now();
-    render();
+  if (next && (!board || next.now >= board.now)) {
+    if (board && next.version !== board.version) reloadSoon();
+    offset = next.now - Date.now();
+    if (next.same) board = { ...board, now: next.now, event: next.event, next: next.next };
+    else {
+      board = next;
+      render();
+      renderFeed(next.feed);
+    }
   }
-  if (live.status === "fulfilled") renderFeed(live.value.items);
+  tick();
+  if (again) {
+    again = false;
+    refresh(true);
+  }
 }
 
 function lively() {
@@ -144,9 +181,68 @@ function lively() {
   return !!(ev && t < ev.finalAt) || !!(next && next.opensAt - t < SOON_MS);
 }
 
+function quiet() {
+  clearInterval(pingTimer);
+  clearTimeout(pongTimer);
+}
+
+function drop(ws) {
+  if (socket !== ws) return;
+  socket = null;
+  live = false;
+  quiet();
+  if (document.hidden || !lively()) return;
+  retryTimer = setTimeout(() => {
+    retryTimer = null;
+    if (!document.hidden && lively()) connect();
+  }, RETRY_MS[Math.min(tries++, RETRY_MS.length - 1)]);
+}
+
+function connect() {
+  if (socket || retryTimer || !window.WebSocket) return;
+  const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/api/live");
+  socket = ws;
+  ws.onopen = () => {
+    live = true;
+    tries = 0;
+    refresh(true);
+    quiet();
+    pingTimer = setInterval(() => {
+      ws.send("ping");
+      clearTimeout(pongTimer);
+      pongTimer = setTimeout(() => {
+        drop(ws);
+        ws.close();
+      }, PONG_MS);
+    }, PING_MS);
+  };
+  ws.onmessage = (e) => {
+    if (e.data === "pong") clearTimeout(pongTimer);
+    else if (!document.hidden) refresh(true);
+  };
+  ws.onclose = () => drop(ws);
+  ws.onerror = () => ws.close();
+}
+
+function disconnect() {
+  clearTimeout(retryTimer);
+  retryTimer = null;
+  const ws = socket;
+  if (!ws) return;
+  drop(ws);
+  ws.close();
+}
+
 function poll() {
-  if (document.hidden || (!lively() && Date.now() - lastAsk < QUIET_POLL_MS)) return;
-  refresh();
+  if (document.hidden) return;
+  const since = Date.now() - lastAsk;
+  if (!lively()) {
+    disconnect();
+    if (since >= QUIET_POLL_MS) refresh(true);
+    return;
+  }
+  connect();
+  if (live ? since >= SAFE_POLL_MS : since >= FAST_POLL_MS) refresh(live);
 }
 
 async function keepAwake() {
@@ -174,13 +270,16 @@ document.addEventListener("fullscreenchange", () => {
   if (stale && !document.fullscreenElement) location.reload();
 });
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) return;
+  if (document.hidden) {
+    disconnect();
+    return;
+  }
   if (lock === null) keepAwake();
-  refresh();
+  refresh(true);
 });
 document.addEventListener("pointermove", wake);
 wake();
 keepAwake();
-refresh();
-setInterval(poll, POLL_MS);
+refresh(true);
+setInterval(poll, FAST_POLL_MS);
 setInterval(tick, 1000);

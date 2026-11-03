@@ -5,12 +5,17 @@ import * as admin from "./routes/admin";
 import * as link from "./routes/link";
 import * as diag from "./routes/diag";
 import * as errors from "./routes/errors";
+import { connect } from "./live";
+
+export { Live } from "./live";
 
 const ID = "([\\w-]{1,64})";
 
 const routes: Route[] = [
   { method: "GET", path: "/api/board", run: player.board },
   { method: "GET", path: "/api/feed", run: player.feed },
+  { method: "GET", path: "/api/ecran", run: player.screen },
+  { method: "GET", path: "/api/live", run: connect },
   { method: "POST", path: "/api/join", run: player.join },
   { method: "POST", path: "/api/resume", run: player.resume },
   { method: "PATCH", path: "/api/me", run: player.rename },
@@ -41,9 +46,9 @@ const routes: Route[] = [
 ];
 
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, exec) {
     try {
-      return await dispatch(routes, req, env);
+      return await dispatch(routes, req, env, exec);
     } catch (e) {
       console.error(e);
       return fail(500, "Erreur serveur, réessaie.");

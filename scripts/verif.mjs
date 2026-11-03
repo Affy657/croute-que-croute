@@ -39,7 +39,7 @@ const sw = await get("/sw.js").then((r) => (r.ok ? r.text() : "")).catch(() => "
 const shell = JSON.parse((sw.match(/const SHELL = (\[[\s\S]*?\]);/) || [])[1] || "[]");
 check("cache hors ligne (sw.js) lisible", shell.length > 30, `${shell.length} fichiers`);
 
-const pages = [...new Set([...shell, ...PAGES, "/api/feed"])];
+const pages = [...new Set([...shell, ...PAGES, "/api/feed", "/api/ecran"])];
 const answers = await Promise.all(pages.map((p) => get(p).then((r) => r.status, () => 0)));
 const broken = pages.flatMap((p, i) => (answers[i] === 200 ? [] : [`${p} (${answers[i]})`]));
 check(`les ${pages.length} pages et fichiers répondent`, !broken.length, broken.join(", "));

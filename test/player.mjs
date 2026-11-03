@@ -340,15 +340,55 @@ check("rapport d'erreurs trop gros refusé", r.status === 413, r);
 }
 
 {
+  const until = async (ok, ms = 5000) => {
+    for (const end = Date.now() + ms; Date.now() < end && !ok(); ) await wait(50);
+    return ok();
+  };
+  r = await call("GET", "/api/live");
+  check("direct : sans WebSocket, refusé (426)", r.status === 426, r);
+  const ws = new WebSocket(BASE.replace("http", "ws") + "/api/live"), heard = [];
+  ws.onmessage = (e) => heard.push(String(e.data));
+  await until(() => ws.readyState === 1);
+  check("direct : l'écran se connecte en WebSocket", ws.readyState === 1, ws.readyState);
+  ws.send("ping");
+  check("direct : ping, pong", await until(() => heard.includes("pong")), heard);
+
+  r = await call("GET", "/api/ecran");
+  const before = r.data;
+  check("écran : soirée ouverte, 10 premiers au plus, joueurs, fil et repère", r.status === 200 && before.event.status === "open" && before.event.finalAt === before.event.closesAt + 15000 && Array.isArray(before.top) && before.top.length <= 10 && typeof before.count === "number" && Array.isArray(before.feed) && typeof before.stamp === "string", before);
+  r = await call("GET", "/api/ecran?v=" + encodeURIComponent(before.stamp));
+  check("écran : rien de nouveau, réponse courte", r.status === 200 && r.data.same === true && r.data.stamp === before.stamp && !r.data.top && r.data.event.status === "open", r.data);
+
+  heard.length = 0;
+  const name = "Direct" + hex(4), tok = await joinAs(name);
+  check("direct : nouveau joueur annoncé à l'écran", await until(() => heard.includes("change")), heard);
+  heard.length = 0;
+  r = await call("POST", `/api/runs/${await startRun(tok)}`, { token: tok, body: { score: 1400 } });
+  check("direct : record de soirée annoncé à l'écran", r.data.eventImproved && (await until(() => heard.includes("change"))), [r.data.eventImproved, heard]);
+  r = await call("GET", "/api/ecran?v=" + encodeURIComponent(before.stamp));
+  check("écran : record visible tout de suite, avec le nombre de joueurs et le fil", !r.data.same && r.data.stamp !== before.stamp && r.data.top.some((x) => x.pseudo === name && x.best === 1400) && r.data.count === before.count + 1 && r.data.feed.some((i) => i.kind === "best" && i.pseudo === name), r.data);
+  heard.length = 0;
+  r = await call("POST", `/api/runs/${await startRun(tok)}`, { token: tok, body: { score: 50 } });
+  await wait(800);
+  check("direct : partie sans record, écran pas dérangé", r.status === 200 && !heard.includes("change"), heard);
+  ws.close();
+}
+
+{
   const tokF = await joinAs("Fin" + hex(5)), late = await startRun(tokF);
   await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: Date.now() - 3 * 3600 * 1000, closesAt: Date.now() - 6 * 60 * 1000 } });
   r = await call("POST", `/api/runs/${late}`, { token: tokF, body: { score: 40 } });
-  check("partie finie plus de 5 min après la fin de la soirée : hors soirée", r.status === 200 && r.data.best === 40 && r.data.eventBest === null && !r.data.eventImproved, r.data);
+  check("partie finie 6 min après la fin de la soirée : hors soirée", r.status === 200 && r.data.best === 40 && r.data.eventBest === null && !r.data.eventImproved, r.data);
   r = await call("POST", "/api/admin/events", { key: KEY, body: { name: "Soirée rattrapage", opensAt: Date.now() - 1000, closesAt: Date.now() + 3600 * 1000 } });
-  const inTime = await startRun(tokF);
+  const tooLate = await startRun(tokF);
   await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: Date.now() - 3600 * 1000, closesAt: Date.now() - 60 * 1000 } });
-  r = await call("POST", `/api/runs/${inTime}`, { token: tokF, body: { score: 30 } });
-  check("partie finie moins de 5 min après la fin : compte pour la soirée", r.status === 200 && r.data.eventBest === 30 && r.data.eventImproved, r.data);
+  r = await call("POST", `/api/runs/${tooLate}`, { token: tokF, body: { score: 30 } });
+  check("partie finie 1 min après la fin : hors soirée, la fin est la fin", r.status === 200 && r.data.eventBest === null && !r.data.eventImproved, r.data);
+  r = await call("POST", "/api/admin/events", { key: KEY, body: { name: "Soirée marge", opensAt: Date.now() - 1000, closesAt: Date.now() + 3600 * 1000 } });
+  const inTime = await startRun(tokF);
+  await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: Date.now() - 3600 * 1000, closesAt: Date.now() - 5000 } });
+  r = await call("POST", `/api/runs/${inTime}`, { token: tokF, body: { score: 20 } });
+  check("score arrivé 5 s après la fin (réseau) : compte pour la soirée", r.status === 200 && r.data.eventBest === 20 && r.data.eventImproved, r.data);
 }
 
 {

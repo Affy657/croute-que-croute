@@ -65,6 +65,7 @@ export const registered = () => !!(net.board && net.board.me);
 
 export const openEvent = () => openOf(net.board, serverNow());
 export const isOpen = () => !!openEvent();
+export const pastEvent = () => !!(net.board && net.board.event && serverNow() > net.board.event.finalAt);
 export const recentEvent = () => recentOf(net.board, serverNow());
 export const upcomingEvent = () => upcomingOf(net.board, serverNow());
 

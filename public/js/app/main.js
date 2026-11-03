@@ -40,7 +40,7 @@ const scene = createScene(canvas, document.getElementById("fx"));
 let sim = createSim();
 const S = {
   mode: "menu", clock: 0, dieT: 0, freeze: 0, splat: null, chain: 0, combo: 0, nearAt: -Infinity, train: null, t0: 0,
-  newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general", guess: false, held: false,
+  newBest: false, score: 0, submit: null, run: null, prevRank: null, scope: "general", guess: false, late: false, held: false,
   toast: { x: FW / 2, y: FH * 0.55, tilt: 0, thrust: 0.35, scars: [], spread: chosen(), ...outfit() }, gotToppings: [], menuY: FH * 0.55, menuAt: 0
 };
 let boardTimer = null, wasOpen = null, lastShown = "";
@@ -96,6 +96,8 @@ function die(killer) {
   api.setDevice(device);
   if (device === "pc") S.scope = "pc";
   else if (S.scope === "pc" || S.guess) S.scope = api.isOpen() ? "event" : "general";
+  S.late = S.scope === "event" && api.pastEvent();
+  if (S.late) S.scope = "general";
   input.reset();
   S.score = Math.floor(elapsed() * 100);
   audio.musicRunEnd();
@@ -151,7 +153,7 @@ function start(train = null) {
   const t0 = train ? train.from : 0, y = S.mode === "menu" ? S.toast.y : S.menuY;
   const immortal = () => testing.invincible;
   sim = createSim(Math.random, train ? { only: train.id, t0, y, immortal } : { y, immortal });
-  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, combo: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.myScope(), guess: !api.net.board, held: false });
+  Object.assign(S, { mode: "play", dieT: 0, freeze: 0, splat: null, chain: 0, combo: 0, nearAt: -Infinity, lap: 0, train, t0, newBest: false, score: 0, submit: null, gotToppings: [], scope: api.myScope(), guess: !api.net.board, late: false, held: false });
   Object.assign(S.toast, { x: sim.state.toast.x, y: sim.state.toast.y, tilt: 0, thrust: 0, scars: [] });
   scene.clear();
   ui.menuToast.hidden = true;
@@ -257,7 +259,11 @@ function showOver() {
     setText(ui.overNote, "Envoi…");
     mine.then((r) => {
       if (S.submit !== mine || S.mode !== "over") return;
-      setText(ui.overNote, r.error || "");
+      if (!r.error && S.scope === "event" && r.eventBest === null) {
+        S.scope = "general";
+        S.late = true;
+      }
+      setText(ui.overNote, r.error || (S.late ? "Soirée finie : partie comptée au général" : ""));
       const now = api.standing(S.scope);
       if (r.error) return;
       renderOverStats(S.newBest ? 0 : now.best, now.rank, now.count);
