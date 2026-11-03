@@ -56,6 +56,9 @@ check("admin ne voit pas l'équipe", r.status === 403, r);
 r = await call("POST", "/api/admin/invites", { body: { name: "Intrus", role: "owner" }, token: admin });
 check("admin ne peut pas inviter", r.status === 403, r);
 
+r = await call("POST", "/api/admin/merge", { body: { keep: "Aaaa", from: "Bbbb", confirm: true }, token: admin });
+check("admin ne peut pas réunir deux comptes (propriétaire seulement)", r.status === 403, r);
+
 const oops = { kind: "erreur", message: "TypeError: test admin 12", source: "/js/app/main.js:12:3", stack: "frame@/js/app/main.js:12:3", trail: ["   1.00  clic #play"], device: "390x844 x3", count: 2 };
 const report = (session, errors) => call("POST", "/api/errors", { body: { version: "dev", page: "/", platform: "iPhone", standalone: true, ua: "test", session, errors } });
 await report("a1a1a1a1a1a1a1a1", [oops]);

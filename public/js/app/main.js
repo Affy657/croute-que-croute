@@ -594,7 +594,7 @@ ui.joinForm.addEventListener("submit", async (e) => {
     ui.pseudo.blur();
     maybeSuggest();
   } catch (err) {
-    setText(ui.joinError, api.reason(err));
+    setText(ui.joinError, api.reason(err) + (err.status === 409 ? " C'est toi ? Touche « J'ai déjà un compte »." : ""));
     markInvalid(ui.pseudo, api.badInput(err));
   } finally {
     button.disabled = false;

@@ -40,7 +40,7 @@ export async function createLink({ req, env }: Ctx) {
   return json({ code, expiresAt, qr: qrOf(`${new URL(req.url).origin}/#lier=${code}`) }, 201);
 }
 
-async function mergeInto(env: Env, into: string, from: string) {
+export async function mergeInto(env: Env, into: string, from: string) {
   const { results } = await env.DB.prepare("SELECT id, progress FROM profiles WHERE id IN (?1, ?2)").bind(into, from).all<{ id: string; progress: string | null }>();
   const read = (id: string) => cleanProgress(JSON.parse(results.find((r) => r.id === id)?.progress ?? "{}"))!;
   await env.DB.batch([

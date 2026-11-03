@@ -409,6 +409,7 @@ async function boot() {
   $("who").textContent = me.name + ", " + (me.role === "owner" ? "propriétaire" : "admin");
   $("teamCard").hidden = me.role !== "owner";
   $("errorsCard").hidden = me.role !== "owner";
+  $("mergeCard").hidden = me.role !== "owner";
   show("app");
   await load();
   if (me.role === "owner") await Promise.all([loadTeam(), loadErrorCount()]);
@@ -417,6 +418,23 @@ async function boot() {
     if (!document.hidden) load();
   }, REFRESH_MS);
 }
+
+const summary = (a) => a.pseudo + " (" + (a.best ? fmtCs(a.best) + " s, " : "") + a.runs + (a.runs > 1 ? " parties" : " partie") + ")";
+
+onSubmit("mergeForm", async () => {
+  const pair = { keep: $("mergeKeep").value, from: $("mergeFrom").value };
+  say($("mergeMsg"), "");
+  try {
+    const { keep, from } = await call("POST", "/api/admin/merge", pair);
+    if (!confirm("Réunir " + summary(from) + " dans " + summary(keep) + " ? " + keep.pseudo + " garde tout. " + from.pseudo + " disparaît, c'est définitif.")) return;
+    const r = await call("POST", "/api/admin/merge", { ...pair, confirm: true });
+    $("mergeKeep").value = $("mergeFrom").value = "";
+    say($("mergeMsg"), r.merged + " est réuni dans " + r.pseudo + ".");
+    await load();
+  } catch (err) {
+    say($("mergeMsg"), err.message, true);
+  }
+});
 
 onSubmit("loginForm", async () => {
   try {

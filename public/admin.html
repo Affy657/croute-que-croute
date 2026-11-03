@@ -107,6 +107,19 @@
         <p id="playersMsg" class="msg" hidden></p>
       </section>
 
+      <section id="mergeCard" class="card" hidden>
+        <h2>Réunir deux comptes</h2>
+        <p class="sub">Pour un joueur qui s'est refait un compte. Le premier pseudo reste, avec le meilleur record des deux, toutes les parties et tous les succès. Les appareils des deux comptes restent connectés. Le deuxième pseudo disparaît.</p>
+        <form id="mergeForm" class="form">
+          <label for="mergeKeep">Pseudo à garder</label>
+          <input id="mergeKeep" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+          <label for="mergeFrom">Pseudo à réunir dedans</label>
+          <input id="mergeFrom" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+          <button class="btn" type="submit">Réunir</button>
+        </form>
+        <p id="mergeMsg" class="msg" hidden></p>
+      </section>
+
       <section id="errorsCard" class="card" hidden>
         <h2>Erreurs des joueurs</h2>
         <p id="errorsSummary" class="sub">Ce qui plante chez les joueurs, sans pseudo.</p>

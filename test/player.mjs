@@ -360,6 +360,31 @@ check("admin : classement PC disponible", r.status === 200 && r.data.scope === "
   await call("POST", "/api/link", { token: tokD, body: { code: (await call("POST", "/api/me/link", { token: tokE })).data.code, merge: true } });
   const [merged, other] = await Promise.all([call("GET", "/api/board", { token: tokE }), call("GET", "/api/board", { token: tokG })]);
   check("fusion à égalité : le record le plus ancien garde sa place", merged.data.me.rank < other.data.me.rank && merged.data.me.eventRank < other.data.me.eventRank, [merged.data.me, other.data.me]);
+
+  const keepName = "Gar" + hex(5), fromName = "Ref" + hex(5), [tokK, tokF] = [await joinAs(keepName), await joinAs(fromName)];
+  await play(tokK, 100, "mobile");
+  await play(tokF, 200, "mobile");
+  const merge = (body) => call("POST", "/api/admin/merge", { key: KEY, body });
+  r = await merge({ keep: keepName.toLowerCase(), from: fromName });
+  const left = (await call("GET", "/api/board", { token: tokF })).data.me || {};
+  check("admin, réunir : d'abord un aperçu des deux comptes, sans rien changer", r.status === 200 && r.data.keep.pseudo === keepName && r.data.keep.runs === 1 && r.data.from.pseudo === fromName && r.data.from.best === 200 && left.pseudo === fromName, [r.data, left]);
+  r = await merge({ keep: keepName, from: fromName, confirm: true });
+  check("admin, réunir : comptes réunis après confirmation", r.status === 200 && r.data.pseudo === keepName && r.data.merged === fromName, r.data);
+  const [kept, moved] = await Promise.all([call("GET", "/api/board", { token: tokK }), call("GET", "/api/board", { token: tokF })]);
+  const km = moved.data.me || {};
+  check("admin, réunir : les appareils du compte réuni passent sur le compte gardé, record et parties réunis", !!kept.data.me && km.id === kept.data.me.id && km.pseudo === keepName && km.best === 200 && km.runs === 2, [kept.data.me, km]);
+  r = await call("POST", "/api/join", { body: { pseudo: fromName, clientId: hex(32) } });
+  check("admin, réunir : le pseudo réuni est libre", r.status === 201, r);
+  r = await merge({ keep: keepName, from: "Inconnu" + hex(5), confirm: true });
+  check("admin, réunir : pseudo inconnu = 404", r.status === 404, r);
+  r = await merge({ keep: keepName, from: keepName.toUpperCase(), confirm: true });
+  check("admin, réunir : deux fois le même compte = 400", r.status === 400, r);
+  r = await merge({ keep: keepName });
+  check("admin, réunir : un pseudo manquant = 400", r.status === 400, r);
+  const outName = "Out" + hex(5), tokO = await joinAs(outName);
+  await call("POST", `/api/admin/players/${(await call("GET", "/api/board", { token: tokO })).data.me.id}/ban`, { key: KEY, body: { banned: true } });
+  r = await merge({ keep: keepName, from: outName, confirm: true });
+  check("admin, réunir : compte retiré du classement refusé", r.status === 403, r);
 }
 
 r = await call("POST", "/api/diag", { body: { kind: "test", version: "dev", standalone: false, ua: "test", lines: ["un", "deux"] } });
