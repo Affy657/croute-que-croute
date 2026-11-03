@@ -3,6 +3,7 @@ import { randomToken, sha256, safeEqual } from "../security";
 import { cleanName, cleanRole } from "../validate";
 import { pendingEvent, lastEvent, forgetCaches, type EventRow } from "../db";
 import type { Ctx } from "../router";
+import { tell } from "../live";
 
 const INVITE_MS = 48 * 3600 * 1000;
 const SEEN_MS = 5 * 60 * 1000;
@@ -167,7 +168,7 @@ function eventName(value: unknown) {
   return name && name.length <= 60 ? name : null;
 }
 
-export async function createEvent({ req, env }: Ctx) {
+export async function createEvent({ req, env, exec }: Ctx) {
   const now = Date.now();
   const body = await readJson(req);
   const name = eventName(body.name);
@@ -186,10 +187,11 @@ export async function createEvent({ req, env }: Ctx) {
     return fail(409, "Une soirée est déjà en cours ou prévue. Modifie-la, ou avance sa fin à maintenant.");
   }
   forgetCaches();
+  tell(env, exec);
   return json({ ok: true }, 201);
 }
 
-export async function updateEvent({ req, env }: Ctx) {
+export async function updateEvent({ req, env, exec }: Ctx) {
   const event = await pendingEvent(env);
   if (!event) return fail(404, "Aucune soirée en cours ou prévue.");
   const body = await readJson(req);
@@ -202,14 +204,16 @@ export async function updateEvent({ req, env }: Ctx) {
     .bind(name, opensAt, closesAt, event.id)
     .run();
   forgetCaches();
+  tell(env, exec);
   return json({ ok: true });
 }
 
-export async function ban({ req, env, params }: Ctx) {
+export async function ban({ req, env, params, exec }: Ctx) {
   const banned = (await readJson(req)).banned === true ? 1 : 0;
   const res = await env.DB.prepare("UPDATE profiles SET banned = ? WHERE id = ?").bind(banned, params[0]).run();
   if (!res.meta.changes) return fail(404, "Joueur inconnu.");
   forgetCaches();
+  tell(env, exec);
   return json({ ok: true });
 }
 

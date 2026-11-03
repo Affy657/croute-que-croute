@@ -6,6 +6,7 @@ export interface Ctx {
   env: Env;
   params: string[];
   auth?: AdminAuth;
+  exec?: ExecutionContext;
 }
 
 type Access = "public" | "admin" | "owner";
@@ -24,13 +25,13 @@ function match(route: Route, method: string, pathname: string) {
   return m ? m.slice(1) : null;
 }
 
-export async function dispatch(routes: Route[], req: Request, env: Env) {
+export async function dispatch(routes: Route[], req: Request, env: Env, exec?: ExecutionContext) {
   const { pathname } = new URL(req.url);
   for (const route of routes) {
     const params = match(route, req.method, pathname);
     if (!params) continue;
     const access = route.access ?? "public";
-    const ctx: Ctx = { req, env, params };
+    const ctx: Ctx = { req, env, params, exec };
     if (access !== "public") {
       const auth = await adminAuth(req, env);
       if (auth === "slow") return tooFast();

@@ -169,13 +169,13 @@ try {
     await shown("hud");
     if (!(await $("#hudBest").textContent()).startsWith("Entraînement")) throw new Error("pas en entraînement");
   });
-  await step("écran géant sans soirée proche : une demande par minute, pas toutes les 10 s", async () => {
+  await step("écran géant sans soirée proche : une demande par minute, pas toutes les 2 s", async () => {
     const context = await browser.newContext();
     const other = await context.newPage();
     await other.clock.install();
     let asks = 0;
     other.on("request", (r) => {
-      if (new URL(r.url()).pathname === "/api/board") asks++;
+      if (new URL(r.url()).pathname === "/api/ecran") asks++;
     });
     await other.goto(BASE + "/ecran", { waitUntil: "networkidle" });
     asks = 0;
@@ -241,6 +241,30 @@ try {
     await admin.locator("#eventForm button").click();
     await admin.waitForFunction(() => document.getElementById("eventName").textContent === "Soirée du navigateur", null, { timeout: WAIT_MS });
     if ((await status()) !== "Soirée en cours") throw new Error(await status());
+  });
+  await step("écran géant pendant la soirée : en direct par WebSocket, un record s'affiche tout de suite", async () => {
+    const other = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    watch(other);
+    let sockets = 0;
+    other.on("websocket", (ws) => {
+      if (ws.url().endsWith("/api/live")) sockets++;
+    });
+    await other.goto(BASE + "/ecran");
+    await other.waitForFunction(() => document.getElementById("title").textContent === "Soirée du navigateur", null, { timeout: WAIT_MS });
+    for (let i = 0; i < 50 && !sockets; i++) await wait(100);
+    await wait(500);
+    const headers = { "content-type": "application/json", "x-app-version": "dev" };
+    const name = "Live" + hex(5);
+    const { token } = await (await fetch(BASE + "/api/join", { method: "POST", headers, body: JSON.stringify({ pseudo: name, clientId: hex(32) }) })).json();
+    const auth = { ...headers, authorization: "Bearer " + token };
+    const { runId } = await (await fetch(BASE + "/api/runs", { method: "POST", headers: auth, body: "{}" })).json();
+    const since = Date.now();
+    await fetch(BASE + "/api/runs/" + runId, { method: "POST", headers: auth, body: JSON.stringify({ score: 300 }) });
+    await other.locator("#list li", { hasText: name }).first().waitFor({ timeout: WAIT_MS });
+    const took = Date.now() - since;
+    await other.close();
+    if (!sockets) throw new Error("pas de WebSocket ouvert");
+    if (took > 1500) throw new Error(`record affiché en ${took} ms`);
   });
   await step("admin : fin déjà passée, confirmation demandée, « Annuler » laisse la soirée ouverte", async () => {
     let patched = 0;

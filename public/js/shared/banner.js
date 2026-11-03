@@ -1,6 +1,7 @@
 import { when } from "./format.js";
 
 export const SOON_MS = 24 * 3600 * 1000;
+export const FINAL_MS = 15 * 60 * 1000;
 
 export const openOf = (b, now) => (b && [b.event, b.next].find((e) => e && now >= e.opensAt && now < e.closesAt)) || null;
 
@@ -23,15 +24,14 @@ export function countdown(b, now) {
 
 export function champion(b, now) {
   const e = recentOf(b, now);
-  return e && now >= e.finalAt && b.eventTop[0] ? b.eventTop[0].pseudo : null;
+  return e && b.eventTop[0] ? b.eventTop[0].pseudo : null;
 }
 
 export function screenBanner(b, now) {
-  const ev = b.event, next = b.next, top = ev ? b.eventTop : b.top;
-  if (ev && now < ev.closesAt) return { label: "Fin dans ", target: ev.closesAt };
-  if (ev && now < ev.finalAt) return { label: "Résultats dans ", target: ev.finalAt };
+  const ev = b.event, next = b.next;
+  if (ev && now < ev.closesAt) return { label: "Fin dans ", target: ev.closesAt, final: ev.closesAt - now <= FINAL_MS };
   if (next && next.opensAt - now < SOON_MS) return { label: ev ? "Prochaine soirée dans " : "Début dans ", target: next.opensAt };
   if (next) return { text: "Prochaine soirée " + when(next.opensAt) };
-  if (ev && top[0]) return { text: "Bravo " + top[0].pseudo + " !" };
+  if (ev && b.top[0]) return { text: "Bravo " + b.top[0].pseudo + " !", win: true };
   return null;
 }

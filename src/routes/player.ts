@@ -7,12 +7,13 @@ import {
   type EventRow, type Profile, type Ranked,
 } from "../db";
 import type { Ctx } from "../router";
+import { tell } from "../live";
 
-const GRACE_MS = 5 * 60 * 1000;
+const LATE_MS = 15 * 1000;
 const SLACK_MS = 15000;
 const MAX_SCORE = 15 * 60 * 100;
 const TOP = 50;
-const FEED_MS = 15 * 60 * 1000, FEED_SIZE = 6;
+const FEED_MS = 15 * 60 * 1000, FEED_SIZE = 6, SCREEN_TOP = 10;
 const CARD_MS = 10000, CARD_RECORDS = 10, EXPRESS_CS = 200, SIX_SEVEN_CS = 6700, EVENT_TOP = 10, WIN_MIN = 10, MAX_COMBO = 99;
 const PROGRESS_TRIES = 3;
 const BAD_PSEUDO = "Pseudo de 2 à 16 caractères : lettres, chiffres, espaces, tirets.";
@@ -36,7 +37,7 @@ const keptMobile = (me: Profile): Mark => ({ best: me.best, at: me.best_at, impr
 const keptPc = (me: Profile): Mark => ({ best: me.pc_best, at: me.pc_best_at, improved: false });
 
 const eventInfo = (e: EventRow | null, status: string) =>
-  e ? { name: e.name, opensAt: e.opens_at, closesAt: e.closes_at, finalAt: e.closes_at + GRACE_MS, status } : null;
+  e ? { name: e.name, opensAt: e.opens_at, closesAt: e.closes_at, finalAt: e.closes_at + LATE_MS, status } : null;
 
 const topOf = (list: Ranked[], me: Profile | null) =>
   list.slice(0, TOP).map((row, i) => ({ rank: i + 1, id: row.id, pseudo: row.pseudo, best: row.best, me: me?.id === row.id }));
@@ -102,15 +103,13 @@ interface FeedRow {
   at: number;
 }
 
-export async function feed({ env }: Ctx) {
-  const now = Date.now();
+async function feedItems(env: Env, open: EventRow | null, now: number) {
   const since = now - FEED_MS;
-  const view = await events(env, now);
-  const bests = view.open
+  const bests = open
     ? env.DB.prepare(
         `SELECT p.pseudo, e.best AS score, e.best_at AS at FROM entries e JOIN profiles p ON p.id = e.player_id
          WHERE e.event_id = ?1 AND e.best > 0 AND e.best_at > ?2 AND p.banned = 0 ORDER BY e.best_at DESC LIMIT ?3`,
-      ).bind(view.open.id, since, FEED_SIZE)
+      ).bind(open.id, since, FEED_SIZE)
     : env.DB.prepare(
         `SELECT pseudo, best AS score, best_at AS at FROM profiles INDEXED BY profiles_best_at
          WHERE best > 0 AND best_at > ?1 AND banned = 0 ORDER BY best_at DESC LIMIT ?2`,
@@ -119,16 +118,54 @@ export async function feed({ env }: Ctx) {
     `SELECT pseudo, created_at AS at FROM profiles INDEXED BY profiles_joined WHERE created_at > ?1 AND banned = 0 ORDER BY created_at DESC LIMIT ?2`,
   ).bind(since, FEED_SIZE);
   const [b, j] = await Promise.all([bests.all<FeedRow>(), joins.all<FeedRow>()]);
-  const items = [
+  return [
     ...b.results.map((r) => ({ kind: "best", pseudo: r.pseudo, score: r.score, at: r.at })),
     ...j.results.map((r) => ({ kind: "join", pseudo: r.pseudo, at: r.at })),
   ]
     .sort((x, y) => y.at - x.at)
     .slice(0, FEED_SIZE);
-  return json({ now, items });
 }
 
-export async function join({ req, env }: Ctx) {
+export async function feed({ env }: Ctx) {
+  const now = Date.now();
+  const view = await events(env, now);
+  return json({ now, items: await feedItems(env, view.open, now) });
+}
+
+async function screenTop(env: Env, shown: EventRow | null, during: boolean) {
+  if (!shown) {
+    const general = await generalRanking(env, during);
+    return { list: general.slice(0, SCREEN_TOP), count: await generalCount(env, general) };
+  }
+  const from = "FROM entries e JOIN profiles p ON p.id = e.player_id WHERE e.event_id = ?1 AND e.best > 0 AND p.banned = 0";
+  const [rows, n] = await env.DB.batch([
+    env.DB.prepare(`SELECT p.id, p.pseudo, e.best ${from} ORDER BY e.best DESC, e.best_at ASC LIMIT ?2`).bind(shown.id, SCREEN_TOP),
+    env.DB.prepare(`SELECT COUNT(*) AS n ${from}`).bind(shown.id),
+  ]);
+  return { list: rows.results as Ranked[], count: (n.results[0] as { n: number }).n };
+}
+
+export async function screen({ req, env }: Ctx) {
+  const now = Date.now();
+  const view = await events(env, now);
+  const shown = view.open ?? view.recent;
+  const head = {
+    now,
+    version: env.APP_VERSION,
+    event: view.open ? eventInfo(view.open, "open") : eventInfo(view.recent, "closed"),
+    next: eventInfo(view.next, "upcoming"),
+  };
+  const marks = await (shown
+    ? env.DB.prepare("SELECT (SELECT MAX(best_at) FROM entries WHERE event_id = ?1) AS a, (SELECT MAX(created_at) FROM profiles) AS b").bind(shown.id)
+    : env.DB.prepare("SELECT (SELECT MAX(best_at) FROM profiles) AS a, (SELECT MAX(created_at) FROM profiles) AS b")
+  ).first<{ a: number | null; b: number | null }>();
+  const stamp = `${shown?.id ?? 0}.${marks?.a ?? 0}.${marks?.b ?? 0}`;
+  if (new URL(req.url).searchParams.get("v") === stamp) return json({ ...head, stamp, same: true });
+  const [{ list, count }, items] = await Promise.all([screenTop(env, shown, !!view.open), feedItems(env, view.open, now)]);
+  return json({ ...head, stamp, top: topOf(list, null), count, feed: items });
+}
+
+export async function join({ req, env, exec }: Ctx) {
   if (outdated(req, env)) return updateRequired();
   const body = await readJson(req);
   const pseudo = cleanPseudo(body.pseudo);
@@ -160,10 +197,11 @@ export async function join({ req, env }: Ctx) {
     if (String(e).includes("UNIQUE")) return fail(409, "Ce pseudo est déjà pris.");
     throw e;
   }
+  tell(env, exec);
   return json({ token, pseudo }, 201);
 }
 
-export async function rename({ req, env }: Ctx) {
+export async function rename({ req, env, exec }: Ctx) {
   if (outdated(req, env)) return updateRequired();
   const me = await findProfile(req, env);
   if (!me) return fail(401, "Joueur inconnu.");
@@ -177,6 +215,7 @@ export async function rename({ req, env }: Ctx) {
     throw e;
   }
   renameCached(me.id, pseudo);
+  tell(env, exec);
   return json({ pseudo });
 }
 
@@ -397,7 +436,7 @@ async function standing(env: Env, me: Profile, eventId: number | null, mobile: M
   };
 }
 
-export async function finishRun({ req, env, params }: Ctx) {
+export async function finishRun({ req, env, params, exec }: Ctx) {
   const now = Date.now();
   const me = await findProfile(req, env);
   if (!me) return fail(401, "Joueur inconnu.");
@@ -411,7 +450,7 @@ export async function finishRun({ req, env, params }: Ctx) {
   const device = (run.finished_at ? run.device : body.device) === "pc" ? "pc" : "mobile";
   const combo = typeof body.combo === "number" && Number.isInteger(body.combo) && body.combo >= 0 && body.combo <= MAX_COMBO ? body.combo : null;
   const event = run.event_id && device === "mobile" ? await eventById(env, run.event_id) : null;
-  const eventId = event && now <= event.closes_at + GRACE_MS ? event.id : null;
+  const eventId = event && now <= event.closes_at + LATE_MS ? event.id : null;
   const mine = () => (eventId ? entryBest(env, eventId, me.id) : Promise.resolve(0));
   if (run.finished_at) {
     if (run.score !== score) return fail(409, "Partie déjà enregistrée.");
@@ -456,6 +495,7 @@ export async function finishRun({ req, env, params }: Ctx) {
   const results = await env.DB.batch(statements);
   const improved = !me.banned && results[1].meta.changes > 0;
   const eventImproved = !!eventId && !me.banned && results[3].meta.changes > 0;
+  if (eventImproved || (!eventId && improved && device === "mobile")) tell(env, exec);
   const eventBest = eventImproved ? score : await mine();
   const mark = { best: score, at: now, improved: true };
   const mobile = improved && device === "mobile" ? mark : keptMobile(me), pc = improved && device === "pc" ? mark : keptPc(me);
