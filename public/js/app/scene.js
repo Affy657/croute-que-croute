@@ -357,6 +357,7 @@ export function createScene(canvas, overlay) {
     }
     drawFinger(finger, clock);
     if (fieldA > 0 && !dying) drawWarns(world, clock, sx, sy);
+    if (overlay.hidden === fxDirty) overlay.hidden = !fxDirty;
     ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * (oy + sy));
     if (fieldA > 0) {
       ctx.globalAlpha = fieldA * (1 - HEAT_FIELD * heat);

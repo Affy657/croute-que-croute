@@ -28,6 +28,11 @@ test("le jeu hors ligne : chaque fichier chargé par la page est dans le cache d
   assert.deepEqual(needed.filter((f) => !SHELL.includes(f)), []);
 });
 
+test("chaque module du jeu est préchargé par la page, sans fichier en trop, pour ne pas attendre les imports un étage après l'autre", () => {
+  const preloaded = [...page.matchAll(/<link rel="modulepreload" href="(\/[^"]+)">/g)].map((m) => m[1]);
+  assert.deepEqual(preloaded.sort(), modules(["/js/app/main.js"]).sort());
+});
+
 test("chaque fichier du cache de sw.js existe", () => {
   assert.deepEqual(SHELL.filter((f) => f !== "/" && !existsSync("public" + f)), []);
 });

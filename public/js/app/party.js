@@ -14,6 +14,7 @@ function fit() {
   dpr = Math.min(window.devicePixelRatio || 1, 2);
   canvas.width = Math.round(window.innerWidth * dpr);
   canvas.height = Math.round(window.innerHeight * dpr);
+  canvas.hidden = false;
 }
 
 function spawn(x, y, vx, vy, { colors, g = GRAVITY, drag = 1.4, life }) {
@@ -67,8 +68,12 @@ function frame(now) {
   }
   ctx.globalAlpha = 1;
   parts = parts.filter((p) => p.life > 0);
-  if (parts.length) requestAnimationFrame(frame);
-  else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (parts.length) {
+    requestAnimationFrame(frame);
+    return;
+  }
+  canvas.hidden = true;
+  canvas.width = canvas.height = 0;
 }
 
 export function burst(el, { count = 40, power = 1, gold = false } = {}) {

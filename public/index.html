@@ -19,6 +19,59 @@
 <link rel="stylesheet" href="/tokens.css">
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/catalog.css">
+<link rel="modulepreload" href="/js/app/main.js">
+<link rel="modulepreload" href="/js/game/sim.js">
+<link rel="modulepreload" href="/js/game/field.js">
+<link rel="modulepreload" href="/js/shared/format.js">
+<link rel="modulepreload" href="/js/shared/store.js">
+<link rel="modulepreload" href="/js/version.js">
+<link rel="modulepreload" href="/js/app/api.js">
+<link rel="modulepreload" href="/js/app/audio.js">
+<link rel="modulepreload" href="/js/app/diag.js">
+<link rel="modulepreload" href="/js/app/scene.js">
+<link rel="modulepreload" href="/js/app/input.js">
+<link rel="modulepreload" href="/js/app/party.js">
+<link rel="modulepreload" href="/js/app/achievements.js">
+<link rel="modulepreload" href="/js/app/toppings.js">
+<link rel="modulepreload" href="/js/app/gear.js">
+<link rel="modulepreload" href="/js/shared/palette.js">
+<link rel="modulepreload" href="/js/app/catalog.js">
+<link rel="modulepreload" href="/js/app/guide.js">
+<link rel="modulepreload" href="/js/app/settings.js">
+<link rel="modulepreload" href="/js/app/install.js">
+<link rel="modulepreload" href="/js/app/profile.js">
+<link rel="modulepreload" href="/js/app/account.js">
+<link rel="modulepreload" href="/js/app/loader.js">
+<link rel="modulepreload" href="/js/app/screens.js">
+<link rel="modulepreload" href="/js/game/attacks.js">
+<link rel="modulepreload" href="/js/game/projectiles.js">
+<link rel="modulepreload" href="/js/game/solver.js">
+<link rel="modulepreload" href="/js/shared/local.js">
+<link rel="modulepreload" href="/js/shared/timeout.js">
+<link rel="modulepreload" href="/js/shared/banner.js">
+<link rel="modulepreload" href="/js/app/sprites.js">
+<link rel="modulepreload" href="/js/app/planets.js">
+<link rel="modulepreload" href="/js/app/art/auras.js">
+<link rel="modulepreload" href="/js/app/art/breads.js">
+<link rel="modulepreload" href="/js/app/art/cutlery.js">
+<link rel="modulepreload" href="/js/app/art/hats.js">
+<link rel="modulepreload" href="/js/app/art/kit.js">
+<link rel="modulepreload" href="/js/app/art/sides.js">
+<link rel="modulepreload" href="/js/app/art/spreads.js">
+<link rel="modulepreload" href="/js/app/sky/cans.js">
+<link rel="modulepreload" href="/js/app/sky/cheese.js">
+<link rel="modulepreload" href="/js/app/sky/classic.js">
+<link rel="modulepreload" href="/js/app/sky/egg.js">
+<link rel="modulepreload" href="/js/app/sky/melies.js">
+<link rel="modulepreload" href="/js/app/sky/music.js">
+<link rel="modulepreload" href="/js/app/sky/pancake.js">
+<link rel="modulepreload" href="/js/app/sky/pirate.js">
+<link rel="modulepreload" href="/js/app/sky/pumpkin.js">
+<link rel="modulepreload" href="/js/app/sky/santa.js">
+<link rel="modulepreload" href="/js/app/sky/toaster.js">
+<link rel="modulepreload" href="/js/app/sky/tung.js">
+<link rel="modulepreload" href="/js/app/sky/vehicles.js">
+<link rel="modulepreload" href="/js/app/sky/kit.js">
 </head>
 <body>
 <div id="loader" class="loader" role="progressbar" aria-label="Chargement">
@@ -49,7 +102,7 @@
   <p id="holdHint" class="ach-toast" hidden>Touche pour reprendre</p>
 </div>
 
-<canvas id="fx" aria-hidden="true"></canvas>
+<canvas id="fx" aria-hidden="true" hidden></canvas>
 
 <section id="menu" class="screen">
   <div class="block menu-head">
@@ -367,7 +420,7 @@
   </div>
 </div>
 
-<canvas id="party" aria-hidden="true"></canvas>
+<canvas id="party" aria-hidden="true" hidden></canvas>
 
 <script src="/js/boot.js"></script>
 <script type="module" src="/js/app/main.js"></script>

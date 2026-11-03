@@ -213,7 +213,7 @@ export const closeCard = () => { shown = null; };
 
 export function drawCard(clock) {
   if (!ready) return;
-  const { width, height } = ui.canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const { width, height } = ui.canvas.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
   if (!width) return;
   const w = Math.round(width * dpr), h = Math.round(height * dpr);
   if (ui.canvas.width !== w || ui.canvas.height !== h) {

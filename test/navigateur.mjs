@@ -72,6 +72,10 @@ try {
     await $("#joinForm button").click();
     await shown("play");
   });
+  await step("accueil : les calques des annonces et des confettis sont retirés tant qu'ils sont vides", async () => {
+    const shownLayers = await page.evaluate(() => ["fx", "party"].filter((id) => !document.getElementById(id).hidden));
+    if (shownLayers.length) throw new Error("calques affichés : " + shownLayers.join(", "));
+  });
   if (SAFARI) {
     await step("iPhone : « Installe le jeu » proposé une fois, « Plus tard » le ferme", async () => {
       await shown("installPop");
@@ -82,6 +86,7 @@ try {
   await step("une partie se lance et finit sur l'écran de fin", async () => {
     await click("play");
     await shown("hud");
+    await shown("fx");
     await shown("over", RUN_MS);
   });
   await step("le score est envoyé au serveur", async () => {
