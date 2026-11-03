@@ -433,6 +433,40 @@ try {
       await context.close();
     }
   });
+  const boardOf = async (tok) => (await (await fetch(BASE + "/api/board", { headers: { ...apiHeaders, authorization: "Bearer " + tok } })).json()).me;
+  await step("pseudo déjà pris : l'erreur propose « J'ai déjà un compte », et l'écran du code dit où le trouver", async () => {
+    const taken = "Pris" + hex(4);
+    await joinApi(taken);
+    const { context, p } = await freshPage(null);
+    try {
+      await p.goto(BASE + "/");
+      await p.locator("#joinForm").waitFor({ state: "visible", timeout: WAIT_MS });
+      await p.fill("#pseudo", taken);
+      await p.locator("#joinForm button").first().click();
+      await p.waitForFunction(() => document.getElementById("joinError").textContent.includes("J'ai déjà un compte"), null, { timeout: WAIT_MS });
+      await p.locator("#haveAccount").click();
+      await p.locator("#linkHelp").waitFor({ state: "visible", timeout: WAIT_MS });
+      if (!/Mon\s+code/.test(await p.locator("#linkHelp").textContent())) throw new Error("l'aide ne dit pas où trouver le code");
+      if (await p.locator("#inApp").isVisible()) throw new Error("message des applis affiché dans un vrai navigateur");
+    } finally {
+      await context.close();
+    }
+  });
+  await step("dans Snapchat : un message renvoie vers Safari, « Copier le lien » copie l'adresse du jeu", async () => {
+    const userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Snapchat/14.30.0.33";
+    const { context, p } = await freshPage(null, null, { userAgent });
+    try {
+      await p.addInitScript(() => Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (text) => { window.__copied = text; } } }));
+      await p.goto(BASE + "/");
+      await p.locator("#inApp").waitFor({ state: "visible", timeout: WAIT_MS });
+      const text = await p.locator("#inAppText").textContent();
+      if (!text.includes("Snapchat") || !text.includes("Safari")) throw new Error(text);
+      await p.locator("#inAppCopy").click();
+      await p.waitForFunction((url) => window.__copied === url, BASE + "/", { timeout: WAIT_MS });
+    } finally {
+      await context.close();
+    }
+  });
   await step("Succès : la liste s'affiche, puis retour", async () => {
     await click("menuAch");
     await shown("ach");
@@ -538,6 +572,24 @@ try {
     await admin.waitForFunction((p) => [...document.querySelectorAll("#players li.out")].some((li) => li.textContent.includes(p)), pseudo, { timeout: WAIT_MS });
     await row.locator("button", { hasText: "Réintégrer" }).click();
     await admin.waitForFunction((p) => [...document.querySelectorAll("#players li:not(.out)")].some((li) => li.textContent.includes(p)), pseudo, { timeout: WAIT_MS });
+  });
+  await step("admin : réunir deux comptes demande confirmation avec les deux pseudos, « Annuler » ne réunit rien, puis réunis", async () => {
+    const keepName = "Garde" + hex(4), fromName = "Fond" + hex(4), fromTok = await joinApi(fromName);
+    await joinApi(keepName);
+    await admin.locator("#mergeCard").waitFor({ state: "visible", timeout: WAIT_MS });
+    await admin.fill("#mergeKeep", keepName);
+    await admin.fill("#mergeFrom", fromName);
+    let asked = dialog(admin, false);
+    await admin.locator("#mergeForm button").click();
+    const question = await asked;
+    if (!question.includes(keepName) || !question.includes(fromName)) throw new Error(question);
+    await wait(500);
+    if ((await boardOf(fromTok)).pseudo !== fromName) throw new Error("réunis sans confirmation");
+    asked = dialog(admin, true);
+    await admin.locator("#mergeForm button").click();
+    await asked;
+    await admin.waitForFunction((t) => document.getElementById("mergeMsg").textContent === t, fromName + " est réuni dans " + keepName + ".", { timeout: WAIT_MS });
+    if ((await boardOf(fromTok)).pseudo !== keepName) throw new Error("l'appareil du compte réuni n'est pas sur le compte gardé");
   });
   await step("écran géant : à l'heure du début, la soirée s'affiche tout de suite, pas « Début dans 0:00 »", async () => {
     const headers = { "content-type": "application/json", "x-app-version": "dev", "x-admin-key": KEY };

@@ -18,6 +18,7 @@ export const ui = {
   menuRankBox: $("menuRankBox"), menuRank: $("menuRank"), menuInfo: $("menuInfo"), menuPitch: $("menuPitch"),
   joinForm: $("joinForm"), pseudo: $("pseudo"), joinError: $("joinError"), haveAccount: $("haveAccount"),
   linkForm: $("linkForm"), linkInput: $("linkInput"), linkError: $("linkError"), newAccount: $("newAccount"),
+  inApp: $("inApp"), inAppText: $("inAppText"), inAppCopy: $("inAppCopy"),
   linkCard: $("linkCard"), linkBtn: $("linkBtn"), link: $("link"), linkQr: $("linkQr"), linkCode: $("linkCode"), linkTime: $("linkTime"), linkCopy: $("linkCopy"), linkFail: $("linkFail"), linkBack: $("linkBack"),
   mergeBtn: $("mergeBtn"), mergeHelp: $("mergeHelp"), mergeForm: $("mergeForm"), mergeInput: $("mergeInput"), mergeNote: $("mergeNote"), mergeAsk: $("mergeAsk"), mergeYes: $("mergeYes"), mergeNo: $("mergeNo"),
   outRow: $("outRow"), outBtn: $("outBtn"), outNote: $("outNote"), outAsk: $("outAsk"), outYes: $("outYes"), outNo: $("outNo"),

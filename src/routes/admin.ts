@@ -1,9 +1,10 @@
 import { json, fail, readJson, bearer, clientIp, tooFast, allowed } from "../http";
 import { randomToken, sha256, safeEqual } from "../security";
-import { cleanName, cleanRole } from "../validate";
+import { cleanName, cleanRole, pseudoKey } from "../validate";
 import { pendingEvent, lastEvent, forgetCaches, type EventRow } from "../db";
 import type { Ctx } from "../router";
 import { tell } from "../live";
+import { mergeInto } from "./link";
 
 const INVITE_MS = 48 * 3600 * 1000;
 const SEEN_MS = 5 * 60 * 1000;
@@ -226,6 +227,33 @@ export async function ban({ req, env, params, exec }: Ctx) {
   forgetCaches();
   tell(env, exec);
   return json({ ok: true });
+}
+
+interface MergeRow {
+  id: string;
+  pseudo: string;
+  best: number;
+  pc_best: number;
+  run_count: number;
+  banned: number;
+}
+
+const account = (p: MergeRow) => ({ pseudo: p.pseudo, best: p.best, pcBest: p.pc_best, runs: p.run_count });
+
+export async function merge({ req, env, exec }: Ctx) {
+  const body = await readJson(req);
+  const keys = [body.keep, body.from].map((raw) => (typeof raw === "string" ? pseudoKey(raw) : ""));
+  if (keys.some((k) => k.length < 2)) return fail(400, "Tape les deux pseudos.");
+  const find = (key: string) =>
+    env.DB.prepare("SELECT id, pseudo, best, pc_best, run_count, banned FROM profiles WHERE pseudo_key = ?").bind(key).first<MergeRow>();
+  const [keep, from] = await Promise.all(keys.map(find));
+  if (!keep || !from) return fail(404, "Pseudo inconnu : " + String(keep ? body.from : body.keep).trim() + ".");
+  if (keep.id === from.id) return fail(400, "C'est deux fois le même compte.");
+  if (keep.banned || from.banned) return fail(403, "Réintègre d'abord le joueur retiré du classement.");
+  if (body.confirm !== true) return json({ keep: account(keep), from: account(from) });
+  await mergeInto(env, keep.id, from.id);
+  tell(env, exec);
+  return json({ pseudo: keep.pseudo, merged: from.pseudo });
 }
 
 export async function invite({ req, env, auth }: Ctx) {

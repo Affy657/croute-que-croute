@@ -3,6 +3,7 @@ import { ui, show, setText, markInvalid, renderControls, setLinking } from "./sc
 import { net, on, registered, joinReady, refreshBoard, serverNow, linkWith, newLinkCode, logoutOthers, reason, badInput } from "./api.js";
 import { renderSettings, copy } from "./settings.js";
 import { resync } from "./profile.js";
+import { inAppNote } from "./inapp.js";
 
 const TICK_MS = 1000, RETRY_MS = 20000, QUIET = 4;
 const OUT_ASK = "Tes autres appareils sortent du compte. Pour revenir, il leur faudra un nouveau code.";
@@ -263,6 +264,12 @@ ui.haveAccount.addEventListener("click", () => {
   ui.linkInput.focus();
 });
 ui.newAccount.addEventListener("click", () => setLinking(false));
+const stuck = inAppNote();
+if (stuck) {
+  ui.inAppText.textContent = stuck;
+  ui.inApp.hidden = false;
+  ui.inAppCopy.addEventListener("click", () => copy(ui.inAppCopy, location.origin + "/", "Lien copié"));
+}
 ui.linkForm.addEventListener("submit", (e) => {
   e.preventDefault();
   connect(ui.linkInput.value);

@@ -11,6 +11,7 @@ const FLASH_MS = 2000;
 const HINTS = {
   prompt: "Lance-le depuis ton écran d'accueil, en plein écran.",
   ios: "Touche Partager, puis « Sur l'écran d'accueil ».",
+  inapp: "Ouvre d'abord le jeu dans ton navigateur (Safari sur iPhone) : on ne peut pas l'installer depuis une appli comme Snapchat.",
   menu: "Ouvre le menu du navigateur, puis « Installer l'appli » ou « Ajouter à l'écran d'accueil »."
 };
 const NUMBER = VERSION.split("+")[0];

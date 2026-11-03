@@ -38,6 +38,7 @@
 <link rel="modulepreload" href="/js/app/catalog.js">
 <link rel="modulepreload" href="/js/app/guide.js">
 <link rel="modulepreload" href="/js/app/settings.js">
+<link rel="modulepreload" href="/js/app/inapp.js">
 <link rel="modulepreload" href="/js/app/install.js">
 <link rel="modulepreload" href="/js/app/profile.js">
 <link rel="modulepreload" href="/js/app/account.js">
@@ -118,6 +119,10 @@
       <p id="menuRankBox" class="stat"><span class="stat-label">Place</span><span id="menuRank" class="stat-value hot"></span></p>
     </div>
     <p id="menuInfo" class="info" hidden></p>
+    <div id="inApp" class="in-app" hidden>
+      <p id="inAppText" class="note"></p>
+      <button id="inAppCopy" class="ghost" type="button">Copier le lien</button>
+    </div>
     <form id="joinForm" class="join" hidden>
       <label for="pseudo" class="sr-only">Ton pseudo</label>
       <input id="pseudo" aria-describedby="joinError" name="pseudo" maxlength="16" placeholder="Ton pseudo" autocomplete="nickname" autocapitalize="off" spellcheck="false" required>
@@ -129,6 +134,7 @@
       <label for="linkInput" class="sr-only">Code de ton autre appareil</label>
       <input id="linkInput" aria-describedby="linkError" name="code" maxlength="9" placeholder="Code à 8 caractères" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required>
       <p id="linkError" class="note error" hidden></p>
+      <p id="linkHelp" class="note">Ton code s'affiche là où tu joues déjà avec ce compte : Paramètres, Autre appareil, «&nbsp;Mon&nbsp;code&nbsp;». Sur iPhone, ça peut être ce téléphone : l'appli de l'écran d'accueil, Safari et Snapchat ne partagent pas le compte.</p>
       <button class="cta" type="submit">Connecter</button>
       <button id="newAccount" class="ghost" type="button">Nouveau joueur</button>
     </form>

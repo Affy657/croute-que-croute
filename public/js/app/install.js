@@ -1,4 +1,5 @@
 import { store, KEYS } from "../shared/store.js";
+import { inApp } from "./inapp.js";
 
 let deferred = null;
 const listeners = [];
@@ -12,6 +13,7 @@ function changed() {
 
 export function installMode() {
   if (standalone()) return "installed";
+  if (inApp()) return "inapp";
   if (deferred) return "prompt";
   return ios() ? "ios" : "menu";
 }

@@ -270,6 +270,17 @@ h2.page-title {
   color: var(--jam-light);
 }
 
+.in-app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.in-app .note {
+  color: var(--ink);
+}
+
 .rival {
   max-width: 24ch;
   font-size: var(--text-lg);
