@@ -1,6 +1,7 @@
 const CACHE = "croute-" + (new URL(self.location.href).searchParams.get("v") || "v19");
 const SHELL = [
   "/", "/tokens.css", "/style.css", "/catalog.css", "/manifest.webmanifest", "/icons/icon-192.png", "/qr.svg",
+  "/ecran", "/ecran.css", "/js/ecran/ecran.js",
   "/js/version.js", "/js/errors.js", "/js/boot.js", "/js/shared/store.js", "/js/shared/format.js", "/js/shared/palette.js", "/js/shared/local.js", "/js/shared/timeout.js", "/js/shared/banner.js",
   "/js/game/field.js", "/js/game/projectiles.js", "/js/game/attacks.js", "/js/game/solver.js", "/js/game/sim.js",
   "/js/app/api.js", "/js/app/audio.js", "/js/app/catalog.js", "/js/app/input.js", "/js/app/sprites.js", "/js/app/scene.js", "/js/app/planets.js", "/js/app/screens.js", "/js/app/install.js", "/js/app/settings.js", "/js/app/party.js", "/js/app/achievements.js", "/js/app/toppings.js", "/js/app/gear.js", "/js/app/profile.js", "/js/app/account.js", "/js/app/guide.js", "/js/app/diag.js", "/js/app/loader.js", "/js/app/main.js",
@@ -42,7 +43,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/music/") || url.pathname.startsWith("/admin")) return;
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/music/") || url.pathname.startsWith("/admin") || url.pathname.startsWith("/js/admin/")) return;
 
   let settled = false;
   const net = fetch(req, { cache: "no-cache" }).then((res) => {
@@ -56,5 +57,5 @@ self.addEventListener("fetch", (event) => {
   const saved = () => caches.match(req, { ignoreSearch: true });
   const slow = new Promise((resolve) => setTimeout(resolve, NET_MS)).then(() => (settled ? net : saved().then((hit) => hit || net)));
   event.waitUntil(net.catch(() => {}));
-  event.respondWith(Promise.race([net, slow]).catch(() => saved().then((hit) => hit || (req.mode === "navigate" ? caches.match("/") : Response.error()))));
+  event.respondWith(Promise.race([net, slow]).catch(() => saved().then((hit) => hit || (req.mode === "navigate" && !url.pathname.startsWith("/ecran") ? caches.match("/") : Response.error()))));
 });

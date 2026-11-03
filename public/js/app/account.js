@@ -6,7 +6,7 @@ import { resync } from "./profile.js";
 
 const TICK_MS = 1000, RETRY_MS = 20000, QUIET = 4;
 const OUT_ASK = "Tes autres appareils sortent du compte. Pour revenir, il leur faudra un nouveau code.";
-let timer = null, until = Infinity, live = false, asked = 0, shown = "", merging = null, mergeInto = null, waiting = null, opener = () => {}, idle = () => true;
+let timer = null, until = Infinity, live = false, asked = 0, shown = "", merging = null, mergeInto = null, flow = 0, waiting = null, opener = () => {}, idle = () => true;
 
 const quoted = (name) => "« " + name + " »";
 
@@ -113,6 +113,7 @@ function showMerge(on) {
 }
 
 function resetMerge(note = "", error = false) {
+  flow++;
   merging = null;
   ui.mergeAsk.hidden = true;
   say(ui.mergeNote, note, error);
@@ -122,16 +123,19 @@ function resetMerge(note = "", error = false) {
 async function checkMerge(code) {
   const button = ui.mergeForm.querySelector("button[type=submit]");
   resetMerge();
+  const mine = flow;
   showMerge(true);
   ui.mergeInput.value = code;
   button.disabled = true;
   try {
     const r = await linkWith(code);
+    if (mine !== flow) return;
     showMerge(false);
     ui.mergeInput.value = "";
     renderSettings();
     resetMerge(`Cet appareil n'était plus connecté à son ancien compte : tu joues maintenant en ${quoted(r.pseudo)}.`);
   } catch (e) {
+    if (mine !== flow) return;
     const m = e.data && e.data.merge;
     if (!m) {
       say(ui.mergeNote, reason(e), true);

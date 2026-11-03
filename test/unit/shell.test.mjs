@@ -39,7 +39,14 @@ test("iPhone d'avant iOS 15.4 : pas de Object.hasOwn dans le code du navigateur,
 });
 
 test("chaque fichier du cache de sw.js existe", () => {
-  assert.deepEqual(SHELL.filter((f) => f !== "/" && !existsSync("public" + f)), []);
+  assert.deepEqual(SHELL.filter((f) => f !== "/" && !existsSync("public" + f) && !existsSync("public" + f + ".html")), []);
+});
+
+test("l'écran géant hors ligne : sa page et chaque fichier qu'elle charge sont dans le cache de sw.js", () => {
+  const screen = read("/ecran.html");
+  const needed = ["/ecran", ...modules([...screen.matchAll(/<script[^>]*src="(\/[^"]+)"/g)].map((m) => m[1])), ...[...screen.matchAll(/<link[^>]*rel="stylesheet"[^>]*href="(\/[^"]+)"/g)].map((m) => m[1])];
+  assert.ok(needed.includes("/js/ecran/ecran.js"));
+  assert.deepEqual(needed.filter((f) => !SHELL.includes(f)), []);
 });
 
 test("chaque élément attendu par screens.js existe dans la page, sinon le jeu se recharge à chaque ouverture", () => {

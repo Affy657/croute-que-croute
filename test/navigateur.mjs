@@ -153,6 +153,13 @@ try {
     await page.keyboard.press("Escape");
     await shown("menu");
   });
+  await step("Échap fait « Retour » même après avoir touché un curseur", async () => {
+    await click("settingsBtn");
+    await shown("settings");
+    await $("#sensVol").click();
+    await page.keyboard.press("Escape");
+    await shown("menu");
+  });
   await step("Infos : les 4 onglets s'affichent, puis retour", async () => {
     await click("infoBtn");
     await shown("info");
@@ -223,9 +230,9 @@ try {
   const apiHeaders = { "content-type": "application/json", "x-app-version": "dev" };
   const joinApi = async (name) => (await (await fetch(BASE + "/api/join", { method: "POST", headers: apiHeaders, body: JSON.stringify({ pseudo: name, clientId: hex(32) }) })).json()).token;
   const codeOf = async (tok) => (await (await fetch(BASE + "/api/me/link", { method: "POST", headers: { ...apiHeaders, authorization: "Bearer " + tok } })).json()).code;
-  const freshPage = async (token, viewport) => {
+  const freshPage = async (token, viewport, options = {}) => {
     const base = SAFARI ? devices["iPhone 13"] : { viewport: { width: 390, height: 844 } };
-    const context = await browser.newContext(viewport ? { ...base, viewport } : base);
+    const context = await browser.newContext({ ...(viewport ? { ...base, viewport } : base), ...options });
     await context.addInitScript((t) => {
       localStorage.setItem("cv-install-asked", "1");
       if (t) localStorage.setItem("cv-token", t);
@@ -245,6 +252,149 @@ try {
         .filter((b) => b.offsetParent && (b.scrollWidth > b.clientWidth || b.offsetHeight > 48 || parseFloat(getComputedStyle(b).fontSize) < 13))
         .map((b) => b.textContent));
       if (tight.length) throw new Error("boutons serrés : " + tight.join(", "));
+    } finally {
+      await context.close();
+    }
+  });
+  const testPage = async (token, viewport) => {
+    const fresh = await freshPage(token, viewport, { serviceWorkers: "block" });
+    await fresh.context.addInitScript(() => sessionStorage.setItem("cv-invincible", "1"));
+    await fresh.p.route("**/js/app/main.js", async (route) => {
+      const res = await route.fetch();
+      await route.fulfill({ response: res, body: (await res.text()) + "\nwindow.__jeu = { S, die, get sim() { return sim; } };\n" });
+    });
+    return fresh;
+  };
+  const runFor = async (p, button, ms) => {
+    await p.locator(button).click({ timeout: WAIT_MS });
+    await p.waitForFunction(() => window.__jeu.S.mode === "play", null, { timeout: WAIT_MS });
+    await wait(ms);
+    await p.evaluate(() => window.__jeu.die(null));
+    await p.locator("#over").waitFor({ state: "visible", timeout: WAIT_MS });
+  };
+  const sent = (p) => p.waitForFunction(() => {
+    const note = document.getElementById("overNote");
+    return note.hidden || !note.textContent.startsWith("Envoi");
+  }, null, { timeout: WAIT_MS });
+  await step("inscription quand le classement ne répond pas : la partie est quand même comptée", async () => {
+    const { context, p } = await freshPage(null);
+    try {
+      await p.goto(BASE + "/");
+      await p.locator("#joinForm").waitFor({ state: "visible", timeout: WAIT_MS });
+      await p.route("**/api/board", (route) => route.abort());
+      await p.fill("#pseudo", "Sature" + hex(4));
+      const started = p.waitForRequest((req) => req.method() === "POST" && new URL(req.url()).pathname === "/api/runs", { timeout: WAIT_MS });
+      await p.locator("#joinForm button").first().click();
+      await p.locator("#play").click({ timeout: WAIT_MS });
+      await started;
+    } finally {
+      await context.close();
+    }
+  });
+  await step("partie non comptée puis vrai record : « Nouveau record » affiché, et l'accueil montre le record du serveur", async () => {
+    const { context, p } = await testPage(await joinApi("Hors" + hex(4)));
+    try {
+      let down = true;
+      await p.route("**/api/runs", (route) => (down && route.request().method() === "POST" ? route.abort() : route.continue()));
+      await p.goto(BASE + "/");
+      await runFor(p, "#play", 3000);
+      await p.waitForFunction(() => document.getElementById("overNote").textContent.includes("non compté"), null, { timeout: WAIT_MS });
+      down = false;
+      await runFor(p, "#again", 1500);
+      await sent(p);
+      await p.waitForFunction(() => !document.getElementById("newBest").hidden, null, { timeout: WAIT_MS });
+      const score = (await p.locator("#final").textContent()).replace(/\s/g, "");
+      await p.locator("#overHome").click();
+      await p.waitForFunction((s) => document.getElementById("menuBest").textContent.replace(/\s/g, "") === s, score, { timeout: WAIT_MS });
+    } finally {
+      await context.close();
+    }
+  });
+  await step("écran de fin : « Nouveau record » retiré quand le serveur ne le compte pas comme record", async () => {
+    const { context, p } = await testPage(await joinApi("Verdict" + hex(4)));
+    try {
+      await p.route(/\/api\/runs\/[^/]+$/, async (route) => {
+        const res = await route.fetch();
+        await route.fulfill({ response: res, json: { ...(await res.json()), improved: false, eventImproved: false, pcImproved: false } });
+      });
+      await p.goto(BASE + "/");
+      await runFor(p, "#play", 1000);
+      await sent(p);
+      await p.waitForFunction(() => document.getElementById("newBest").hidden, null, { timeout: WAIT_MS });
+    } finally {
+      await context.close();
+    }
+  });
+  if (!SAFARI) {
+    await step("souris en mode « Glisser » : sortir de la fenêtre et revenir ailleurs ne fait pas sauter la tartine", async () => {
+      const { context, p } = await testPage(await joinApi("Souris" + hex(4)), { width: 1280, height: 720 });
+      try {
+        await p.goto(BASE + "/");
+        await p.locator("#play").waitFor({ state: "visible", timeout: WAIT_MS });
+        await p.mouse.move(640, 600);
+        await p.keyboard.press("Space");
+        await p.waitForFunction(() => window.__jeu.S.mode === "play", null, { timeout: WAIT_MS });
+        const x = () => p.evaluate(() => window.__jeu.sim.state.toast.x);
+        for (let i = 0; i <= 10; i++) await p.mouse.move(640 - i * 20, 600);
+        await wait(100);
+        const before = await x();
+        await p.mouse.move(-100, 600, { steps: 5 });
+        await p.mouse.move(-100, 300, { steps: 5 });
+        await p.mouse.move(1279, 300);
+        await wait(100);
+        const after = await x();
+        if (Math.abs(after - before) > 40) throw new Error(`la tartine a sauté de ${Math.round(before)} à ${Math.round(after)}`);
+      } finally {
+        await context.close();
+      }
+    });
+  }
+  await step("Autre appareil : « Déconnecter les autres » pendant la vérification d'un code, une seule confirmation ouverte", async () => {
+    const code = await codeOf(await joinApi("Course" + hex(4)));
+    const { context, p } = await freshPage(await joinApi("Coureur" + hex(4)));
+    try {
+      await p.goto(BASE + "/");
+      await p.locator("#settingsBtn").click({ timeout: WAIT_MS });
+      await p.locator("#mergeBtn").click({ timeout: WAIT_MS });
+      await p.fill("#mergeInput", code);
+      await p.route("**/api/link", async (route) => {
+        await wait(1500);
+        await route.continue();
+      });
+      const answered = p.waitForResponse((res) => new URL(res.url()).pathname === "/api/link", { timeout: WAIT_MS });
+      await p.locator("#mergeForm button").click();
+      await p.locator("#outBtn").click();
+      await answered;
+      await wait(300);
+      if (await p.locator("#mergeAsk").isVisible()) throw new Error("« Réunir » et « Déconnecter » ouverts ensemble");
+      if (!(await p.locator("#outAsk").isVisible())) throw new Error("la confirmation de « Déconnecter les autres » a disparu");
+    } finally {
+      await context.close();
+    }
+  });
+  await step("clavier : Espace joue après un clic de souris sur la tartine", async () => {
+    const { context, p } = await freshPage(await joinApi("Clavier" + hex(4)));
+    try {
+      await p.goto(BASE + "/?garnitures=toutes");
+      await p.locator("#pickToast").click({ timeout: WAIT_MS });
+      await p.locator("#pickToast").click();
+      await p.keyboard.press("Space");
+      await p.locator("#hud").waitFor({ state: "visible", timeout: 3000 });
+    } finally {
+      await context.close();
+    }
+  });
+  await step("clavier : choix de garniture ouvert puis Paramètres au clavier, le premier Échap revient", async () => {
+    const { context, p } = await freshPage(await joinApi("Echap" + hex(4)));
+    try {
+      await p.goto(BASE + "/?garnitures=toutes");
+      await p.locator("#pickToast").click({ timeout: WAIT_MS });
+      await p.keyboard.press("Tab");
+      await p.focus("#settingsBtn");
+      await p.keyboard.press("Enter");
+      await p.locator("#settings").waitFor({ state: "visible", timeout: WAIT_MS });
+      await p.keyboard.press("Escape");
+      await p.locator("#menu").waitFor({ state: "visible", timeout: 3000 });
     } finally {
       await context.close();
     }
@@ -519,6 +669,11 @@ try {
       const frame = document.querySelector("#settingsAdmin iframe"), root = frame.contentDocument.documentElement;
       return root.scrollHeight <= root.clientHeight && frame.getBoundingClientRect().bottom <= document.getElementById("settingsBack").getBoundingClientRect().top;
     }, null, { timeout: WAIT_MS });
+  });
+  await step("admin dans Paramètres : Échap après un clic dans le tableau de bord revient à l'accueil", async () => {
+    await admin.frameLocator("#settingsAdmin iframe").locator("h2:visible").first().click();
+    await admin.keyboard.press("Escape");
+    await admin.locator("#menu").waitFor({ state: "visible", timeout: WAIT_MS });
     await admin.close();
   });
   for (const path of ["/ecran", "/admin"]) {
