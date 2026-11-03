@@ -41,6 +41,34 @@ for (const file of ["style.css", "catalog.css", "admin.css", "ecran.css"]) {
   });
 }
 
+const steps = (css) => css.replace(/@keyframes[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, "");
+const raw = (d) => d.replace(/var\(--[\w-]+\)/g, "");
+
+for (const file of ["style.css", "catalog.css", "admin.css", "ecran.css"]) {
+  test(`${file} : ombres, durées, calques, opacités et bordures viennent de tokens.css`, () => {
+    const css = steps(read(file));
+    assert.deepEqual(decls(css, /^(box|text)-shadow$/).filter((d) => /\d(px|rem|em|vh|vw)\b/.test(raw(d))), []);
+    assert.deepEqual(decls(css, /^(transition|animation)$/).filter((d) => !/infinite|: none$/.test(d) && /\d(m?s)\b|cubic-bezier/.test(raw(d))), []);
+    assert.deepEqual(decls(css, /^z-index$/).filter((d) => !/: var\(--z-[\w-]+\)$/.test(d)), []);
+    assert.deepEqual(decls(css, /^opacity$/).filter((d) => !/: (0|1|var\(--opacity-[\w-]+\))$/.test(d)), []);
+    assert.deepEqual(decls(css, /^(border|outline)(-(top|right|bottom|left))?(-width)?$/).filter((d) => /\dpx\b/.test(raw(d))), []);
+  });
+}
+
+for (const file of ["style.css", "catalog.css", "admin.css"]) {
+  test(`${file} : taille tactile et marges intérieures en em viennent de tokens.css`, () => {
+    const css = read(file);
+    assert.doesNotMatch(css, /\b44px\b/);
+    assert.deepEqual(decls(css, /^padding(-[a-z]+)?$/).filter((d) => /\dem\b/.test(raw(d))), []);
+  });
+}
+
+test("ecran.css : tailles de texte, espacements et rayons viennent de l'échelle de l'écran géant", () => {
+  const css = steps(read("ecran.css"));
+  assert.deepEqual(decls(css, /^font-size$/).filter((d) => !/: var\(--screen-text-[\w-]+\)$/.test(d)), []);
+  assert.deepEqual(decls(css, /^(gap|row-gap|column-gap|padding(-[a-z]+)?|margin(-[a-z]+)?|border-radius)$/).filter((d) => /\d(px|rem|em|vh|vw)\b/.test(raw(d))), []);
+});
+
 for (const page of ["index.html", "admin.html", "ecran.html"]) {
   test(`${page} : charge tokens.css avant ses styles`, () => {
     const links = [...read(page).matchAll(/<link[^>]*rel="stylesheet"[^>]*href="(\/[^"]+)"/g)].map((m) => m[1]);
