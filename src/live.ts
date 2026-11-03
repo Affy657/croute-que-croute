@@ -1,8 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
 import { fail, clientIp, allowed, tooFast } from "./http";
 import type { Ctx } from "./router";
+import { PER_IP, stalest } from "./slots";
 
-const MAX_SCREENS = 20, PER_IP = 4;
+const MAX_SCREENS = 20;
 const open = (list: WebSocket[]) => list.filter((ws) => ws.readyState === WebSocket.OPEN);
 
 export class Live extends DurableObject<Env> {
@@ -13,7 +14,11 @@ export class Live extends DurableObject<Env> {
 
   async fetch(req: Request) {
     const ip = clientIp(req), mine = open(this.ctx.getWebSockets(ip));
-    if (mine.length >= PER_IP) mine.reduce((a, b) => (b.deserializeAttachment() < a.deserializeAttachment() ? b : a)).close(4000, "Remplacé par un nouvel écran.");
+    if (mine.length >= PER_IP) {
+      const dead = stalest(mine, (ws) => this.ctx.getWebSocketAutoResponseTimestamp(ws)?.getTime() ?? ws.deserializeAttachment(), Date.now());
+      if (!dead) return fail(503, "Trop d'écrans sur ce réseau.");
+      dead.close(4000, "Remplacé par un nouvel écran.");
+    }
     if (open(this.ctx.getWebSockets()).length >= MAX_SCREENS) return fail(503, "Trop d'écrans connectés.");
     const { 0: client, 1: server } = new WebSocketPair();
     this.ctx.acceptWebSocket(server, [ip]);

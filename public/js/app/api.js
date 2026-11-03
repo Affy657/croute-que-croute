@@ -228,6 +228,7 @@ async function send(runId, score, device, combo, onWait, since = Date.now()) {
     try {
       const r = await call("POST", "/api/runs/" + runId, { score, device, combo }, SEND_TIMEOUT_MS);
       clearPending(runId);
+      bestsAsked = boardAsked;
       applyResult(r);
       emit("result", r);
       return r;

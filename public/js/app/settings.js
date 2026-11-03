@@ -89,7 +89,7 @@ function fitAdmin(frame) {
 
 function relayEscape(frame) {
   const win = frame.contentWindow;
-  if (!win) return;
+  if (!win || !frame.contentDocument) return;
   win.addEventListener("keydown", (e) => {
     const typing = e.target.closest && e.target.closest("input:not([type=range]), select, textarea");
     if (e.key === "Escape" && !e.defaultPrevented && !typing) window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", repeat: e.repeat }));

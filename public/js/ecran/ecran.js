@@ -298,3 +298,4 @@ keepAwake();
 refresh(true);
 setInterval(poll, TICK_MS);
 setInterval(tick, TICK_MS);
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=" + encodeURIComponent(VERSION)).catch(() => {});

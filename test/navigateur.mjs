@@ -478,6 +478,20 @@ try {
     await context.close();
     if (asks < 1 || asks > 3) throw new Error(asks + " demande(s) du classement en 2 min");
   });
+  if (!SAFARI) await step("écran géant ouvert seul dans un navigateur neuf : il se met en cache et se recharge sans réseau", async () => {
+    const context = await browser.newContext();
+    const other = await context.newPage();
+    try {
+      await other.goto(BASE + "/ecran", { waitUntil: "networkidle" });
+      const cached = await other.evaluate(() => Promise.race([navigator.serviceWorker.ready.then(() => true), new Promise((ok) => setTimeout(() => ok(false), 10000))]));
+      if (!cached) throw new Error("l'écran géant n'installe pas le cache hors ligne");
+      await context.setOffline(true);
+      await other.reload();
+      await other.locator(".wall").waitFor({ state: "visible", timeout: WAIT_MS });
+    } finally {
+      await context.close();
+    }
+  });
   await step("écran géant : « Pas de réseau » quand le réseau tombe", async () => {
     const context = await browser.newContext();
     const other = await context.newPage();
@@ -674,7 +688,19 @@ try {
     await admin.frameLocator("#settingsAdmin iframe").locator("h2:visible").first().click();
     await admin.keyboard.press("Escape");
     await admin.locator("#menu").waitFor({ state: "visible", timeout: WAIT_MS });
-    await admin.close();
+  });
+  await step("admin dans Paramètres sans réseau : l'onglet Admin ne fait pas d'erreur", async () => {
+    const before = problems.length;
+    await admin.context().setOffline(true);
+    try {
+      await admin.locator("#settingsBtn").click();
+      await admin.locator('#settingsTabs [data-tab="admin"]').click();
+      await wait(1500);
+      if (problems.length > before) throw new Error(problems.slice(before).join(" ; "));
+    } finally {
+      await admin.context().setOffline(false);
+      await admin.close();
+    }
   });
   for (const path of ["/ecran", "/admin"]) {
     await step(`la page ${path} s'ouvre`, async () => {

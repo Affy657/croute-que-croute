@@ -411,8 +411,8 @@ check("rapport d'erreurs trop gros refusé", r.status === 413, r);
       await wait(60);
     }
     const fifth = await socket(ip), other = await socket(ip.replace(/1$/, "2"));
-    const oldestOut = await until(() => !!four[0] && four[0].readyState >= 2);
-    check("direct : une même adresse garde 4 écrans au plus, le plus ancien laisse sa place", four.every(Boolean) && !!fifth && !!other && oldestOut && four.slice(1).every((s) => s.readyState === 1), four.map((s) => s && s.readyState));
+    await wait(300);
+    check("direct : une même adresse garde 4 écrans au plus, un 5e est refusé tant qu'ils répondent, sans en chasser un", four.every((s) => s && s.readyState === 1) && !fifth && !!other, { four: four.map((s) => s && s.readyState), fifth: !!fifth, other: !!other });
     for (const s of [...four, fifth, other]) if (s) s.close();
   }
 
