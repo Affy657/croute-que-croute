@@ -21,7 +21,7 @@ function passAt(items, part = CALM_PASS) {
   return end;
 }
 
-export function createSim(rng = Math.random, { fair = true, react = REACT, only = null, t0 = 0, y = FH * 0.7, immortal = mortal } = {}) {
+export function createSim(rng = Math.random, { fair = true, react = REACT, only = null, t0 = 0, y = FH * 0.7, immortal = mortal, audit = false } = {}) {
   const rnd = (a, b) => a + rng() * (b - a);
   const pick = (arr) => arr[Math.floor(rng() * arr.length)];
   const forced = only && ATTACKS.find((a) => a.id === only);
@@ -29,7 +29,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
     t: t0, next: 0.9, tries: 0, near: 0, dead: false, last: null, streak: 0, queued: null, held: null, until: {},
     toast: { x: FW / 2, y: Number.isFinite(y) ? y : FH * 0.7 },
     obs: [], warns: [],
-    stats: { spawned: 0, rejected: 0, impossible: 0, solves: 0, solveMs: 0, solveMax: 0 }
+    stats: { spawned: 0, rejected: 0, impossible: 0, own: {}, solves: 0, solveMs: 0, solveMax: 0 }
   };
 
   function solveTimed(extra) {
@@ -40,6 +40,10 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
     state.stats.solveMs += ms;
     state.stats.solveMax = Math.max(state.stats.solveMax, ms);
     return ok;
+  }
+
+  function blame(attack) {
+    if (audit && solve(state, null, false, react)) state.stats.own[attack.id] = (state.stats.own[attack.id] || 0) + 1;
   }
 
   function spawn() {
@@ -75,7 +79,10 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
     const items = attack.make({ t, toast: state.toast, rng, rnd, pick, last: state.last });
     const ok = solveTimed(items);
     if (ok || !fair) {
-      if (!ok) state.stats.impossible++;
+      if (!ok) {
+        state.stats.impossible++;
+        blame(attack);
+      }
       for (const w of items) {
         w.born = w.notice ? Math.max(t, w.at - w.notice) : t;
         for (const o of w.obs) o.from = attack.id;
@@ -93,6 +100,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
       return;
     }
     state.stats.rejected++;
+    blame(attack);
     state.tries++;
     state.next = state.tries < TRIES ? 1 / 60 : 0.25;
     if (state.tries >= TRIES) state.tries = 0;
