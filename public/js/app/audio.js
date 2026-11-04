@@ -87,7 +87,7 @@ function ensureContext() {
   if (!build()) return;
   for (const { url } of Object.values(SOUNDS).flat()) {
     fetch(url)
-      .then((res) => res.arrayBuffer())
+      .then((res) => { if (!res.ok) throw new Error(url); return res.arrayBuffer(); })
       .then(decode)
       .then((buffer) => { buffers[url] = buffer; })
       .catch(() => {});

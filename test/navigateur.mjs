@@ -6,7 +6,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(BASE)) {
   console.error("Le test du navigateur ne tourne qu'en local, sur une base à part : npm run test:navigateur.");
   process.exit(1);
 }
-const RUN_MS = 90000, WAIT_MS = 15000, MUSIC = /\/music\//;
+const RUN_MS = 90000, WAIT_MS = 15000, AUDIO = /\/(music|sfx)\//;
 const SAFARI = process.env.NAVIGATEUR === "webkit";
 const WEBKIT_SELECT = /^Refused to apply a stylesheet because/;
 const KEY = readFileSync(".dev.vars", "utf8").match(/ADMIN_KEY=(\w+)/)[1];
@@ -34,7 +34,7 @@ function watch(page) {
     if (m.type() === "error" && !m.text().startsWith("Failed to load resource") && !(SAFARI && WEBKIT_SELECT.test(m.text()))) problems.push(`[${current}] ${page.url()} : ${m.text()}${url ? ` (${url}:${lineNumber})` : ""}`);
   });
   page.on("response", (r) => {
-    if ((r.status() === 404 || r.status() >= 500) && !MUSIC.test(r.url())) problems.push(`${r.status()} ${r.url()}`);
+    if ((r.status() === 404 || r.status() >= 500) && !AUDIO.test(r.url())) problems.push(`${r.status()} ${r.url()}`);
   });
 }
 

@@ -4,6 +4,7 @@ node_modules/
 cle-admin.txt
 public/music/*.mp3
 public/music/*.m4a
+public/sfx/*.mp3
 invitation-*.txt
 ecoute-sons/
 sauvegardes/
