@@ -2,6 +2,10 @@
 
 Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couverts, et le meilleur temps de la soirée gagne une conso.
 
+<img src="maquettes/accueil.jpg" alt="Accueil du jeu sur téléphone" width="260">
+
+Serveur en TypeScript sur Cloudflare Workers, D1 et Durable Objects. Jeu en JavaScript sans compilation, dessiné sur canvas, installable comme une appli. Avant chaque attaque, un solveur vérifie qu'il reste un chemin pour s'en sortir.
+
 Source unique de connaissance du projet. Si le README et le code se contredisent, le code a raison.
 
 ## Liens
@@ -9,8 +13,19 @@ Source unique de connaissance du projet. Si le README et le code se contredisent
 - Jeu : https://croute-que-croute.tartine-sauvage.workers.dev
 - Admin : `/admin`
 - Écran géant : `/ecran`, sur l'ordinateur branché à l'écran
-- Code : https://github.com/Affy657/croute-que-croute (privé), copie locale dans `C:\dev\couverts-volants`
+- Code : https://github.com/Affy657/croute-que-croute
 - QR codes : `qr/` (`.png` pour imprimer, `.svg` pour une affiche, version `-simple` en secours). Régénérer : `npm run qr`, ou `npm run qr -- <adresse>`. À scanner sur plusieurs téléphones avant d'imprimer.
+
+## Lancer le jeu en local
+
+Il faut Node 26.
+
+1. `npm ci`
+2. Créer un fichier `.dev.vars` avec la ligne `ADMIN_KEY=une-cle-de-test`.
+3. `npm run db:local`, puis `npm run seed` pour des joueurs d'essai.
+4. `npm run dev` : le jeu tourne sur http://localhost:8787.
+
+La musique n'est pas dans le dépôt, le jeu marche sans.
 
 ## Le jeu
 
@@ -216,7 +231,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Admin : 30 échecs par minute et par IP. Une bonne clé ou invitation passe toujours : un invité malveillant ne peut pas bloquer les admins.
 - Un joueur retiré ne monte plus. Renvoyer son ancien record ne le remet pas dans les classements en mémoire : il pouvait être « Bravo » à la fin de la soirée.
 - En-têtes (`public/_headers`) : pas de script externe, pas d'affichage dans le cadre d'un autre site.
-- Faille connue : les lectures publiques (`/api/board`, `/api/feed`, `/api/ecran`, `/api/players/…`) n'ont pas de limite. Un script en boucle peut user les 100 000 requêtes du jour. Un limiteur dans le Worker n'y peut rien, la requête compte déjà : il faut une règle Cloudflare, possible seulement avec un nom de domaine (voir À faire).
+- Lectures publiques (`/api/board`, `/api/feed`, `/api/ecran`, `/api/players/…`) : pas de limite dans le Worker, la requête y compte déjà. À freiner par une règle Cloudflare, possible seulement avec un nom de domaine (voir À faire).
 
 ## Admin
 
@@ -247,8 +262,8 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 
 - Pas de son sur les annonces : ça avantagerait ceux qui jouent avec le son.
 - En local (`LOCAL`), son coupé à chaque chargement.
-- Bruitages Mixkit dans `public/sfx/`, `SOUNDS` dans `audio.js`. Licence gratuite d'après la FAQ, texte officiel à relire avant une diffusion hors soirée.
-- Musique : `public/music/theme.m4a` ou `.mp3`, hors git : à remettre avant de déployer depuis un autre PC. En prod : « Roundabout » de Blacklolita, demander l'accord de l'artiste avant une diffusion plus large.
+- Bruitages Mixkit dans `public/sfx/`, `SOUNDS` dans `audio.js`. Leur licence permet de les utiliser dans le jeu, pas de les redistribuer seuls ni avec le code source.
+- Musique : `public/music/theme.m4a` ou `.mp3`, hors git : à remettre avant de déployer depuis un autre PC. Crédit dans `MUSIC_CREDIT`.
 - Changer : remplacer le fichier, `MUSIC_CREDIT` et `MUSIC_PARTS` (`[[0, durée]]` pour tout jouer), puis `npm run deploy`.
 - Elle ne joue qu'en partie et repart du début, pour suivre la difficulté. Hors partie, 2 s d'aperçu quand on lâche le curseur.
 - Coupes calées sur 172 BPM, approximatives (`MUSIC_PARTS`). Passages recollés en mémoire et joués par une seule source (`stitch`) : aucun saut.
@@ -579,7 +594,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 
 ## À faire
 
-- Adresse : garder « workers.dev » ou prendre un nom de domaine payant (le QR code changerait). Décision à l'AG du lundi 02/11/2026 à 20h, avant d'imprimer les affiches. Un domaine permettrait aussi de freiner les requêtes avant le Worker (voir Triche et sécurité).
+- Adresse : passer au nom de domaine tartinesauvage.fr, puis `npm run qr` (le QR code change). Il permettra aussi de freiner les requêtes avant le Worker (voir Triche et sécurité).
 - Retirer la colonne `profiles.client_id`, plus écrite depuis le 02/11/2026, dans une migration d'une mise en ligne suivante : la retirer tout de suite casserait le retour à la version d'avant, qui l'écrit encore. `profiles.token` reste : obligatoire et unique, la retirer demande de reconstruire la table.
 - Activer la connexion avec Google une fois le nom de domaine en place (voir Appli et réseau).
 - Remplacer ou compléter la musique avec des morceaux des collègues DJ.
@@ -602,7 +617,6 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 
 ### Ajouté par Adrien le 02/11/2026
 
-- Préparer une diapo pour présenter le projet et la suite à l'AG du lundi 02/11/2026 à 20h, où se décide aussi l'adresse du jeu (voir plus haut).
 - Page `/tech` comme sur Movie Picker (movie-picker.fr/tech) : le dossier technique publié dans le jeu, avec des chiffres relevés dans le dépôt plutôt qu'estimés.
 
 ### Recherche de bugs du 03/11/2026 : pas corrigé
@@ -632,3 +646,12 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - Impossible de revenir de la 0.49.0 ou plus à la 0.48.0 ou avant : Cloudflare refuse quand une classe Durable Object (`Live`) a été ajoutée entre les deux. Plan B : corriger, puis `npm run deploy -- --pendant-soiree`. Entre deux versions avec `Live`, le retour reste possible.
 - La base ne revient pas en arrière : une migration doit laisser marcher la version d'avant (ajouter des colonnes, jamais en retirer ni en renommer dans la même mise en ligne). Après un retour avant le 02/11/2026 puis une remise en ligne : `UPDATE profiles SET steps = NULL`.
 - wrangler est connecté au compte Cloudflare sur le PC d'Adrien (`npx wrangler whoami`).
+
+## Licence
+
+Code sous licence MIT (`LICENSE`). Ne sont pas couverts :
+
+- le nom, le logo, les affiches et l'univers du collectif Tartine Sauvage ;
+- les bruitages et la musique ;
+- la police Bungee (SIL OFL, chargée depuis Google Fonts) et le logo Google ;
+- les marques citées ou dessinées dans le jeu, qui restent à leurs propriétaires.
