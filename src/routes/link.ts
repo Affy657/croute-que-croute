@@ -41,7 +41,7 @@ export async function createLink({ req, env }: Ctx) {
 }
 
 export async function mergeInto(env: Env, into: string, from: string) {
-  const { results } = await env.DB.prepare("SELECT id, progress FROM profiles WHERE id IN (?1, ?2)").bind(into, from).all<{ id: string; progress: string | null }>();
+  const { results } = await env.DB.prepare("SELECT id, progress, google_hash FROM profiles WHERE id IN (?1, ?2)").bind(into, from).all<{ id: string; progress: string | null; google_hash: string | null }>();
   const read = (id: string) => cleanProgress(JSON.parse(results.find((r) => r.id === id)?.progress ?? "{}"))!;
   await env.DB.batch([
     env.DB.prepare(MERGE_PROFILE).bind(into, from, JSON.stringify(mergeProgress(read(into), read(from)))),
@@ -51,6 +51,7 @@ export async function mergeInto(env: Env, into: string, from: string) {
     env.DB.prepare("UPDATE sessions SET player_id = ?1 WHERE player_id = ?2").bind(into, from),
     env.DB.prepare("DELETE FROM links WHERE player_id = ?").bind(from),
     env.DB.prepare("DELETE FROM profiles WHERE id = ?").bind(from),
+    env.DB.prepare("UPDATE profiles SET google_hash = COALESCE(google_hash, ?1) WHERE id = ?2").bind(results.find((r) => r.id === from)?.google_hash ?? null, into),
   ]);
   forgetCaches();
 }
@@ -62,13 +63,17 @@ const findLink = (env: Env, hash: string, now: number) =>
     .bind(hash, now)
     .first<LinkRow>();
 
-async function openSession(env: Env, link: LinkRow, clientId: string | null, clientHash: string | null, now: number) {
+export async function addSession(env: Env, playerId: string, clientId: string | null, clientHash: string | null, now: number) {
   const token = randomToken();
   await env.DB.batch([
-    env.DB.prepare("DELETE FROM sessions WHERE player_id = ?1 AND client_hash IN (?2, ?3) AND created_at < ?4").bind(link.id, clientHash, clientId, now),
-    env.DB.prepare("INSERT INTO sessions (token_hash, player_id, client_hash, created_at) VALUES (?, ?, ?, ?)").bind(await sha256(token), link.id, clientHash, now),
+    env.DB.prepare("DELETE FROM sessions WHERE player_id = ?1 AND client_hash IN (?2, ?3) AND created_at < ?4").bind(playerId, clientHash, clientId, now),
+    env.DB.prepare("INSERT INTO sessions (token_hash, player_id, client_hash, created_at) VALUES (?, ?, ?, ?)").bind(await sha256(token), playerId, clientHash, now),
   ]);
-  return json({ token, pseudo: link.pseudo });
+  return token;
+}
+
+async function openSession(env: Env, link: LinkRow, clientId: string | null, clientHash: string | null, now: number) {
+  return json({ token: await addSession(env, link.id, clientId, clientHash, now), pseudo: link.pseudo });
 }
 
 export async function useLink({ req, env }: Ctx) {

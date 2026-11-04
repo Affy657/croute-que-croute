@@ -522,6 +522,13 @@ h2.page-title {
   background: var(--row);
 }
 
+.ghost.google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
 .ghost.danger {
   border-color: var(--jam-deep);
   background: var(--jam-deep);

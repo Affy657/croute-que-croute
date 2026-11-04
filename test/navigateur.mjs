@@ -652,6 +652,23 @@ try {
     if (took > 1500) throw new Error(`record affiché en ${took} ms`);
     if (asks > 3) throw new Error(`${asks} relectures pour 8 inscriptions en 1 s`);
   });
+  await step("connexion Google : bouton visible une fois configurée, retour sans compte lié expliqué, adresse nettoyée", async () => {
+    const other = await browser.newPage({ viewport: { width: 390, height: 844 }, serviceWorkers: "block" });
+    watch(other);
+    await other.route((url) => url.pathname === "/api/board", async (route) => {
+      const res = await route.fetch();
+      await route.fulfill({ response: res, json: { ...(await res.json()), google: true } });
+    });
+    try {
+      await other.goto(BASE + "/#google=inconnu");
+      await other.locator("#googleLogin").waitFor({ state: "visible", timeout: WAIT_MS });
+      const text = await other.locator("#linkError").textContent();
+      if (!text.includes("Aucun joueur")) throw new Error("message : " + text);
+      if (new URL(other.url()).hash) throw new Error("résultat resté dans l'adresse");
+    } finally {
+      await other.close();
+    }
+  });
   await step("écran géant : « Nouveau n°1 » pour un vrai record, même enregistré pendant la lecture du classement d'avant, pas pour un n°1 retiré puis réintégré", async () => {
     const other = await browser.newPage({ viewport: { width: 1280, height: 720 }, serviceWorkers: "block" });
     watch(other);

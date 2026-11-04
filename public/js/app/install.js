@@ -11,6 +11,8 @@ function changed() {
   for (const fn of listeners) fn();
 }
 
+export const googleBlocked = () => !!inApp() || (standalone() && ios());
+
 export function installMode() {
   if (standalone()) return "installed";
   if (inApp()) return "inapp";

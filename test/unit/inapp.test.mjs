@@ -42,3 +42,18 @@ test("navigateur d'appli : l'installation n'y est pas proposée, Safari la propo
   assert.equal(installMode(), "ios");
   assert.equal(shouldSuggest(), true);
 });
+
+test("connexion Google : bloquée dans les applis et l'appli iPhone, ouverte dans Safari, Chrome et l'appli Android", async () => {
+  const phone = (userAgent) => Object.defineProperty(globalThis, "navigator", { configurable: true, value: { userAgent, platform: "", maxTouchPoints: 0 } });
+  let installed = false;
+  window.matchMedia = () => ({ matches: installed });
+  const { googleBlocked } = await import("../../public/js/app/install.js");
+  phone(IOS + " Snapchat/14.30.0.33");
+  assert.equal(googleBlocked(), true);
+  phone(IOS + " Safari/604.1");
+  assert.equal(googleBlocked(), false);
+  installed = true;
+  assert.equal(googleBlocked(), true);
+  phone("Mozilla/5.0 (Linux; Android 14) Chrome/130.0.0.0 Mobile");
+  assert.equal(googleBlocked(), false);
+});
