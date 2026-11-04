@@ -259,9 +259,9 @@ try {
   const testPage = async (token, viewport) => {
     const fresh = await freshPage(token, viewport, { serviceWorkers: "block" });
     await fresh.context.addInitScript(() => sessionStorage.setItem("cv-invincible", "1"));
-    await fresh.p.route("**/js/app/main.js", async (route) => {
+    await fresh.p.route("**/js/app/run.js", async (route) => {
       const res = await route.fetch();
-      await route.fulfill({ response: res, body: (await res.text()) + "\nwindow.__jeu = { S, die, get sim() { return sim; } };\n" });
+      await route.fulfill({ response: res, body: (await res.text()) + "\nwindow.__jeu = { S, die, get sim() { return game.sim; } };\n" });
     });
     return fresh;
   };
