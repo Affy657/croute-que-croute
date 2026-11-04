@@ -27,6 +27,7 @@ export const KEYS = {
   diag: "cv-diag"
 };
 
+/** @param {() => Storage} storage @returns {Store} */
 function safe(storage) {
   return {
     get(k) { try { return storage().getItem(k); } catch (e) { return null; } },

@@ -20,8 +20,10 @@ export const PALETTE = {
   "trail-end": "rgba(255, 246, 224, 0)"
 };
 
+/** @type {Record<string, string>} */
 export const SLOTS = { head: "Sans chapeau", side: "Rien sur les côtés", bread: "Pain de mie", aura: "Sans aura" };
 
+/** @type {Record<string, GearItem>} */
 export const GEAR = {
   witch: { slot: "head", name: "Chapeau de sorcière" },
   santa: { slot: "head", name: "Bonnet de Noël" },
@@ -91,6 +93,7 @@ export const SKY = {
   }
 };
 
+/** @type {Record<string, Spread>} */
 export const SPREADS = {
   butter: { name: "Beurre", free: true, color: "#fff1a8", shine: "#ffffff" },
   plain: { name: "Nature", free: true, with: "nature", color: "#f6c983", shine: "#fff6e0" },

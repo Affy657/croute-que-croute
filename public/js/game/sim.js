@@ -9,6 +9,7 @@ export const GAP_START = 0.95, GAP_SLOPE = 0.005625, GAP_MIN = 0.5;
 const mortal = () => false;
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
+/** @param {Warn[]} items */
 function passAt(items, part = CALM_PASS) {
   let end = 0;
   for (const w of items) {
@@ -21,10 +22,14 @@ function passAt(items, part = CALM_PASS) {
   return end;
 }
 
+/** @param {Rng} [rng] @param {SimOptions} [o] @returns {Sim} */
 export function createSim(rng = Math.random, { fair = true, react = REACT, only = null, t0 = 0, y = FH * 0.7, immortal = mortal, audit = false } = {}) {
+  /** @type {Rnd} */
   const rnd = (a, b) => a + rng() * (b - a);
+  /** @type {PickOne} */
   const pick = (arr) => arr[Math.floor(rng() * arr.length)];
   const forced = only && ATTACKS.find((a) => a.id === only);
+  /** @type {SimState} */
   const state = {
     t: t0, next: 0.9, tries: 0, near: 0, dead: false, last: null, streak: 0, queued: null, held: null, until: {},
     toast: { x: FW / 2, y: Number.isFinite(y) ? y : FH * 0.7 },
@@ -32,6 +37,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
     stats: { spawned: 0, rejected: 0, impossible: 0, own: {}, solves: 0, solveMs: 0, solveMax: 0 }
   };
 
+  /** @param {Warn[]} extra */
   function solveTimed(extra) {
     const t0 = now();
     const ok = solve(state, extra, react);
@@ -42,6 +48,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
     return ok;
   }
 
+  /** @param {Attack} attack */
   function blame(attack) {
     if (audit && solve(state, null, react)) state.stats.own[attack.id] = (state.stats.own[attack.id] || 0) + 1;
   }
@@ -50,6 +57,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
     const t = state.t;
     const active = new Set([...state.obs.map((o) => o.from), ...state.warns.flatMap((w) => w.obs.map((o) => o.from))]);
     const fresh = new Set(Object.keys(state.until).filter((id) => state.until[id] > t));
+    /** @param {Attack} a */
     const blocked = (a) => [...(a.holds || []), ...(a.shuns || [])].some((id) => active.has(id));
     let attack = forced || state.queued;
     if (!attack && state.held && !blocked(state.held)) {
@@ -88,7 +96,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
         for (const o of w.obs) o.from = attack.id;
       }
       sprinkleRare(items);
-      state.warns.push(...items);
+      state.warns.push(.../** @type {LiveWarn[]} */ (items));
       state.stats.spawned++;
       state.tries = 0;
       state.streak = attack.id === state.last ? state.streak + 1 : 1;
@@ -106,6 +114,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
     if (state.tries >= TRIES) state.tries = 0;
   }
 
+  /** @param {number} dt */
   function moveObs(dt) {
     for (const o of state.obs) moveProjectile(o, dt);
     state.obs = state.obs.filter((o) => o.x > -OUT && o.x < FW + OUT && o.y > -OUT && o.y < FH + OUT);
@@ -120,6 +129,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
     state.warns = state.warns.filter((w) => state.t < w.at);
   }
 
+  /** @param {SimEvent[]} events */
   function collide(events) {
     const tt = state.toast;
     for (const o of state.obs) {
@@ -137,6 +147,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
     }
   }
 
+  /** @param {number} mx @param {number} my @param {SimEvent[]} events */
   function slide(mx, my, events) {
     mx = clamp(mx || 0, -MOVE_MAX, MOVE_MAX);
     my = clamp(my || 0, -MOVE_MAX, MOVE_MAX);
@@ -149,7 +160,9 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
     }
   }
 
+  /** @param {number} dt @param {number} mx @param {number} my */
   function step(dt, mx, my) {
+    /** @type {SimEvent[]} */
     const events = [];
     if (state.dead) return events;
     state.t += dt;

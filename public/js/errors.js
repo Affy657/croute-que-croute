@@ -11,12 +11,16 @@
   const platform = /iPhone|iPod/.test(ua) ? "iPhone"
     : /iPad/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) ? "iPad"
     : /Android/.test(ua) ? "Android" : "PC";
-  const trail = [], errors = new Map();
+  /** @type {string[]} */
+  const trail = [], /** @type {Map<string, ClientError>} */ errors = new Map();
+  /** @type {Timer} */
   let timer = null, sends = 0, fileVersion = "", session = "";
 
   const stamp = () => ((Date.now() - t0) / 1000).toFixed(2).padStart(7);
+  /** @param {string | null | undefined} text */
   const local = (text) => String(text || "").split(origin).join("").replace(/\?[^\s:()@]*(?=:\d+:\d+)/g, "");
 
+  /** @param {string} key @param {string} [value] */
   function tabStore(key, value) {
     try {
       if (value === undefined) return sessionStorage.getItem(key);
@@ -35,6 +39,7 @@
     return session;
   }
 
+  /** @param {string} text */
   function note(text) {
     trail.push(stamp() + "  " + String(text).slice(0, 160));
     if (trail.length > TRAIL) trail.shift();
@@ -55,6 +60,7 @@
     }).catch(() => {});
   }
 
+  /** @param {Error | string} r */
   function describe(r) {
     if (r && typeof r === "object" && r.name) return r.name + (r.message ? ": " + r.message : "");
     if (typeof r === "string") return r;
@@ -65,6 +71,7 @@
     }
   }
 
+  /** @param {string} kind @param {string} message @param {string} source @param {string} stack */
   function capture(kind, message, source, stack) {
     message = String(message || "").replace(/^Uncaught\s+/, "").slice(0, 300);
     source = local(source).slice(0, 200);
@@ -82,6 +89,7 @@
     e.count++;
   }
 
+  /** @param {ClientError} e */
   function item(e) {
     return e.sent
       ? { kind: e.kind, message: e.message, source: e.source, count: e.count - e.sent }
@@ -97,6 +105,7 @@
     return true;
   }
 
+  /** @param {boolean} leaving */
   function flush(leaving) {
     clearTimeout(timer);
     timer = null;
@@ -110,7 +119,7 @@
     if (!due.length || !allowed()) return;
     const head = {
       version: root.dataset.version || fileVersion, page: location.pathname, platform, ua, session: sessionId(),
-      standalone: !!(navigator.standalone || (window.matchMedia && matchMedia("(display-mode: standalone)").matches))
+      standalone: !!(navigator.standalone || (/** @type {unknown} */ (window.matchMedia) && matchMedia("(display-mode: standalone)").matches))
     };
     let body = JSON.stringify(Object.assign({ errors: due.map(item) }, head));
     while (body.length > BODY_MAX && due.length > 1) {
@@ -126,6 +135,7 @@
     }
   }
 
+  /** @param {Event} e */
   const failed = (e) => {
     try {
       if (e instanceof ErrorEvent) {
@@ -134,7 +144,7 @@
         capture("erreur", e.message || (err && String(err)), source, err && err.stack);
         return;
       }
-      const el = e.target, url = el && (el.currentSrc || el.src || el.href);
+      const el = /** @type {Loaded} */ (e.target), url = el && (el.currentSrc || el.src || el.href);
       if (url && String(url).indexOf(origin + "/") === 0) {
         capture("fichier", el.tagName.toLowerCase() + " pas chargé", String(url).split(/[?#]/)[0], "");
       }

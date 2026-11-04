@@ -8,15 +8,20 @@ const J0 = Math.ceil(Y_MIN / CELL - 0.5), J1 = Math.floor(Y_MAX / CELL - 0.5);
 export const GRID = { CELL, COLS, CELLS: COLS * ROWS, I0, I1, J0, J1, SDT };
 const LO = new Float64Array(ROWS), HI = new Float64Array(ROWS);
 
+/** @param {number} x @param {number} y */
 const cellOf = (x, y) =>
   clamp(Math.round(y / CELL - 0.5), J0, J1) * COLS + clamp(Math.round(x / CELL - 0.5), I0, I1);
 
+/** @param {number} i0 @param {number} i1 */
 const span = (i0, i1) => ((0xffffffff >>> (31 - i1)) & (0xffffffff << i0)) >>> 0;
 
+/** @param {number} v */
 const lowBit = (v) => 31 - Math.clz32(v & -v);
 
+/** @param {number} v */
 const highBit = (v) => 31 - Math.clz32(v);
 
+/** @param {Shot} o @param {number} t0 */
 function mover(o, t0) {
   const spin = !!o.spin;
   const tx = o.vx > 0 ? (FW + OUT - o.x) / o.vx : o.vx < 0 ? (-OUT - o.x) / o.vx : Infinity;
@@ -32,6 +37,7 @@ function mover(o, t0) {
   };
 }
 
+/** @param {Mover[]} list @param {Shot} o @param {number} t0 */
 function addMovers(list, o, t0) {
   const m = mover(o, t0);
   list.push(m);
@@ -42,6 +48,7 @@ function addMovers(list, o, t0) {
   addMovers(list, { ...o, x: o.x + o.vx * tb, y: o.y + o.vy * tb, vx: -o.vx, a: Math.PI - o.a, bounces: o.bounces - 1 }, t0 + tb);
 }
 
+/** @param {number} ax @param {number} ay @param {number} bx @param {number} by @param {number} tx @param {number} ty @param {number} len @param {number} r @param {Area} area */
 function capsule(ax, ay, bx, by, tx, ty, len, r, area) {
   const r2 = r * r;
   const j0 = Math.max(area.j0, Math.floor((Math.min(ay, by) - r) / CELL));
@@ -88,12 +95,14 @@ function capsule(ax, ay, bx, by, tx, ty, len, r, area) {
   }
 }
 
+/** @param {number} ax @param {number} ay @param {number} bx @param {number} by @param {number} r @param {Area} area */
 function segment(ax, ay, bx, by, r, area) {
   const len = Math.hypot(bx - ax, by - ay);
   if (len > 1e-9) capsule(ax, ay, bx, by, (bx - ax) / len, (by - ay) / len, len, r, area);
   else capsule(ax, ay, ax, ay, 1, 0, 0, r, area);
 }
 
+/** @param {Mover} m @param {number} d0 @param {number} d1 @param {Area} area @param {RowWrite} write */
 export function cover(m, d0, d1, area, write) {
   const x0 = m.x + m.vx * d0, y0 = m.y + m.vy * d0, x1 = m.x + m.vx * d1, y1 = m.y + m.vy * d1;
   const reachOut = m.h + m.r;
@@ -122,15 +131,18 @@ export function cover(m, d0, d1, area, write) {
   }
 }
 
+/** @param {Mover} m @param {number} ta @param {number} tb @param {Area} area @param {RowWrite} write */
 function sweep(m, ta, tb, area, write) {
   ta = Math.max(ta, m.t0);
   tb = Math.min(tb, m.t1);
   if (ta <= tb) cover(m, ta - m.t0, tb - m.t0, area, write);
 }
 
+/** @param {Mover[]} movers @param {number} t @param {number} steps @param {number} still @param {number} start */
 function survives(movers, t, steps, still, start) {
   let reach = new Uint32Array(ROWS), next = new Uint32Array(ROWS);
   const blocked = new Uint32Array(ROWS), wide = new Uint32Array(ROWS);
+  /** @type {RowWrite} */
   const write = (j, i0, i1) => { blocked[j] |= span(i0, i1); };
   reach[Math.floor(start / COLS)] = 2 ** (start % COLS);
   const box = { i0: start % COLS, i1: start % COLS, j0: Math.floor(start / COLS), j1: Math.floor(start / COLS) };
@@ -149,6 +161,7 @@ function survives(movers, t, steps, still, start) {
       const src = reach[j] & ~blocked[j];
       wide[j] = (frozen ? src : src | (src << 1) | (src >>> 1)) & cols;
     }
+    /** @param {number} j */
     const at = (j) => (j >= box.j0 && j <= box.j1 ? wide[j] : 0);
     next.fill(0);
     let any = false;
@@ -170,8 +183,10 @@ function survives(movers, t, steps, still, start) {
   return true;
 }
 
+/** @param {SimState} state @param {Warn[] | null} extra */
 export function prepare(state, extra) {
   const t = state.t;
+  /** @type {Mover[]} */
   const movers = [];
   for (const o of state.obs) addMovers(movers, o, t);
   for (const w of state.warns) for (const o of w.obs) addMovers(movers, o, w.at);
@@ -184,6 +199,7 @@ export function prepare(state, extra) {
   return { movers, t, steps, start: cellOf(state.toast.x, state.toast.y) };
 }
 
+/** @param {SimState} state @param {Warn[] | null} extra */
 export function solve(state, extra, react = 0) {
   const { movers, t, steps, start } = prepare(state, extra);
   return survives(movers, t, steps, Math.round(react / SDT), start);

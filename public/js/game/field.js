@@ -2,11 +2,14 @@ export const FW = 360, FH = 640, STEP = 1 / 120, HIT_R = 13, NEAR = 11;
 export const M = 50, OUT = 130;
 export const X_MIN = 18, X_MAX = FW - 18, Y_MIN = 22, Y_MAX = FH - 22;
 
+/** @param {number} v @param {number} a @param {number} b */
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 export const SPEED_START = 1.4, SPEED_RAMP = 75, SPEED_HOT = 3, SPEED_UNTIL = 150;
+/** @param {number} t */
 export const speedMul = (t) => SPEED_START + Math.min(t, SPEED_UNTIL) / SPEED_RAMP;
 
+/** @param {number} px @param {number} py @param {number} ax @param {number} ay @param {number} bx @param {number} by */
 export function segDist2(px, py, ax, ay, bx, by) {
   const dx = bx - ax, dy = by - ay;
   const l2 = dx * dx + dy * dy;
