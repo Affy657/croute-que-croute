@@ -177,6 +177,12 @@ export async function linkWith(code, merge = false) {
 
 export const newLinkCode = () => call("POST", "/api/me/link");
 export const logoutOthers = () => call("DELETE", "/api/me/devices");
+export const unlinkGoogle = () => call("DELETE", "/api/me/google");
+
+export async function openGoogle(link) {
+  const { url } = await call("POST", "/api/google/start", { link, clientId: clientId() });
+  location.href = url;
+}
 
 export async function rename(pseudo) {
   const r = await call("PATCH", "/api/me", { pseudo });

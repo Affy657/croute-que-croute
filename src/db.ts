@@ -20,6 +20,7 @@ export interface Profile {
   banned: number;
   run_count: number;
   look: string | null;
+  google_hash: string | null;
 }
 
 export type Board = "general" | "pc";
@@ -85,7 +86,7 @@ export async function findProfile(req: Request, env: Env) {
   const token = bearer(req);
   if (!token) return null;
   return env.DB.prepare(
-    `SELECT p.id, p.pseudo, p.best, p.best_at, p.pc_best, p.pc_best_at, p.banned, p.run_count, p.look
+    `SELECT p.id, p.pseudo, p.best, p.best_at, p.pc_best, p.pc_best_at, p.banned, p.run_count, p.look, p.google_hash
      FROM sessions s JOIN profiles p ON p.id = s.player_id WHERE s.token_hash = ?`,
   )
     .bind(await sha256(token))

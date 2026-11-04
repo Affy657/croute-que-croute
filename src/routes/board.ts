@@ -27,6 +27,7 @@ export async function board({ req, env }: Ctx) {
   const res = json({
     now,
     version: env.APP_VERSION,
+    google: !!env.GOOGLE_CLIENT_ID,
     event: view.open ? eventInfo(view.open, "open") : eventInfo(view.recent, "closed"),
     next: eventInfo(view.next, "upcoming"),
     top: topOf(general, me),
@@ -51,6 +52,7 @@ export async function board({ req, env }: Ctx) {
           eventRival: me.banned || !eventList ? null : rivalIn(eventList, me.id),
           banned: !!me.banned,
           look: me.look ? JSON.parse(me.look) : null,
+          google: !!me.google_hash,
         }
       : null,
   });

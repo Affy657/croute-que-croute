@@ -328,7 +328,8 @@ export function renderCredits(root) {
     credit("Collectif", "Tartine Sauvage, l'équipe derrière les soirées Space Tartinade", CREW_URL, "Suivre sur Instagram"),
     credit("Développeur", DEV.name, DEV.url, "Voir sur LinkedIn"),
     credit("Musique", `${MUSIC_CREDIT.title}, de ${MUSIC_CREDIT.artist}`, MUSIC_CREDIT.url, "Écouter sur Spotify"),
-    sounds()
+    sounds(),
+    credit("Confidentialité", "Ce que le jeu garde sur toi, et comment le faire effacer.", "/confidentialite", "Lire")
   );
 }
 

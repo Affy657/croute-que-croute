@@ -33,10 +33,12 @@ export const tooFast = () => fail(429, "Doucement : réessaie dans quelques seco
 
 const KEY_COOKIE = "cv_cle", KEY_COOKIE_S = 400 * 24 * 3600;
 
-export function keyCookie(req: Request) {
-  const pair = (req.headers.get("cookie") ?? "").split(";").map((p) => p.trim()).find((p) => p.startsWith(KEY_COOKIE + "="));
-  return pair ? pair.slice(KEY_COOKIE.length + 1) : "";
+export function cookie(req: Request, name: string) {
+  const pair = (req.headers.get("cookie") ?? "").split(";").map((p) => p.trim()).find((p) => p.startsWith(name + "="));
+  return pair ? pair.slice(name.length + 1) : "";
 }
+
+export const keyCookie = (req: Request) => cookie(req, KEY_COOKIE);
 
 export function withKey(res: Response, token: string | null) {
   res.headers.append("set-cookie", `${KEY_COOKIE}=${token ?? ""}; Max-Age=${token ? KEY_COOKIE_S : 0}; Path=/api; Secure; HttpOnly; SameSite=Strict`);

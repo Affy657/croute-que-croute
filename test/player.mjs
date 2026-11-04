@@ -51,6 +51,10 @@ r = await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt
 check("modification de la soirée : fin avant le début refusée", r.status === 400, r);
 
 const eventName = (await call("GET", "/api/board")).data.event.name;
+{
+  const off = await call("POST", "/api/google/start", { body: {} });
+  check("connexion Google fermée tant que les clés ne sont pas posées", off.status === 404 && (await call("GET", "/api/board")).data.google === false, off);
+}
 r = await call("PATCH", "/api/admin/events/current", { key: KEY, body: { name: "  Soirée renommée  " } });
 const renamed = (await call("GET", "/api/admin/players", { key: KEY })).data.event;
 check("nom de la soirée modifiable, horaires gardés", r.status === 200 && renamed.name === "Soirée renommée" && renamed.status === "open", renamed);

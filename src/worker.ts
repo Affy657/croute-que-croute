@@ -7,6 +7,7 @@ import * as cards from "./routes/card";
 import * as runs from "./routes/runs";
 import * as admin from "./routes/admin";
 import * as link from "./routes/link";
+import * as google from "./routes/google";
 import * as diag from "./routes/diag";
 import * as errors from "./routes/errors";
 import { connect } from "./live";
@@ -27,6 +28,9 @@ const routes: Route[] = [
   { method: "POST", path: "/api/me/link", run: link.createLink },
   { method: "DELETE", path: "/api/me/devices", run: link.logoutOthers },
   { method: "POST", path: "/api/link", run: link.useLink },
+  { method: "POST", path: "/api/google/start", run: google.start },
+  { method: "GET", path: "/api/google/retour", run: google.back },
+  { method: "DELETE", path: "/api/me/google", run: google.unlink },
   { method: "POST", path: "/api/diag", run: diag.report },
   { method: "POST", path: "/api/errors", run: errors.collect },
   { method: "GET", path: new RegExp(`^/api/players/${ID}$`), run: cards.card },

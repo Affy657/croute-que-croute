@@ -1,13 +1,20 @@
 import { clock } from "../shared/format.js";
 import { ui, show, setText, markInvalid, renderControls, setLinking } from "./screens.js";
-import { net, on, registered, joinReady, refreshBoard, serverNow, linkWith, newLinkCode, logoutOthers, reason, badInput } from "./api.js";
+import { net, on, registered, joinReady, refreshBoard, serverNow, linkWith, newLinkCode, logoutOthers, openGoogle, unlinkGoogle, reason, badInput } from "./api.js";
 import { renderSettings, copy } from "./settings.js";
 import { resync } from "./profile.js";
 import { inAppNote } from "./inapp.js";
+import { googleBlocked } from "./install.js";
 
 const TICK_MS = 1000, RETRY_MS = 20000, QUIET = 4;
+const GOOGLE_NOTES = {
+  lie: "Compte Google lié.",
+  pris: "Ce compte Google est déjà lié à un autre joueur.",
+  inconnu: "Aucun joueur n'est lié à ce compte Google. Utilise ton code, ou crée un pseudo.",
+  erreur: "La connexion Google a échoué. Réessaie."
+};
 const OUT_ASK = "Tes autres appareils sortent du compte. Pour revenir, il leur faudra un nouveau code.";
-let timer = null, until = Infinity, live = false, asked = 0, shown = "", merging = null, mergeInto = null, flow = 0, waiting = null, opener = () => {}, idle = () => true;
+let timer = null, until = Infinity, live = false, asked = 0, shown = "", merging = null, mergeInto = null, flow = 0, waiting = null, googleResult = null, opener = () => {}, idle = () => true;
 
 const quoted = (name) => "« " + name + " »";
 
@@ -174,6 +181,66 @@ async function confirmMerge() {
   }
 }
 
+function renderGoogle() {
+  const usable = !!(net.board && net.board.google) && !googleBlocked();
+  const me = net.board && net.board.me;
+  ui.googleLogin.hidden = !usable;
+  ui.googleBox.hidden = !usable || !me;
+  if (me) ui.googleLabel.textContent = me.google ? "Délier mon compte Google" : "Lier mon compte Google";
+}
+
+async function goGoogle(button, link) {
+  button.disabled = true;
+  say(ui.googleNote, "");
+  setText(ui.linkError, "");
+  try {
+    await openGoogle(link);
+  } catch (e) {
+    say(link ? ui.googleNote : ui.linkError, reason(e), true);
+    button.disabled = false;
+  }
+}
+
+async function toggleGoogle() {
+  const me = net.board && net.board.me;
+  if (!me || !me.google) return goGoogle(ui.googleBtn, true);
+  ui.googleBtn.disabled = true;
+  say(ui.googleNote, "");
+  try {
+    await unlinkGoogle();
+    await refreshBoard();
+    say(ui.googleNote, "Compte Google délié.");
+  } catch (e) {
+    say(ui.googleNote, reason(e), true);
+  } finally {
+    ui.googleBtn.disabled = false;
+  }
+}
+
+function showGoogleResult() {
+  if (!googleResult || !idle()) return;
+  const note = GOOGLE_NOTES[googleResult];
+  if (registered()) {
+    googleResult = null;
+    if (!note) return;
+    opener();
+    say(ui.googleNote, note, !note.startsWith("Compte"));
+  } else if (net.board && joinReady()) {
+    googleResult = null;
+    if (!note) return;
+    setLinking(true);
+    setText(ui.linkError, note);
+  }
+}
+
+function googleFromUrl() {
+  const m = location.hash.match(/^#google=([a-z]+)$/);
+  if (!m) return;
+  history.replaceState(null, "", location.pathname + location.search);
+  googleResult = m[1];
+  showGoogleResult();
+}
+
 function askOut(on, note = "") {
   ui.outRow.hidden = on;
   ui.outAsk.hidden = !on;
@@ -194,6 +261,8 @@ async function confirmOut() {
 }
 
 export function resetAccount() {
+  say(ui.googleNote, "");
+  renderGoogle();
   resetMerge();
   showMerge(false);
   ui.mergeInput.value = "";
@@ -232,6 +301,7 @@ export function initAccount(openSettings, isIdle) {
   opener = openSettings;
   idle = isIdle;
   linkFromUrl();
+  googleFromUrl();
 }
 
 ui.linkBtn.addEventListener("click", openLink);
@@ -256,6 +326,10 @@ ui.outBtn.addEventListener("click", () => {
 ui.outNo.addEventListener("click", () => askOut(false));
 ui.outYes.addEventListener("click", confirmOut);
 on("board", pickUp);
+on("board", renderGoogle);
+on("board", showGoogleResult);
+ui.googleLogin.addEventListener("click", () => goGoogle(ui.googleLogin, false));
+ui.googleBtn.addEventListener("click", toggleGoogle);
 ui.linkBack.addEventListener("click", closeLink);
 ui.haveAccount.addEventListener("click", () => {
   setText(ui.linkError, "");
