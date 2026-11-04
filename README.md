@@ -21,7 +21,7 @@ Source unique de connaissance du projet. Si le README et le code se contredisent
 Il faut Node 26.
 
 1. `npm ci`
-2. Créer un fichier `.dev.vars` avec la ligne `ADMIN_KEY=une-cle-de-test`.
+2. Créer un fichier `.dev.vars` avec la ligne `ADMIN_KEY=cledetest` (lettres et chiffres seulement).
 3. `npm run db:local`, puis `npm run seed` pour des joueurs d'essai.
 4. `npm run dev` : le jeu tourne sur http://localhost:8787.
 
