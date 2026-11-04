@@ -609,6 +609,10 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 
 - Un appareil sorti du compte (« Déconnecter les autres ») garde les succès, garnitures et la tenue, et les donne au pseudo qu'il crée ensuite. Pour corriger sans risque, le serveur doit dire à l'appareil qu'il a été déconnecté (une petite migration) : vider la progression dès qu'une clé est refusée ferait perdre leurs skins à tous si les comptes étaient effacés un jour.
 
+### Vu à la mise en ligne de la 0.49.8 : pas corrigé
+
+- Juste après un déploiement, une page chargée peut recevoir un mélange d'anciens et de nouveaux fichiers (1 à 2 min au plus, cause probable : Cloudflare qui propage les fichiers). Vu une fois sur ce PC : `over.js` en 404, `api.js` encore ancien, page bloquée sur l'écran de chargement malgré le rechargement automatique de `boot.js`, puis tout est rentré dans l'ordre au rechargement suivant. `npm run verif` ne le voit pas. Piste : un second rechargement automatique au bout de quelques secondes quand le jeu n'a pas démarré.
+
 ### Analyse du solveur du 04/11/2026 : pas fait
 
 - Plafonner le répit des refus à environ 0,3 s : fermerait le blocage devant un rouleau (voir Équité) et garderait 97 % des répits actuels. Pas encore mesuré, à décider après la soirée du 07/11.
