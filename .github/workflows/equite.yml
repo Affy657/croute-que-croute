@@ -3,7 +3,7 @@ name: Équité
 on:
   push:
     branches: [master]
-    paths: ["public/js/game/**", "test/fairness.mjs", "test/equilibrage/jeu.mjs", "test/equilibrage/invariants.mjs"]
+    paths: ["public/js/game/**", "test/fairness.mjs", "test/chemin.mjs", "test/equilibrage/jeu.mjs", "test/equilibrage/invariants.mjs"]
   workflow_dispatch:
 
 concurrency:

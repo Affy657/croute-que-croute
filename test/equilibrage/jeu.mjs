@@ -1,10 +1,10 @@
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
+import { planPath } from "../chemin.mjs";
 
 export const DIR = resolve(process.env.GAME || "public/js/game");
 const load = (file) => import(pathToFileURL(resolve(DIR, file)).href);
 export const { createSim, CALM_PASS, WAIT_PASS } = await load("sim.js");
-export const { solve } = await load("solver.js");
 export const { ATTACKS, WALL_HOLE, WALL_AWAY, WALL_LOW, ROLLING_APART } = await load("attacks.js");
 export const { gapTo } = await load("projectiles.js");
 export const field = await load("field.js");
@@ -38,7 +38,7 @@ export function solverPilot(sim) {
     if (left === 0) {
       if (!path || s.stats.spawned !== seen || idx >= path.length - 1) {
         seen = s.stats.spawned;
-        path = sim.plan();
+        path = planPath(s);
         idx = 0;
       }
       from = { x: s.toast.x, y: s.toast.y };
@@ -82,7 +82,7 @@ export function playHuman(seed, { rt, spd, lapse }, limit, { t0 = 0, setup, tick
     let target = path && path[Math.min(Math.floor((s.t - tPlan) / SDT) + 1, path.length - 1)];
     const off = target ? Math.hypot(target.x - s.toast.x, target.y - s.toast.y) : Infinity;
     if (fresh || !path || s.t - lastPlan > REPLAN_S || off > OFF_PX) {
-      const p = solve({ t: s.t, toast: s.toast, obs: s.obs, warns: vis }, null, true);
+      const p = planPath({ t: s.t, toast: s.toast, obs: s.obs, warns: vis });
       if (p) {
         path = p;
         tPlan = s.t;

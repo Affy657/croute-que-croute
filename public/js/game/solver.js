@@ -1,16 +1,15 @@
 import { FW, FH, HIT_R, X_MIN, X_MAX, Y_MIN, Y_MAX, OUT, clamp } from "./field.js";
 import { PROJECTILES } from "./projectiles.js";
 
-const CELL = 12, SDT = 1 / 30, SUB = 4, HORIZON = 3.5, HORIZON_LONG = 4.5, MARGIN = 11;
-const COLS = Math.floor(FW / CELL), ROWS = Math.floor(FH / CELL), CELLS = COLS * ROWS;
+const CELL = 12, SDT = 1 / 30, HORIZON = 3.5, HORIZON_LONG = 4.5, MARGIN = 11;
+const COLS = Math.floor(FW / CELL), ROWS = Math.floor(FH / CELL);
 const I0 = Math.ceil(X_MIN / CELL - 0.5), I1 = Math.floor(X_MAX / CELL - 0.5);
 const J0 = Math.ceil(Y_MIN / CELL - 0.5), J1 = Math.floor(Y_MAX / CELL - 0.5);
+export const GRID = { CELL, COLS, CELLS: COLS * ROWS, I0, I1, J0, J1, SDT };
 const LO = new Float64Array(ROWS), HI = new Float64Array(ROWS);
 
 const cellOf = (x, y) =>
   clamp(Math.round(y / CELL - 0.5), J0, J1) * COLS + clamp(Math.round(x / CELL - 0.5), I0, I1);
-
-const centerOf = (c) => ({ x: ((c % COLS) + 0.5) * CELL, y: (Math.floor(c / COLS) + 0.5) * CELL });
 
 const span = (i0, i1) => ((0xffffffff >>> (31 - i1)) & (0xffffffff << i0)) >>> 0;
 
@@ -32,8 +31,6 @@ function mover(o, t0) {
     t0, t1: t0 + Math.min(tx, ty)
   };
 }
-
-const FULL = { i0: I0, i1: I1, j0: J0, j1: J1 };
 
 function addMovers(list, o, t0) {
   const m = mover(o, t0);
@@ -97,7 +94,7 @@ function segment(ax, ay, bx, by, r, area) {
   else capsule(ax, ay, ax, ay, 1, 0, 0, r, area);
 }
 
-function cover(m, d0, d1, area, write) {
+export function cover(m, d0, d1, area, write) {
   const x0 = m.x + m.vx * d0, y0 = m.y + m.vy * d0, x1 = m.x + m.vx * d1, y1 = m.y + m.vy * d1;
   const reachOut = m.h + m.r;
   if (Math.max(x0, x1) + reachOut < (area.i0 - 0.5) * CELL || Math.min(x0, x1) - reachOut > (area.i1 + 1.5) * CELL) return;
@@ -129,10 +126,6 @@ function sweep(m, ta, tb, area, write) {
   ta = Math.max(ta, m.t0);
   tb = Math.min(tb, m.t1);
   if (ta <= tb) cover(m, ta - m.t0, tb - m.t0, area, write);
-}
-
-function mark(m, tau, area, write) {
-  if (tau >= m.t0 && tau <= m.t1) cover(m, tau - m.t0, tau - m.t0, area, write);
 }
 
 function survives(movers, t, steps, still, start) {
@@ -177,62 +170,7 @@ function survives(movers, t, steps, still, start) {
   return true;
 }
 
-function pathOf(movers, t, steps, still, start) {
-  let reach = new Uint8Array(CELLS), next = new Uint8Array(CELLS);
-  const blocked = new Uint8Array(CELLS);
-  const write = (j, i0, i1) => blocked.fill(1, j * COLS + i0, j * COLS + i1 + 1);
-  const prev = [];
-  reach[start] = 1;
-  for (let k = 1; k <= steps; k++) {
-    blocked.fill(0);
-    const tA = t + (k - 1) * SDT;
-    const frozen = k <= still;
-    for (let s = 0; s <= SUB; s++) {
-      const tau = tA + (s * SDT) / SUB;
-      for (const m of movers) mark(m, tau, FULL, write);
-    }
-    next.fill(0);
-    let any = false;
-    const from = new Int16Array(CELLS).fill(-1);
-    for (let j = J0; j <= J1; j++) {
-      for (let i = I0; i <= I1; i++) {
-        const c = j * COLS + i;
-        if (blocked[c]) continue;
-        let src = reach[c] ? c : -1;
-        for (let dj = -1; dj <= 1 && src < 0 && !frozen; dj++) {
-          const jj = j + dj;
-          if (jj < J0 || jj > J1) continue;
-          for (let di = -1; di <= 1; di++) {
-            const ii = i + di;
-            if (ii < I0 || ii > I1) continue;
-            const n = jj * COLS + ii;
-            if (reach[n] && !blocked[n]) { src = n; break; }
-          }
-        }
-        if (src < 0) continue;
-        next[c] = 1;
-        any = true;
-        from[c] = src;
-      }
-    }
-    prev.push(from);
-    if (!any) return null;
-    [reach, next] = [next, reach];
-  }
-  let last = start, bestD = Infinity;
-  for (let c = 0; c < CELLS; c++) {
-    if (!reach[c]) continue;
-    const p = centerOf(c);
-    const d = (p.x - FW / 2) ** 2 + (p.y - FH * 0.6) ** 2;
-    if (d < bestD) { bestD = d; last = c; }
-  }
-  const path = [last];
-  for (let k = prev.length - 1; k >= 0; k--) path.push(prev[k][path[path.length - 1]]);
-  return path.reverse().map(centerOf);
-}
-
-export function solve(state, extra, wantPath, react = 0) {
-  const still = Math.round(react / SDT);
+export function prepare(state, extra) {
   const t = state.t;
   const movers = [];
   for (const o of state.obs) addMovers(movers, o, t);
@@ -243,6 +181,10 @@ export function solve(state, extra, wantPath, react = 0) {
   for (const m of movers) end = Math.max(end, m.t1);
   for (let i = first; i < movers.length; i++) own = Math.max(own, movers[i].t1);
   const steps = Math.ceil((Math.min(end, t + Math.min(HORIZON_LONG, Math.max(HORIZON, own - t))) - t) / SDT);
-  const start = cellOf(state.toast.x, state.toast.y);
-  return wantPath ? pathOf(movers, t, steps, still, start) : survives(movers, t, steps, still, start);
+  return { movers, t, steps, start: cellOf(state.toast.x, state.toast.y) };
+}
+
+export function solve(state, extra, react = 0) {
+  const { movers, t, steps, start } = prepare(state, extra);
+  return survives(movers, t, steps, Math.round(react / SDT), start);
 }
