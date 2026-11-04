@@ -25,7 +25,7 @@ Il faut Node 26.
 3. `npm run db:local`, puis `npm run seed` pour des joueurs d'essai.
 4. `npm run dev` : le jeu tourne sur http://localhost:8787.
 
-La musique n'est pas dans le dépôt, le jeu marche sans.
+La musique et les bruitages ne sont pas dans le dépôt, le jeu marche sans.
 
 ## Le jeu
 
@@ -262,7 +262,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 
 - Pas de son sur les annonces : ça avantagerait ceux qui jouent avec le son.
 - En local (`LOCAL`), son coupé à chaque chargement.
-- Bruitages Mixkit dans `public/sfx/`, `SOUNDS` dans `audio.js`. Leur licence permet de les utiliser dans le jeu, pas de les redistribuer seuls ni avec le code source.
+- Bruitages Mixkit : `public/sfx/`, hors git car leur licence interdit de les redistribuer avec le code source. À remettre avant de déployer depuis un autre PC. `SOUNDS` dans `audio.js`.
 - Musique : `public/music/theme.m4a` ou `.mp3`, hors git : à remettre avant de déployer depuis un autre PC. Crédit dans `MUSIC_CREDIT`.
 - Changer : remplacer le fichier, `MUSIC_CREDIT` et `MUSIC_PARTS` (`[[0, durée]]` pour tout jouer), puis `npm run deploy`.
 - Elle ne joue qu'en partie et repart du début, pour suivre la difficulté. Hors partie, 2 s d'aperçu quand on lâche le curseur.
@@ -535,7 +535,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `npm run check` : types de l'API et du JavaScript de `public/js`. Attrape un import disparu (la page admin blanche) ou un nom mal tapé.
 - `npm test` ou `npm run test:unit` : le code du téléphone, sans serveur (4 s).
 - `npm run test:api` (`test/api.mjs`, avec `player.mjs` et `admin.mjs`, 1 min) : chaque route, cas normal et refus, sur une base neuve à part, port 8790 (`TEST_PORT` pour un autre).
-- `npm run test:navigateur` (`test/navigateur.mjs`, Playwright, Edge sous Windows, Chromium sur GitHub, 30 s) : parcours complet joueur, écran géant, admin, sans erreur de console ni fichier manquant (sauf la musique). Le test ajoute à `run.js` une poignée `window.__jeu`, dans son navigateur seulement.
+- `npm run test:navigateur` (`test/navigateur.mjs`, Playwright, Edge sous Windows, Chromium sur GitHub, 30 s) : parcours complet joueur, écran géant, admin, sans erreur de console ni fichier manquant (sauf la musique et les bruitages). Le test ajoute à `run.js` une poignée `window.__jeu`, dans son navigateur seulement.
 - `npm run equite` (`test/fairness.mjs`, 4 min) : le robot parfait. `npm run verif` : la prod (réessaie 30 s après une mise en ligne).
 
 ### Pièges WebKit
@@ -639,7 +639,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 
 ## Bon à savoir
 
-- Hors git, à garder de côté : `cle-admin.txt`, `.dev.vars`, `invitation-*.txt`, `sauvegardes/`, la musique, `ecoute-sons/` (`node ecoute-sons/serve.mjs`).
+- Hors git, à garder de côté : `cle-admin.txt`, `.dev.vars`, `invitation-*.txt`, `sauvegardes/`, la musique, les bruitages, `ecoute-sons/` (`node ecoute-sons/serve.mjs`).
 - Sauvegarde : `npx wrangler d1 export croute-que-croute --remote --output sauvegardes/<nom>.sql`. Celles d'avant le 29/10/2026 contiennent des jetons en clair : à garder pour soi.
 - Time Travel, 7 jours, gratuit : `npx wrangler d1 time-travel restore croute-que-croute --timestamp=<heure unix>`. Écrase la base en ligne : sauvegarder d'abord.
 - Revenir à la version d'avant : `npx wrangler versions list`, puis `npx wrangler rollback <id> -m "<raison>"`. Pas encore essayé : le faire une fois hors soirée.
