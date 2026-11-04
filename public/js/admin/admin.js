@@ -3,32 +3,43 @@ import { fmtCs, clock } from "../shared/format.js";
 import { VERSION } from "../version.js";
 import { timeout } from "../shared/timeout.js";
 
+/** @param {string} id */
 const $ = (id) => document.getElementById(id);
 const CALL_MS = 10000, REFRESH_MS = 10000, ERRORS_MS = 60000, FRESH_MS = 3600 * 1000, COPIED_MS = 2000;
 const store = {
   get: () => storage.get(KEYS.adminToken),
-  set: (v) => storage.set(KEYS.adminToken, v || null)
+  set: /** @param {string | null} v */ (v) => storage.set(KEYS.adminToken, v || null)
 };
 
 document.documentElement.dataset.version = VERSION;
 if (window.top !== window) document.documentElement.classList.add("embedded");
 
 let token = store.get();
+/** @type {AdminRole | null} */
 let me = null;
+/** @type {AdminData | null} */
 let data = null;
+/** @type {Timer} */
 let timer = null;
+/** @type {Timer} */
 let retry = null;
 let scope = "event";
 let loads = 0;
 let invited = new URLSearchParams(location.hash.slice(1)).get("invite");
+/** @type {Set<string>} */
 const opened = new Set();
 const STATUS = { open: "Soirée en cours", upcoming: "Prochaine soirée", closed: "Dernière soirée" };
 
+/** @param {number} ms */
 const day = (ms) => new Date(ms).toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "2-digit" }) + " à " + hour(ms);
+/** @param {number} ms */
 const hour = (ms) => new Date(ms).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
+/** @param {number} ms */
 const toInput = (ms) => new Date(ms - new Date(ms).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+/** @param {string} value */
 const fromInput = (value) => (value ? new Date(value).getTime() : NaN);
 
+/** @param {number} ms */
 function since(ms) {
   const min = Math.floor((Date.now() - ms) / 60000);
   if (min < 1) return "à l'instant";
@@ -37,8 +48,10 @@ function since(ms) {
   return "il y a " + Math.floor(min / 1440) + " j";
 }
 
+/** @param {number} ms */
 const ago = (ms) => (Date.now() - ms < 5 * 60000 ? "actif à l'instant" : "vu " + since(ms));
 
+/** @type {Record<string, string>} */
 const KINDS = {
   erreur: "Erreur",
   promesse: "Promesse rejetée",
@@ -55,13 +68,16 @@ const BROWSERS = [
 
 const SUSPECT_LABELS = { high: "à vérifier : loin devant le 2e", slow: "à vérifier : partie ralentie, mise en pause ou envoyée en retard" };
 
+/** @param {HTMLElement} el @param {string} text @param {boolean} [error] */
 function say(el, text, error) {
   el.textContent = text || "";
   el.hidden = !text;
   el.classList.toggle("error", !!error);
 }
 
+/** @param {string} method @param {string} path @param {unknown} [body] */
 async function call(method, path, body) {
+  /** @type {Record<string, string>} */
   const headers = { "content-type": "application/json" };
   if (token) headers.authorization = "Bearer " + token;
   let res;
@@ -76,6 +92,7 @@ async function call(method, path, body) {
   return json;
 }
 
+/** @param {string} view */
 function show(view) {
   $("login").hidden = view !== "login";
   $("invite").hidden = view !== "invite";
@@ -97,10 +114,11 @@ function signOut() {
   else show("login");
 }
 
+/** @param {string} id @param {() => Promise<void>} fn */
 function onSubmit(id, fn) {
   const form = $(id);
   let busy = false;
-  form.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", /** @param {Event} e */ async (e) => {
     e.preventDefault();
     if (busy) return;
     busy = true;
@@ -115,6 +133,7 @@ function onSubmit(id, fn) {
   });
 }
 
+/** @type {MakeCell} */
 function cell(tag, cls, text) {
   const el = document.createElement(tag);
   el.className = cls;
@@ -181,7 +200,7 @@ function renderPlayers() {
         await call("POST", "/api/admin/players/" + p.id + "/ban", { banned: !p.banned });
         await load();
       } catch (e) {
-        say($("playersMsg"), e.message, true);
+        say($("playersMsg"), /** @type {Error} */ (e).message, true);
         btn.disabled = false;
       }
     });
@@ -202,14 +221,14 @@ async function load() {
     renderEvent();
     renderPlayers();
   } catch (e) {
-    if (asked === scope && mine === loads) say($("playersMsg"), e.message, true);
+    if (asked === scope && mine === loads) say($("playersMsg"), /** @type {Error} */ (e).message, true);
   }
 }
 
 async function loadTeam() {
   try {
     const { team } = await call("GET", "/api/admin/team");
-    $("team").replaceChildren(...team.map((a) => {
+    $("team").replaceChildren(...team.map(/** @param {TeamMate} a */ (a) => {
       const li = document.createElement("li");
       const main = document.createElement("div");
       main.className = "main";
@@ -228,7 +247,7 @@ async function loadTeam() {
             await call("POST", "/api/admin/team/" + a.id + "/revoke");
             await loadTeam();
           } catch (e) {
-            say($("teamMsg"), e.message, true);
+            say($("teamMsg"), /** @type {Error} */ (e).message, true);
           } finally {
             btn.disabled = false;
           }
@@ -240,10 +259,11 @@ async function loadTeam() {
       return li;
     }));
   } catch (e) {
-    say($("teamMsg"), e.message, true);
+    say($("teamMsg"), /** @type {Error} */ (e).message, true);
   }
 }
 
+/** @param {string} ua @param {string} platform */
 function system(ua, platform) {
   const ios = ua.match(/OS (\d+)_(\d+)/) || ua.match(/Version\/(\d+)\.(\d+)/);
   if ((platform === "iPhone" || platform === "iPad") && ios) return "iOS " + ios[1] + "." + ios[2];
@@ -252,20 +272,24 @@ function system(ua, platform) {
   return /Windows/.test(ua) ? "Windows" : /Mac OS X/.test(ua) ? "macOS" : /Linux/.test(ua) ? "Linux" : "";
 }
 
+/** @param {ErrorDevice} d */
 function deviceLabel(d) {
   const browser = BROWSERS.find(([re]) => re.test(d.ua));
   return [d.platform, system(d.ua, d.platform), browser ? browser[1] : "", d.standalone ? "appli installée" : ""].filter(Boolean).join(", ");
 }
 
+/** @param {ErrorGroup} g */
 function spread(g) {
   const where = Object.entries(g.platforms).sort((a, b) => b[1] - a[1]).map(([p, n]) => p + " " + n).join(", ");
   return g.count + " fois, " + g.sessions + (g.sessions > 1 ? " sessions" : " session") + (where ? " (" + where + ")" : "");
 }
 
+/** @param {ErrorGroup} g */
 function versionLabel(g) {
   return (g.last.version || "inconnue") + (g.versions > 1 ? ", vue sur " + g.versions + " versions" : "");
 }
 
+/** @param {ErrorGroup} g */
 function reportText(g) {
   const l = g.last;
   return [
@@ -288,6 +312,7 @@ function reportText(g) {
   ].join("\n");
 }
 
+/** @param {string} text */
 function copyText(text) {
   const fallback = () => {
     const area = document.createElement("textarea");
@@ -305,6 +330,7 @@ function copyText(text) {
   return navigator.clipboard.writeText(text).then(() => true, fallback);
 }
 
+/** @param {ErrorGroup} g */
 function errorItem(g) {
   const li = document.createElement("li");
   li.className = Date.now() - g.lastAt < FRESH_MS ? "fresh" : "";
@@ -342,7 +368,7 @@ function errorItem(g) {
       opened.delete(g.id);
       await loadErrors();
     } catch (e) {
-      say($("errorsMsg"), e.message, true);
+      say($("errorsMsg"), /** @type {Error} */ (e).message, true);
       fixBtn.disabled = false;
     }
   });
@@ -370,7 +396,7 @@ async function loadErrorCount() {
       : "Aucune erreur ces dernières 24 h.";
     say($("errorsAlert"), r.hour ? (r.hour > 1 ? r.hour + " erreurs différentes" : "1 erreur") + " dans la dernière heure (trait rouge)." : "", true);
   } catch (e) {
-    $("errorsSummary").textContent = e.message;
+    $("errorsSummary").textContent = /** @type {Error} */ (e).message;
   }
 }
 
@@ -384,7 +410,7 @@ async function loadErrors() {
     btn.textContent = "Actualiser la liste";
     say($("errorsMsg"), "");
   } catch (e) {
-    say($("errorsMsg"), e.message, true);
+    say($("errorsMsg"), /** @type {Error} */ (e).message, true);
   } finally {
     btn.disabled = false;
   }
@@ -393,11 +419,11 @@ async function loadErrors() {
 
 async function boot() {
   try {
-    me = (await call("GET", "/api/admin/me")).admin;
+    me = /** @type {AdminRole} */ ((await call("GET", "/api/admin/me")).admin);
   } catch (e) {
     if (!token) return;
     show("app");
-    say($("playersMsg"), e.message, true);
+    say($("playersMsg"), /** @type {Error} */ (e).message, true);
     clearTimeout(retry);
     retry = setTimeout(boot, REFRESH_MS);
     return;
@@ -419,6 +445,7 @@ async function boot() {
   }, REFRESH_MS);
 }
 
+/** @param {MergeSide} a */
 const summary = (a) => a.pseudo + " (" + (a.best ? fmtCs(a.best) + " s, " : "") + a.runs + (a.runs > 1 ? " parties" : " partie") + ")";
 
 onSubmit("mergeForm", async () => {
@@ -432,7 +459,7 @@ onSubmit("mergeForm", async () => {
     say($("mergeMsg"), r.merged + " est réuni dans " + r.pseudo + ".");
     await load();
   } catch (err) {
-    say($("mergeMsg"), err.message, true);
+    say($("mergeMsg"), /** @type {Error} */ (err).message, true);
   }
 });
 
@@ -445,10 +472,11 @@ onSubmit("loginForm", async () => {
     say($("loginMsg"), "");
     await boot();
   } catch (err) {
-    say($("loginMsg"), err.message, true);
+    say($("loginMsg"), /** @type {Error} */ (err).message, true);
   }
 });
 
+/** @param {string} invite */
 async function acceptInvite(invite) {
   const r = await call("POST", "/api/admin/accept", { invite });
   invited = null;
@@ -458,6 +486,7 @@ async function acceptInvite(invite) {
   await boot();
 }
 
+/** @param {string} invite */
 function showInvite(invite) {
   show("invite");
   $("acceptBtn").onclick = async () => {
@@ -465,7 +494,7 @@ function showInvite(invite) {
     try {
       await acceptInvite(invite);
     } catch (e) {
-      say($("inviteMsg"), e.message, true);
+      say($("inviteMsg"), /** @type {Error} */ (e).message, true);
       $("acceptBtn").disabled = false;
     }
   };
@@ -482,7 +511,7 @@ onSubmit("pasteForm", async () => {
     await acceptInvite(match[1]);
     $("pasteInvite").value = "";
   } catch (err) {
-    say($("pasteMsg"), err.message, true);
+    say($("pasteMsg"), /** @type {Error} */ (err).message, true);
   }
 });
 
@@ -522,7 +551,7 @@ onSubmit("endForm", async () => {
     say($("eventMsg"), "Soirée modifiée.");
     await load();
   } catch (err) {
-    say($("eventMsg"), err.message, true);
+    say($("eventMsg"), /** @type {Error} */ (err).message, true);
   }
 });
 
@@ -540,7 +569,7 @@ onSubmit("eventForm", async () => {
     say($("eventMsg"), "Soirée créée.");
     await load();
   } catch (err) {
-    say($("eventMsg"), err.message, true);
+    say($("eventMsg"), /** @type {Error} */ (err).message, true);
   }
 });
 
@@ -553,7 +582,7 @@ onSubmit("inviteForm", async () => {
     $("inviteName").value = "";
     say($("teamMsg"), "");
   } catch (err) {
-    say($("teamMsg"), err.message, true);
+    say($("teamMsg"), /** @type {Error} */ (err).message, true);
   }
 });
 
