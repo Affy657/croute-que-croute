@@ -3,17 +3,20 @@ import { GOLD, TAU } from "./kit.js";
 
 const SANS = "Arial, Helvetica, sans-serif", SERIF = "Georgia, 'Times New Roman', serif";
 
+/** @type {Record<string, Can>} */
 export const CANS = {
   "86": { name: "8.6 Original", edge: "#031722", mid: "#1f4458", lid: "#d8c48a", decor: eightSix },
   maxi: { name: "Maximator", edge: "#012b17", mid: "#0c7d52", lid: "#d3d7de", decor: maximator }
 };
 
+/** @param {Ctx} ctx @param {string} text @param {number} y @param {number} size @param {string} color @param {number} max */
 function label(ctx, text, y, size, color, max, font = "bold " + size + "px " + SANS) {
   ctx.font = font;
   ctx.fillStyle = color;
   ctx.fillText(text, 0, y, max);
 }
 
+/** @param {Ctx} ctx @param {string} text @param {number} y @param {number} r @param {string} font @param {number} max */
 function arcText(ctx, text, y, r, font, max) {
   ctx.font = font;
   const widths = [...text].map((ch) => ctx.measureText(ch).width);
@@ -31,6 +34,7 @@ function arcText(ctx, text, y, r, font, max) {
   });
 }
 
+/** @param {Ctx} ctx @param {number} w @param {number} cy */
 function wolf(ctx, w, cy) {
   ctx.save();
   ctx.translate(0, cy);
@@ -68,6 +72,7 @@ function wolf(ctx, w, cy) {
   ctx.restore();
 }
 
+/** @type {Box} */
 function cracks(ctx, w, h) {
   ctx.strokeStyle = "rgba(0, 8, 14, 0.55)";
   ctx.lineWidth = Math.max(0.6, w * 0.012);
@@ -78,6 +83,7 @@ function cracks(ctx, w, h) {
   }
 }
 
+/** @type {Box} */
 function eightSix(ctx, w, h) {
   cracks(ctx, w, h);
   ctx.textAlign = "center";
@@ -100,6 +106,7 @@ function eightSix(ctx, w, h) {
   label(ctx, "500 mL", h * 0.38, h * 0.022, "#ffffff", w * 0.3);
 }
 
+/** @param {Ctx} ctx @param {number} x @param {number} y0 @param {number} y1 @param {number} half */
 function sail(ctx, x, y0, y1, half) {
   const b = (y1 - y0) * 0.25;
   ctx.beginPath();
@@ -112,6 +119,7 @@ function sail(ctx, x, y0, y1, half) {
   ctx.fill();
 }
 
+/** @param {Ctx} ctx @param {number} w @param {number} cy */
 function ship(ctx, w, cy) {
   ctx.save();
   ctx.translate(0, cy);
@@ -150,6 +158,7 @@ function ship(ctx, w, cy) {
   ctx.restore();
 }
 
+/** @type {Box} */
 function maximator(ctx, w, h) {
   ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
   ctx.fillRect(-w / 2, h * 0.08, w, h * 0.5);
@@ -191,6 +200,7 @@ function maximator(ctx, w, h) {
   label(ctx, "AU GOÛT PUISSANT", h * 0.335, h * 0.02, "#ffffff", w * 0.56);
 }
 
+/** @param {Ctx} ctx @param {string} kind @param {number} s */
 export function drawCan(ctx, kind, s) {
   const K = CANS[kind], h = s, w = s * 0.4, e = w * 0.14, neck = w * 0.08, top = -h / 2 + e + neck;
   ctx.save();
@@ -234,10 +244,12 @@ export function drawCan(ctx, kind, s) {
   ctx.restore();
 }
 
+/** @type {Map<string, HTMLCanvasElement>} */
 const SPRITES = new Map(), SPRITE_KEEP = 8;
 
+/** @param {Ctx} ctx @param {string} kind @param {number} s */
 export function cachedCan(ctx, kind, s) {
-  const m = typeof document !== "undefined" && document.createElement && ctx.getTransform ? ctx.getTransform() : null;
+  const m = typeof document !== "undefined" && /** @type {unknown} */ (document.createElement) && ctx.getTransform ? ctx.getTransform() : null;
   if (!m) return drawCan(ctx, kind, s);
   const px = Math.hypot(m.a, m.b), key = kind + ":" + Math.round(s * px);
   let cv = SPRITES.get(key);
@@ -245,7 +257,7 @@ export function cachedCan(ctx, kind, s) {
     cv = document.createElement("canvas");
     cv.width = Math.ceil(s * 0.4 * px) + 4;
     cv.height = Math.ceil(s * px) + 4;
-    const g = cv.getContext("2d");
+    const g = /** @type {Ctx} */ (cv.getContext("2d"));
     g.setTransform(px, 0, 0, px, cv.width / 2, cv.height / 2);
     drawCan(g, kind, s);
     if (SPRITES.size >= SPRITE_KEEP) SPRITES.clear();
@@ -254,6 +266,7 @@ export function cachedCan(ctx, kind, s) {
   ctx.drawImage(cv, -cv.width / (2 * px), -cv.height / (2 * px), cv.width / px, cv.height / px);
 }
 
+/** @type {Move} */
 export function streak(ctx, len, s) {
   ctx.lineCap = "round";
   for (const [w, a] of [[0.25, 0.35], [0.09, 0.8]]) {

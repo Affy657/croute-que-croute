@@ -5,15 +5,19 @@ import { clipped, disc, INK, ink, onSphere, TAU } from "./kit.js";
 const POP_S = 6, DROP_S = 0.5, POP_AT = 5, SNAP_S = 0.12, EJECT = 0.6, SHOWN_AT = 3.5, WISPS = 3;
 const SLOTS = [[0.08, -0.74, 0.12, 1], [-0.08, -0.55, 0, -1]];
 
+/** @param {string} c */
 const hex = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
 
+/** @param {string} a @param {string} b @param {number} t */
 function mix(a, b, t) {
   const A = hex(a), B = hex(b);
   return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(",")})`;
 }
 
+/** @param {number} clock @param {number} delay */
 const cycle = (clock, delay) => (((clock + SHOWN_AT - delay) % POP_S) + POP_S) % POP_S;
 
+/** @param {number} clock @param {number} delay */
 function grill(clock, delay) {
   const k = cycle(clock, delay);
   if (k < DROP_S) {
@@ -25,11 +29,13 @@ function grill(clock, delay) {
   return { done: 1, lift: EJECT * Math.sin((e * Math.PI) / 2), fade: 1 - e * e, turn: e };
 }
 
+/** @param {number} clock */
 function lever(clock) {
   const k = cycle(clock, 0);
   return k < DROP_S ? 1 - k / DROP_S : k < POP_AT ? 0 : Math.min(1, (k - POP_AT) / SNAP_S);
 }
 
+/** @type {Art} */
 function chrome(ctx, r) {
   const T = SKY.toaster;
   clipped(ctx, r, () => {
@@ -68,6 +74,7 @@ function chrome(ctx, r) {
   ctx.stroke();
 }
 
+/** @param {Ctx} ctx @param {number} x @param {number} y @param {number} w @param {number} a @param {number} done */
 function bread(ctx, x, y, w, a, done) {
   const T = SKY.toaster, k = w / 40;
   ctx.save();
@@ -90,6 +97,7 @@ function bread(ctx, x, y, w, a, done) {
   ctx.restore();
 }
 
+/** @param {Ctx} ctx @param {number} x @param {number} y @param {number} w @param {number} r */
 function slot(ctx, x, y, w, r) {
   const T = SKY.toaster, g = ctx.createRadialGradient(x, y, 0, x, y, w);
   g.addColorStop(0, T.glow);
@@ -103,6 +111,7 @@ function slot(ctx, x, y, w, r) {
   ctx.stroke();
 }
 
+/** @param {Ctx} ctx @param {number} x @param {number} y @param {number} r @param {number} clock @param {number} heat @param {number} seed */
 function steam(ctx, x, y, r, clock, heat, seed) {
   const base = ctx.globalAlpha;
   ctx.fillStyle = SKY.toaster.smoke;
@@ -114,6 +123,7 @@ function steam(ctx, x, y, r, clock, heat, seed) {
   ctx.globalAlpha = base;
 }
 
+/** @type {Move} */
 export function toaster(ctx, r, clock) {
   const T = SKY.toaster, w = r * 0.56, hop = lever(clock);
   chrome(ctx, r);

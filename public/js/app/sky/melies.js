@@ -6,6 +6,7 @@ const SPLAT = [[0, 0, 0.17], [-0.15, 0.05, 0.08], [0.15, 0.04, 0.07], [0.02, -0.
 const DRIPS = [[-0.08, 0.3, 0.07], [0.06, 0.4, 0.08], [-0.17, 0.18, 0.05]];
 const PUFFS = [[-0.8, 0.72, 0.24], [-0.52, 0.9, 0.24], [-0.2, 1.0, 0.2], [0.18, 1.0, 0.18], [0.5, 0.88, 0.24], [0.82, 0.64, 0.2]];
 
+/** @type {Move} */
 function goo(ctx, r, clock) {
   const M = SKY.melies, grow = 0.04 * Math.sin(clock * 0.8);
   const shape = () => {
@@ -25,6 +26,7 @@ function goo(ctx, r, clock) {
   ctx.fill();
 }
 
+/** @type {Art} */
 function capsule(ctx, r) {
   const M = SKY.melies, len = r * 0.42, rad = r * 0.19, g = ctx.createLinearGradient(0, -rad, 0, rad);
   g.addColorStop(0, M.rocketLight);
@@ -62,6 +64,7 @@ function capsule(ctx, r) {
   }
 }
 
+/** @type {Art} */
 function puffs(ctx, r) {
   const M = SKY.melies, shape = () => {
     ctx.beginPath();
@@ -82,6 +85,7 @@ function puffs(ctx, r) {
   ctx.fill();
 }
 
+/** @type {Move} */
 export function melies(ctx, r, clock) {
   const M = SKY.melies, line = Math.max(1.2, r * 0.045), t = clock % 5;
   ctx.save();

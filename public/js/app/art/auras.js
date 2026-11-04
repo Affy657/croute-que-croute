@@ -1,10 +1,11 @@
 import { TAU } from "./kit.js";
 
-const FIRE_TONGUES = 9, FIRE_LAYERS = [["jam", 1, 0], ["flame", 0.7, 1.7], ["mustard", 0.42, 3.1]], EMBERS = 5, EMBER_RISE = 20;
+const FIRE_TONGUES = 9, /** @type {["jam" | "flame" | "mustard", number, number][]} */ FIRE_LAYERS = [["jam", 1, 0], ["flame", 0.7, 1.7], ["mustard", 0.42, 3.1]], EMBERS = 5, EMBER_RISE = 20;
 const BOLTS = 3, BOLT_STEPS = 6, BOLT_MS = 90, BOLT_JAG = 3, BOLT_FORK = 0.3, SPARKS = 7, NEON_R = 35, FIRE_HOLE = 22;
 const NEON = ["#ff3fa4", "#8a5cff", "#ffcf33"], NEON_SEAM = 0.02;
 const RING_RX = 43, RING_RY = 12, RING_TILT = -0.28, RING_SPIN = 0.9, MOON_R = 3.8;
 const RING_SPARKLES = [[-36, -26, 2.2], [34, 24, 1.8], [-28, 30, 1.4]];
+/** @param {Ctx} ctx @param {number} y @param {number} inner @param {number} outer @param {string} from @param {string} to */
 function glow(ctx, y, inner, outer, from, to) {
   const g = ctx.createRadialGradient(0, y, inner, 0, y, outer);
   g.addColorStop(0, from);
@@ -15,6 +16,7 @@ function glow(ctx, y, inner, outer, from, to) {
   ctx.fill();
 }
 
+/** @param {Ctx} ctx @param {number} x @param {number} y @param {number} s */
 function sparkle(ctx, x, y, s) {
   ctx.beginPath();
   ctx.moveTo(x, y - s * 1.6);
@@ -29,16 +31,19 @@ function sparkle(ctx, x, y, s) {
   ctx.fill();
 }
 
+/** @param {number} n */
 function hash(n) {
   const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
   return x - Math.floor(x);
 }
 
+/** @param {number} a @param {boolean} round */
 function fireBase(a, round) {
   const c = Math.cos(a), sn = Math.sin(a);
   return round ? [c * 22, sn * 22] : [Math.sign(c) * Math.abs(c) ** 0.5 * 18, Math.sign(sn) * Math.abs(sn) ** 0.5 * 20 - 1];
 }
 
+/** @param {Ctx} ctx @param {number} now @param {boolean} round @param {number} k @param {number} phase */
 function fireLayer(ctx, now, round, k, phase) {
   ctx.beginPath();
   for (let i = 0; i < FIRE_TONGUES; i++) {
@@ -59,6 +64,7 @@ function fireLayer(ctx, now, round, k, phase) {
   ctx.fill("evenodd");
 }
 
+/** @param {Ctx} ctx @param {number} now @param {Pal} C @param {boolean} round */
 function auraHeat(ctx, now, C, round) {
   if (round) {
     const g = ctx.createRadialGradient(0, 0, FIRE_HOLE, 0, 0, 44);
@@ -85,6 +91,7 @@ function auraHeat(ctx, now, C, round) {
   ctx.globalAlpha = 1;
 }
 
+/** @param {Ctx} ctx @param {number} seed @param {number} a @param {number} r0 @param {number} r1 */
 function bolt(ctx, seed, a, r0, r1) {
   let fx = 0, fy = 0;
   ctx.beginPath();
@@ -100,6 +107,7 @@ function bolt(ctx, seed, a, r0, r1) {
   ctx.lineTo(Math.cos(fork) * (r1 - 3), Math.sin(fork) * (r1 - 3));
 }
 
+/** @param {Ctx} ctx @param {number} now @param {Pal} C @param {boolean} round */
 function auraVolt(ctx, now, C, round) {
   const ms = now * 1000, tick = Math.floor(ms / BOLT_MS), flash = 1 - (ms % BOLT_MS) / BOLT_MS;
   const r0 = round ? 22 : 19, r1 = round ? 40 : 38;
@@ -127,6 +135,7 @@ function auraVolt(ctx, now, C, round) {
   }
 }
 
+/** @type {Art} */
 function auraNeon(ctx, now) {
   const pulse = 0.75 + 0.25 * Math.sin(now * 4), turn = now * 1.5, arc = TAU / (NEON.length * 2);
   glow(ctx, 0, 22, 40, `rgba(255, 63, 164, ${0.28 * pulse})`, "rgba(138, 92, 255, 0)");
@@ -144,6 +153,7 @@ function auraNeon(ctx, now) {
   }
 }
 
+/** @param {Ctx} ctx @param {number} from @param {number} to */
 function ringBand(ctx, from, to) {
   ctx.lineCap = "round";
   ctx.beginPath();
@@ -156,6 +166,7 @@ function ringBand(ctx, from, to) {
   ctx.stroke();
 }
 
+/** @param {Ctx} ctx @param {number} a @param {Pal} C */
 function moon(ctx, a, C) {
   ctx.fillStyle = C.steel;
   ctx.strokeStyle = C.void;
@@ -166,6 +177,7 @@ function moon(ctx, a, C) {
   ctx.stroke();
 }
 
+/** @param {Ctx} ctx @param {number} now @param {Pal} C */
 function ringBack(ctx, now, C) {
   ctx.save();
   ctx.rotate(RING_TILT);
@@ -180,6 +192,7 @@ function ringBack(ctx, now, C) {
   ctx.globalAlpha = 1;
 }
 
+/** @param {Ctx} ctx @param {number} now @param {Pal} C */
 function ringFront(ctx, now, C) {
   const a = now * RING_SPIN;
   ctx.save();
@@ -189,4 +202,5 @@ function ringFront(ctx, now, C) {
   ctx.restore();
 }
 
+/** @type {Record<string, AuraArt>} */
 export const AURAS = { heat: { back: auraHeat }, volt: { back: auraVolt }, neon: { back: auraNeon }, ring: { back: ringBack, front: ringFront } };

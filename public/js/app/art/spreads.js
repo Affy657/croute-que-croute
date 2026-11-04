@@ -12,9 +12,11 @@ const KETCHUP_LINE = Array.from({ length: 61 }, (_, i) => {
   const s = i / 30 - 1, o = Math.sin(s * Math.PI * 3.5) * 5.5;
   return [s * 11 + o * 0.67, 2 + s * 10 - o * 0.74];
 });
+/** @param {number} dy */
 const PASTE = (dy) => Array.from({ length: 51 }, (_, i) => [-12 + i * 0.48, 1 + dy + Math.sin(i * 0.36) * 4]);
 const PASTE_UNDER = PASTE(0.5), PASTE_BODY = PASTE(0), PASTE_RED = PASTE(-1.7), PASTE_BLUE = PASTE(1.7);
 
+/** @type {Record<string, Tint>} */
 const TOPPINGS = {
   plain() {},
   butter(ctx, C) {
@@ -304,6 +306,7 @@ const TOPPINGS = {
   }
 };
 
+/** @param {Ctx} ctx @param {string | undefined} kind @param {Pal} C */
 export function topping(ctx, kind, C) {
   ctx.save();
   (own(TOPPINGS, kind) || TOPPINGS.butter)(ctx, C);

@@ -10,6 +10,7 @@ const NOTCHES = [
 const HOLES = [[-0.05, -0.28, 0.17], [0.42, -0.45, 0.11], [0.2, 0.25, 0.15], [-0.4, 0.42, 0.12], [-0.62, -0.08, 0.1], [-0.12, 0.72, 0.07], [0.58, 0.05, 0.07], [0.1, -0.02, 0.05]];
 const PORES = [[0.3, -0.12, 0.025], [-0.25, 0.12, 0.02], [0.45, 0.48, 0.025], [-0.55, 0.62, 0.02], [0.12, -0.7, 0.02], [0.3, 0.62, 0.018], [-0.3, -0.05, 0.018]];
 
+/** @param {Notch} n @param {number} r */
 function notch(n, r) {
   const D = n.d * r, br = n.s * r;
   return {
@@ -19,13 +20,14 @@ function notch(n, r) {
   };
 }
 
+/** @param {Ctx} ctx @param {NotchArt} n */
 function notchEdge(ctx, n) {
   const from = n.a + Math.PI + n.psi;
   if (!n.teeth) {
     ctx.arc(n.cx, n.cy, n.br, from, n.a + Math.PI - n.psi, true);
     return;
   }
-  const bulge = n.br * 0.25, at = (t) => [n.cx + Math.cos(t) * n.br, n.cy + Math.sin(t) * n.br];
+  const bulge = n.br * 0.25, at = /** @param {number} t */ (t) => [n.cx + Math.cos(t) * n.br, n.cy + Math.sin(t) * n.br];
   for (let i = 0; i < n.teeth; i++) {
     const t1 = from - ((i + 1) / n.teeth) * 2 * n.psi, tm = t1 + n.psi / n.teeth;
     const [x1, y1] = at(t1), [mx, my] = at(tm);
@@ -33,6 +35,7 @@ function notchEdge(ctx, n) {
   }
 }
 
+/** @param {Ctx} ctx @param {NotchArt[]} list @param {number} r */
 function wheel(ctx, list, r) {
   ctx.beginPath();
   list.forEach((n, i) => {
@@ -45,6 +48,7 @@ function wheel(ctx, list, r) {
   ctx.closePath();
 }
 
+/** @param {Ctx} ctx @param {number} s @param {number} light */
 function hole(ctx, s, light) {
   const C = SKY.cheese, lx = Math.cos(light) * s, ly = Math.sin(light) * s;
   ctx.save();
@@ -60,6 +64,7 @@ function hole(ctx, s, light) {
   ctx.restore();
 }
 
+/** @type {Art} */
 function mouse(ctx, r) {
   const C = SKY.cheese, s = r * 0.34, at = NOTCHES[0].a + 0.66;
   ctx.save();
@@ -109,6 +114,7 @@ function mouse(ctx, r) {
   ctx.restore();
 }
 
+/** @type {Art} */
 export function cheese(ctx, r) {
   const C = SKY.cheese, list = NOTCHES.map((n) => notch(n, r));
   ctx.save();

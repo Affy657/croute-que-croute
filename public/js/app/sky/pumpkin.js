@@ -4,6 +4,7 @@ import { INK, ink, TAU, toastie } from "./kit.js";
 const RIBS = [[-0.58, 0.44], [0.58, 0.44], [-0.3, 0.5], [0.3, 0.5], [0, 0.52]];
 const CUTS = [[[-0.56, -0.02], [-0.16, -0.06], [-0.4, -0.32]], [[0.56, -0.02], [0.16, -0.06], [0.4, -0.32]], [[-0.08, 0.14], [0.08, 0.14], [0, 0]]];
 
+/** @param {Ctx} ctx @param {number} r @param {Pts} list */
 function ribs(ctx, r, list) {
   ctx.beginPath();
   for (const [x, w] of list) {
@@ -12,6 +13,7 @@ function ribs(ctx, r, list) {
   }
 }
 
+/** @param {Ctx} ctx @param {number} r @param {number} open */
 function grin(ctx, r, open) {
   ctx.beginPath();
   for (const shape of CUTS) {
@@ -24,6 +26,7 @@ function grin(ctx, r, open) {
   ctx.closePath();
 }
 
+/** @type {Move} */
 function witch(ctx, s, clock) {
   const P = SKY.pumpkin, line = Math.max(1, s * 0.07);
   ctx.lineJoin = "round";
@@ -53,6 +56,7 @@ function witch(ctx, s, clock) {
   ctx.restore();
 }
 
+/** @type {Move} */
 export function pumpkin(ctx, r, clock) {
   const P = SKY.pumpkin, a = clock * 0.9, front = Math.sin(a) > 0, t = clock % 4, flicker = 0.82 + 0.18 * Math.sin(clock * 13) * Math.sin(clock * 7.3);
   const fly = () => {

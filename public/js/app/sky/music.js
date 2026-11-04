@@ -7,6 +7,7 @@ const LANDS = [
   { x: 0.3, y: -0.8, parts: [[0, 0, 0.22], [0.2, 0.05, 0.15]] }
 ];
 
+/** @param {Ctx} ctx @param {number} s @param {number} light */
 export function speaker(ctx, s, light, S = SKY.speakers) {
   const lx = Math.cos(light) * s, ly = Math.sin(light) * s;
   ctx.strokeStyle = INK;
@@ -38,6 +39,7 @@ export function speaker(ctx, s, light, S = SKY.speakers) {
   disc(ctx, lx * 0.08, ly * 0.08, s * 0.08);
 }
 
+/** @type {Move} */
 function waves(ctx, r, clock) {
   ctx.save();
   ctx.strokeStyle = SKY.speakers.wave;
@@ -56,6 +58,7 @@ function waves(ctx, r, clock) {
   ctx.restore();
 }
 
+/** @param {Ctx} ctx @param {number} r @param {Pts} parts */
 function land(ctx, r, parts, S = SKY.speakers) {
   const edge = ink(r) * 1.2;
   ctx.fillStyle = S.landEdge;
@@ -64,6 +67,7 @@ function land(ctx, r, parts, S = SKY.speakers) {
   for (const [x, y, s] of parts) disc(ctx, x * r, y * r, s * r);
 }
 
+/** @type {Move} */
 export function speakers(ctx, r, clock) {
   waves(ctx, r, clock);
   ctx.fillStyle = SKY.speakers.base;
@@ -85,6 +89,7 @@ const DUNES = [
 ];
 const WOOFERS = [[-0.24, -0.2, 0.3], [0.5, -0.45, 0.17], [0.36, 0.4, 0.21], [-0.55, 0.45, 0.14], [0.66, 0.02, 0.1]];
 
+/** @type {Move} */
 function boom(ctx, r, clock) {
   const alpha = ctx.globalAlpha, beat = (clock / BEAT) % 1;
   ctx.save();
@@ -103,6 +108,7 @@ function boom(ctx, r, clock) {
   ctx.restore();
 }
 
+/** @type {Move} */
 export function bass(ctx, r, clock) {
   const S = SKY.bass, pump = (1 - ((clock / BEAT) % 1)) ** 3, k = 1 + 0.025 * pump;
   boom(ctx, r, clock);

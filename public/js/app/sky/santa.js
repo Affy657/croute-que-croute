@@ -4,6 +4,7 @@ import { disc, GOLD, INK, TAU } from "./kit.js";
 const SANTA = { red: "#d7263d", redDark: "#9c1528", fur: "#fff6e0", skin: "#f3c39b", gold: "#f2b13a", deer: "#9a6436", deerDark: "#6b4022", antler: "#e6c48a", sack: "#8a5a2e", gift: "#3fae4a" };
 const SPARKS = [[0.5, -0.06, 0.035], [0.75, 0.05, 0.025], [1.0, -0.02, 0.03], [1.3, 0.07, 0.02], [1.6, -0.05, 0.022], [1.95, 0.03, 0.016], [2.3, -0.03, 0.013]];
 
+/** @type {Move} */
 export function stardust(ctx, len, s) {
   const base = ctx.globalAlpha;
   for (const [k, y, r] of SPARKS) {
@@ -22,6 +23,7 @@ export function stardust(ctx, len, s) {
   ctx.globalAlpha = base;
 }
 
+/** @param {Ctx} ctx @param {number} s @param {number} x @param {number} y @param {number} a @param {number} line */
 function leg(ctx, s, x, y, a, line) {
   const fx = x + Math.sin(a) * s * 0.09, fy = y + Math.cos(a) * s * 0.09;
   ctx.beginPath();
@@ -35,6 +37,7 @@ function leg(ctx, s, x, y, a, line) {
   ctx.stroke();
 }
 
+/** @param {Ctx} ctx @param {number} s @param {number} x @param {number} y @param {number} clock @param {number} line */
 function reindeer(ctx, s, x, y, clock, line) {
   const run = Math.sin(clock * 11 + x * 9);
   ctx.save();
@@ -92,6 +95,7 @@ function reindeer(ctx, s, x, y, clock, line) {
   ctx.restore();
 }
 
+/** @param {Ctx} ctx @param {number} s @param {number} clock @param {number} line */
 function sleigh(ctx, s, clock, line) {
   ctx.strokeStyle = INK;
   ctx.lineWidth = line;
@@ -202,6 +206,7 @@ function sleigh(ctx, s, clock, line) {
   ctx.stroke();
 }
 
+/** @type {Move} */
 export function santa(ctx, s, clock) {
   const line = Math.max(1, s * 0.02);
   ctx.save();

@@ -2,6 +2,7 @@ import { PROJECTILES } from "../../game/projectiles.js";
 import { PROJECTILE_SPRITES } from "./cutlery.js";
 import { dots, rr } from "./kit.js";
 
+/** @type {Toaster} */
 function sideBoosters(ctx, t, C) {
   ctx.lineJoin = "round";
   for (const side of [-1, 1]) {
@@ -54,19 +55,21 @@ function sideBoosters(ctx, t, C) {
 /** @type {[string, number][]} */
 const SIDE_CUTLERY = [["fork", -1], ["knife", 1]];
 
+/** @type {Toaster} */
 function sideCutlery(ctx, t, C) {
   for (const [kind, side] of SIDE_CUTLERY) {
     ctx.save();
     ctx.translate(side * 25, -2);
     ctx.rotate(-Math.PI / 2 + side * 0.2);
     ctx.scale(0.5, 0.5);
-    PROJECTILE_SPRITES[kind](ctx, { len: PROJECTILES[kind].len }, C);
+    PROJECTILE_SPRITES[kind](ctx, /** @type {ShotArt} */ ({ len: PROJECTILES[kind].len }), C);
     ctx.restore();
   }
 }
 
 const SIX_SEVEN_HZ = 2.2, BAT_HZ = 2.6;
 
+/** @type {Record<string, (ctx: Ctx) => void>} */
 const DIGITS = {
   6(ctx) {
     ctx.moveTo(3, -13.2);
@@ -80,6 +83,7 @@ const DIGITS = {
   }
 };
 
+/** @param {Ctx} ctx @param {number} n @param {number} x @param {Pal} C */
 function digit(ctx, n, x, C) {
   ctx.save();
   ctx.translate(x, -1.2);
@@ -94,6 +98,7 @@ function digit(ctx, n, x, C) {
   ctx.restore();
 }
 
+/** @param {Ctx} ctx @param {number} side @param {Pal} C */
 function palm(ctx, side, C) {
   ctx.scale(side, 1);
   ctx.fillStyle = C.ink;
@@ -126,6 +131,7 @@ function palm(ctx, side, C) {
   ctx.scale(side, 1);
 }
 
+/** @type {Toaster} */
 function sideSixSeven(ctx, t, C) {
   const k = Math.sin((performance.now() / 1000) * Math.PI * 2 * SIX_SEVEN_HZ);
   ctx.lineCap = "round";
@@ -151,6 +157,7 @@ function sideSixSeven(ctx, t, C) {
   }
 }
 
+/** @type {Toaster} */
 function sideBat(ctx, t, C) {
   const k = Math.sin((performance.now() / 1000) * Math.PI * 2 * BAT_HZ);
   ctx.lineJoin = "round";
@@ -196,4 +203,5 @@ function sideBat(ctx, t, C) {
   }
 }
 
+/** @type {Record<string, Toaster>} */
 export const SIDES = { boosters: sideBoosters, cutlery: sideCutlery, sixseven: sideSixSeven, bat: sideBat };
