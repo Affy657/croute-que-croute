@@ -1,6 +1,8 @@
 import { bearer } from "./http";
 import { sha256 } from "./security";
 
+export const LATE_MS = 15 * 1000;
+
 export interface EventRow {
   id: number;
   name: string;

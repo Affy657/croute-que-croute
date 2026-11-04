@@ -1,6 +1,10 @@
 import { fail } from "./http";
 import { dispatch, type Route } from "./router";
+import * as boards from "./routes/board";
 import * as player from "./routes/player";
+import * as look from "./routes/look";
+import * as cards from "./routes/card";
+import * as runs from "./routes/runs";
 import * as admin from "./routes/admin";
 import * as link from "./routes/link";
 import * as diag from "./routes/diag";
@@ -12,22 +16,22 @@ export { Live } from "./live";
 const ID = "([\\w-]{1,64})";
 
 const routes: Route[] = [
-  { method: "GET", path: "/api/board", run: player.board },
-  { method: "GET", path: "/api/feed", run: player.feed },
-  { method: "GET", path: "/api/ecran", run: player.screen },
+  { method: "GET", path: "/api/board", run: boards.board },
+  { method: "GET", path: "/api/feed", run: boards.feed },
+  { method: "GET", path: "/api/ecran", run: boards.screen },
   { method: "GET", path: "/api/live", run: connect },
   { method: "POST", path: "/api/join", run: player.join },
   { method: "POST", path: "/api/resume", run: player.resume },
   { method: "PATCH", path: "/api/me", run: player.rename },
-  { method: "PUT", path: "/api/me/look", run: player.saveLook },
+  { method: "PUT", path: "/api/me/look", run: look.saveLook },
   { method: "POST", path: "/api/me/link", run: link.createLink },
   { method: "DELETE", path: "/api/me/devices", run: link.logoutOthers },
   { method: "POST", path: "/api/link", run: link.useLink },
   { method: "POST", path: "/api/diag", run: diag.report },
   { method: "POST", path: "/api/errors", run: errors.collect },
-  { method: "GET", path: new RegExp(`^/api/players/${ID}$`), run: player.card },
-  { method: "POST", path: "/api/runs", run: player.startRun },
-  { method: "POST", path: new RegExp(`^/api/runs/${ID}$`), run: player.finishRun },
+  { method: "GET", path: new RegExp(`^/api/players/${ID}$`), run: cards.card },
+  { method: "POST", path: "/api/runs", run: runs.startRun },
+  { method: "POST", path: new RegExp(`^/api/runs/${ID}$`), run: runs.finishRun },
 
   { method: "POST", path: "/api/admin/login", run: admin.login },
   { method: "POST", path: "/api/admin/accept", run: admin.accept },
