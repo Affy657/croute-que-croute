@@ -230,7 +230,11 @@ async function toggleGoogle() {
 }
 
 function showGoogleResult() {
-  if (!googleResult || !idle()) return;
+  if (!googleResult || !idle() || !net.board) return;
+  if (!net.board.google) {
+    googleResult = null;
+    return;
+  }
   const note = GOOGLE_NOTES[googleResult];
   if (registered()) {
     googleResult = null;
