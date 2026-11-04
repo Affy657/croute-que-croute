@@ -553,6 +553,10 @@ Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du c
 - Plafonner le répit des refus à environ 0,3 s : fermerait le blocage devant un rouleau (voir Équité) et garderait 97 % des répits actuels. Pas encore mesuré, à décider après la soirée du 07/11.
 - Sortir `pathOf` du code envoyé aux téléphones : seuls les tests s'en servent (`plan` de `createSim`).
 
+### Trouvé par GitHub le 04/11/2026 : pas corrigé
+
+- Même score reçu deux fois à la même milliseconde : la partie compte double (`run_count`, `played`, `entries.run_count`), parce que `finishRun` reconnaît sa propre écriture à `finished_at = now`. Le record et le classement ne changent pas. Piste : écrire `runs` en dernier dans le batch, et soumettre les autres écritures à `finished_at IS NULL`. Fait échouer au hasard le test « même score envoyé deux fois en même temps » (1 fois sur GitHub avec la 0.49.7) : relancer le job suffit en attendant.
+
 ## Idées pour plus tard
 
 - Vibration au frôlé.
