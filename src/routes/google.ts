@@ -24,6 +24,7 @@ interface Claims {
 }
 
 const ready = (env: Env) => !!env.GOOGLE_CLIENT_ID && !!env.GOOGLE_CLIENT_SECRET;
+const closed = () => fail(404, "Connexion Google indisponible.");
 const returnUrl = (req: Request) => new URL(req.url).origin + "/api/google/retour";
 
 const stateCookie = (value: string, seconds: number) => `${STATE_COOKIE}=${value}; Max-Age=${seconds}; Path=/api/google; Secure; HttpOnly; SameSite=Lax`;
@@ -36,7 +37,7 @@ function home(result: string, token?: string) {
 
 export async function start({ req, env }: Ctx) {
   if (outdated(req, env)) return updateRequired();
-  if (!ready(env)) return fail(404, "Connexion Google indisponible.");
+  if (!ready(env)) return closed();
   if (!(await allowed(env.JOIN_LIMIT, "google:" + clientIp(req)))) return tooFast();
   const body = await readJson(req);
   const linking = body.link === true;
@@ -100,7 +101,7 @@ async function linkAccount(env: Env, playerId: string, hash: string) {
 }
 
 export async function back({ req, env }: Ctx) {
-  if (!ready(env)) return home("erreur");
+  if (!ready(env)) return closed();
   const params = new URL(req.url).searchParams;
   const state = params.get("state") ?? "", code = params.get("code") ?? "";
   if (!state || state !== cookie(req, STATE_COOKIE)) return home("erreur");
@@ -120,6 +121,7 @@ export async function back({ req, env }: Ctx) {
 
 export async function unlink({ req, env }: Ctx) {
   if (outdated(req, env)) return updateRequired();
+  if (!ready(env)) return closed();
   const me = await findProfile(req, env);
   if (!me) return fail(401, "Joueur inconnu.");
   await env.DB.prepare("UPDATE profiles SET google_hash = NULL WHERE id = ?").bind(me.id).run();

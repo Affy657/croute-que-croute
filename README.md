@@ -310,12 +310,15 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 
 ### Connexion avec Google
 
+Désactivée en prod tant qu'on n'a pas le nom de domaine : sans les clés, les 3 routes répondent 404, les boutons restent cachés et un `#google=` tapé à la main est ignoré. La migration 0014 est appliquée, sa colonne et sa table restent vides.
+
 Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Paramètres, Autre appareil. Se connecter : « J'ai déjà un compte », « Continuer avec Google ». Elle ne crée pas de compte : sans compte lié, le joueur reçoit un message. Un compte Google ne se lie qu'à un joueur.
 
 - Le serveur parle à Google lui-même (`src/routes/google.ts`) : `POST /api/google/start` note la demande dans `google_states` (10 min, un seul usage) et pose le cookie `cv_google`, puis Google renvoie sur `GET /api/google/retour`, qui compare le cookie, échange le code et revient sur `/#google=<résultat>`. Aucun script Google dans la page, la politique de sécurité ne change pas.
-- On demande `openid email`, parce que la documentation de Google l'exige, mais on ne garde que `sha256("google:" + sub)` dans `profiles.google_hash`. L'adresse e-mail n'est jamais enregistrée. La page `/confidentialite` le dit, elle est liée depuis Crédits.
+- On demande `openid email`, parce que la documentation de Google l'exige, mais on ne garde que `sha256("google:" + sub)` dans `profiles.google_hash`. L'adresse e-mail n'est jamais enregistrée. La page `/confidentialite`, liée depuis Crédits, ne parle pas de Google tant que la connexion est coupée.
 - Bouton caché sans clés, dans les navigateurs d'applis (Google y refuse la connexion) et dans l'appli iPhone de l'écran d'accueil (la page de Google s'y ouvre dans un autre stockage : à vérifier sur un vrai iPhone avant de l'ouvrir).
 - Mise en route, à faire par Adrien : projet Google Cloud, écran de consentement « Externe » avec la page `/confidentialite`, identifiant OAuth « Application Web » avec comme URI de redirection `https://<adresse du jeu>/api/google/retour`, puis `npx wrangler secret put GOOGLE_CLIENT_ID` et `npx wrangler secret put GOOGLE_CLIENT_SECRET`. Migration 0014 à appliquer en ligne avant la mise en ligne. Google vérifie le domaine de l'adresse : `workers.dev` risque de bloquer, à faire de préférence avec tartinesauvage.fr.
+- Pour l'activer : poser les clés, puis remettre dans `public/confidentialite.html` la section « Compte Google, si tu le lies » (texte dans le commit 99e2cb2).
 - Jamais essayée avec le vrai Google : les tests remplacent sa réponse.
 
 ### Mises à jour
@@ -416,7 +419,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 | 0.46 | 01/11 | Tartine d'or : 1er d'un classement d'au moins 10 joueurs | 1 |
 | 0.47 | 01/11 | tenue qui suit le compte, rechargement si versions mélangées | 4 |
 | 0.48 | 02/11 | pluies espacées après une double pluie ou un hachoir | |
-| 0.49 | 03/11 | écran géant en direct, fin de soirée stricte, mur mis de côté | 7 |
+| 0.49 | 03/11 | écran géant en direct, fin de soirée stricte, mur mis de côté | 8 |
 
 ## Erreurs des joueurs
 
@@ -578,6 +581,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 
 - Adresse : garder « workers.dev » ou prendre un nom de domaine payant (le QR code changerait). Décision à l'AG du lundi 02/11/2026 à 20h, avant d'imprimer les affiches. Un domaine permettrait aussi de freiner les requêtes avant le Worker (voir Triche et sécurité).
 - Retirer la colonne `profiles.client_id`, plus écrite depuis le 02/11/2026, dans une migration d'une mise en ligne suivante : la retirer tout de suite casserait le retour à la version d'avant, qui l'écrit encore. `profiles.token` reste : obligatoire et unique, la retirer demande de reconstruire la table.
+- Activer la connexion avec Google une fois le nom de domaine en place (voir Appli et réseau).
 - Remplacer ou compléter la musique avec des morceaux des collègues DJ.
 - Faire monter le morceau par un ami DJ : coupes et transitions propres, fin qui boucle.
 - Compte sur plusieurs appareils : reste, pour récupérer son compte sans autre appareil, un code de secours ou un code reçu par e-mail. L'e-mail passerait par le compte Resend de Movie Picker (gratuit : 3 domaines, 100 e-mails par jour et 3 000 par mois partagés entre les projets), avec un domaine à soi pour l'expéditeur, à voir avec la décision sur l'adresse du jeu.

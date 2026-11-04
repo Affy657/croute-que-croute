@@ -150,10 +150,12 @@ test("Google : lier demande d'être connecté", async (t) => {
   assert.equal((await start({ req: post({ link: true }), env })).status, 401);
 });
 
-test("Google : sans clés configurées, rien n'est ouvert", async (t) => {
+test("Google : sans clés configurées, les trois routes répondent 404", async (t) => {
   const env = { ...(await setup(t)), GOOGLE_CLIENT_ID: undefined };
+  const leave = new Request("http://jeu.test/api/me/google", { method: "DELETE", headers: { authorization: "Bearer " + TOKEN, "x-app-version": "dev" } });
   assert.equal((await start({ req: post({}), env })).status, 404);
-  assert.equal(result(await back({ req: new Request("http://jeu.test/api/google/retour?state=x&code=y"), env })), "erreur");
+  assert.equal((await back({ req: new Request("http://jeu.test/api/google/retour?state=x&code=y"), env })).status, 404);
+  assert.equal((await unlink({ req: leave, env })).status, 404);
 });
 
 test("Google : réunir deux comptes garde le lien du compte retiré", async (t) => {
