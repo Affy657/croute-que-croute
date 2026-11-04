@@ -12,6 +12,7 @@ import { toaster } from "./sky/toaster.js";
 import { stage } from "./sky/tung.js";
 import { roadster, saucer } from "./sky/vehicles.js";
 
+/** @type {Record<string, Planet[]>} */
 export const BODIES = {
   normal: [{ draw: purple, r: 0.13, reach: 1.7 }, { draw: moons, r: 0.045, reach: 3.1 }, { draw: green, r: 0.1, reach: 1.7 }, { draw: rock, r: 0.05, reach: 1.1 }],
   wild: [
@@ -26,6 +27,7 @@ export const BODIES = {
   ]
 };
 
+/** @type {Record<string, Passer>} */
 export const PASSERS = {
   ...Object.fromEntries(Object.keys(CANS).map((kind) => [kind, { name: CANS[kind].name, draw: (ctx, s) => cachedCan(ctx, kind, s), size: 0.13, trail: streak, spin: 1 }])),
   tesla: { name: "Tesla dans l'espace", draw: roadster, size: 0.17, spin: 0.35 },

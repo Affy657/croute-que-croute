@@ -6,16 +6,20 @@ import { VERSION } from "../version.js";
 
 const TICK_MS = 1000, FAST_POLL_MS = 2000, FALLBACK_FULL_MS = 15000, SAFE_POLL_MS = 60000, QUIET_POLL_MS = 60000, PUSH_GAP_MS = 1000, OFFLINE_MISSES = 2, FETCH_MS = 8000, ROWS = 10, FEED_ROWS = 6, IDLE_MS = 3000, CROWN_MS = 6000;
 const LAST_MS = 60000, LONG_WIN = 16, MOVE_MS = 700, PING_MS = 25000, PONG_MS = 10000, RETRY_MS = [1000, 2000, 5000, 10000, 30000], RECHECK_MS = 11000;
+/** @param {string} id */
 const $ = (id) => document.getElementById(id);
 const calm = matchMedia("(prefers-reduced-motion: reduce)");
-let board = null, offset = 0, shown = null, idleTimer = null, lock = null, seen = null, crownTimer = null, busy = false, again = false, stale = false;
-let lastOk = 0, lastAsk = 0, lastFull = 0, misses = 0, ended = null;
-let socket = null, live = false, tries = 0, retryTimer = null, pingTimer = null, pongTimer = null, pushTimer = null, lastPush = 0, recheckTimer = null, opened = null;
+/** @type {ScreenBoard} */
+let board = /** @type {never} */ (null), offset = 0, /** @type {Shown | null} */ shown = null, /** @type {Timer} */ idleTimer = null, /** @type {WakeLockSentinel | null} */ lock = null, /** @type {Set<string> | null} */ seen = null, /** @type {Timer} */ crownTimer = null, busy = false, again = false, stale = false;
+let lastOk = 0, lastAsk = 0, lastFull = 0, misses = 0, /** @type {boolean | null} */ ended = null;
+/** @type {WebSocket | null} */
+let socket = null, live = false, tries = 0, /** @type {Timer} */ retryTimer = null, /** @type {Timer} */ pingTimer = null, /** @type {Timer} */ pongTimer = null, /** @type {Timer} */ pushTimer = null, lastPush = 0, /** @type {Timer} */ recheckTimer = null, /** @type {number | null} */ opened = null;
 
 document.documentElement.dataset.version = VERSION;
 const now = () => Date.now() + offset;
 const title = () => (board.event ? board.event.name : "Classement général");
 
+/** @param {Ranked} r */
 function row(r) {
   const li = document.createElement("li");
   li.dataset.id = r.id;
@@ -28,6 +32,7 @@ function row(r) {
   return li;
 }
 
+/** @param {Ranked} r */
 function crown(r) {
   const el = $("crown");
   $("crownName").textContent = r.pseudo;
@@ -39,9 +44,10 @@ function crown(r) {
   crownTimer = setTimeout(() => { el.hidden = true; }, CROWN_MS);
 }
 
+/** @param {HTMLElement[]} rows @param {Map<string, number>} before */
 function slide(rows, before) {
   for (const li of rows) {
-    const was = before.get(li.dataset.id);
+    const was = before.get(/** @type {string} */ (li.dataset.id));
     if (was === undefined) continue;
     const dy = was - li.getBoundingClientRect().top;
     if (Math.abs(dy) > 1) li.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: MOVE_MS, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
@@ -54,7 +60,7 @@ function render() {
   const rows = top.map(row);
   if (shown && shown.title === name) {
     top.forEach((r, i) => {
-      if (!shown.bests.has(r.best)) rows[i].classList.add("up");
+      if (!/** @type {Shown} */ (shown).bests.has(r.best)) rows[i].classList.add("up");
     });
     const first = top[0];
     if (first && shown.first && first.pseudo !== shown.first.pseudo && first.best > shown.first.best && !(first.at <= shown.last)) {
@@ -71,6 +77,7 @@ function render() {
   tick();
 }
 
+/** @param {string} label @param {number} ms */
 function setCountdown(label, ms) {
   const el = $("countdown");
   const digits = document.createElement("span");
@@ -80,6 +87,7 @@ function setCountdown(label, ms) {
   el.hidden = false;
 }
 
+/** @param {number} t */
 function celebrate(t) {
   const ev = board.event, over = !!(ev && t >= ev.closesAt);
   $("list").classList.toggle("over", over);
@@ -117,15 +125,17 @@ function tick() {
   celebrate(t);
 }
 
+/** @param {FeedItem} item */
 function feedLine(item) {
   const li = document.createElement("li");
   const name = document.createElement("b");
   name.textContent = item.pseudo;
-  if (item.kind === "best") li.append(name, " vient de faire " + fmtCs(item.score) + " s");
+  if (item.kind === "best") li.append(name, " vient de faire " + fmtCs(/** @type {number} */ (item.score)) + " s");
   else li.append("Bienvenue ", name, " !");
   return li;
 }
 
+/** @param {FeedItem[]} items */
 function renderFeed(items) {
   const keys = items.map((i) => i.kind + i.pseudo + i.at);
   const rows = items.slice(0, FEED_ROWS).map((item, i) => {
@@ -138,6 +148,7 @@ function renderFeed(items) {
   $("live").hidden = rows.length === 0;
 }
 
+/** @param {string} path @returns {Promise<ScreenBoard>} */
 async function grab(path) {
   const res = await fetch(path, { cache: "no-store", signal: timeout(FETCH_MS) });
   if (!res.ok) throw new Error(path);
@@ -149,6 +160,7 @@ function reloadSoon() {
   if (!document.fullscreenElement) location.reload();
 }
 
+/** @param {boolean} full */
 async function refresh(full) {
   if (busy) {
     if (full) again = true;
@@ -201,6 +213,7 @@ function quiet() {
   clearTimeout(pongTimer);
 }
 
+/** @param {WebSocket} ws */
 function drop(ws) {
   if (socket !== ws) return;
   socket = null;

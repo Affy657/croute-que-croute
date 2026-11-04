@@ -1,5 +1,6 @@
 import { dots, FUR, line, oval, toastPath } from "./kit.js";
 
+/** @type {Box} */
 function crumbClip(ctx, w, h) {
   ctx.save();
   ctx.translate(0, 2);
@@ -16,6 +17,7 @@ const CRUMB_PORES = [
 ];
 const CRUMB_SHADE = "rgba(196, 122, 48, 0.3)";
 
+/** @type {Record<string, (ctx: Ctx, w: number, h: number, C: Pal) => void>} */
 export const BREADS = {
   toasted(ctx, w, h) {
     crumbClip(ctx, w, h);

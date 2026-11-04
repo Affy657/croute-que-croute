@@ -1,6 +1,7 @@
 const WAIT_MS = 2500, FADE_MS = 600;
 const loader = document.getElementById("loader");
 
+/** @param {Promise<unknown>} board */
 export function finishLoading(board) {
   const fonts = document.fonts ? document.fonts.ready : null;
   const cap = new Promise((ok) => setTimeout(ok, WAIT_MS));

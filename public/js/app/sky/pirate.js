@@ -7,6 +7,7 @@ const RING = { rx: 1.45, ry: 0.4, tilt: -0.2, w: 0.2, lap: 0.42 };
 const SHIP_U = 0.4;
 const SHORE = [[0.02, 0.06, 0.5], [-0.32, 0.18, 0.3], [0.36, 0.2, 0.3], [0.05, -0.24, 0.42], [-0.3, -0.17, 0.28], [0.34, -0.14, 0.3]];
 
+/** @param {Ctx} ctx @param {number} r @param {number} clock @param {Sky["pirate"]} P */
 function swell(ctx, r, clock, P) {
   ctx.strokeStyle = P.foam;
   ctx.lineWidth = ink(r);
@@ -24,6 +25,7 @@ function swell(ctx, r, clock, P) {
   ctx.globalAlpha /= 0.6;
 }
 
+/** @param {Ctx} ctx @param {number} r @param {Pts} parts */
 function blob(ctx, r, parts) {
   ctx.beginPath();
   for (const [x, y, s] of parts) {
@@ -32,6 +34,7 @@ function blob(ctx, r, parts) {
   }
 }
 
+/** @param {Ctx} ctx @param {number} r @param {Sky["pirate"]} P */
 function skullRock(ctx, r, P) {
   ctx.save();
   ctx.translate(0, -r * 0.18);
@@ -77,6 +80,7 @@ function skullRock(ctx, r, P) {
   ctx.restore();
 }
 
+/** @param {Ctx} ctx @param {number} r @param {number} x @param {number} y @param {number} size @param {number} lean @param {number} clock @param {Sky["pirate"]} P */
 function palmTree(ctx, r, x, y, size, lean, clock, P) {
   const sway = Math.sin(clock * 1.3 + x * 5) * 0.06, top = [lean * r * 0.12 + sway * r, -r * 0.36];
   ctx.save();
@@ -110,6 +114,7 @@ function palmTree(ctx, r, x, y, size, lean, clock, P) {
   ctx.restore();
 }
 
+/** @param {Ctx} ctx @param {number} r @param {number} clock @param {Sky["pirate"]} P */
 function skullIsland(ctx, r, clock, P) {
   ctx.fillStyle = P.shallow;
   ctx.globalAlpha *= 0.7;
@@ -139,6 +144,7 @@ function skullIsland(ctx, r, clock, P) {
   ctx.stroke();
 }
 
+/** @param {Ctx} ctx @param {number} r @param {number} clock @param {Sky["pirate"]} P @param {boolean} front */
 function ringHalf(ctx, r, clock, P, front) {
   const { rx, ry, tilt, w } = RING, from = front ? 0 : Math.PI, to = front ? Math.PI : TAU;
   ctx.save();
@@ -169,6 +175,7 @@ function ringHalf(ctx, r, clock, P, front) {
   ctx.restore();
 }
 
+/** @param {Ctx} ctx @param {number} u @param {number} x @param {number} top @param {number} bottom @param {number} half @param {number} puff @param {Sky["pirate"]} P */
 function mainSail(ctx, u, x, top, bottom, half, puff, P) {
   ctx.beginPath();
   ctx.moveTo(x - half, top);
@@ -182,6 +189,7 @@ function mainSail(ctx, u, x, top, bottom, half, puff, P) {
   ctx.stroke();
 }
 
+/** @param {Ctx} ctx @param {number} u @param {number} x @param {number} y @param {Sky["pirate"]} P */
 function jolly(ctx, u, x, y, P) {
   ctx.save();
   ctx.translate(x, y);
@@ -205,6 +213,7 @@ function jolly(ctx, u, x, y, P) {
   ctx.restore();
 }
 
+/** @param {Ctx} ctx @param {number} u @param {number} clock @param {Sky["pirate"]} P @param {number} line */
 function galleon(ctx, u, clock, P, line) {
   const puff = Math.sin(clock * 1.1) * u * 0.05, flap = Math.sin(clock * 7) * u * 0.05;
   ctx.lineJoin = "round";
@@ -277,6 +286,7 @@ function galleon(ctx, u, clock, P, line) {
   for (const x of [-0.42, -0.08, 0.26, 0.58]) disc(ctx, x * u, -u * 0.02 + Math.abs(x) * u * 0.04, u * 0.06);
 }
 
+/** @param {Ctx} ctx @param {number} u @param {number} clock @param {Sky["pirate"]} P */
 function smoke(ctx, u, clock, P) {
   const k = (clock % 4.2) / 1.1;
   if (k >= 1) return;
@@ -291,6 +301,7 @@ function smoke(ctx, u, clock, P) {
   }
 }
 
+/** @param {Ctx} ctx @param {number} r @param {number} clock @param {Sky["pirate"]} P */
 function shipOnRing(ctx, r, clock, P) {
   const { rx, ry, tilt, lap } = RING, t = clock * lap, depth = (Math.sin(t) + 1) / 2;
   const c = Math.cos(tilt), s = Math.sin(tilt), ex = rx * Math.cos(t) * r, ey = ry * Math.sin(t) * r;
@@ -305,6 +316,7 @@ function shipOnRing(ctx, r, clock, P) {
   ctx.restore();
 }
 
+/** @type {Move} */
 export function pirate(ctx, r, clock) {
   const P = SKY.pirate, front = Math.sin(clock * RING.lap) > 0;
   ringHalf(ctx, r, clock, P, false);

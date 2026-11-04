@@ -8,6 +8,7 @@ import { net, rename, reason, badInput } from "./api.js";
 import { controls, setSens, setAim, hasMouse } from "./input.js";
 
 const FLASH_MS = 2000;
+/** @type {Record<string, string>} */
 const HINTS = {
   prompt: "Lance-le depuis ton écran d'accueil, en plein écran.",
   ios: "Touche Partager, puis « Sur l'écran d'accueil ».",
@@ -20,6 +21,7 @@ let tab = "app";
 
 export const testing = { invincible: LOCAL && session.get(KEYS.invincible) === "1" };
 
+/** @param {boolean} on */
 export function setInvincible(on) {
   testing.invincible = LOCAL && on;
   session.set(KEYS.invincible, testing.invincible ? "1" : null);
@@ -80,6 +82,7 @@ function mountAdmin() {
   ui.settingsAdmin.replaceChildren(frame);
 }
 
+/** @param {HTMLIFrameElement} frame */
 function fitAdmin(frame) {
   const page = frame.contentDocument && frame.contentDocument.body;
   if (!page || !window.ResizeObserver) return;
@@ -88,11 +91,12 @@ function fitAdmin(frame) {
   fit();
 }
 
+/** @param {HTMLIFrameElement} frame */
 function relayEscape(frame) {
   const win = frame.contentWindow;
   if (!win || !frame.contentDocument) return;
   win.addEventListener("keydown", (e) => {
-    const typing = e.target.closest && e.target.closest("input:not([type=range]), select, textarea");
+    const typing = /** @type {Element} */ (e.target).closest && /** @type {Element} */ (e.target).closest("input:not([type=range]), select, textarea");
     if (e.key === "Escape" && !e.defaultPrevented && !typing) window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", repeat: e.repeat }));
   });
 }
@@ -101,11 +105,13 @@ export function leaveSettings() {
   ui.settingsAdmin.replaceChildren();
 }
 
+/** @param {string} text @param {boolean} error */
 function renameNote(text, error) {
   setText(ui.renameNote, text);
   ui.renameNote.classList.toggle("error", error);
 }
 
+/** @param {Event} e */
 async function renamePlayer(e) {
   e.preventDefault();
   const me = net.board && net.board.me, pseudo = ui.newPseudo.value.trim();
@@ -116,7 +122,7 @@ async function renamePlayer(e) {
   markInvalid(ui.newPseudo, false);
   try {
     await rename(pseudo);
-    ui.newPseudo.value = net.board.me ? net.board.me.pseudo : pseudo;
+    ui.newPseudo.value = /** @type {Joined} */ (net.board).me ? /** @type {Joined} */ (net.board).me.pseudo : pseudo;
     ui.newPseudo.blur();
     renameNote("C'est changé.", false);
   } catch (err) {
@@ -127,13 +133,15 @@ async function renamePlayer(e) {
   }
 }
 
+/** @param {Flash} button @param {string} text */
 function flash(button, text) {
   clearTimeout(button.flash);
   button.label = button.label || button.textContent;
   button.textContent = text;
-  button.flash = setTimeout(() => { button.textContent = button.label; }, FLASH_MS);
+  button.flash = setTimeout(() => { button.textContent = /** @type {string} */ (button.label); }, FLASH_MS);
 }
 
+/** @param {string} text */
 function copyByHand(text) {
   const area = document.createElement("textarea");
   area.value = text;
@@ -150,6 +158,7 @@ function copyByHand(text) {
   return ok;
 }
 
+/** @param {Flash} button @param {string} text */
 export async function copy(button, text, done = "Copié !") {
   let ok = true;
   try {

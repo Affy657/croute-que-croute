@@ -6,6 +6,7 @@ const BULGE = 0.12, ZIG = 8;
 const SPOTS = [[-0.2, -0.78, 0.06], [0.22, -0.72, 0.05], [0.02, -0.9, 0.04], [-0.48, -0.66, 0.04], [0.5, -0.6, 0.035]];
 const SPECKS = [-0.6, -0.3, 0, 0.3, 0.6].map((x) => [x, 0.37 + BULGE * (1 - x * x), 0.045]);
 
+/** @type {Art} */
 function eggPath(ctx, r) {
   ctx.beginPath();
   ctx.moveTo(0, -r);
@@ -16,6 +17,7 @@ function eggPath(ctx, r) {
   ctx.closePath();
 }
 
+/** @param {Ctx} ctx @param {number} r @param {number} y @param {number} h */
 function stripe(ctx, r, y, h) {
   ctx.beginPath();
   ctx.moveTo(-r, y * r);
@@ -26,7 +28,9 @@ function stripe(ctx, r, y, h) {
   ctx.fill();
 }
 
+/** @param {Ctx} ctx @param {number} r @param {number} y @param {number} h @param {number} amp */
 function zigzag(ctx, r, y, h, amp) {
+  /** @param {number} i @param {boolean} top @returns {Pair} */
   const at = (i, top) => {
     const x = -1 + (2 * i) / ZIG;
     return [x * r, (y + (top ? 0 : h) + BULGE * (1 - x * x) + (i % 2 ? amp : -amp)) * r];
@@ -38,6 +42,7 @@ function zigzag(ctx, r, y, h, amp) {
   ctx.fill();
 }
 
+/** @param {Ctx} ctx @param {number} r @param {Sky["egg"]} P */
 function shell(ctx, r, P) {
   ctx.save();
   eggPath(ctx, r);
@@ -72,6 +77,7 @@ function shell(ctx, r, P) {
   ctx.stroke();
 }
 
+/** @param {Ctx} ctx @param {number} r @param {Sky["egg"]} P @param {boolean} front */
 function ribbon(ctx, r, P, front) {
   const { rx, ry, tilt, w } = RIBBON, from = front ? 0 : Math.PI;
   ctx.save();
@@ -91,6 +97,7 @@ function ribbon(ctx, r, P, front) {
   ctx.restore();
 }
 
+/** @param {Ctx} ctx @param {number} r @param {Sky["egg"]} P */
 function knot(ctx, r, P) {
   const { ry, tilt } = RIBBON, s = r * 0.2;
   ctx.save();
@@ -124,6 +131,7 @@ function knot(ctx, r, P) {
   ctx.restore();
 }
 
+/** @type {Move} */
 function hopper(ctx, r, clock) {
   const { rx, ry, tilt, lap } = RIBBON, t = clock * lap, depth = (Math.sin(t) + 1) / 2;
   const c = Math.cos(tilt), s = Math.sin(tilt), ex = rx * Math.cos(t) * r, ey = ry * Math.sin(t) * r;
@@ -135,6 +143,7 @@ function hopper(ctx, r, clock) {
   ctx.restore();
 }
 
+/** @type {Move} */
 export function egg(ctx, r, clock) {
   const P = SKY.egg, front = Math.sin(clock * RIBBON.lap) > 0;
   ribbon(ctx, r, P, false);

@@ -6,11 +6,14 @@ import { copy } from "./settings.js";
 const SEND_MS = 1500, SAMPLE_MS = 250, KEEP = 3000, LOUD = 0.004;
 const STRAY_MS = 1000, MUTE_MS = 3000, REPORTS = 4, REPORT_LINES = 150, RUN_REPORTS = 2;
 const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-const lines = [], queue = [], t0 = performance.now();
-let mode = null, state = null, analyser = null, tapped = null, samples = null, loud = null, strayAt = 0, muteAt = 0, runAt = 0, sent = 0, runs = 0, resyncs = 0;
+/** @type {string[]} */
+const lines = [], /** @type {string[]} */ queue = [], t0 = performance.now();
+/** @type {string | null} */
+let mode = null, /** @type {HTMLElement | null} */ state = null, /** @type {AnalyserNode} */ analyser = /** @type {never} */ (null), /** @type {GainNode | null} */ tapped = null, /** @type {Float32Array<ArrayBuffer>} */ samples = /** @type {never} */ (null), /** @type {boolean | null} */ loud = null, strayAt = 0, muteAt = 0, runAt = 0, sent = 0, runs = 0, resyncs = 0;
 
 const stamp = () => ((performance.now() - t0) / 1000).toFixed(2).padStart(7);
 
+/** @param {string} text */
 function log(text) {
   const line = stamp() + "  " + text;
   lines.push(line);
@@ -30,6 +33,7 @@ function send() {
   fetch("/api/diag", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ lines: queue.splice(0) }), keepalive: true }).catch(() => {});
 }
 
+/** @param {string} kind */
 function report(kind) {
   if (mode !== "report" || sent >= REPORTS) return;
   sent++;
@@ -43,6 +47,7 @@ function runEnded() {
   if (runs++ < RUN_REPORTS) report(`partie de ${secs} s, ${resyncs} recalage(s)`);
 }
 
+/** @param {AudioParts} parts */
 function level(parts) {
   if (!parts.musicGain || parts.ctx.state === "closed") return null;
   if (tapped !== parts.musicGain) {
@@ -93,6 +98,7 @@ function header() {
   log(`version ${VERSION}  appli installée ${standalone ? "oui" : "non"}  audioSession ${navigator.audioSession ? navigator.audioSession.type : "absent"}  musique ${prefs.music ? "on" : "off"} ${Math.round(prefs.musicLevel * 100)}%`);
 }
 
+/** @param {string} text @param {Fn} run */
 function button(text, run) {
   const b = document.createElement("button");
   b.type = "button";
@@ -112,6 +118,7 @@ function mount() {
   document.body.append(panel);
 }
 
+/** @param {boolean} asked */
 export function startDiag(asked) {
   if (!asked && !IOS) return;
   mode = asked ? "live" : "report";

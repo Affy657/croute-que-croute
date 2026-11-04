@@ -7,6 +7,7 @@ import { inAppNote } from "./inapp.js";
 import { googleBlocked } from "./install.js";
 
 const TICK_MS = 1000, RETRY_MS = 20000, QUIET = 4;
+/** @type {Record<string, string>} */
 const GOOGLE_NOTES = {
   lie: "Compte Google lié.",
   pris: "Ce compte Google est déjà lié à un autre joueur.",
@@ -14,13 +15,18 @@ const GOOGLE_NOTES = {
   erreur: "La connexion Google a échoué. Réessaie."
 };
 const OUT_ASK = "Tes autres appareils sortent du compte. Pour revenir, il leur faudra un nouveau code.";
-let timer = null, until = Infinity, live = false, asked = 0, shown = "", merging = null, mergeInto = null, flow = 0, waiting = null, googleResult = null, opener = () => {}, idle = () => true;
+/** @type {Timer} */
+let timer = null, until = Infinity, live = false, asked = 0, shown = "", /** @type {string | null} */ merging = null, /** @type {string | null} */ mergeInto = null, flow = 0, /** @type {string | null} */ waiting = null, /** @type {string | null} */ googleResult = null, opener = () => {}, idle = () => true;
 
+/** @param {string} name */
 const quoted = (name) => "« " + name + " »";
 
+/** @param {string} name */
 const color = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+/** @param {string} code */
 const spaced = (code) => code.slice(0, 4) + " " + code.slice(4);
 
+/** @param {Qr | null} qr */
 function drawQr(qr) {
   const canvas = ui.linkQr, ctx = canvas.getContext("2d");
   ctx.fillStyle = color("--ink");
@@ -93,6 +99,7 @@ function closeLink() {
   resync();
 }
 
+/** @param {string} code */
 async function connect(code) {
   const button = ui.linkForm.querySelector("button[type=submit]");
   setText(ui.linkError, "");
@@ -111,11 +118,13 @@ async function connect(code) {
   }
 }
 
+/** @param {HTMLElement} node @param {string} text */
 function say(node, text, error = false) {
   setText(node, text);
   node.classList.toggle("error", error);
 }
 
+/** @param {boolean} on */
 function showMerge(on) {
   ui.mergeForm.hidden = ui.mergeHelp.hidden = !on;
 }
@@ -128,6 +137,7 @@ function resetMerge(note = "", error = false) {
   markInvalid(ui.mergeInput, false);
 }
 
+/** @param {string} code */
 async function checkMerge(code) {
   const button = ui.mergeForm.querySelector("button[type=submit]");
   resetMerge();
@@ -144,7 +154,7 @@ async function checkMerge(code) {
     resetMerge(`Cet appareil n'était plus connecté à son ancien compte : tu joues maintenant en ${quoted(r.pseudo)}.`);
   } catch (e) {
     if (mine !== flow) return;
-    const m = e.data && e.data.merge;
+    const m = /** @type {Err} */ (e).data && /** @type {Err} */ (e).data.merge;
     if (!m) {
       say(ui.mergeNote, reason(e), true);
       return markInvalid(ui.mergeInput, badInput(e));
@@ -158,6 +168,7 @@ async function checkMerge(code) {
   }
 }
 
+/** @param {string} pseudo */
 function merged(pseudo) {
   showMerge(false);
   ui.mergeInput.value = "";
@@ -172,9 +183,9 @@ async function confirmMerge() {
     const r = await linkWith(merging, true);
     merged(r.pseudo);
   } catch (e) {
-    if (!e.status) await refreshBoard();
+    if (!/** @type {Err} */ (e).status) await refreshBoard();
     const me = net.board && net.board.me;
-    if (!e.status && me && me.pseudo === mergeInto) merged(me.pseudo);
+    if (!/** @type {Err} */ (e).status && me && me.pseudo === mergeInto) merged(me.pseudo);
     else resetMerge(reason(e), true);
   } finally {
     ui.mergeYes.disabled = ui.mergeNo.disabled = false;
@@ -189,6 +200,7 @@ function renderGoogle() {
   if (me) ui.googleLabel.textContent = me.google ? "Délier mon compte Google" : "Lier mon compte Google";
 }
 
+/** @param {HTMLButtonElement} button @param {boolean} link */
 async function goGoogle(button, link) {
   button.disabled = true;
   say(ui.googleNote, "");
@@ -241,6 +253,7 @@ function googleFromUrl() {
   showGoogleResult();
 }
 
+/** @param {boolean} on */
 function askOut(on, note = "") {
   ui.outRow.hidden = on;
   ui.outAsk.hidden = !on;
@@ -269,6 +282,7 @@ export function resetAccount() {
   askOut(false);
 }
 
+/** @param {string} code */
 function offerLink(code) {
   ui.linkInput.value = code;
   setText(ui.linkError, "");
@@ -297,6 +311,7 @@ function linkFromUrl() {
   pickUp();
 }
 
+/** @param {Fn} openSettings @param {() => boolean} isIdle */
 export function initAccount(openSettings, isIdle) {
   opener = openSettings;
   idle = isIdle;
@@ -312,7 +327,7 @@ ui.mergeBtn.addEventListener("click", () => {
   showMerge(ui.mergeForm.hidden);
   if (!ui.mergeForm.hidden) ui.mergeInput.focus();
 });
-ui.mergeForm.addEventListener("submit", (e) => {
+ui.mergeForm.addEventListener("submit", /** @param {Event} e */ (e) => {
   e.preventDefault();
   checkMerge(ui.mergeInput.value);
 });
@@ -344,7 +359,7 @@ if (stuck) {
   ui.inApp.hidden = false;
   ui.inAppCopy.addEventListener("click", () => copy(ui.inAppCopy, location.origin + "/", "Lien copié"));
 }
-ui.linkForm.addEventListener("submit", (e) => {
+ui.linkForm.addEventListener("submit", /** @param {Event} e */ (e) => {
   e.preventDefault();
   connect(ui.linkInput.value);
 });

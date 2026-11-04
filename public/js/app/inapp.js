@@ -7,6 +7,7 @@ const APPS = [
   ["TikTok", /musical_ly|BytedanceWebview|TikTok/]
 ];
 
+/** @param {string} ua */
 const apple = (ua) => /iPhone|iPad|iPod/.test(ua);
 
 export function inApp(ua = navigator.userAgent) {

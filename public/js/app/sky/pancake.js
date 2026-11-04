@@ -5,6 +5,7 @@ import { clipped, disc, INK, ink, onSphere, TAU, tone } from "./kit.js";
 import { speaker } from "./music.js";
 
 const CRATERS = [[-0.45, -0.5, 0.14], [-0.6, -0.05, 0.1], [0.55, -0.55, 0.12], [0.78, 0.2, 0.1], [-0.3, 0.78, 0.09], [0.15, -0.82, 0.08]];
+/** @param {Ctx} ctx @param {number} x @param {number} y @param {number} w @param {number} e @param {number} t */
 function layer(ctx, x, y, w, e, t) {
   const P = SKY.pancake;
   const side = ctx.createLinearGradient(x - w, 0, x + w, 0);
@@ -30,6 +31,7 @@ function layer(ctx, x, y, w, e, t) {
   ctx.stroke();
 }
 
+/** @param {Ctx} ctx @param {number} x @param {number} y @param {number} w @param {number} e @param {number} t */
 function glaze(ctx, x, y, w, e, t) {
   const P = SKY.pancake, g = ctx.createLinearGradient(x - w, 0, x + w, 0);
   g.addColorStop(0, P.glazeLight);
@@ -60,6 +62,7 @@ function glaze(ctx, x, y, w, e, t) {
   ctx.fill();
 }
 
+/** @param {Ctx} ctx @param {number} x @param {number} y @param {number} s */
 function jar(ctx, x, y, s) {
   const P = SKY.pancake, h = s * 0.95;
   const body = ctx.createLinearGradient(x - s / 2, 0, x + s / 2, 0);
@@ -84,6 +87,7 @@ function jar(ctx, x, y, s) {
   ctx.fill();
 }
 
+/** @type {Art} */
 export function pancake(ctx, r) {
   ctx.fillStyle = SKY.pancake.base;
   disc(ctx, 0, 0, r);

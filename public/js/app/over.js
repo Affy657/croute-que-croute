@@ -10,6 +10,7 @@ const ACH_TOAST_MS = 2600, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200, LAP_CS = 1
 
 function cheer() {
   const mine = S.submit, prev = S.prevRank;
+  /** @type {Promise<null>} */
   const timeout = new Promise((ok) => setTimeout(() => ok(null), CHEER_WAIT_MS));
   Promise.race([mine || Promise.resolve(null), timeout]).then((r) => {
     if (S.submit !== mine || S.mode !== "over" || !S.newBest) return;
@@ -24,6 +25,7 @@ function cheer() {
   });
 }
 
+/** @param {string} text @param {number} count @param {boolean} gold */
 function cheerHud(text, count, gold) {
   ui.hudBest.textContent = text;
   ui.hudBest.classList.add("hot");
@@ -32,6 +34,7 @@ function cheerHud(text, count, gold) {
   burst(ui.time, { count, power: 0.55, gold });
 }
 
+/** @param {number} cs */
 export function cheerRun(cs) {
   const g = S.goal;
   if (g.reached < 2 && g.lead && cs > g.lead) {
@@ -43,6 +46,7 @@ export function cheerRun(cs) {
   }
 }
 
+/** @param {number} cs */
 export function lap(cs) {
   const n = Math.floor(cs / LAP_CS);
   if (n <= S.lap) return;
@@ -103,8 +107,10 @@ export function renderOverAch() {
   ui.overAchBtn.textContent = achLabel();
 }
 
-export const gearLabel = (a) => (GEAR[a.gear].slot === "bread" ? "" : "Accessoire ") + GEAR[a.gear].name;
+/** @param {Feat} a */
+export const gearLabel = (a) => (GEAR[/** @type {string} */ (a.gear)].slot === "bread" ? "" : "Accessoire ") + GEAR[/** @type {string} */ (a.gear)].name;
 
+/** @param {{ name: string }} a */
 export function toastAch(a) {
   const t = S.mode === "menu" ? ui.menuToast : ui.achToast;
   if (t.hidden || !t.timer) {

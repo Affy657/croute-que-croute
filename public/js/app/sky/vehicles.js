@@ -2,6 +2,7 @@ import { PALETTE } from "../../shared/palette.js";
 import { rr } from "../art/kit.js";
 import { disc, INK, TAU } from "./kit.js";
 
+/** @type {Art} */
 export function roadster(ctx, s) {
   const line = Math.max(1, s * 0.022), suit = "#f1f3f7";
   ctx.lineJoin = "round";
@@ -76,6 +77,7 @@ export function roadster(ctx, s) {
 
 const LIGHTS = ["#ffd84a", "#ff6bb5", "#6be8ff"];
 
+/** @type {Move} */
 export function saucer(ctx, s, clock) {
   const skin = "#7bd85a", line = Math.max(1, s * 0.022), a = -1.2 + Math.sin(clock * 8) * 0.5;
   const hx = s * 0.08 + Math.cos(a) * s * 0.14, hy = -s * 0.14 + Math.sin(a) * s * 0.14;

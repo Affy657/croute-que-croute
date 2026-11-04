@@ -6,8 +6,11 @@ const GOLD = [C.mustard, C.butter, C.ink, C.flame];
 const canvas = document.getElementById("party");
 const ctx = canvas.getContext("2d");
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+/** @type {Rnd} */
 const rnd = (a, b) => a + Math.random() * (b - a);
+/** @type {PickOne} */
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
+/** @type {Spark[]} */
 let parts = [], last = 0, dpr = 1;
 
 function fit() {
@@ -17,6 +20,7 @@ function fit() {
   canvas.hidden = false;
 }
 
+/** @param {number} x @param {number} y @param {number} vx @param {number} vy @param {SparkOptions} e */
 function spawn(x, y, vx, vy, { colors, g = GRAVITY, drag = 1.4, life }) {
   if (!parts.length) {
     fit();
@@ -29,6 +33,7 @@ function spawn(x, y, vx, vy, { colors, g = GRAVITY, drag = 1.4, life }) {
   });
 }
 
+/** @param {number} r */
 function star(r) {
   ctx.beginPath();
   for (let i = 0; i < 8; i++) {
@@ -39,6 +44,7 @@ function star(r) {
   ctx.fill();
 }
 
+/** @param {number} now */
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
@@ -76,6 +82,7 @@ function frame(now) {
   canvas.width = canvas.height = 0;
 }
 
+/** @param {HTMLElement} el @param {BurstOptions} b */
 export function burst(el, { count = 40, power = 1, gold = false } = {}) {
   if (reduceMotion) return;
   const r = el.getBoundingClientRect();
@@ -93,6 +100,7 @@ export function rain(count = 90) {
   }
 }
 
+/** @param {HTMLElement} el */
 export function bounce(el) {
   el.classList.remove("cheer");
   void el.offsetWidth;

@@ -1,6 +1,7 @@
 import { PALETTE, SKY } from "../../shared/palette.js";
 import { ball, clipped, disc, onSphere, outline, TAU } from "./kit.js";
 
+/** @param {Ctx} ctx @param {number} r @param {string} color @param {number} from */
 function halfRing(ctx, r, color, from) {
   const alpha = ctx.globalAlpha;
   ctx.save();
@@ -15,6 +16,7 @@ function halfRing(ctx, r, color, from) {
   ctx.restore();
 }
 
+/** @param {Ctx} ctx @param {number} r @param {string} light @param {string} dark @param {string} ring @param {number} tilt @param {string} band @param {string} [storm] */
 function ringed(ctx, r, light, dark, ring, tilt, band, storm) {
   ctx.rotate(tilt);
   halfRing(ctx, r, ring, Math.PI);
@@ -40,16 +42,19 @@ function ringed(ctx, r, light, dark, ring, tilt, band, storm) {
   halfRing(ctx, r, ring, 0);
 }
 
+/** @type {Art} */
 export function purple(ctx, r) {
   const V = SKY.violet;
   ringed(ctx, r, PALETTE.planet, PALETTE["planet-shade"], PALETTE.mustard, -0.35, V.band, V.storm);
 }
 
+/** @type {Art} */
 export function green(ctx, r) {
   const G = SKY.green;
   ringed(ctx, r, G.light, G.dark, G.ring, 0.3, G.band);
 }
 
+/** @param {Ctx} ctx @param {number} s @param {number} light @param {{ crater: string, floor: string }} [P] */
 export function crater(ctx, s, light, P = SKY.pancake) {
   ctx.fillStyle = P.crater;
   disc(ctx, 0, 0, s);
@@ -57,6 +62,7 @@ export function crater(ctx, s, light, P = SKY.pancake) {
   disc(ctx, -Math.cos(light) * s * 0.25, -Math.sin(light) * s * 0.25, s * 0.75);
 }
 
+/** @param {Ctx} ctx @param {number} r @param {Sky["moons"]} C @param {Pts} pits */
 function pitted(ctx, r, C, pits) {
   ball(ctx, r, C.light, C.dark);
   clipped(ctx, r, () => {
@@ -65,6 +71,7 @@ function pitted(ctx, r, C, pits) {
   outline(ctx, r);
 }
 
+/** @type {Art} */
 export function moons(ctx, r) {
   for (const [x, y, s] of [[0, 0, 1], [2.4, 1.3, 0.6], [-1.3, 2.3, 0.45]]) {
     ctx.save();
@@ -74,6 +81,7 @@ export function moons(ctx, r) {
   }
 }
 
+/** @type {Art} */
 export function rock(ctx, r) {
   pitted(ctx, r, SKY.rock, [[0.3, 0.2, 0.25], [-0.35, 0.35, 0.18], [-0.1, -0.45, 0.14], [0.55, -0.4, 0.09], [-0.65, -0.15, 0.08], [0.1, 0.7, 0.07]]);
 }

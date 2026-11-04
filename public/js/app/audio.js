@@ -5,6 +5,7 @@ const MUSIC_FILES = ["/music/theme.m4a", "/music/theme.mp3"];
 export const MUSIC_CREDIT = { title: "Roundabout", artist: "Blacklolita", url: "https://open.spotify.com/track/1GbuLhdSobTcKzQfOGliQX" };
 export const SFX_CREDIT = { name: "Mixkit", url: "https://mixkit.co/free-sound-effects/game/" };
 const MUSIC_PARTS = [[0, 83.086], [131.923, 208.668]];
+/** @type {Record<string, { url: string, gain: number }[]>} */
 const SOUNDS = {
   start: [{ url: "/sfx/start.mp3", gain: 0.85 }],
   near: [{ url: "/sfx/near.mp3", gain: 0.8 }],
@@ -12,6 +13,7 @@ const SOUNDS = {
   record: [{ url: "/sfx/record.mp3", gain: 1 }],
   first: [{ url: "/sfx/first.mp3", gain: 1 }]
 };
+/** @type {Record<string, number>} */
 const SFX_GAP = { near: 0.08 };
 const SESSION = "ambient";
 const VOLUME = 0.6, SFX_VOLUME = 1, SFX_LATE_MS = 300, LEVEL_S = 0.02;
@@ -20,6 +22,7 @@ const MUFFLE_HZ = 320, MUFFLE_Q = 6, MUFFLE_IN_S = 0.8, MUFFLE_FAR = 0.45, MUFFL
 const PREVIEW_AT = 30, PREVIEW_S = 2, PREVIEW_FADE_S = 0.5;
 const WATCH_MS = 500, FROZEN_MS = 400, WAKE_MS = 1000;
 
+/** @param {string} key */
 function level(key) {
   const raw = store.get(key), v = Number(raw);
   return raw === null || !Number.isFinite(v) ? 1 : Math.min(1, Math.max(0, v / 100));
@@ -29,15 +32,20 @@ export const prefs = {
   music: !LOCAL && store.get(KEYS.musicOff) !== "1", sfx: !LOCAL && store.get(KEYS.sfxOff) !== "1",
   musicLevel: level(KEYS.musicVolume), sfxLevel: level(KEYS.sfxVolume)
 };
-const listeners = [], buffers = {}, lastPlayed = {};
-let ctx = null, master = null, music = null, song = null, songLoad = null, songFailed = false, play = null, stale = false;
-let running = false, hidden = false, runTime = 0, synced = -Infinity, previewTimer = null, watch = null, tracer = null, tailUntil = 0;
+/** @type {Fn[]} */
+const listeners = [], /** @type {Record<string, AudioBuffer>} */ buffers = {}, /** @type {Record<string, number>} */ lastPlayed = {};
+/** @type {AudioContext} */
+let ctx = /** @type {never} */ (null), /** @type {GainNode} */ master = /** @type {never} */ (null), /** @type {GainNode} */ music = /** @type {never} */ (null), /** @type {Song} */ song = /** @type {never} */ (null), /** @type {Promise<void> | null} */ songLoad = null, songFailed = false, /** @type {Playing | null} */ play = null, stale = false;
+let running = false, hidden = false, runTime = 0, synced = -Infinity, /** @type {Timer} */ previewTimer = null, /** @type {Timer} */ watch = null, /** @type {((text: string) => void) | null} */ tracer = null, tailUntil = 0;
 
+/** @param {...(string | number)} parts */
 const note = (...parts) => tracer && tracer(parts.join(" "));
+/** @param {(text: string) => void} fn */
 export const traceAudio = (fn) => { tracer = fn; };
 export const audioParts = () => ({ ctx, musicGain: music, song: !!song, playing: !!play, preview: !!(play && play.preview), running, hidden, stale, tail: performance.now() < tailUntil, heard: play ? heard(play) : null });
 
 export const musicAvailable = () => !!song || (!!ctx && !songFailed);
+/** @param {Fn} fn */
 export const onAudioChange = (fn) => listeners.push(fn);
 const changed = () => listeners.forEach((fn) => fn());
 
@@ -96,9 +104,11 @@ function rebuild() {
   old.close().catch(() => {});
 }
 
+/** @param {ArrayBuffer} data */
 const decode = (data) => new Promise((ok, ko) => ctx.decodeAudioData(data, ok, ko));
 const musicLevel = () => (prefs.music ? prefs.musicLevel * VOLUME : 0);
 
+/** @param {AudioBuffer} full */
 function stitch(full) {
   const rate = full.sampleRate, join = Math.round(JOIN_S * rate);
   const spans = MUSIC_PARTS.map(([a, b]) => [Math.round(a * rate), Math.min(full.length, Math.round(b * rate))]);
@@ -130,7 +140,7 @@ async function fetchSong() {
       note("musique prête", url, song.loopEnd.toFixed(1) + " s");
       break;
     } catch (e) {
-      note("musique échec", url, e.message);
+      note("musique échec", url, /** @type {Error} */ (e).message);
     }
   }
   songFailed = !song;
@@ -150,9 +160,12 @@ export async function initAudio() {
   else changed();
 }
 
+/** @param {number} t */
 const songAt = (t) => (t < song.loopStart ? t : song.loopStart + ((t - song.loopStart) % (song.loopEnd - song.loopStart)));
+/** @param {Playing} p */
 const heard = (p) => p.t + (ctx.currentTime - p.at);
 
+/** @param {number} t */
 function startSong(t, preview = false) {
   const now = ctx.currentTime, src = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), fade = ctx.createGain();
   src.buffer = song.buffer;
@@ -170,6 +183,7 @@ function startSong(t, preview = false) {
   return { src, filter, fade, at: now, t, preview };
 }
 
+/** @param {Playing} p */
 function stopSong(p, after = STOP_S) {
   const now = ctx.currentTime;
   tailUntil = Math.max(tailUntil, performance.now() + after * 1000);
@@ -178,6 +192,7 @@ function stopSong(p, after = STOP_S) {
   p.src.stop(now + after);
 }
 
+/** @param {Playing} p */
 function muffle(p) {
   const t = ctx.currentTime, end = t + MUFFLE_S + MUFFLE_FADE_S, { frequency, Q } = p.filter, { gain } = p.fade;
   frequency.setValueAtTime(ctx.sampleRate / 2, t);
@@ -193,6 +208,7 @@ function muffle(p) {
   tailUntil = performance.now() + (end - t) * 1000;
 }
 
+/** @param {number} [after] */
 function halt(after) {
   if (!play) return;
   stopSong(play, after);
@@ -258,6 +274,7 @@ export function musicRunStart() {
   reconcile();
 }
 
+/** @param {number} t */
 export function musicRunSync(t) {
   runTime = t;
   if (!play || play.preview || ctx.state !== "running" || t - synced < RESYNC_S) return;
@@ -277,6 +294,7 @@ export function musicRunEnd() {
   play = null;
 }
 
+/** @param {boolean} away */
 export function pauseForBackground(away) {
   if (hidden === away) return;
   hidden = away;
@@ -311,6 +329,7 @@ export function toggleSfx() {
   changed();
 }
 
+/** @param {string} kind @param {number} value */
 export function setLevel(kind, value) {
   const v = Math.min(1, Math.max(0, value));
   note("curseur", kind, Math.round(v * 100));
@@ -338,6 +357,7 @@ export function previewMusic() {
   reconcile();
 }
 
+/** @param {string} name @param {number} rate */
 function fire(name, rate) {
   const variants = SOUNDS[name], t = ctx.currentTime, now = performance.now() / 1000;
   if (now - (lastPlayed[name] ?? -Infinity) < (SFX_GAP[name] || 0)) return;
@@ -353,6 +373,7 @@ function fire(name, rate) {
   src.start(t);
 }
 
+/** @param {string} name @param {number} patience */
 function trigger(name, patience, rate = 1) {
   if (!ctx || !SOUNDS[name] || stale) return;
   if (ctx.state === "running") {
@@ -365,12 +386,14 @@ function trigger(name, patience, rate = 1) {
   }, () => {});
 }
 
+/** @param {string} name @param {number} [rate] */
 export function playSfx(name, rate) {
   if (prefs.sfx) trigger(name, SFX_LATE_MS, rate);
 }
 
 export const prepareSfx = ensureContext;
 
+/** @param {string} name */
 export function previewSfx(name) {
   ensureContext();
   trigger(name, Infinity);

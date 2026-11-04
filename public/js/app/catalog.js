@@ -15,11 +15,15 @@ const CREW_URL = "https://www.instagram.com/collectif_tartine_sauvage/";
 const DEV = { name: "Adrien Morand", url: "https://www.linkedin.com/in/adrien-morand/" };
 const gameScale = () => Math.min(window.innerWidth / FW, window.innerHeight / FH);
 const GAP_END = (GAP_START - GAP_MIN) / GAP_SLOPE;
+/** @type {Rnd} */
 const rnd = (a, b) => a + Math.random() * (b - a);
+/** @type {PickOne} */
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+/** @type {Preview[]} */
 const previews = [];
 let running = false;
 
+/** @type {MakeEl} */
 export function el(tag, cls, text) {
   const node = document.createElement(tag);
   if (cls) node.className = cls;
@@ -27,6 +31,7 @@ export function el(tag, cls, text) {
   return node;
 }
 
+/** @param {number} w @param {number} h */
 export function canvas(w, h) {
   const c = document.createElement("canvas");
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -38,6 +43,7 @@ export function canvas(w, h) {
   return c;
 }
 
+/** @param {Ctx} ctx @param {Capsule} b */
 function capsule(ctx, [ax, ay, bx, by, r]) {
   const a = Math.atan2(by - ay, bx - ax);
   ctx.arc(bx, by, r, a - Math.PI / 2, a + Math.PI / 2);
@@ -45,19 +51,21 @@ function capsule(ctx, [ax, ay, bx, by, r]) {
   ctx.closePath();
 }
 
+/** @param {number} width @param {number} scale */
 function realCanvas(width, scale) {
   const w = Math.max(120, Math.ceil(width * scale) + 24);
   const cv = canvas(w, CARD_H);
-  const ctx = cv.getContext("2d");
+  const ctx = /** @type {Ctx} */ (cv.getContext("2d"));
   ctx.setTransform(cv.dpr * scale, 0, 0, cv.dpr * scale, (cv.dpr * w) / 2, (cv.dpr * CARD_H) / 2);
   return { cv, ctx };
 }
 
+/** @param {Ctx} ctx @param {number} scale @param {((c: Ctx) => void)[]} shapes */
 function hitbox(ctx, scale, shapes) {
   const off = document.createElement("canvas");
   off.width = ctx.canvas.width;
   off.height = ctx.canvas.height;
-  const o = off.getContext("2d");
+  const o = /** @type {Ctx} */ (off.getContext("2d"));
   o.setTransform(ctx.getTransform());
   /** @type {[number, string, number[]][]} */
   const strokes = [[6, PALETTE.void, []], [2.4, PALETTE.mustard, [3, 3]]];
@@ -83,6 +91,7 @@ function hitbox(ctx, scale, shapes) {
   ctx.restore();
 }
 
+/** @param {string} kind @param {string | null} spread @param {string | null} status @param {number} scale */
 function weaponCard(kind, spread, status, scale) {
   const { name, len, rad, parts } = PROJECTILES[kind];
   const card = el("div", "weapon");
@@ -95,12 +104,13 @@ function weaponCard(kind, spread, status, scale) {
   return card;
 }
 
+/** @param {string} spread */
 function spreadCard(spread) {
   const { len, rad } = PROJECTILES.knife;
   const card = el("div", "weapon");
   const cv = canvas(CLOSE_W, CARD_H);
   cv.className = "close-up";
-  const ctx = cv.getContext("2d");
+  const ctx = /** @type {Ctx} */ (cv.getContext("2d"));
   const k = cv.dpr * CLOSE_ZOOM;
   ctx.setTransform(k, 0, 0, k, (cv.dpr * CLOSE_W) / 2, (cv.dpr * CARD_H) / 2);
   drawProjectile(ctx, { kind: "knife", len, rad, x: -CLOSE_AT, y: 0, a: 0, spread });
@@ -108,6 +118,7 @@ function spreadCard(spread) {
   return card;
 }
 
+/** @param {number} scale */
 function toastCard(scale) {
   const card = el("div", "weapon");
   const { cv, ctx } = realCanvas(TOAST_W, scale);
@@ -117,6 +128,7 @@ function toastCard(scale) {
   return card;
 }
 
+/** @param {string} title @param {string} note @param {Node[]} cards */
 function weaponGroup(title, note, cards) {
   const section = el("section", "card");
   const grid = el("div", "gallery");
@@ -125,6 +137,7 @@ function weaponGroup(title, note, cards) {
   return section;
 }
 
+/** @param {Element} root @param {{ showLab?: boolean }} b */
 export function renderWeapons(root, { showLab = false } = {}) {
   const scale = gameScale();
   const kinds = Object.keys(PROJECTILES);
@@ -143,8 +156,9 @@ export function renderWeapons(root, { showLab = false } = {}) {
 }
 
 function progressionCard() {
+  /** @type {Steps} */
   const steps = [];
-  for (const a of ATTACKS.filter((x) => !x.lab && x.growsUntil)) steps.push([a.growsUntil, a.growth]);
+  for (const a of ATTACKS.filter((x) => !x.lab && x.growsUntil)) steps.push(/** @type {Step} */ ([a.growsUntil, a.growth]));
   steps.push([GAP_END, "cadence max des attaques"]);
   steps.push([SPEED_UNTIL, "vitesse max des couverts"]);
   steps.sort((x, y) => x[0] - y[0]);
@@ -159,6 +173,7 @@ function progressionCard() {
   return section;
 }
 
+/** @param {Preview} p */
 function restart(p) {
   const t = Math.max(p.attack.from + 4, 20);
   const items = p.attack.make({ t, toast: { ...TOAST }, rng: Math.random, rnd, pick });
@@ -168,6 +183,7 @@ function restart(p) {
   p.idle = 0;
 }
 
+/** @param {Preview} p @param {number} dt */
 function step(p, dt) {
   p.time += dt;
   for (const o of p.obs) moveProjectile(o, dt);
@@ -181,6 +197,7 @@ function step(p, dt) {
   if (p.idle > PREVIEW_PAUSE_S || p.time > PREVIEW_MAX_S) restart(p);
 }
 
+/** @param {Preview} p @param {number} clock */
 function draw(p, clock) {
   const { ctx, cv } = p;
   const k = cv.dpr * PREVIEW_SCALE;
@@ -204,11 +221,16 @@ function draw(p, clock) {
   ctx.restore();
 }
 
+/** @type {Steps} */
 const OFTEN = [[0.2, "très souvent"], [0.1, "souvent"], [0.06, "parfois"], [0, "rarement"]];
+/** @type {Steps} */
 const SPEED = [[260, "très rapide"], [200, "rapide"], [140, "moyenne"], [0, "lente"]];
+/** @type {Steps} */
 const BREAK = [[1.75, "long"], [1.25, "moyen"], [0, "court"]];
-const level = (value, steps) => steps.find(([min]) => value >= min)[1];
+/** @param {number} value @param {Steps} steps */
+const level = (value, steps) => /** @type {Step} */ (steps.find(([min]) => value >= min))[1];
 
+/** @param {string} label @param {string} value */
 export function stat(label, value) {
   const row = el("div", "fact");
   row.append(el("span", "fact-label", label), el("span", "fact-value", value));
@@ -233,14 +255,16 @@ function rulesCard() {
   return rules;
 }
 
+/** @param {HTMLDetailsElement} card */
 function openOnly(card) {
   if (card.open) return;
   const scroller = card.closest(".info-screen");
   const top = card.getBoundingClientRect().top;
-  for (const other of card.parentElement.children) if (other !== card && other.open) other.open = false;
+  for (const other of /** @type {HTMLCollectionOf<HTMLDetailsElement>} */ (/** @type {HTMLElement} */ (card.parentElement).children)) if (other !== card && other.open) other.open = false;
   if (scroller) scroller.scrollTop += card.getBoundingClientRect().top - top;
 }
 
+/** @param {string} title @param {Element | null} tag @param {Node | (() => Node)} content */
 export function fold(title, tag, content) {
   const card = el("details", "card fold");
   const head = el("summary", "fold-head");
@@ -248,7 +272,7 @@ export function fold(title, tag, content) {
   if (tag) head.append(tag);
   card.append(head);
   let build = typeof content === "function" ? content : null;
-  if (!build) card.append(content);
+  if (!build) card.append(/** @type {Node} */ (content));
   head.addEventListener("click", () => openOnly(card));
   card.addEventListener("toggle", () => {
     if (!card.open) return;
@@ -261,6 +285,7 @@ export function fold(title, tag, content) {
   return card;
 }
 
+/** @param {Element} root @param {{ showLab?: boolean, onTrain?: ((a: Attack) => void) | null }} b */
 export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
   const live = ATTACKS.filter((a) => !a.lab && SAMPLE_T > a.from);
   const total = live.reduce((s, a) => s + a.weight, 0);
@@ -285,7 +310,7 @@ export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
     }
     body.append(cv, text);
     const card = fold(attack.name, attack.lab ? el("span", "fold-tag lab", "Prototype") : el("span", "fold-tag", `${attack.from} s`), body);
-    const p = { attack, card, cv, ctx: cv.getContext("2d") };
+    const p = /** @type {Preview} */ ({ attack, card, cv, ctx: cv.getContext("2d") });
     restart(p);
     card.addEventListener("toggle", () => {
       if (card.open) restart(p);
@@ -296,6 +321,7 @@ export function renderAttacks(root, { showLab = false, onTrain = null } = {}) {
   root.replaceChildren(...cards, progressionCard(), rulesCard());
 }
 
+/** @param {string} title @param {string} text @param {string} href @param {string} label */
 function credit(title, text, href, label) {
   const card = el("section", "card");
   const actions = el("div", "card-actions");
@@ -319,10 +345,11 @@ function sounds() {
     btn.addEventListener("click", () => previewSfx(name));
     return btn;
   }));
-  card.lastChild.before(list);
+  /** @type {ChildNode} */ (card.lastChild).before(list);
   return card;
 }
 
+/** @param {Element} root */
 export function renderCredits(root) {
   root.replaceChildren(
     credit("Collectif", "Tartine Sauvage, l'équipe derrière les soirées Space Tartinade", CREW_URL, "Suivre sur Instagram"),
@@ -333,11 +360,13 @@ export function renderCredits(root) {
   );
 }
 
+/** @param {boolean} on */
 export function animateAttacks(on) {
   if (on === running) return;
   running = on;
   if (!on) return;
   let last = performance.now(), clock = 0;
+  /** @param {number} now */
   const frame = (now) => {
     if (!running) return;
     const dt = Math.min(0.05, (now - last) / 1000);

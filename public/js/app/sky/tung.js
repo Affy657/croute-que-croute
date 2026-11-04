@@ -5,6 +5,7 @@ import { BEAT, INK, TAU } from "./kit.js";
 
 const GRAIN = [[-0.11, -0.05, -0.36, 0.025], [-0.03, -0.03, -0.18, -0.015], [0.09, -0.06, -0.33, -0.02]];
 
+/** @param {Ctx} ctx @param {Pair} from @param {Pair} to @param {number} s @param {number} line */
 function limb(ctx, from, to, s, line) {
   ctx.beginPath();
   ctx.moveTo(...from);
@@ -17,6 +18,7 @@ function limb(ctx, from, to, s, line) {
   ctx.stroke();
 }
 
+/** @param {Ctx} ctx @param {number} x @param {number} y @param {number} rx @param {number} ry @param {number} line */
 function knob(ctx, x, y, rx, ry, line) {
   ctx.fillStyle = SKY.tung.wood;
   ctx.strokeStyle = INK;
@@ -27,6 +29,7 @@ function knob(ctx, x, y, rx, ry, line) {
   ctx.stroke();
 }
 
+/** @type {Art} */
 function bat(ctx, s) {
   const B = SKY.tung, g = ctx.createLinearGradient(-s * 0.06, 0, s * 0.06, 0);
   g.addColorStop(0, B.bat);
@@ -42,6 +45,7 @@ function bat(ctx, s) {
   ctx.stroke();
 }
 
+/** @type {Move} */
 function tung(ctx, s, clock) {
   const B = SKY.tung, k = clock / BEAT, beat = Math.floor(k), f = k - beat, hit = ((beat % 4) + 4) % 4 < 3;
   const hop = hit ? Math.sin(f * Math.PI) : 0, line = Math.max(1.2, s * 0.025);
@@ -58,7 +62,7 @@ function tung(ctx, s, clock) {
   }
   ctx.translate(0, -rise);
   ctx.rotate(sway);
-  const shoulder = -h * 0.5, left = [-w / 2 - s * 0.16, shoulder - s * (0.08 + 0.12 * wave)];
+  const shoulder = -h * 0.5, /** @type {Pair} */ left = [-w / 2 - s * 0.16, shoulder - s * (0.08 + 0.12 * wave)];
   limb(ctx, [-w / 2 + s * 0.03, shoulder], left, s, line);
   knob(ctx, ...left, s * 0.038, s * 0.038, line);
   const g = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
@@ -105,6 +109,7 @@ function tung(ctx, s, clock) {
   ctx.beginPath();
   ctx.arc(0, -h * 0.57, s * 0.06, 0.25 * Math.PI, 0.75 * Math.PI);
   ctx.stroke();
+  /** @type {Pair} */
   const hand = [w / 2 + s * 0.13, shoulder + s * 0.1];
   limb(ctx, [w / 2 - s * 0.03, shoulder], hand, s, line);
   ctx.save();
@@ -118,6 +123,7 @@ function tung(ctx, s, clock) {
   ctx.restore();
 }
 
+/** @type {Move} */
 export function stage(ctx, r, clock) {
   rock(ctx, r);
   ctx.save();

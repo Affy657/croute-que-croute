@@ -1,6 +1,7 @@
 import { PALETTE, SPREADS } from "../../shared/palette.js";
 import { own, rr } from "./kit.js";
 
+/** @type {ShotDraw} */
 function knife(ctx, o, C) {
   const L = o.len, hx = -L / 2, bx = hx + 22;
   ctx.lineWidth = 2;
@@ -29,6 +30,7 @@ function knife(ctx, o, C) {
   }
 }
 
+/** @type {Record<string, (ctx: Ctx, x: number, y: number) => void>} */
 const SMEARS = {
   toothpaste(ctx, x, y) {
     ctx.fillStyle = "#e8303a";
@@ -57,6 +59,7 @@ const SMEARS = {
   }
 };
 
+/** @param {Ctx} ctx @param {number} x @param {number} y @param {string | null} kind */
 function spreadOn(ctx, x, y, kind) {
   const spread = SPREADS[kind || "butter"];
   ctx.fillStyle = spread.color;
@@ -87,11 +90,12 @@ function spreadOn(ctx, x, y, kind) {
   }
 }
 
+/** @type {ShotDraw} */
 function fork(ctx, o, C) {
   const L = o.len, hx = -L / 2, nx = hx + 30, tx = L / 2 - 20;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
-  for (const [width, color, end] of [[4, C.void, L / 2], [2, C.steel, L / 2 - 1]]) {
+  for (const [width, color, end] of /** @type {[number, string, number][]} */ ([[4, C.void, L / 2], [2, C.steel, L / 2 - 1]])) {
     ctx.lineWidth = width;
     ctx.strokeStyle = color;
     for (let i = 0; i < 4; i++) {
@@ -119,6 +123,7 @@ function fork(ctx, o, C) {
   ctx.stroke();
 }
 
+/** @type {ShotDraw} */
 function rolling(ctx, o, C) {
   const L = o.len, r = o.rad, body = L - 26;
   ctx.lineWidth = 2;
@@ -147,6 +152,7 @@ function rolling(ctx, o, C) {
   }
 }
 
+/** @type {ShotDraw} */
 function whisk(ctx, o, C) {
   const L = o.len, hx = -L / 2, head = L - 26, cx = hx + 26 + head / 2;
   ctx.lineJoin = "round";
@@ -157,7 +163,7 @@ function whisk(ctx, o, C) {
   rr(ctx, hx, -4, 22, 8, 4);
   ctx.fill();
   ctx.stroke();
-  for (const [width, color] of [[3.4, C.void], [1.6, C.steel]]) {
+  for (const [width, color] of /** @type {[number, string][]} */ ([[3.4, C.void], [1.6, C.steel]])) {
     ctx.lineWidth = width;
     ctx.strokeStyle = color;
     for (let i = 0; i < 4; i++) {
@@ -175,6 +181,7 @@ function whisk(ctx, o, C) {
   ctx.stroke();
 }
 
+/** @type {ShotDraw} */
 function cleaver(ctx, o, C) {
   const L = o.len, hx = -L / 2, bx = hx + 18;
   ctx.lineJoin = "round";
@@ -198,6 +205,7 @@ function cleaver(ctx, o, C) {
   ctx.fill();
 }
 
+/** @type {ShotDraw} */
 function bread(ctx, o, C) {
   const L = o.len, hx = -L / 2, bx = hx + 24, tip = L / 2;
   ctx.lineJoin = "round";
@@ -226,4 +234,5 @@ function bread(ctx, o, C) {
   ctx.stroke();
 }
 
+/** @type {Record<string, ShotDraw>} */
 export const PROJECTILE_SPRITES = { knife, fork, rolling, whisk, cleaver, bread };

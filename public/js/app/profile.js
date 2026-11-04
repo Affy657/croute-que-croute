@@ -10,12 +10,17 @@ import { progress, forSync, absorb } from "./achievements.js";
 
 const SEND_MS = 1500, TOAST_SCALE = 1.8, TOAST_Y = 0.53, BAR_MIN = 6, PODIUM = 3, BLANK = " ", NONE = "-";
 const SHELVES = [["head", "Chapeaux"], ["side", "Côtés"], ["bread", "Pains"], ["aura", "Auras"], ["spread", "Garnitures"]];
+/** @param {string} id */
 const $ = (id) => document.getElementById(id);
+/** @param {string} slot @param {string | null | undefined} kind */
 const wearable = (slot, kind) => (own(GEAR, kind)?.slot === slot ? kind : null);
 const ui = { name: $("profileName"), since: $("profileSince"), last: $("profileLast"), canvas: $("profileToast"), ranks: $("profileRanks"), body: $("profileBody") };
 const ctx = ui.canvas.getContext("2d");
+/** @type {Toast} */
 const toast = { x: 0, y: 0, tilt: 0, thrust: 0.35, scars: [], spread: "butter", head: null, side: null, bread: null, aura: null };
-let shown = null, sent = null, timer = null, ready = false;
+/** @type {string | null} */
+let shown = null, /** @type {string | null} */ sent = null, /** @type {Timer} */ timer = null, ready = false;
+/** @type {Fn[]} */
 const adopted = [];
 
 const outfitAt = () => {
@@ -24,8 +29,10 @@ const outfitAt = () => {
 };
 
 export const stampOutfit = () => store.set(KEYS.outfitAt, Math.round(serverNow()));
+/** @param {Fn} fn */
 export const onAdopt = (fn) => adopted.push(fn);
 
+/** @param {Look | null | undefined} look */
 export function adoptLook(look) {
   const at = look && Number.isInteger(look.at) ? look.at : 0;
   if (!look || at <= outfitAt()) return;
@@ -35,6 +42,7 @@ export function adoptLook(look) {
   for (const fn of adopted) fn();
 }
 
+/** @returns {Look} */
 export function myLook() {
   const own = Object.fromEntries(Object.keys(SLOTS).map((slot) => [slot, gearOwned(slot).length]));
   return { ...outfit(), spread: chosen(), ach: progress().got, own: { ...own, spread: owned().length }, at: Math.max(0, outfitAt()) };
@@ -44,7 +52,7 @@ export function shareLook() {
   clearTimeout(timer);
   timer = setTimeout(() => {
     if (!canCompete()) return;
-    const body = { look: myLook(), progress: { ...forSync(), toppings: toppingList() } }, key = net.board.me.id + JSON.stringify(body);
+    const body = { look: myLook(), progress: { ...forSync(), toppings: toppingList() } }, key = /** @type {Joined} */ (net.board).me.id + JSON.stringify(body);
     if (key === sent) return;
     sent = key;
     call("PUT", "/api/me/look", body).then((r) => {
@@ -66,6 +74,7 @@ on("board", () => {
   if (me) adoptLook(me.look);
 });
 
+/** @type {MakeEl} */
 function el(tag, cls, text) {
   const node = document.createElement(tag);
   if (cls) node.className = cls;
@@ -73,6 +82,7 @@ function el(tag, cls, text) {
   return node;
 }
 
+/** @param {string} label @param {string} value @param {...string} subs */
 function tile(label, value, ...subs) {
   const node = el("div", "tile");
   node.append(el("span", "tile-label", label), el("span", "tile-value", value));
@@ -80,18 +90,21 @@ function tile(label, value, ...subs) {
   return node;
 }
 
+/** @param {string} title @param {...Node} children */
 function card(title, ...children) {
   const node = el("section", "card");
   node.append(el("h2", null, title), ...children);
   return node;
 }
 
+/** @param {...Node} list */
 function tiles(...list) {
   const node = el("div", "tiles");
   node.append(...list.filter(Boolean));
   return node;
 }
 
+/** @param {string} label @param {number} best @param {number | null} rank @param {number} count */
 function rankBadge(label, best, rank, count) {
   const node = el("div", "rank" + (!best ? " empty" : rank && rank <= PODIUM ? " p" + rank : ""));
   const place = el("span", "rank-place", best && rank ? ord(rank) : NONE);
@@ -100,6 +113,7 @@ function rankBadge(label, best, rank, count) {
   return node;
 }
 
+/** @param {CardRecord[]} records */
 function spark(records) {
   const top = Math.max(...records.map((r) => r.score), 1);
   const node = el("div", "spark");
@@ -113,19 +127,22 @@ function spark(records) {
   return node;
 }
 
+/** @param {PlayerCard} c @param {boolean} pc */
 function progression(c, pc) {
   const records = c.records.filter((r) => r.pc === pc);
   if (records.length < 2) return null;
   const node = card("Progression", spark(records));
-  node.firstChild.append(el("span", "card-tag", pc ? "PC" : "Mobile"));
+  /** @type {HTMLElement} */ (node.firstChild).append(el("span", "card-tag", pc ? "PC" : "Mobile"));
   return node;
 }
 
+/** @param {number} cs */
 function duration(cs) {
   const s = Math.round(cs / 100), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
   return h ? h + " h " + String(m).padStart(2, "0") : m ? m + " min" : s + " s";
 }
 
+/** @param {number} ms */
 function ago(ms) {
   const m = Math.floor(ms / 60000);
   if (m < 1) return "à l'instant";
@@ -134,18 +151,22 @@ function ago(ms) {
   return h < 24 ? "il y a " + h + " h" : "il y a " + Math.floor(h / 24) + " j";
 }
 
+/** @param {number} ms */
 function since(ms) {
   const d = new Date(ms), year = d.getFullYear() !== new Date().getFullYear();
   return "Depuis le " + d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: year ? "numeric" : undefined });
 }
 
+/** @param {string} slot */
 const shelfTotal = (slot) => (slot === "spread" ? Object.keys(SPREADS).length : gearTotal(slot));
 
+/** @param {boolean} on */
 function showToast(on) {
   ready = on;
   ui.canvas.classList.toggle("off", !on);
 }
 
+/** @param {PlayerCard} c */
 function render(c) {
   ui.name.textContent = c.pseudo;
   ui.since.textContent = since(c.joinedAt);
@@ -166,7 +187,7 @@ function render(c) {
     progression(c, true)
   ];
   if (c.look) {
-    const shelves = SHELVES.map(([slot, label]) => tile(label, Math.min(c.look.own[slot] || 0, shelfTotal(slot)) + "/" + shelfTotal(slot)));
+    const shelves = SHELVES.map(([slot, label]) => tile(label, Math.min(/** @type {Look} */ (c.look).own[slot] || 0, shelfTotal(slot)) + "/" + shelfTotal(slot)));
     cards.push(card("Collection", tiles(tile("Succès", Math.min(c.look.ach, progress().total) + "/" + progress().total), ...shelves)));
   }
   ui.body.replaceChildren(...cards.filter(Boolean));
@@ -181,6 +202,7 @@ function loading() {
   ui.body.replaceChildren(el("section", "card skeleton"), el("section", "card skeleton"));
 }
 
+/** @param {boolean} missing @param {string} id @param {string | undefined} pseudo */
 function failed(missing, id, pseudo) {
   ui.since.textContent = "";
   ui.last.hidden = true;
@@ -196,6 +218,7 @@ function failed(missing, id, pseudo) {
   ui.body.replaceChildren(box);
 }
 
+/** @param {string} id @param {string | undefined} pseudo */
 export async function openCard(id, pseudo) {
   shown = id;
   ui.name.textContent = pseudo || "";
@@ -204,12 +227,13 @@ export async function openCard(id, pseudo) {
     const c = await call("GET", "/api/players/" + encodeURIComponent(id));
     if (shown === id) render(c);
   } catch (e) {
-    if (shown === id) failed(e.status === 404, id, pseudo);
+    if (shown === id) failed(/** @type {Err} */ (e).status === 404, id, pseudo);
   }
 }
 
 export const closeCard = () => { shown = null; };
 
+/** @param {number} clock */
 export function drawCard(clock) {
   if (!ready) return;
   const { width, height } = ui.canvas.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);

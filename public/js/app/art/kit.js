@@ -1,10 +1,13 @@
-export const own = (map, key) => (Object.prototype.hasOwnProperty.call(map, key) ? map[key] : null);
+/** @template T @param {Record<string, T>} map @param {string | null | undefined} key @returns {T | null} */
+export const own = (map, key) => (Object.prototype.hasOwnProperty.call(map, /** @type {string} */ (key)) ? map[/** @type {string} */ (key)] : null);
 
+/** @param {Ctx} ctx @param {number} x @param {number} y @param {number} w @param {number} h @param {number} r */
 export function rr(ctx, x, y, w, h, r) {
   if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
   else ctx.rect(x, y, w, h);
 }
 
+/** @type {Box} */
 export function toastPath(ctx, w, h) {
   ctx.beginPath();
   ctx.moveTo(-w / 2 + 6, h / 2);
@@ -19,8 +22,10 @@ export function toastPath(ctx, w, h) {
 
 export const TAU = Math.PI * 2;
 
+/** @type {Map<string, number[][]>} */
 const WAVES = new Map();
 
+/** @param {number} wob @param {number} k */
 function wave(wob, k) {
   const key = wob + ":" + k;
   let w = WAVES.get(key);
@@ -34,6 +39,7 @@ function wave(wob, k) {
   return w;
 }
 
+/** @param {Ctx} ctx @param {number} cx @param {number} cy @param {number} rx @param {number} ry @param {number} wob @param {number} k */
 export function wavy(ctx, cx, cy, rx, ry, wob, k) {
   ctx.beginPath();
   wave(wob, k).forEach(([c, sn, f], i) => {
@@ -44,6 +50,7 @@ export function wavy(ctx, cx, cy, rx, ry, wob, k) {
   ctx.closePath();
 }
 
+/** @param {Ctx} ctx @param {string} color @param {Pts} list */
 export function dots(ctx, color, list) {
   ctx.fillStyle = color;
   for (const [x, y, r] of list) {
@@ -53,6 +60,7 @@ export function dots(ctx, color, list) {
   }
 }
 
+/** @param {Ctx} ctx @param {number} x @param {number} y @param {number} len @param {number} w */
 export function drip(ctx, x, y, len, w) {
   ctx.beginPath();
   ctx.moveTo(x - w, y);
@@ -63,11 +71,13 @@ export function drip(ctx, x, y, len, w) {
   ctx.fill();
 }
 
+/** @param {Ctx} ctx @param {number} x @param {number} y @param {number} rx @param {number} ry */
 export function oval(ctx, x, y, rx, ry, a = 0) {
   ctx.beginPath();
   ctx.ellipse(x, y, rx, ry, a, 0, TAU);
 }
 
+/** @param {Ctx} ctx @param {Pts} points */
 export function line(ctx, points) {
   ctx.beginPath();
   points.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));

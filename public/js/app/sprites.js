@@ -11,6 +11,7 @@ import { topping } from "./art/spreads.js";
 
 const TRAIL_MIN = 380, TRAIL_K = 0.25, TRAIL_MAX = 90;
 
+/** @param {Ctx} ctx @param {Shot} o */
 export function drawTrail(ctx, o, C = PALETTE) {
   const v = Math.hypot(o.vx, o.vy), len = Math.min(TRAIL_MAX, (v - TRAIL_MIN) * TRAIL_K);
   if (len < 4) return;
@@ -36,6 +37,7 @@ export function drawTrail(ctx, o, C = PALETTE) {
   ctx.restore();
 }
 
+/** @param {Ctx} ctx @param {ShotArt} o */
 export function drawProjectile(ctx, o, C = PALETTE) {
   ctx.save();
   ctx.translate(o.x, o.y);
@@ -46,6 +48,7 @@ export function drawProjectile(ctx, o, C = PALETTE) {
 
 const BADGE_R = 15, ICON = 2 * BADGE_R - 6, ARROW = 9;
 
+/** @param {Ctx} ctx @param {ShotArt} o @param {number} a @param {Pal} C */
 function badgeIcon(ctx, o, a, C) {
   const s = ICON / o.len;
   ctx.save();
@@ -55,6 +58,7 @@ function badgeIcon(ctx, o, a, C) {
   ctx.restore();
 }
 
+/** @param {Ctx} ctx @param {Warn} w @param {Pal} C */
 function fanIcon(ctx, w, C) {
   const picks = [w.obs[0], w.obs[w.obs.length >> 1], w.obs[w.obs.length - 1]];
   const back = -ICON / 2;
@@ -68,6 +72,7 @@ function fanIcon(ctx, w, C) {
   }
 }
 
+/** @param {Ctx} ctx @param {LiveWarn} w @param {number} clock @param {number} now @param {Pal} [C] @param {Zone | null} [avoid] */
 export function drawWarn(ctx, w, clock, now, C = PALETTE, avoid = null) {
   if (now < w.born) return;
   const r = BADGE_R;
@@ -109,6 +114,7 @@ export function drawWarn(ctx, w, clock, now, C = PALETTE, avoid = null) {
   ctx.restore();
 }
 
+/** @param {Ctx} ctx @param {Toast} t @param {number} w @param {number} h @param {Pal} C */
 function thrusters(ctx, t, w, h, C) {
   for (const side of [-1, 1]) {
     const bx = side * w * 0.3, by = h / 2;
@@ -133,6 +139,7 @@ function thrusters(ctx, t, w, h, C) {
   }
 }
 
+/** @param {Ctx} ctx @param {Scar[]} list @param {number} w @param {number} h @param {Pal} C @param {boolean} round */
 function scars(ctx, list, w, h, C, round) {
   ctx.save();
   if (round) roundPath(ctx);
@@ -155,11 +162,13 @@ function scars(ctx, list, w, h, C, round) {
 
 const ROUND_R = 21, ROUND_SPREAD = 0.82, NEAR_CRUMBS = 14, NEAR_SPIN_MS = 9000, NEAR_GLOW = 0.34;
 
+/** @param {Ctx} ctx */
 function roundPath(ctx) {
   ctx.beginPath();
   ctx.arc(0, 0, ROUND_R, 0, TAU);
 }
 
+/** @param {Ctx} ctx @param {Pal} C */
 function nearZone(ctx, C) {
   const outer = HIT_R + NEAR, spin = (performance.now() / NEAR_SPIN_MS) * TAU;
   ctx.save();
@@ -191,6 +200,7 @@ function nearZone(ctx, C) {
 
 const SIDE_REACH = { boosters: 31, cutlery: 32, sixseven: 44, bat: 50 }, SIDE_BAND = 20, OUTLINE = 2;
 
+/** @param {Ctx} ctx @param {Toast} t */
 export function drawAura(ctx, t, C = PALETTE) {
   const aura = own(AURAS, t.aura);
   if (!aura) return;
@@ -201,9 +211,10 @@ export function drawAura(ctx, t, C = PALETTE) {
   ctx.restore();
 }
 
+/** @param {Ctx} ctx @param {Toast} t @param {Splash[] | null} splat */
 export function drawToast(ctx, t, splat, C = PALETTE, aura = true) {
-  const w = 40, h = 42, bread = own(GEAR, t.bread), round = t.bread === "hitbox", s = round ? HIT_R / ROUND_R : 1;
-  const body = round ? roundPath : (c) => toastPath(c, w, h), front = !splat && own(AURAS, t.aura)?.front;
+  const w = 40, h = 42, bread = /** @type {Required<GearItem> | null} */ (own(GEAR, t.bread)), round = t.bread === "hitbox", s = round ? HIT_R / ROUND_R : 1;
+  const body = round ? roundPath : /** @param {Ctx} c */ (c) => toastPath(c, w, h), front = !splat && own(AURAS, t.aura)?.front;
   if (aura && !splat) drawAura(ctx, t, C);
   ctx.save();
   ctx.translate(t.x, t.y);
@@ -212,7 +223,7 @@ export function drawToast(ctx, t, splat, C = PALETTE, aura = true) {
   if (round && !splat) nearZone(ctx, C);
   ctx.scale(s, s);
   if (!splat) thrusters(ctx, t, w, h, C);
-  if (!splat && own(SIDES, t.side)) SIDES[t.side](ctx, t, C);
+  if (!splat && own(SIDES, t.side)) SIDES[/** @type {string} */ (t.side)](ctx, t, C);
   body(ctx);
   ctx.fillStyle = bread ? bread.crust : C.crust;
   ctx.fill();
@@ -234,7 +245,7 @@ export function drawToast(ctx, t, splat, C = PALETTE, aura = true) {
     ctx.fill();
   }
   ctx.globalAlpha = 1;
-  if (own(BREADS, t.bread)) BREADS[t.bread](ctx, w, h, C);
+  if (own(BREADS, t.bread)) BREADS[/** @type {string} */ (t.bread)](ctx, w, h, C);
   ctx.save();
   ctx.scale(round ? ROUND_SPREAD : 1, round ? ROUND_SPREAD : 1);
   topping(ctx, t.spread, C);

@@ -1,5 +1,6 @@
 import { dots, FUR, line, oval, own, rr, TAU } from "./kit.js";
 
+/** @type {Record<string, Tint>} */
 const HATS = {
   ninja(ctx, C) {
     ctx.strokeStyle = C.void;
@@ -350,9 +351,10 @@ const HATS = {
   }
 };
 
+/** @param {Ctx} ctx @param {string | null | undefined} kind @param {Pal} C */
 export function hat(ctx, kind, C) {
   if (!own(HATS, kind)) return;
   ctx.save();
-  HATS[kind](ctx, C);
+  HATS[/** @type {string} */ (kind)](ctx, C);
   ctx.restore();
 }

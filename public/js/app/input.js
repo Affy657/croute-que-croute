@@ -11,11 +11,13 @@ function savedSens() {
 export const controls = { sens: savedSens(), aim: store.get(KEYS.mouseAim) === "1" };
 export const hasMouse = () => window.matchMedia("(any-pointer: fine)").matches;
 
+/** @param {number} v */
 export function setSens(v) {
   controls.sens = clamp(v, SENS_MIN, SENS_MAX);
   store.set(KEYS.sensitivity, Math.round(controls.sens * 10));
 }
 
+/** @param {boolean} on */
 export function setAim(on) {
   controls.aim = on;
   store.set(KEYS.mouseAim, on ? "1" : null);
@@ -23,18 +25,24 @@ export function setAim(on) {
 
 export const guessDevice = () => (window.matchMedia("(pointer: coarse)").matches ? "mobile" : "pc");
 
+/** @param {HTMLCanvasElement} canvas @param {InputHooks} b */
 export function createInput(canvas, { active, scale, view, toast }) {
   const pend = { x: 0, y: 0 };
+  /** @type {Pt | null} */
   let aim = null;
   const finger = { held: false, touch: false, x: 0, y: 0, at: 0 };
+  /** @type {Map<number, Pt>} */
   const spare = new Map();
-  let drag = null, mouse = null, poked = false, used = null;
+  /** @type {{ id: number, lx: number, ly: number } | null} */
+  let drag = null, /** @type {Pt | null} */ mouse = null, poked = false, /** @type {string | null} */ used = null;
 
+  /** @param {PointerEvent} e */
   const begin = (e) => {
     drag = { id: e.pointerId, lx: e.clientX, ly: e.clientY };
     if (e.pointerType !== "mouse") Object.assign(finger, { held: true, touch: true, x: e.clientX, y: e.clientY, at: performance.now() });
   };
 
+  /** @param {PointerEvent} e */
   const end = (e) => {
     spare.delete(e.pointerId);
     if (!drag || e.pointerId !== drag.id) return;

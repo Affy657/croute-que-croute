@@ -30,13 +30,15 @@ import {
 const MENU_POLL_MS = 30000;
 const ADMIN_TAPS = 5, ADMIN_TAP_MS = 3000;
 
-let wasOpen = null, historyFor = null;
+/** @type {boolean | null} */
+let wasOpen = null, /** @type {string | null} */ historyFor = null;
 
 window.addEventListener("resize", () => {
   if (S.mode === "play") avoidHud();
   if (openPage() === "board") renderBoard();
 });
 
+/** @param {PointerEvent} e */
 const go = (e) => {
   if (start(replay())) {
     input.begin(e);
@@ -53,11 +55,11 @@ ui.overAchBtn.addEventListener("click", openAch);
 ui.overHome.addEventListener("click", goHome);
 ui.boardBack.addEventListener("click", closeBoard);
 for (const tab of ui.boardTabs.children) tab.addEventListener("click", () => setBoardScope(tab.dataset.scope));
-ui.boardList.addEventListener("click", (e) => {
+ui.boardList.addEventListener("click", /** @param {Tap} e */ (e) => {
   const row = e.target.closest("li[data-id]");
   if (row) openBoardCard(row);
 });
-ui.boardList.addEventListener("keydown", (e) => {
+ui.boardList.addEventListener("keydown", /** @param {KeyHit} e */ (e) => {
   const row = e.target.closest("li[data-id]");
   if (!row || (e.key !== "Enter" && e.key !== " ")) return;
   e.preventDefault();
@@ -68,7 +70,7 @@ ui.infoBtn.addEventListener("click", openInfo);
 ui.infoBack.addEventListener("click", closeInfo);
 ui.closeBtn.addEventListener("click", () => (screen() === "settings" ? closeSettings() : screen() === "ach" ? closeAch() : closeInfo()));
 ui.menuAch.addEventListener("click", openAch);
-ui.menu.addEventListener("click", (e) => {
+ui.menu.addEventListener("click", /** @param {Tap} e */ (e) => {
   if (e.target.closest("button, a, input, label, select, .picker")) return;
   const b = scene.bodyAt(e.clientX, e.clientY), hit = b && ach.touchSky(b.key);
   if (!hit) return;
@@ -84,7 +86,7 @@ document.addEventListener("pointerdown", (e) => {
 ui.pickPrev.addEventListener("click", () => stepTopping(-1));
 ui.pickNext.addEventListener("click", () => stepTopping(1));
 ui.pickSkins.addEventListener("click", () => openPicker(true));
-ui.gearRows.addEventListener("click", (e) => {
+ui.gearRows.addEventListener("click", /** @param {Tap} e */ (e) => {
   const b = e.target.closest("[data-step]");
   if (b) stepGear(b.parentElement.dataset.slot, Number(b.dataset.step));
 });
@@ -113,7 +115,7 @@ ui.godPill.addEventListener("click", () => {
 ui.music.addEventListener("click", audio.toggleMusic);
 ui.sfx.addEventListener("click", audio.toggleSfx);
 
-ui.joinForm.addEventListener("submit", async (e) => {
+ui.joinForm.addEventListener("submit", /** @param {Event} e */ async (e) => {
   e.preventDefault();
   const button = ui.joinForm.querySelector("button");
   setText(ui.joinError, "");
@@ -124,7 +126,7 @@ ui.joinForm.addEventListener("submit", async (e) => {
     ui.pseudo.blur();
     maybeSuggest();
   } catch (err) {
-    setText(ui.joinError, api.reason(err) + (err.status === 409 ? " C'est toi ? Touche « J'ai déjà un compte »." : ""));
+    setText(ui.joinError, api.reason(err) + (/** @type {Err} */ (err).status === 409 ? " C'est toi ? Touche « J'ai déjà un compte »." : ""));
     markInvalid(ui.pseudo, api.badInput(err));
   } finally {
     button.disabled = false;
@@ -147,6 +149,7 @@ window.addEventListener("keydown", (e) => {
   if ((S.mode === "menu" || S.mode === "over") && start(replay())) e.preventDefault();
 });
 
+/** @type {number[]} */
 let brandTaps = [];
 ui.brand.addEventListener("click", () => {
   const now = Date.now();
@@ -184,7 +187,7 @@ onTopping((kind, synced) => {
   shareLook();
 });
 onGear((slot, kind) => {
-  S.toast[slot] = kind;
+  S.toast[/** @type {keyof Worn} */ (slot)] = kind;
   ach.checkOutfit(S.toast);
   renderPicker();
   stampOutfit();

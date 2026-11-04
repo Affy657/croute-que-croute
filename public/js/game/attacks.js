@@ -6,8 +6,10 @@ const SLANT = 0.55, CLEAVER_GAP = 0.3, ROLLING_GAP = 0.55, SERIES_GAP = 0.7, SER
 export const WALL_HOLE = 144, WALL_AWAY = 90, WALL_LOW = 430, ROLLING_APART = 200;
 const BREATHERS = ["rolling", "bread", "slant"], RAINS = ["rain", "slant", "downpour"];
 
+/** @param {Pt} p */
 const inside = (p) => ({ x: clamp(p.x, 10, FW - 10), y: clamp(p.y, 10, FH - 10) });
 
+/** @param {Spawn} a */
 function edgePoint({ rnd, pick }) {
   const side = pick(["top", "top", "left", "right"]);
   if (side === "top") return { x: rnd(20, FW - 20), y: -M };
@@ -15,12 +17,14 @@ function edgePoint({ rnd, pick }) {
   return { x: FW + M, y: rnd(20, FH * 0.6) };
 }
 
+/** @param {Pt} p @param {Pt} target @param {number} at @param {number} v @param {Partial<Shot>} [extra] */
 function aimedFrom(p, target, at, v, kind = "knife", spin = 0, extra) {
   const a = Math.atan2(target.y - p.y, target.x - p.x);
   const w = inside(p);
   return { x: w.x, y: w.y, a, at, obs: [projectile(kind, p.x, p.y, Math.cos(a) * v, Math.sin(a) * v, spin, extra)] };
 }
 
+/** @param {Spawn} g */
 function aimed(g) {
   const { t, toast, rng, rnd } = g;
   const spinning = t >= 25 && rng() < 0.35;
@@ -32,6 +36,7 @@ function aimed(g) {
   return [{ x: w.x, y: w.y, a, at: t + 0.5, obs: [projectile("knife", p.x, p.y, Math.cos(a) * v, Math.sin(a) * v, spin)] }];
 }
 
+/** @param {Spawn} a @param {number} n @param {number} gap */
 function rainOf({ t, rnd }, n, gap) {
   const v = 190 * speedMul(t);
   const items = [];
@@ -42,10 +47,13 @@ function rainOf({ t, rnd }, n, gap) {
   return items;
 }
 
+/** @param {number} t */
 const rainSize = (t) => Math.min(8, 4 + Math.floor(t / 15));
 
+/** @param {Spawn} g */
 const rain = (g) => rainOf(g, rainSize(g.t), 0.14);
 
+/** @param {Spawn} a */
 function slant({ t, rnd, pick }) {
   const n = rainSize(t), dir = pick([1, -1]), v = 190 * speedMul(t);
   const vx = dir * v * Math.sin(SLANT), vy = v * Math.cos(SLANT);
@@ -58,6 +66,7 @@ function slant({ t, rnd, pick }) {
   return items;
 }
 
+/** @param {Spawn} a */
 function downpour({ t, rng, rnd }) {
   const n = rainSize(t) + 1, v = 190 * speedMul(t);
   let left = rng() < 0.5;
@@ -70,6 +79,7 @@ function downpour({ t, rng, rnd }) {
   return items;
 }
 
+/** @param {number} gc @param {number} lo @param {number} hi @param {number} step @param {(p: number) => Warn} make */
 function wallLine(gc, lo, hi, step, make) {
   const items = [];
   for (let p = gc - WALL_HOLE / 2; p > lo; p -= step) items.push(make(p));
@@ -77,32 +87,39 @@ function wallLine(gc, lo, hi, step, make) {
   return items;
 }
 
+/** @param {Spawn} a @param {number} at @param {number} v @param {number} gc */
 function topWall({ rnd }, at, v, gc = rnd(70, FW - 70)) {
   return wallLine(gc, -18, FW + 18, 36, (x) => ({ x: clamp(x, 10, FW - 10), y: 10, a: Math.PI / 2, at, obs: [projectile("fork", x, -M, 0, v)] }));
 }
 
+/** @param {Spawn} a @param {string} side @param {number} at @param {number} v @param {number} gc */
 function sideWall({ rnd }, side, at, v, gc = rnd(100, WALL_LOW)) {
   const dir = side === "left" ? 1 : -1;
   const x0 = side === "left" ? -M : FW + M;
   return wallLine(gc, -16, FH + 16, 34, (y) => ({ x: side === "left" ? 10 : FW - 10, y: clamp(y, 10, FH - 10), a: dir > 0 ? 0 : Math.PI, at, obs: [projectile("knife", x0, y, dir * v, 0)] }));
 }
 
+/** @param {Rnd} rnd @param {number} lo @param {number} hi @param {number} from */
 function away(rnd, lo, hi, from, gap = WALL_AWAY) {
   const a = clamp(from - gap, lo, hi), b = clamp(from + gap, lo, hi);
   const u = rnd(0, a - lo + hi - b);
   return u < a - lo ? lo + u : b + u - (a - lo);
 }
 
+/** @param {Spawn} g */
 const wallSide = (g) => g.pick(RAINS.includes(g.last) ? ["left", "right"] : ["left", "right", "top"]);
 
+/** @param {Spawn} g */
 function wall(g) {
   const side = wallSide(g);
   const v = 150 * speedMul(g.t), at = g.t + 0.7;
   return side === "top" ? topWall(g, at, v * TOP_WALL_RUSH, away(g.rnd, 70, FW - 70, g.toast.x)) : sideWall(g, side, at, v, away(g.rnd, 100, WALL_LOW, g.toast.y));
 }
 
+/** @param {number} t */
 const seriesSize = (t) => (t >= 60 ? 3 : 2);
 
+/** @param {Spawn} g */
 function wallSeries(g) {
   const { t, toast, rng, rnd } = g;
   const side = wallSide(g);
@@ -121,12 +138,14 @@ function wallSeries(g) {
   return items;
 }
 
+/** @param {Spawn} g */
 function corridor(g) {
   const first = g.pick(["left", "right"]);
   const v = 150 * speedMul(g.t), at = g.t + 0.7;
   return [...sideWall(g, first, at, v), ...sideWall(g, first === "left" ? "right" : "left", at + 0.7, v)];
 }
 
+/** @param {Spawn} a */
 function fan({ t, toast, pick }) {
   const p = pick([{ x: -M, y: -M }, { x: FW + M, y: -M }, { x: FW / 2, y: -M }, { x: -M, y: FH * 0.4 }, { x: FW + M, y: FH * 0.4 }]);
   const n = t >= 54 ? 5 : t >= 38 ? 4 : 3;
@@ -142,14 +161,17 @@ function fan({ t, toast, pick }) {
   return [{ x: w.x, y: w.y, a: base, at: t + 0.6, obs }];
 }
 
+/** @param {Spawn} a */
 function cross({ t, toast, rnd }) {
   const v = 190 * speedMul(t), at = t + 0.7;
   const starts = [{ x: -M, y: -M }, { x: FW + M, y: -M }, { x: -M, y: rnd(20, FH * 0.6) }, { x: FW + M, y: rnd(20, FH * 0.6) }];
   return starts.map((p) => aimedFrom(p, toast, at, v));
 }
 
+/** @param {number} t */
 const rollingCount = (t) => (t >= 36 ? 2 : 1);
 
+/** @param {Spawn} a */
 function rolling({ t, rnd, pick }) {
   const top = 80, bottom = FH - 80, v = 110 * speedMul(t);
   const items = [];
@@ -163,13 +185,16 @@ function rolling({ t, rnd, pick }) {
   return items;
 }
 
+/** @param {Spawn} a */
 function whisk({ t, toast, rng, rnd }) {
   const p = { x: rnd(40, FW - 40), y: -M };
   return [aimedFrom(p, toast, t + 0.7, 100 * speedMul(t), "whisk", 5 * (rng() < 0.5 ? -1 : 1))];
 }
 
+/** @param {number} t */
 const cleaverCount = (t) => (t >= 55 ? 3 : t >= 30 ? 2 : 1);
 
+/** @param {Spawn} a */
 function cleaver({ t, toast, rng, rnd }) {
   const items = [];
   let x = clamp(toast.x + rnd(-10, 10), 30, FW - 30);
@@ -181,6 +206,7 @@ function cleaver({ t, toast, rng, rnd }) {
   return items;
 }
 
+/** @param {Spawn} a */
 function bread({ t, toast, pick }) {
   const fromLeft = pick([true, false]);
   const p = { x: fromLeft ? -M : FW + M, y: -M };
@@ -188,6 +214,7 @@ function bread({ t, toast, pick }) {
   return [aimedFrom(p, target, t + 0.6, 240 * speedMul(t), "bread", 0, { bounces: 1 })];
 }
 
+/** @type {Attack[]} */
 export const ATTACKS = [
   { id: "aimed", name: "Couteau visé", from: 0, weight: 2.5, cost: 1, speed: 230, make: aimed, growsUntil: 25, growth: "le couteau visé se met à tourner",
     info: "Un couteau lancé droit sur toi, du haut ou d'un côté. Bouge pendant l'alerte et c'est esquivé. Dès 25 s, il tourne sur lui-même une fois sur trois." },
@@ -217,11 +244,13 @@ export const ATTACKS = [
     info: "Une rafale de 8 fourchettes (9 dès 60 s) qui tombent tout droit, une fois à gauche, une fois à droite." }
 ];
 
+/** @param {number} t @param {Rng} rng @param {string | null} [last] */
 export function pickAttack(t, rng, last = null, streak = 0, active = new Set(), fresh = new Set()) {
   const open = ATTACKS.filter((a) => !a.lab && t > a.from && !(a.shuns && a.shuns.some((id) => active.has(id))) && !(a.waits && a.waits.some((id) => fresh.has(id))));
   const prev = ATTACKS.find((a) => a.id === last), kin = prev && prev.kin;
   const allowed = open.filter((a) => (a.id !== last || (!a.solo && streak < MAX_STREAK)) && !(kin && a.kin === kin && a.id !== last) && !(a.avoids && a.avoids.includes(last)));
   const pool = allowed.length ? allowed : open;
+  /** @param {Attack} a */
   const weight = (a) => a.weight * (a.id === last ? REPEAT_FACTOR ** streak : 1);
   let r = rng() * pool.reduce((s, a) => s + weight(a), 0);
   for (const a of pool) {

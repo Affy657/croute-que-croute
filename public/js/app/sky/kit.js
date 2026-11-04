@@ -6,14 +6,17 @@ export const TAU = Math.PI * 2;
 const LIGHT = -0.75 * Math.PI;
 export const INK = PALETTE.void;
 
+/** @param {number} r */
 export const ink = (r) => Math.max(1.2, r * 0.035);
 
+/** @param {Ctx} ctx @param {number} x @param {number} y @param {number} r */
 export function disc(ctx, x, y, r) {
   ctx.beginPath();
   ctx.arc(x, y, r, 0, TAU);
   ctx.fill();
 }
 
+/** @param {Ctx} ctx @param {number} r @param {string} light @param {string} dark */
 export function ball(ctx, r, light, dark) {
   const g = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r);
   g.addColorStop(0, light);
@@ -22,11 +25,13 @@ export function ball(ctx, r, light, dark) {
   disc(ctx, 0, 0, r);
 }
 
+/** @param {Ctx} ctx @param {number} r @param {string} color @param {Pts} list */
 export function dots(ctx, r, color, list) {
   ctx.fillStyle = color;
   for (const [x, y, s] of list) disc(ctx, x * r, y * r, s * r);
 }
 
+/** @param {Ctx} ctx @param {number} r @param {Fn} draw */
 export function clipped(ctx, r, draw) {
   ctx.save();
   ctx.beginPath();
@@ -36,6 +41,7 @@ export function clipped(ctx, r, draw) {
   ctx.restore();
 }
 
+/** @param {Ctx} ctx @param {number} r @param {number} x @param {number} y @param {(a: number) => void} draw */
 export function onSphere(ctx, r, x, y, draw) {
   const d = Math.min(0.95, Math.hypot(x, y)), a = Math.atan2(y, x);
   ctx.save();
@@ -46,6 +52,7 @@ export function onSphere(ctx, r, x, y, draw) {
   ctx.restore();
 }
 
+/** @type {Art} */
 export function tone(ctx, r) {
   clipped(ctx, r, () => {
     const g = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r);
@@ -57,6 +64,7 @@ export function tone(ctx, r) {
   outline(ctx, r);
 }
 
+/** @type {Art} */
 export function outline(ctx, r) {
   ctx.strokeStyle = INK;
   ctx.lineWidth = ink(r);
@@ -66,6 +74,7 @@ export function outline(ctx, r) {
 }
 
 export const BEAT = 0.42;
+/** @param {Ctx} ctx @param {number} w @param {string} head */
 export function toastie(ctx, w, head) {
   const k = w / 40;
   ctx.save();
