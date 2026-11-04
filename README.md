@@ -2,399 +2,432 @@
 
 Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couverts, et le meilleur temps de la soirée gagne une conso.
 
+Source unique de connaissance du projet. Si le README et le code se contredisent, le code a raison.
+
 ## Liens
 
 - Jeu : https://croute-que-croute.tartine-sauvage.workers.dev
-- Admin : `/admin`, dans la même appli que le jeu
-- Écran géant : `/ecran`, sur l'ordinateur branché à l'écran ou au vidéoprojecteur
+- Admin : `/admin`
+- Écran géant : `/ecran`, sur l'ordinateur branché à l'écran
 - Code : https://github.com/Affy657/croute-que-croute (privé), copie locale dans `C:\dev\couverts-volants`
-- QR codes : `qr/croute-que-croute.png` pour imprimer, `.svg` pour une affiche, version simple en secours `qr/croute-que-croute-simple.*`. Le même est dans le jeu (Paramètres, « QR code »). Régénérer : `npm run qr`, ou `npm run qr -- <adresse>`. À scanner sur plusieurs téléphones avant d'imprimer.
+- QR codes : `qr/` (`.png` pour imprimer, `.svg` pour une affiche, version `-simple` en secours). Régénérer : `npm run qr`, ou `npm run qr -- <adresse>`. À scanner sur plusieurs téléphones avant d'imprimer.
 
 ## Le jeu
 
-- On scanne le QR code, on choisit un pseudo, on joue autant qu'on veut. Sans pseudo, la partie ne compte pas au classement.
-- Le doigt glisse n'importe où : la tartine suit le mouvement, 1,8 fois plus loin que le doigt, pour que le doigt ne la cache pas. Réglable dans Paramètres, Contrôles, « Sensibilité », avec « Lent » et « Rapide » aux deux bouts (de 0,8 à 2,8, 1,8 au milieu ; gardé dans `cv-sensibilite`).
-- Souris (31/10/2026) : sur un appareil qui a une souris, Paramètres propose « Glisser » (la souris bouge la tartine comme le doigt, avec la même sensibilité) ou « Viser » (la tartine va là où pointe la souris et le curseur disparaît pendant la partie ; `cv-souris`). Le mouvement reste découpé en petits pas comme pour le doigt : aller vite ne permet pas de traverser un couvert. En « Glisser », la souris qui sort de la fenêtre et revient ailleurs ne fait plus sauter la tartine de tout l'écart (03/11/2026, recherche de bugs : elle traversait le terrain d'un coup).
-- Clavier (03/11/2026, revue du rendu sur PC) : Espace ou Entrée lance une partie depuis l'accueil et l'écran de fin, ce que rappellent « Espace pour jouer » et « Espace pour rejouer » sous les boutons, seulement sur un appareil qui a une souris (`.keys`). Échap fait « Retour » sur toutes les pages (classement, fiche, Infos, Succès, Paramètres, QR code, code pour un autre appareil), ferme les skins de l'accueil et la proposition d'installer le jeu. Il ne fait rien dans un champ de texte, et le garder appuyé ne remonte qu'une page. Corrigé le 03/11/2026 (recherche de bugs) : Échap marche après avoir touché un curseur de Paramètres, et après un clic dans l'onglet Admin (le cadre lui renvoie la touche, `relayEscape` dans `settings.js`) ; les skins restées ouvertes ne prennent plus le premier Échap d'une autre page (elles se ferment en quittant l'accueil) ; après un clic de souris sur un bouton de l'accueil ou de l'écran de fin (tartine, son), Espace lance bien la partie (le bouton rend le focus ; avant, Espace recliquait ce bouton).
-- La partie démarre avec la tartine là où elle volait sur l'accueil. Sur téléphone, un rond pulse en bas (`PUCK_LIFT` dans `scene.js`) pour montrer où poser le doigt.
-- Rien n'arrive par le bas (le doigt cacherait les attaques). Les attaques de côté partent des 60 % du haut.
-- Chaque attaque est annoncée 0,45 à 0,9 s avant par une pastille au bord de l'écran, jamais posée sur le chrono.
-- Le rythme des attaques plafonne à 80 s, la vitesse des couverts à 150 s. Le plafond est volontairement bas : au-delà, c'est l'endurance qui départage (voir Équilibrage).
-- Zones de touche : la tartine est un cercle de 26 px, chaque arme est faite de gélules (`parts` dans `projectiles.js`). Fourchette : depuis le 31/10/2026, à la demande d'Adrien, le manche a sa propre gélule de 8 px de large, calée sur le dessin (avant, une seule gélule de 12 px de large sur toute la longueur, plus large que le manche) ; la tête ne change pas. « Frôlé » quand la tartine passe à moins de 11 px.
-- Frôlés : « Frôlé x2 », « x3 »… quand ils s'enchaînent à moins de 1,5 s, avec un son plus aigu à chaque cran (6 au plus). Chaque frôlé laisse une entaille dans la croûte, du côté où le couvert est passé (12 au plus). Aucun effet sur le score ni sur la zone de touche.
-- Effets : le chrono flashe en jaune toutes les 10 s, les couverts rapides (dès 380 px/s) laissent une traînée, et le fond passe du bleu nuit au violet vers 60 s puis au rouge sombre à 120 s, au rythme de la vitesse des couverts (rouge plein à × 3, `SPEED_HOT`) (`HEAT` dans `palette.js`).
-- Planètes du fond (`BODIES` dans `planets.js`, dessins dans `sky/`, un fichier par famille, couleurs dans `SKY` de `palette.js`), en trois catégories : normales (planète violette à bandes et à anneau, planète verte à anneau, lunes et astéroïde à cratères ; depuis le 31/10/2026 elles ont un contour, et leurs anneaux une division comme Saturne), extravagantes (planète pancake et son pot de confiture, planète enceintes, deuxième planète enceintes, bleu canard aux terres ambrées : cinq haut-parleurs posés dessus qui pompent sur le beat, la planète qui bat avec eux et des ondes en arcs qui partent de deux côtés, comme sur la première, plus longues et plus épaisses en haut à gauche, du côté du plus gros haut-parleur) et drôles. Elles défilent par tours de huit places (`TOUR` dans `scene.js`) : cinq normales, deux extravagantes et une drôle, en alternant droite et gauche. Au lancement, on voit trois normales avant la première extravagante, puis une drôle deux planètes plus loin. Depuis le 31/10/2026 : avant, c'était six places (trois normales, deux extravagantes, une drôle) et le ciel s'ouvrait sur une extravagante, avec trois spéciales dans les quatre premières planètes, trop souvent selon les joueurs. Chaque place tire sa planète au hasard dans sa catégorie quand elle rentre par le haut, hors de l'écran, et on revoit une planète seulement après avoir vu toutes les autres de sa catégorie.
-- Planètes drôles (`BODIES.rare`), une à chaque tour : Tung Tung Tung Sahur qui danse avec sa batte sur l'astéroïde (trois coups, puis une pause), lune en fromage (jaune beurre, trous creusés et entailles sur le bord) dont une souris grignote le bord, grille-pain rond en chrome (reflets, fentes rougeoyantes, molette, levier) où l'on voit griller deux tartines (la silhouette de celle du jeu) : elles tombent crues dans les fentes, dorent en fumant, puis sont éjectées toutes les 6 s (refait le 01/11/2026 à la demande d'Adrien). Depuis le 30/10/2026, d'autres s'inspirent de la tenue et des succès : citrouille d'Halloween qui ricane, avec une tartine sorcière qui en fait le tour sur son balai ; lune de Méliès (Le Voyage dans la Lune, 1902, dans le domaine public) : un vrai visage qui grimace, l'obus planté dans l'œil d'où coule la crème, posée sur des nuages, qui cligne de l'autre œil et tressaille de temps en temps. Planète pirate (31/10/2026, refaite le même jour à la demande d'Adrien) : île à tête de mort avec palmiers et croix du trésor, anneau d'océan dont l'écume défile, galion qui fait le tour de l'anneau (derrière puis devant la planète) et tire au canon ; rien de One Piece. Œuf de Pâques (31/10/2026, idée proposée à Adrien) : œuf peint (pois, rayures, zigzag) entouré d'un ruban en guise d'anneau, avec un nœud devant, et une tartine aux oreilles de lapin qui fait le tour en sautillant (derrière puis devant l'œuf). Sur l'accueil, toucher le grille-pain, la citrouille, la planète pirate ou l'œuf donne un succès secret. Ces quatre planètes à accessoire sont rares (01/11/2026, demande d'Adrien) : un tour sur 5 seulement, la planète drôle en est une (`SKIN_ODDS` dans `scene.js`), sinon c'est Tung Tung Tung Sahur, la lune en fromage ou la lune de Méliès. Sur un téléphone, une planète à accessoire passe environ toutes les 13 min de ciel, et une planète donnée environ toutes les 50 min (`key` dans `BODIES`, `bodyAt` dans `scene.js`, `touchSky` dans `achievements.js`). Pas de personnages ni de designs protégés (films, mangas, jeux vidéo) : seulement des idées originales, des œuvres libres de droits ou des objets réels. En local, `?planetes=souvent` ne fait défiler que des planètes drôles.
-- Étoile filante : de temps en temps (première entre 30 s et 3 min après l'ouverture du jeu, puis toutes les 2 à 4 min, menu compris), quelque chose traverse le fond en 9 s, chacun son tour dans un ordre au hasard. Une petite canette passe loin derrière les planètes et les étoiles, avec une traînée dorée, en tournant doucement : 8.6 Original (bleu nuit, loup bleu, gros 8.6 blanc au point rouge) ou Amsterdam Maximator (vert, armoiries, voilier blanc à coque dorée), redessinées d'après les photos produit. Attention, certaines photos de magasin sont délavées : vérifier les couleurs sur l'image seule. Dessinée comme les planètes (sans contour, opaque, seule la traînée est transparente) pour qu'on ne la prenne pas pour une arme. Passent aussi la Tesla rouge envoyée dans l'espace en 2018, avec son mannequin en combinaison au volant (sans logo, elle tourne lentement sur elle-même), et une soucoupe volante dont le petit extraterrestre fait coucou (elle file à l'horizontale en tanguant, ses lumières clignotent), et le père Noël (31/10/2026) : traîneau rouge, hotte avec un cadeau, deux rennes au galop et traînée d'étoiles dorées (`span` : plus large que les autres, réduit d'autant dans le Guide). Tout ce qui passe est dans `PASSERS` (`planets.js`, canettes dans `CANS`), le passage dans `scene.js` (`COMET_*`). En local, `?etoiles=souvent` la fait passer toutes les 4 à 6 s (pour tester seulement : sans ce lien, le vrai rythme).
-- Mort : le jeu se fige 0,3 s, puis l'éclaboussure. Sous « Tartinée ! », l'arme qui t'a eu (« par un hachoir », « par un couteau au dentifrice ») : `by` dans `PROJECTILES`, `with` dans `SPREADS`.
-- Garnitures : 10 tartinades dessinées sur la tartine (`TOPPINGS` dans `art/spreads.js`) : confiture, pâte à tartiner, miel et son abeille, ketchup en zigzag, dentifrice rayé, œuf au plat, sardine entière, slime qui a un œil, pâtée pour chien tartinée avec son odeur et sa mouche, la sauce du chef (01/11/2026, demandée par Adrien : sauce blanche brillante qui coule, blague pour adultes laissée dans le nom). Beurre et Nature (31/10/2026, la tartine sans rien dessus, demandée par Adrien) au départ : gratuites (`free` dans `SPREADS`), elles ne comptent pas parmi les garnitures à gagner. 1 attaque à couteaux sur 10 a un couteau garni : le frôler ou se faire tuer par lui débloque sa garniture (pas en entraînement). La garniture du couteau est tirée parmi toutes celles à gagner de `SPREADS` (03/11/2026 : avant, une liste écrite à part où manquait la sauce du chef, qui ne tombait donc sur aucun couteau ; elle était impossible à gagner, et Tout le frigo avec sa toque de chef aussi). Une garniture gagnée est mise tout de suite. Le bouton « Skins » sous la tartine de l'accueil (31/10/2026, choisi par Adrien parmi quatre pistes : flèches autour de la tartine, petit saut, doigt animé), ou la tartine elle-même, ouvre le choix. Une pastille jaune sur « Skins » signale un skin gagné pas encore vu (`cv-tenue-vue` : nombre de skins au dernier choix). Quand une partie fait gagner un skin, « Essayer le skin » sur l'écran de fin ramène à l'accueil avec le choix ouvert. Gardées sur le téléphone (`cv-garnitures`, `cv-garniture`), purement visuel. En local, `?garnitures=toutes` dans l'adresse les débloque toutes.
-- Tenue de la tartine (30/10/2026) : 4 emplacements en plus de la garniture, un objet de chaque à la fois (`slot` dans `GEAR` de `palette.js`, dessins `HATS`, `SIDES`, `BREADS` et `AURAS` dans `art/hats.js`, `sides.js`, `breads.js` et `auras.js`). Chaque objet est la récompense d'un succès qui a un lien avec lui (champ `gear`) :
-  - Chapeaux : bandeau de ninja (Insaisissable, frôlé x5), couronne (Tartine d'or), toque de chef (Tout le frigo), casque d'astronaute (secret Road trip spatial : toucher la Tesla quand elle passe sur l'accueil), antennes d'alien (secret Rencontre du 3e type : toucher la soucoupe volante quand elle passe sur l'accueil), chapeau de pirate (secret À l'abordage : toucher la planète pirate sur l'accueil), bonnet de Noël (secret Ho ho ho : toucher le père Noël quand il passe sur l'accueil), auréole (Tartinée express), bonnet de nuit (En détente), oreilles de chien (Ouaf), oreilles de lapin (secret Chasse aux œufs : toucher l'œuf de Pâques sur l'accueil), chapeau de sorcière (secret Des bonbons ou un sort : toucher la planète citrouille sur l'accueil).
-  - Côtés : boosters (Dorée à point, 90 s), couteau et fourchette (Tout vu), ailes de chauve-souris qui battent (secret Tartine de minuit : lancer une partie entre minuit et 3 h, à l'heure du téléphone), mains Six Seven (secret Six Seven : les deux mains en creux tiennent un 6 à gauche et un 7 à droite, et montent et descendent chacune leur tour, sans arrêt ; les chiffres sont dessinés à la main, pas avec la police, pour que le 7 ne ressemble pas à un « ? »).
-  - Pain : pain de mie au départ, pain grillé (secret Ding ! : toucher le grille-pain sur l'accueil), pain carbonisé (Tartine de légende, 150 s), brioche (Boulangerie, 50 parties), tartine sans croûte (Accro à la croûte, 100 parties : du pain de mie sans sa croûte, avec quelques alvéoles jusqu'au bord et une ombre légère sur le bord coupé, dans le style des autres pains, `CRUMB_PORES` dans `sprites.js`). Seules les couleurs et les détails changent : même forme, même zone de touche. Hitbox (Ça passe crème, 20 frôlés dans une partie, ajoutée le 31/10/2026, pour ceux qui tryhardent) : une tartine ronde qui remplit pile la vraie zone de touche (le disque de `HIT_R`), croûte sur tout le bord, mie, garniture un peu réduite pour rester dedans ; réacteurs, côtés et chapeau suivent, à la même échelle (`ROUND_R`, `roundPath`). La zone de frôlé (`HIT_R + NEAR`) est une lueur moutarde qui s'efface vers l'extérieur, bordée de 14 miettes qui tournent lentement pile sur sa limite (`nearZone`, `NEAR_*` dans `sprites.js`). Première version du 31/10/2026 (tartine coupée au disque, cercle en pointillés) refaite le même jour à la demande d'Adrien.
-  - Auras (01/11/2026, choisies par Adrien sur maquettes, pour faire envie comme la Hitbox) : Surchauffe (Bien grillée, 120 s : flammes de dessin animé en trois couleurs, rouge, orange et moutarde, surtout en haut, et braises qui montent ; sur la Hitbox, un anneau de feu autour de la zone de frôlé, laissée libre), Survoltée (Intouchable : trois éclairs fourchus qui jaillissent de la tartine et changent de forme 11 fois par seconde, avec des étincelles), Néon de soirée (Dans le top : anneau rose, violet et moutarde qui tourne et pulse), Anneau planétaire (Tout le ciel : anneau penché et petite lune qui en fait le tour, devant puis derrière la tartine). Purement visuel. En jeu, l'aura est dessinée avant les couverts (`drawAura`, appelé par `scene.js`) : elle n'en cache aucun. Seule la moitié avant de l'anneau est redessinée par-dessus la tartine, ses côtés (`SIDE_REACH`) et la zone de frôlé de la Hitbox, là où la tenue cache déjà les couverts. Passe du 01/11/2026 sur toutes les combinaisons : avant, l'anneau passait derrière les boosters, les couverts, les mains Six Seven et les ailes ; les raccords de couleur du néon faisaient de petits points. Puis, à la demande d'Adrien : le contour noir de la tartine coupait l'anneau sur ses côtés, flammes refaites (avant, des pointes isolées) et éclairs refaits (avant, deux traits en zigzag autour de la tartine). Assez large pour dépasser du casque d'astronaute, des ailes et des boosters ; sur la Hitbox, elle garde sa taille.
-  - Avant le 30/10/2026 : sorcière à 30 s, bonnet de Noël à 10 parties, boosters à 60 s puis 90 s. Ceux qui les avaient gagnés ainsi les perdent jusqu'à remplir la nouvelle condition. Même règle le 31/10/2026 : la sorcière passe de Tartine de minuit à la citrouille, le chapeau de pirate de Dans le top (qui ne donne plus d'objet) à la planète pirate, et le bonnet de Noël de Joyeux Noël (qui ne donne plus d'objet, personne ne l'avait encore) au père Noël. Le 01/11/2026 : le pain grillé passe de Bien grillée (qui ne donne plus d'objet, personne ne l'avait) au grille-pain, et le casque d'astronaute de Fidèle du Space (qui ne donne plus d'objet, personne ne l'avait) à la Tesla.
-  - Un objet gagné est mis tout de suite, même en pleine partie. Choix dans les flèches de la tartine de l'accueil : une ligne par emplacement (chapeau, côtés, pain, aura) sous celle de la garniture, montrée seulement quand on a gagné au moins un objet de cet emplacement. Pendant le choix, le bas de l'accueil (Jouer, classement…) se cache pour laisser la place. Gardé sur le téléphone (`cv-accessoire` pour le chapeau, `cv-cotes`, `cv-pain`, `cv-aura`), purement visuel. En local, `?accessoires=tous` les débloque tous le temps de la page, et `?succes=tous` gagne pour de bon tous les succès (donc tous les objets) sur ce navigateur ; avec `&garnitures=toutes`, tout le jeu est débloqué.
-- Fin de partie : « Encore 1,21 s pour passer X », X étant le joueur juste devant (soirée pendant une soirée, général sinon). Rien si tu es 1er, sans pseudo ou au-delà du 1 000e du général.
-- Entraînement : bouton « S'entraîner » sur chaque attaque d'Infos. Seulement cette attaque : elle démarre à la vitesse de son heure d'arrivée, puis accélère comme en partie. Elle attend, comme en partie, que ce qu'elle évite soit sorti de l'écran (`shuns`, 01/11/2026) : un mur attend le mur d'avant, et jamais plus de 2 rouleaux. Ne compte ni au classement, ni pour les succès, ni pour le record. Espace ou Entrée sur la page Infos ne relance plus l'entraînement précédent (03/11/2026).
+### Une partie
+
+- QR code, pseudo, autant de parties qu'on veut. Sans pseudo, la partie ne compte pas au classement.
+- Rien n'arrive par le bas : le doigt cacherait les attaques. Les attaques de côté partent des 60 % du haut.
+- Chaque attaque est annoncée 0,45 à 0,9 s avant par une pastille au bord de l'écran, jamais sur le chrono.
+- Rythme plafonné à 80 s, vitesse à 150 s : plafond bas, au-delà c'est l'endurance qui départage.
+- Tartine : cercle de 26 px. Armes en gélules (`parts` dans `projectiles.js`), manche de fourchette de 8 px, calé sur le dessin.
+- Frôlé : moins de 11 px. « Frôlé x2 », « x3 »… à moins de 1,5 s d'écart, son plus aigu à chaque cran (6 au plus), une entaille dans la croûte (12 au plus). Aucun effet sur le score ni la zone de touche.
+- Mort : gel de 0,3 s, puis « Tartinée ! » et l'arme (`by`, `with`).
+- Fin : « Encore 1,21 s pour passer X », le joueur juste devant (soirée, sinon général). Rien si 1er, sans pseudo ou après le 1 000e.
+- Entraînement : « S'entraîner » sur chaque attaque d'Infos. Démarre à la vitesse de son heure d'arrivée, respecte `shuns` (2 rouleaux au plus), et chaque double pluie attend la précédente à mi-chemin. Ne compte nulle part.
+
+### Commandes
+
+- Doigt : partout, la tartine suit à 1,8 fois le mouvement pour ne pas être cachée. « Sensibilité » de 0,8 à 2,8.
+- Souris : « Glisser » (comme le doigt) ou « Viser » (la tartine va où pointe la souris, curseur caché). Sortir de la fenêtre ne fait pas sauter la tartine.
+- Espace ou Entrée lance une partie depuis l'accueil et l'écran de fin, même après un clic sur un bouton (il rend le focus). Sur Infos, Espace ne relance pas l'entraînement.
+- Échap : « Retour » partout, ferme les skins et la proposition d'installer. Rien dans un champ, et le garder appuyé ne remonte qu'une page. Marche après un curseur et dans l'onglet Admin (`relayEscape`).
+
+### Le ciel
+
+- 14 planètes (`BODIES` dans `planets.js`, dessins dans `sky/`) : normales, extravagantes, drôles (`BODIES.rare`).
+- Tours de huit places (`TOUR`) : cinq normales, deux extravagantes, une drôle. Trois normales avant la première extravagante : plus tôt, les joueurs trouvaient ça trop fréquent.
+- On revoit une planète après avoir vu toutes les autres de sa catégorie.
+- Planètes à accessoire (grille-pain, citrouille, pirate, œuf, `key`) : un tour sur 5 (`SKIN_ODDS`), soit environ toutes les 13 min de ciel, une planète donnée toutes les 50 min. Les toucher sur l'accueil donne un succès secret.
+- Étoiles filantes (`PASSERS`, `COMET_*`) : première entre 30 s et 3 min, puis toutes les 2 à 4 min, menu compris, en 9 s, dans un ordre au hasard.
+- Canettes : photos de magasin délavées, vérifier les couleurs sur l'image seule. Sans contour et opaques, pour ne pas ressembler à une arme.
+- Droits : pas de personnages ni de designs protégés (films, mangas, jeux vidéo). Idées originales, œuvres libres de droits ou objets réels.
+
+### Skins
+
+- Garnitures : 10 à gagner (`SPREADS`), Beurre et Nature gratuites (`free`). 1 attaque à couteaux sur 10 a un couteau garni, tiré dans tout `SPREADS` (une liste à part avait oublié la sauce du chef). Le frôler ou mourir dessus la débloque, pas en entraînement.
+- Tenue : chapeau, côtés, pain, aura (`GEAR` dans `palette.js`). Chaque objet récompense un succès qui a un lien avec lui (`gear` dans `achievements.js`).
+- Pains : seules les couleurs changent, même zone de touche. Hitbox : tartine ronde qui remplit pile la zone de touche (`HIT_R`).
+- Mains Six Seven : chiffres dessinés à la main, la police faisait du 7 un « ? ».
+- Auras : purement visuelles, dessinées avant les couverts pour n'en cacher aucun. Seule la moitié avant de l'anneau repasse sur la tartine, là où la tenue cache déjà les couverts.
+- Un skin gagné est mis tout de suite, même en partie. Visuel seulement, gardé sur le téléphone.
+- Condition d'un objet changée : ceux qui l'avaient gagné autrement le perdent jusqu'à remplir la nouvelle.
+
+### Infos
+
+- Textes pour des joueurs : tutoiement, phrases courtes, « hitbox », « skin », « max ».
+- Onglets et curseurs d'au moins 44 px de haut, la taille minimale pour un doigt. Boutons de Paramètres : 14 px au plus petit (`6cqi`).
 
 ## Attaques
 
 | Attaque | Dès | À retenir |
 |---|---|---|
-| Couteau visé | 0 s | Vise la tartine au moment de l'annonce. Tourne 1 fois sur 3 dès 25 s |
+| Couteau visé | 0 s | Vise la tartine à l'annonce. Tourne 1 fois sur 3 dès 25 s |
 | Pluie de fourchettes | 3 s | 4 fourchettes, 1 de plus toutes les 15 s (8 dès 60 s) |
-| Hachoir | 8 s | Tombe très vite au-dessus de la tartine, annonce longue (0,9 s). 2 à la suite dès 30 s, 3 dès 55 s, dans des colonnes voisines. Ni pluie ni double pluie tant que le dernier hachoir n'est pas à mi-chemin |
-| Mur | 12 s | Rangée serrée avec un seul trou, le même pour tous les murs (144 px d'un couvert à l'autre). Par un côté, le trou n'est jamais dans le bas de l'écran, caché par la main. Par le haut, 1,3 fois plus rapide |
-| Rouleau | 16 s | Traverse lentement par un côté, rebondit sur le bord d'en face et revient, à n'importe quelle hauteur. 2 à la suite dès 36 s, à 200 px de haut l'un de l'autre au moins. Jamais plus de 2 à l'écran |
-| Éventail | 22 s | 3 couteaux en cône vers la tartine, 4 dès 38 s, 5 dès 54 s. Un couteau toujours sur la tartine |
-| Murs en série | 28 s | 2 murs d'affilée du même côté ou du haut (3 dès 60 s), trous de la même taille que le mur seul, décalés de 90 à 140 px d'un mur à l'autre (jamais alignés). Chaque mur n'est annoncé que juste avant d'arriver. Joue seul : l'attaque suivante part quand le dernier mur a fait 20 % de sa traversée |
+| Hachoir | 8 s | Très rapide, annonce longue (0,9 s). 2 dès 30 s, 3 dès 55 s, colonnes voisines |
+| Mur | 12 s | Rangée avec un seul trou. Par le haut, 1,3 fois plus rapide |
+| Rouleau | 16 s | Aller-retour à n'importe quelle hauteur. 2 dès 36 s, à 200 px l'un de l'autre au moins |
+| Éventail | 22 s | 3 couteaux en cône, 4 dès 38 s, 5 dès 54 s. Un toujours sur la tartine |
+| Murs en série | 28 s | 2 murs du même côté ou du haut (3 dès 60 s). Chaque mur annoncé juste avant. Joue seul |
 | Croix | 32 s | 4 couteaux en même temps vers la tartine |
 | Couteau à pain | 38 s | Rebondit une fois sur un bord |
-| Pluie en biais | 45 s | 7 à 8 fourchettes en diagonale, qui balaient l'écran d'un côté à l'autre |
-| Double pluie | 54 s | 8 fourchettes (9 dès 60 s), à gauche et à droite en alternance. Ni pluie ni double pluie tant que sa dernière fourchette n'est pas à mi-chemin |
+| Pluie en biais | 45 s | 7 à 8 fourchettes en diagonale, d'un côté à l'autre |
+| Double pluie | 54 s | 8 fourchettes (9 dès 60 s), à gauche et à droite en alternance |
 
-- Vitesse des couverts : × (1,4 + t / 75), × 3 à 120 s, plafonnée à × 3,4 dès 150 s (`SPEED_START`, `SPEED_RAMP`, `SPEED_UNTIL` dans `field.js`). Délai entre deux attaques : 0,95 s moins 0,005625 × t, 0,5 s au plus court dès 80 s (`GAP_*` dans `sim.js`). Courbe du 30/10/2026, choisie avec le robot « humain » (voir Équilibrage), puis plafond de vitesse monté de 2,2 à 2,4 par Adrien après l'avoir testée (trop facile après 60 s). Le soir même, des joueurs faisaient 150 s : plafond monté à × 3 (120 s) et délai minimal à 0,45 s (75 s), début identique jusqu'à 60 s (voir Équilibrage). Puis Adrien : délai minimal de 0,5 s atteint à 80 s (nombre rond, un peu plus doux entre 30 et 80 s : 0,61 s à 60 s au lieu de 0,55 s), et vitesse des couverts sans limite. Le 30/10/2026 au soir, d'après les retours des joueurs (beaucoup trop rapide au-delà), vitesse plafonnée à celle de 150 s. Avant : × 1 à × 2,6 à 80 s, et 1,25 s à 0,42 s dès 52 s. Début trop calme, mur de difficulté entre 40 et 60 s, puis un plafond si haut que la chance décidait.
-- Jamais plus de 3 fois la même attaque d'affilée, sauf si c'est la seule possible (couteau visé avant 3 s). Hachoir, croix et double pluie ne sortent jamais deux fois de suite (hachoir depuis le 01/11/2026, demande d'Adrien). Jamais deux murs à la suite, seuls ou en série (demande d'Adrien, 01/11/2026) : un mur ne sort jamais deux fois de suite (`solo`), un mur ne suit jamais des murs en série ni l'inverse (même `kin`), et aucun mur ne part tant qu'un autre est annoncé ou à l'écran (`shuns`). Pas de mur ni de murs en série tant qu'un rouleau est annoncé ou à l'écran, et l'inverse (`shuns`) : un rouleau dans le trou d'un mur le bouchait presque. Jamais de hachoir juste après une pluie de fourchettes (droite, en biais ou double), une croix ou un mur, ni de croix juste après un hachoir ou un mur, ni de double pluie juste après une pluie droite ou en biais (`avoids`, 01/11/2026, voir Équilibrage) : esquiver le hachoir obligeait à traverser la pluie de côté, la croix se refermait pendant qu'on dansait entre les hachoirs, juste après un mur on reste coincé dans son trou, et deux rideaux de fourchettes l'un sur l'autre ne laissaient parfois presque plus de place. Après une double pluie ou un hachoir, ni pluie de fourchettes ni double pluie tant que la dernière fourchette de la double pluie, ou le dernier hachoir, n'a pas fait la moitié de sa traversée, même si d'autres attaques passent entre-temps (`waits`, `WAIT_PASS` dans `sim.js`, demandes d'Adrien, 02/11/2026) : avant, après 1 double pluie sur 3, une autre pluie partait plus tôt (1 sur 5 juste après), et 1 hachoir sur 5 était suivi d'une pluie alors qu'il tombait encore. La pluie en biais n'attend pas, mesurée sans effet (voir Équilibrage). À l'entraînement, chaque double pluie attend aussi que la précédente soit à mi-chemin. Pluie en biais, couteau à pain et rouleau ne se suivent jamais, même deux fois le même (`BREATHERS`, 01/11/2026) : deux respirations d'affilée donnaient 2 à 3 s presque gratuites. Juste après une pluie (droite, en biais ou double), un mur ou des murs en série arrivent toujours par un côté, jamais par le haut (`wallSide`, demande d'Adrien, 01/11/2026) : les fourchettes de la pluie et celles du mur arrivaient l'une juste après l'autre, à environ 0,4 s d'écart à 45 s depuis que le mur seul par le haut va 1,3 fois plus vite. Un mur ou des murs en série tirés pendant une double pluie (annoncée ou à l'écran) sont mis de côté, puis lancés dès que sa dernière fourchette a quitté l'écran (`holds`, `held` dans `sim.js`, demandes d'Adrien après l'AG du 02/11/2026, voir Équilibrage) : il fallait rejoindre le trou du mur à travers les fourchettes. Les autres attaques passent entre-temps, sans temps mort, sauf un autre mur ou un rouleau. Poids un peu montés (mur 1,1 à 1,15, murs en série 0,6 à 0,63) pour garder autant de murs par minute. Dans Infos, le mur passe de « parfois » à « souvent ». Si les murs en série sont tirés pendant une annonce, ils attendent qu'elle soit partie (rien d'autre n'est annoncé entre-temps), et l'attaque suivante ne part que quand leur dernier mur a fait 20 % de sa traversée (`CALM_PASS` dans `sim.js`), avec une « durée » (`cost`) de 1. Il reste environ 1 s sans nouvel objet après le dernier mur entre 28 et 60 s, puis 0,86 s, à peine plus que l'écart normal (0,8 à 0,9 s). Historique du 30/10/2026, Adrien trouvant l'attente trop longue à chaque fois : d'abord jusqu'à ce que le dernier mur quitte l'écran (environ 2 s de vide), puis 40 % de sa traversée avec une durée de 4 (1,2 à 1,8 s, la durée de 4 imposait elle-même l'attente avant 60 s). Avant aussi, les murs en série étaient écartés à chaque annonce en cours, et après 60 s ils ne sortaient presque plus.
-- Rouleau en aller-retour (01/11/2026, idée d'Adrien) : il rebondit sur le bord d'en face (`bounces: 1`, comme le couteau à pain) et peut passer à n'importe quelle hauteur. Avant, il ne passait que dans la moitié haute (de 80 à 384 px) : un joueur resté en bas n'avait jamais à l'esquiver. Plus jamais 3 rouleaux à la fois (avant : dès 60 s), jugé abusé par Adrien une fois en aller-retour. Depuis le 01/11/2026 au soir (demandes d'Adrien) : les 2 rouleaux d'une même attaque passent à au moins 200 px de haut l'un de l'autre (`ROLLING_APART`), alors qu'ils pouvaient se coller (60 px), surtout gênant quand ils venaient du même côté ; et un rouleau ne part plus tant qu'un autre est annoncé ou à l'écran (`shuns`), car avec l'aller-retour, deux attaques de rouleaux pouvaient en mettre 4 à l'écran.
-- Éventail à 4 couteaux (de 38 à 54 s) : il laissait un trou pile sur la tartine, et ne pas bouger suffisait 98 fois sur 100. Depuis le 01/11/2026, quand le nombre de couteaux est pair, le cône est décalé d'un demi-écart pour qu'un couteau vise la tartine.
-- Trou des murs (01/11/2026, demande d'Adrien, qui voyait des trous de tailles différentes en prod) : toujours 144 px d'un couvert à l'autre (`WALL_HOLE`), soit environ 105 px de passage pour la tartine, pour les murs seuls comme pour les murs en série, par le haut comme par les côtés. Le mur est construit du trou vers les bords. Avant, il était posé sur une grille fixe et le trou sautait d'une case selon sa place : par le haut, 108 ou 144 px pour un mur seul, 144 ou 180 px en série. Le trou n'est jamais à moins de 90 px de la tartine (`WALL_AWAY`), pour un mur seul comme pour le premier mur d'une série : avant, environ 1 fois sur 4, il tombait sur elle et il n'y avait rien à faire. `equilibrage:invariants` vérifie la taille de chaque trou, sa distance à la tartine, et qu'aucun mur ne part quand un autre est encore là, ni pendant une double pluie.
-- Mur seul par le haut 1,3 fois plus rapide (`TOP_WALL_RUSH`, 01/11/2026, idée à l'instinct, valeur choisie par Adrien) : il laissait 2,5 à 3 s pour se décaler sur 360 px de large, alors qu'un mur par un côté laisse environ 1,5 s pour monter ou descendre sur 640 px de haut. Les murs en série par le haut ne changent pas, ils restent le piège n°1 des débutants.
-- 1 attaque à couteaux sur 10 a un couteau garni (voir Garnitures).
-- Fouet mis de côté (jugé trop facile) : `lab: true` dans `attacks.js` et `projectiles.js`, visible seulement dans l'admin. Enlever `lab` pour le remettre.
-- Couloir (deux murs de deux côtés, 46 s) mis de côté de la même façon : trop proche des murs en série, on pouvait le prendre pour un bug.
-- Chances, vitesses et délais de chaque attaque : `attacks.js`. Le calendrier est dans le jeu (Infos, onglet Attaques).
-- Infos, onglet Attaques (refait le 31/10/2026 après une critique de design ; avant, tout était ouvert et il fallait 10 écrans et demi pour le parcourir sur téléphone) : une carte repliée par attaque, avec son nom et son heure d'arrivée. Une seule s'ouvre à la fois, avec son aperçu animé (seul l'aperçu ouvert tourne), ses pastilles et « S'entraîner ». En dessous, Progression (les paliers de difficulté, sans les arrivées déjà sur les cartes) et Règles. Onglet Armes : la taille réelle avec la zone de touche, puis les variantes rares en gros plan sur la lame (`spreadCard` dans `catalog.js`). Onglet Guide (31/10/2026, le wiki du jeu demandé par Adrien, `guide.js`) : mêmes cartes repliables, dessin compris seulement à l'ouverture, pour Frôlés, Garnitures, Accessoires, Succès, Le ciel, Classements, Soirées et Compte. Garnitures, Accessoires et Succès affichent ce que le joueur a gagné (« 3 / 9 ») et grisent le reste ; un accessoire d'un succès secret pas encore trouvé dit seulement « Succès secret ». Le ciel montre les planètes drôles et extravagantes et tout ce qui passe en étoile filante (`name` dans `BODIES` et `PASSERS` de `planets.js`). Les onglets d'Infos ont moins de marge pour tenir à quatre sur un téléphone. Textes d'Infos (descriptions et paliers dans `attacks.js`, le reste dans `catalog.js` et `guide.js`) écrits pour des joueurs, à la demande d'Adrien : tutoiement, phrases courtes, « hitbox », « skin », « max ».
-- Les onglets (Infos, Classement, Paramètres) font au moins 44 px de haut, la taille minimale pour un doigt.
-- Paramètres (revus le 03/11/2026 après une critique de design, à la demande d'Adrien) : libellés courts pour les boutons côte à côte (« Mon code », « Partager »), dont le texte suit la largeur de la carte (`6cqi`) : 16 px sur un téléphone, 14 px au plus petit (320 px de large ; avant, 10,8 px, et « Afficher mon code » débordait de son bouton). Curseurs de 44 px de haut (avant, 32). Dans les cartes, les messages prennent toute la largeur (avant, coupés à 24 caractères). « Déconnecter les autres » est à part, sous un trait en bas de la carte, et son « Déconnecter » de confirmation est rouge (`.ghost.danger`).
-- Le trou des murs en série par le haut pouvait sauter d'un bord à l'autre entre deux murs : 27 morts pour 100 séries chez un débutant, contre 5 par les côtés. Limité à 140 px depuis le 30/10/2026, comme par les côtés. Depuis le 31/10/2026, chaque trou se décale aussi d'au moins 90 px (`SERIES_MOVE`), vers un côté tiré au hasard (l'autre si le bord est trop près) : les joueurs trouvaient trop facile un trou presque aligné avec le précédent. Mesuré : 0 série refusée par le solveur à 30 s et à 65 s, 0 mort pour le robot parfait. Depuis le 01/11/2026, le trou d'un mur par un côté peut descendre jusqu'à 430 px de haut (`WALL_LOW`), et plus seulement dans la moitié haute (397 px au plus) : un joueur resté en bas devait remonter de 300 px ou plus. Pas plus bas (demande d'Adrien, testé en jeu) : au téléphone à une main, la paume cache souvent le bas de l'écran. La tartine n'a donc jamais besoin de descendre plus bas qu'environ les 3/4 de l'écran pour passer un mur. Avant, le trou pouvait aller jusqu'à 540 px.
+### Rythme
+
+- Vitesse : × (1,4 + t / 75), × 3 à 120 s, plafond × 3,4 à 150 s (`field.js`).
+- Délai : 0,95 s moins 0,005625 × t, 0,5 s au plus court dès 80 s (`GAP_*`), fois `cost` et un hasard de 0,85 à 1,15.
+
+### Enchaînements
+
+- Jamais plus de 3 fois la même attaque, sauf si c'est la seule possible (avant 3 s).
+- Jamais deux fois de suite (`solo`) : hachoir, croix, double pluie, mur, murs en série. Un mur ne suit jamais des murs en série, ni l'inverse (`kin`).
+- `shuns` : ni mur ni rouleau tant qu'un mur ou un rouleau est annoncé ou à l'écran. Un rouleau bouchait presque le trou d'un mur, et l'aller-retour pouvait en mettre 4 à l'écran.
+- `avoids`, juste après :
+  - pas de hachoir après une pluie, une croix ou un mur : il fallait traverser la pluie, et on reste coincé dans le trou d'un mur ;
+  - pas de croix après un hachoir ou un mur : elle se refermait pendant qu'on dansait entre les hachoirs ;
+  - pas de double pluie après une pluie droite ou en biais : deux rideaux ne laissaient presque plus de place ;
+  - pluie en biais, couteau à pain et rouleau ne se suivent jamais (`BREATHERS`) : deux respirations donnaient 2 à 3 s gratuites.
+- `waits` : après une double pluie ou un hachoir, ni pluie droite ni double pluie tant que le dernier objet n'est pas à mi-chemin (`WAIT_PASS`). La pluie en biais n'attend pas, mesurée sans effet.
+- `wallSide` : juste après une pluie, mur et murs en série arrivent par un côté. Par le haut, pluie et mur arrivaient à 0,4 s d'écart.
+- `holds` : mur ou murs en série tirés pendant une double pluie sont mis de côté jusqu'à ce que sa dernière fourchette quitte l'écran : il fallait rejoindre le trou à travers elles. Poids montés (mur 1,15, série 0,63) pour garder autant de murs.
+- `calm` : les murs en série attendent la fin des annonces. L'attaque suivante part à 20 % de la traversée du dernier mur (`CALM_PASS`), soit environ 1 s sans nouvel objet. À 40 % ou à la sortie de l'écran, 1,2 à 2 s de vide : trop long.
+
+### Murs et rouleaux
+
+- Trou : 144 px d'un couvert à l'autre (`WALL_HOLE`), environ 105 px de passage, pour tous les murs. Le mur se construit du trou vers les bords : sur une grille fixe, le trou sautait d'une case.
+- Trou à au moins 90 px de la tartine (`WALL_AWAY`), pour un mur seul et le premier d'une série : 1 fois sur 4, il tombait sur elle et il n'y avait rien à faire.
+- Par un côté, trou jusqu'à 430 px de haut (`WALL_LOW`), pas plus bas : à une main, la paume cache le bas de l'écran. Dans la seule moitié haute, un joueur resté en bas devait remonter de 300 px.
+- Murs en série : trou décalé de 90 à 140 px (`SERIES_MOVE`, `SERIES_SHIFT`). Presque aligné, trop facile. Sans limite, il sautait d'un bord à l'autre : 27 morts pour 100 séries chez un débutant. Mesuré : 0 série refusée, 0 mort du robot parfait.
+- Mur seul par le haut 1,3 fois plus rapide (`TOP_WALL_RUSH`) : il laissait 2,5 à 3 s sur 360 px, contre 1,5 s sur 640 px par un côté.
+- Rouleau : dans la seule moitié haute, un joueur resté en bas n'avait jamais à l'esquiver. 2 rouleaux à 200 px au moins (`ROLLING_APART`), collés c'était trop gênant.
+- Éventail pair : cône décalé d'un demi-écart pour viser la tartine. Sinon, ne pas bouger suffisait 98 fois sur 100.
+- Fouet (trop facile) et couloir (trop proche des murs en série, on pouvait le prendre pour un bug) : `lab: true`, visibles seulement dans l'admin. Enlever `lab` pour les remettre.
 
 ## Équité
 
-- Avant chaque attaque, le solveur simule les 3,5 s suivantes (jusqu'à 4,5 s si l'attaque dure plus longtemps, comme les murs en série) avec tout ce qui est en vol. S'il ne trouve pas de chemin pour la tartine, en comptant 0,1 s de réaction, l'attaque est remplacée (5 essais au plus).
-- Le modèle est prudent (grille de 12 px, doigt à 360 px/s en ligne droite et 509 px/s en diagonale, marge de 11 px autour des couverts) : si le robot passe, un humain peut passer.
-- Le solveur range chaque ligne de sa grille (30 colonnes) dans un nombre de 32 bits. Depuis le 30/10/2026, il calcule d'un coup toute la zone balayée par chaque couvert pendant un pas de 1/30 s (avant : 5 instantanés par pas, avec de petits trous possibles entre deux instantanés quand les couverts vont vite), et fabrique ses masques de bits par décalages (avant : `2 **`, qui prenait la moitié du temps). Résultat : environ 6 fois plus rapide (0,15 ms par vérification sur un PC, 0,8 ms au pire), mêmes décisions sur 8 853 vérifications enregistrées en partie, zone balayée identique à un calcul avec 256 instantanés sur 20 000 couverts tirés au hasard. Le chemin du robot garde ses 5 instantanés : trajets identiques. Il vit dans `test/chemin.mjs` depuis le 04/11/2026, hors du code envoyé aux téléphones.
-- Un geste très rapide ne fait pas traverser un couvert : le trajet de la tartine est vérifié tous les 6 px. Un déplacement absurde (infini, ou plus de 10 000 px d'un coup) est borné pour ne pas figer le jeu.
-- Ce que font vraiment les refus (mesuré le 04/11/2026 sur 38 132 vérifications de 360 parties simulées) : les 3 960 refus venaient tous de la situation en cours, jamais de la nouvelle attaque. La tartine est trop près d'un couvert, et le solveur la suppose immobile pendant la réaction. Les attaques sont saines d'elles-mêmes grâce à leurs règles (`shuns`, `avoids`, `calm`, `WALL_AWAY`) : 3 échecs sur 38 012 attaques seules, tartine placée au hasard. L'effet réel est un petit répit, environ 0,7 s par partie. Le retirer coûte environ 20 s au niveau le plus fort (médiane de 150 à 130 s, chiffres bruités). Son revers, en théorie : rester 35 à 55 px devant un rouleau fait tomber les nouvelles attaques de 1,42 à 0,59 par seconde (test avec une tartine parfaitement calée, jamais vu en prod).
-- Essayé sans gain le 04/11/2026 : réaction de 0,2 ou 0,3 s, filtre sur la marge pour s'échapper (morts à peu près égales quelle que soit la marge), horizon plus long (0 échec sur 34 172 attaques acceptées). Temps mesuré : 0,22 ms en médiane, 1,76 ms au pire sur 8 635 vérifications rejouées.
-- `npm run equite` fait jouer le robot 100 parties de 150 s : 0 mort attendu, et 0 refus « à cause de l'attaque elle-même » (option `audit` de `createSim`, coupée en vraie partie). Si ce chiffre monte, une attaque est vraiment impossible : le jeu la remplace sans rien dire. À relancer après un gros changement des règles, pas pour un petit réglage.
+- Avant chaque attaque, le solveur simule les 3,5 s suivantes (4,5 s pour une attaque longue) avec tout ce qui est en vol. Sans chemin pour la tartine, avec 0,1 s de réaction, l'attaque est remplacée (5 essais au plus).
+- Modèle prudent (grille de 12 px, doigt à 360 px/s, 509 en diagonale, marge de 11 px) : si le robot passe, un humain peut passer.
+- Zone balayée par chaque couvert calculée d'un coup sur 1/30 s, grille en lignes de 32 bits : 6 fois plus rapide que 5 instantanés par pas, mêmes décisions sur 8 853 vérifications enregistrées.
+- Le chemin du robot vit dans `test/chemin.mjs`, hors du code envoyé aux téléphones.
+- Trajet de la tartine vérifié tous les 6 px : un geste rapide ne traverse pas un couvert. Déplacement absurde (infini, plus de 10 000 px) borné pour ne pas figer le jeu.
+
+### Ce que font vraiment les refus
+
+Mesuré sur 38 132 vérifications de 360 parties simulées.
+
+- Les 3 960 refus venaient tous de la situation en cours, jamais de la nouvelle attaque : la tartine est trop près d'un couvert, et le solveur la suppose immobile pendant la réaction.
+- Les attaques sont saines grâce à leurs règles (`shuns`, `avoids`, `calm`, `WALL_AWAY`) : 3 échecs sur 38 012 attaques seules, tartine placée au hasard.
+- L'effet réel est un petit répit, environ 0,7 s par partie. Le retirer coûte environ 20 s au niveau le plus fort (médiane de 150 à 130 s, chiffres bruités).
+- Son revers, en théorie : rester 35 à 55 px devant un rouleau fait tomber les nouvelles attaques de 1,42 à 0,59 par seconde (tartine parfaitement calée, jamais vu en prod).
+- Essayé sans gain : réaction de 0,2 ou 0,3 s, filtre sur la marge pour s'échapper (morts à peu près égales quelle que soit la marge), horizon plus long (0 échec sur 34 172 attaques acceptées).
+- Temps mesuré : 0,22 ms en médiane, 1,76 ms au pire sur 8 635 vérifications rejouées.
+- `npm run equite` : 100 parties de 150 s, 0 mort attendu, 0 refus « à cause de l'attaque elle-même » (option `audit`, coupée en vraie partie). Si ce chiffre monte, une attaque est vraiment impossible, et le jeu la remplace sans rien dire. À relancer après un gros changement des règles.
 
 ## Équilibrage
 
-Le robot d'équité (`npm run equite`) joue parfaitement : il dit si le jeu est faisable, pas s'il est bien dosé. Pour le dosage, on fait jouer un robot « humain » à toute une population de niveaux. Les outils sont dans `test/equilibrage/`.
+Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le dosage, un robot « humain » joue une population de niveaux (`test/equilibrage/`).
 
-**Le robot humain** (`playHuman` dans `jeu.mjs`)
-- Il ne voit une annonce qu'après son temps de réaction, il se déplace à vitesse limitée, et il a des moments d'inattention de 0,4 s où il ne bouge plus.
-- Un niveau de 0 à 1 règle les trois (`profileOf`) : réaction de 0,33 s à 0,18 s, vitesse de 240 à 480 px/s, une inattention toutes les 6 s en moyenne au niveau 0, toutes les 20 s au niveau 1.
-- Il choisit son chemin avec le solveur du jeu, à partir de ce qu'il voit.
-- Limites : il ne se fatigue pas au fil de la partie, il voit tout parfaitement et son doigt ne cache rien. Entre deux attaques, il revient vers le milieu de l'écran (384 px de haut, `test/chemin.mjs`), alors qu'un joueur reste plutôt en bas : pour mesurer avec un robot qui se tient en bas, lancer la commande avec `ROBOT_Y=0.8`. Les chiffres servent à comparer deux versions entre elles, pas à prédire les temps réels. Le vrai repère, c'est le classement en prod.
+### Le robot humain
 
-**Les commandes**
+- `playHuman` dans `jeu.mjs`. Il voit les annonces après son temps de réaction, va à vitesse limitée, a des inattentions de 0,4 s, et choisit son chemin avec le solveur.
+- Niveau de 0 à 1 (`profileOf`) : réaction de 0,33 à 0,18 s, vitesse de 240 à 480 px/s, une inattention toutes les 6 à 20 s.
+- Limites : il ne se fatigue pas, voit tout, son doigt ne cache rien. `ROBOT_Y=0.8` pour un robot qui se tient en bas, comme un joueur.
+- Ses chiffres comparent deux versions, ils ne prédisent pas les temps réels. Le vrai repère, c'est le classement en prod.
+
+### Les commandes
 
 | Commande | Ce qu'elle mesure | Durée |
 |---|---|---|
-| `npm run equilibrage` | 80 joueurs du niveau 0 au niveau 1, 5 parties chacun, sur deux séries de tirages : part du niveau dans le score, surprises, médianes par niveau, risque de mort par tranche de 20 s | environ 10 min pour deux versions |
-| `npm run equilibrage:attaques` | Morts pour 100 lancées de chaque attaque, pour un débutant (niveau 0,1), un moyen (0,5) et un fort (0,9). Murs en série séparés entre haut et côtés | environ 10 min |
-| `npm run equilibrage:vides` | Temps sans nouvel objet avant et après des murs en série, comparé à l'écart normal entre deux attaques | 1 min |
-| `npm run equilibrage:combos` | Pour un joueur moyen à 45 s et à 65 s, rien d'autre à l'écran au départ : morts pour 100 essais de chaque attaque seule, de chaque paire d'attaques, puis des suites de 3 qui prolongent les paires les plus dures. « En trop » : les morts en plus de ce que donneraient les attaques jouées chacune de leur côté. Aussi : survie sans bouger. `ATTAQUE=rolling npm run equilibrage:combos` ne mesure que les paires d'une attaque (2 à 3 min) | environ 13 min |
-| `npm run equilibrage:invariants` | Robots immobile, nerveux, collé aux bords et parfait : valeurs impossibles, couverts oubliés, règles de tirage, couvert traversé sans toucher. Sort en erreur au moindre problème. Tourne aussi sur GitHub avec le robot d'équité, en petit (10 parties de 60 s par style, environ 2 min) | 1 à 3 min |
+| `npm run equilibrage` | 80 joueurs, 5 parties, deux tirages : part du niveau, médianes, risque par tranche de 20 s | 10 min pour deux versions |
+| `npm run equilibrage:attaques` | Morts pour 100 lancées, débutant (0,1), moyen (0,5), fort (0,9) | 10 min |
+| `npm run equilibrage:vides` | Temps sans nouvel objet autour des murs en série | 1 min |
+| `npm run equilibrage:combos` | Joueur moyen à 45 et 65 s : morts de chaque attaque, paire et suite de 3. « En trop » : en plus des attaques jouées séparément. `ATTAQUE=rolling` pour une seule (2 à 3 min) | 13 min |
+| `npm run equilibrage:invariants` | Robots immobile, nerveux, collé aux bords, parfait : valeurs impossibles, règles de tirage, trous, couvert traversé. Aussi sur GitHub, en petit | 1 à 3 min |
 
-**Lire les chiffres**
-- Part du niveau dans le score : la part des écarts de temps qui vient du joueur plutôt que du hasard (corrélation intra-classe sur le logarithme des temps). Plus c'est haut, moins la chance décide. Entre deux séries de tirages, ça bouge d'environ 3 points : un écart plus petit ne prouve rien.
-- Plus faible bat plus fort : la part des duels où un joueur plus faible d'au moins 0,2 niveau a un meilleur record sur ses 5 parties.
-- Risque moyen par tranche : la chance de mourir dans ces 20 s pour un joueur moyen (niveau 0,3 à 0,7) encore en vie. Une montée brutale, c'est un mur de difficulté. Une ligne plate, c'est le plafond.
-- Morts pour 100 lancées : une attaque très au-dessus des autres est un piège, une attaque proche de 0 sert de respiration.
+### Lire les chiffres
 
-**Tester un réglage**
-1. `npm run equilibrage:variante -- essai` copie le coeur du jeu dans `.equilibrage/essai` et `public/js/shared` dans `.equilibrage/shared` (hors git).
-2. Changer les réglages dans cette copie.
-3. `npm run equilibrage -- public/js/game .equilibrage/essai` compare les deux versions. Les autres commandes acceptent aussi une copie : `GAME=.equilibrage/essai npm run equilibrage:attaques`.
-4. Si c'est mieux, reporter le changement dans `public/js/game`, puis `npm run equite` (0 mort) et `npm run equilibrage:invariants`.
-- Pour comparer avec une ancienne version : copier ses 5 fichiers de `public/js/game` depuis git dans `.equilibrage/<nom>` (`git show <commit>:public/js/game/sim.js > .equilibrage/<nom>/sim.js`, pareil pour les autres).
+- Part du niveau : part des écarts de temps qui vient du joueur (corrélation intra-classe sur le logarithme). Bouge d'environ 3 points entre deux tirages : un écart plus petit ne prouve rien.
+- Plus faible bat plus fort : duels où un joueur plus faible d'au moins 0,2 niveau a un meilleur record sur 5 parties.
+- Risque par tranche : chance de mourir dans ces 20 s pour un joueur moyen en vie. Montée brutale : un mur de difficulté. Ligne plate : le plafond.
 
-**Quand refaire un point** : seulement de temps en temps, quand beaucoup de règles changent ou quand la progression paraît mal dosée en voyant les joueurs jouer. Pas à chaque modification, ni pour un petit réglage (choix d'Adrien).
+### Tester un réglage
 
-**Point du 30/10/2026** : nouvelle courbe choisie par Adrien
-- Retour des premiers joueurs : le début est trop calme, et le record en prod (82,8 s) tient surtout de la chance, puisque 80 s est à peine le moment où le niveau se stabilise.
-- Idée d'Adrien : plus dur dès le début, une montée plus douce, et un plafond plus bas pour que l'endurance départage.
-- Mesuré : avant, c'était calme jusqu'à 40 s, puis venait un mur de difficulté entre 40 et 60 s, puis un plafond si haut que chaque tranche de 20 s tuait un tiers des joueurs moyens.
+1. `npm run equilibrage:variante -- essai` copie le coeur du jeu dans `.equilibrage/essai` (hors git). Y changer les réglages.
+2. `npm run equilibrage -- public/js/game .equilibrage/essai` compare. Les autres commandes : `GAME=.equilibrage/essai npm run equilibrage:attaques`.
+3. Si c'est mieux, reporter dans `public/js/game`, puis `npm run equite` et `npm run equilibrage:invariants`.
 
-| | Avant | Depuis le 30/10 |
-|---|---|---|
-| Part du niveau dans le score | 41 % | 47 % |
-| Plus faible bat plus fort | 5,4 % | 3,4 % |
-| Médianes des niveaux 1 à 5 | 31, 50, 69, 99, 132 s | 20, 35, 85, 116, 157 s |
-| Risque d'un joueur moyen (0-20, 20-40, 40-60, 60-80 s) | 5, 11, 32, 35 % | 9, 18, 19, 25 % |
-| Parties qui atteignent 300 s | 3 % | 6 % |
+- Ancienne version : copier ses 5 fichiers dans `.equilibrage/<nom>` (`git show <commit>:public/js/game/sim.js > .equilibrage/<nom>/sim.js`).
+- Refaire un point de temps en temps, quand beaucoup de règles changent ou que la progression paraît mal dosée. Pas pour un petit réglage.
 
-- Écartés : une courbe plus douce qui plafonne à 80 s (plus de chance, 39 %), une vitesse maximale plus haute (aucun effet), un plafond très bas atteint à 60 s (moins stable d'un tirage à l'autre), un préavis de 0,9 s pour les murs en série (moins efficace que limiter le saut du trou).
-- Morts pour 100 lancées avec la nouvelle courbe, pour un débutant, un moyen et un fort : murs en série par le haut 35, 3 et 0,6 ; croix 11, 2 et 0,6 ; double pluie 9,5, 1,7 et 0,9. Les autres attaques restent sous 7 chez le débutant. Pluie en biais et couteau à pain tuent presque jamais (respirations).
-**Point du 30/10/2026 au soir** : des joueurs faisaient 150 s. Adrien trouvait le niveau à 60 s bon, mais le plafond trop bas. Comparaison avec début identique jusqu'à 60 s :
+### Mesures et décisions
 
-| | Plafond × 2,4 et 0,55 s | × 3 et 0,45 s (retenu, puis ajusté par Adrien) | × 2,8 et 0,48 s | Vitesse sans limite et 0,42 s |
-|---|---|---|---|---|
-| Médiane des meilleurs (niveau 5) | 165 s | 152 s | 135 s | 129 s |
-| Risque d'un joueur moyen entre 60 et 80 s | 26 % | 31 % | 31 % | 31 % |
-| Parties à 300 s | 6,6 % | 4,6 % | 5,9 % | 3,4 % |
-
-- Les trois durcissent la fin de partie de la même façon : les écarts entre elles restent dans le bruit de mesure. Le robot fort meurt surtout de ses inattentions, donc la vitesse seule pèse peu sur lui.
-
-- À surveiller : les murs en série par le haut restent le piège n°1 des débutants. Avec 0,7 s de préavis, un débutant ne parcourt qu'environ 100 px, alors que le trou peut se décaler de 140 px.
-
-**Point du 01/11/2026** : enchaînements d'attaques (demande d'Adrien)
-- En prod, le jeu ne garde pas l'attaque qui tue, seulement le temps de chaque partie. Sur 1 083 parties de joueurs rodés (après leur 30e partie), le risque de mourir par tranche de 10 s passe de 21 % (30-40 s) à 44 % (40-50 s), puis 49, 58 et 77 % (70-80 s). Un vrai mur vers 40 s, que le robot ne montre pas. Beaucoup de morts vers 2 s chez ces joueurs : sans doute des relances volontaires.
-- Mesuré avec `equilibrage:combos`, joueur moyen :
-
-| | Avant | Après |
-|---|---|---|
-| Pire paire à 45 s (morts en trop pour 100) | pluie puis hachoir, +3,8 | pluie puis croix, +2,5 |
-| Éventail à 4 couteaux, survie sans bouger | 98 % | 0 % |
-| Rouleau, robot qui se tient en bas, survie sans bouger | 99 % | 65 % |
-| Murs en série à 65 s, robot au milieu et robot en bas (morts pour 100) | 9,5 et 18 | 8 et 12,5 |
-
-- Le robot fort ne meurt presque que de ses inattentions : par combo, ses chiffres restent dans le bruit. Les mesures se font avec le joueur moyen.
-- Avec un robot qui se tient en bas (voir Limites), le rouleau ne le touchait jamais et les murs par un côté le tuaient deux fois plus. D'où le rouleau sur toute la hauteur et les trous de murs plus bas (jusqu'aux 2/3 de l'écran, pas plus bas pour la main qui cache l'écran).
-- `npm run equilibrage` ne départage pas des changements aussi fins : une version témoin, qui ne change que les tirages, bouge déjà de 4 points sur la part du niveau (48 % contre 44 %).
-- Écarté par Adrien : allonger la pause après 2 ou 3 hachoirs ou rouleaux, qui enlevait le surplus de difficulté sur l'attaque suivante.
-- Ensuite, à l'instinct et sans robot, choisis par Adrien : pas de hachoir ni de croix juste après un mur, pas de double pluie juste après une pluie, trou de mur jamais sur la tartine, jamais deux respirations d'affilée. Pas retenus : la croix juste après un rouleau (il coupe souvent la seule sortie), et le couteau visé qui rate toujours un joueur qui bouge sans arrêt (idée : 1 couteau sur 3 qui vise là où va la tartine).
-- À surveiller : dès 55 s, après 2 ou 3 hachoirs, l'attaque suivante reste plus dure (+2 à +3 morts pour 100), c'est le point le plus dur qui reste. L'attaque qui suit un rouleau en aller-retour est un peu plus dure (+1 à +3, le plus pour une croix). Pluie en biais : 84 % de survie sans bouger, gardée comme respiration.
-
-**Point du 02/11/2026** : pluies et hachoirs (demandes d'Adrien)
-- Ressentis d'Adrien : pluie puis hachoir trop compliqué, doubles pluies trop rapprochées.
-- Mesuré avec le joueur moyen, 800 essais par enchaînement (mêmes essais que `equilibrage:combos`, avec des suites choisies), et la fréquence sur 80 parties du robot parfait de 40 à 150 s.
-- Pluie puis hachoir : depuis le 01/11, le hachoir ne sort plus juste après une pluie. Avec une attaque entre les deux : +0,8 et +1,0 morts en trop pour 100 à 45 et 65 s, contre +1,0 et +0,4 sans la pluie avant, dans le bruit de mesure. Ce qui restait, c'était l'inverse : hachoir puis pluie, les hachoirs encore en train de tomber.
-- Double pluie puis pluie avec une attaque entre les deux : pas de surplus, avant comme après (0 à +0,5). La règle sert surtout à ne pas empiler deux rideaux de fourchettes.
-
-| | Avant | Après |
-|---|---|---|
-| Doubles pluies suivies d'une pluie ou double pluie avant d'être à mi-chemin | 33 % (18 % juste après) | 0 % |
-| Hachoirs suivis juste après d'une pluie ou double pluie | 21 % | 0 % |
-| Double pluie puis pluie, à 65 s (morts en trop pour 100) | +1,0 | -0,2 |
-| Hachoir puis pluie, à 45 et 65 s | +1,8 et +1,6 | +0,5 et -0,5 |
-| Hachoir puis double pluie, à 65 s | +1,7 | +0,1 |
-| Pluies de fourchettes par minute après 40 s | 11,7 | 9,2 |
-
-- Pluie en biais laissée libre : double pluie puis pluie en biais +0,4, hachoir puis pluie en biais +0,1.
-- Mi-chemin : il reste 7 % des doubles pluies dont la dernière fourchette est encore en bas de l'écran quand la pluie suivante part. Pour attendre qu'elle ait quitté l'écran, mettre `WAIT_PASS` à 1.
-
-**Point du 02/11/2026, soir** : double pluie puis mur (demandes d'Adrien après l'AG)
-- Ressenti d'Adrien : une double pluie puis un mur juste après, trop dur. Ajouter un peu de temps ou ne pas le faire, seulement pour la double pluie, et sans baisser le nombre de murs par minute.
-- Fréquences sur 300 parties du robot parfait de 40 à 150 s :
-
-| | Avant | Après |
-|---|---|---|
-| Murs et murs en série lancés avec des fourchettes de double pluie à l'écran | 14 % | 0 % |
-| Murs par minute | 5,2 | 5,1 |
-| Murs en série par minute | 2,7 | 2,8 |
-| Attaques par minute | 74,9 | 74,9 |
-
-- Mettre le mur de côté sans toucher aux poids en faisait perdre 4 % (7,6 murs par minute contre 8,0) : pendant qu'un mur attend, aucun autre ne peut sortir. D'où les poids un peu montés. À 1,12, le mur restait « parfois » dans Infos, mais il manquait encore 5 % de murs seuls.
-- Le joueur moyen ne voit pas la difficulté : double pluie puis mur lui donnait moins de morts que les deux attaques chacune de leur côté (-4,0 pour 100 à 65 s, 800 essais). Avec une attente, il meurt plutôt un peu plus (+1,4 quand la dernière fourchette est à mi-chemin, +2,2 quand elle a quitté l'écran) : il se tient en bas, là où arrivent les fourchettes quand le mur passe. Règle choisie au ressenti d'Adrien.
-- Essayé puis retiré le même soir : la même règle pour toutes les pluies (droite, en biais, double), qui retirait les murs au lieu de les mettre de côté. Il y avait deux fois moins de murs (5,5 contre 2,8 par minute).
+- Courbe : début trop calme, mur entre 40 et 60 s, puis un tiers des joueurs moyens tués par tranche de 20 s. Courbe actuelle : part du niveau de 41 à 47 %, plus faible bat plus fort de 5,4 à 3,4 %.
+- Écartés : plafond doux à 80 s (plus de chance, 39 %), vitesse maximale plus haute (sans effet), plafond très bas à 60 s (instable), préavis de 0,9 s pour les murs en série (moins efficace que limiter le saut du trou).
+- Plafond : × 2,4, × 2,8, × 3 ou sans limite durcissent la fin pareil, écarts dans le bruit. Le robot fort meurt de ses inattentions, la vitesse pèse peu sur lui. Sans limite : beaucoup trop rapide d'après les joueurs.
+- À surveiller : murs en série par le haut, piège n°1. Avec 0,7 s de préavis, un débutant parcourt 100 px, le trou peut bouger de 140 px.
+- Prod : le jeu ne garde pas l'attaque qui tue. Sur 1 083 parties de joueurs rodés, risque de 21 % (30-40 s) à 44 % (40-50 s) : un vrai mur, que le robot ne montre pas. Morts vers 2 s : sans doute des relances.
+- `npm run equilibrage` ne départage pas des changements fins : une version témoin bouge déjà de 4 points. Utiliser `equilibrage:combos` et le joueur moyen.
+- Enchaînements : pire paire à 45 s de +3,8 à +2,5 morts en trop. Survie sans bouger : éventail à 4 de 98 à 0 %, rouleau de 99 à 65 %.
+- Écarté par Adrien : allonger la pause après 2 ou 3 hachoirs ou rouleaux. Pas retenus : la croix juste après un rouleau (il coupe souvent la seule sortie), et 1 couteau visé sur 3 qui vise là où va la tartine.
+- À surveiller : dès 55 s, après 2 ou 3 hachoirs, l'attaque suivante reste plus dure (+2 à +3 morts pour 100), le point le plus dur. Après un rouleau, +1 à +3, surtout une croix. Pluie en biais : 84 % de survie sans bouger, gardée comme respiration.
+- `waits` : le surplus venait de hachoir puis pluie, pas de pluie puis hachoir (de +1,8 à +0,5 à 45 s). Pluies par minute de 11,7 à 9,2. Biais laissée libre : +0,4 et +0,1.
+- Mi-chemin : 7 % des doubles pluies ont encore une fourchette en bas quand la pluie suivante part. Pour attendre sa sortie : `WAIT_PASS` à 1.
+- `holds`, choisi au ressenti : le joueur moyen ne voit pas la difficulté (-4,0 morts pour 100), et meurt un peu plus avec une attente (+1,4 à +2,2) car il se tient en bas, là où arrivent les fourchettes. Murs avec des fourchettes à l'écran de 14 à 0 %, murs par minute conservés (5,1 et 2,8).
+- Sans toucher aux poids, on perdait 4 % de murs : un mur qui attend bloque les autres. À 1,12, il en manquait encore 5 %.
+- Essayé puis retiré : la même règle pour toutes les pluies, qui retirait les murs (5,5 contre 2,8 par minute).
 
 ## Soirées et classements
 
-- Pas de compte : le téléphone garde un jeton et son profil pour toujours. Le même téléphone qui retape son pseudo retrouve son compte.
-- Pseudo unique sur tout le jeu, de 2 à 16 caractères : lettres latines (accents, œ, æ, ß et ø permis), chiffres, espaces, tirets. Majuscules et accents ne comptent pas pour l'unicité. Il se change dans Paramètres, record et place suivent. Si le classement n'arrive pas juste après, le nouveau pseudo reste affiché (03/11/2026 : avant, « C'est changé. » à côté de l'ancien pseudo).
-- Trois classements : celui de la soirée (pour le lot), et deux généraux permanents, Mobile et PC. À égalité, le premier à avoir fait le temps passe devant.
-- Mobile ou PC (30/10/2026, des joueurs sur PC faisaient des scores bien meilleurs) : chaque partie enregistre l'appareil d'après ce qui a vraiment bougé la tartine, la souris (PC) ou le doigt (Mobile). Sans geste, le jeu suppose d'après l'écran (tactile ou non). Une partie sur PC compte seulement au général PC : jamais pour la soirée, ni pour son succès « Dans le top ». L'accueil d'un PC le dit pendant une soirée. Les records d'avant le 30/10/2026 sont rangés en Mobile. Jusqu'au 31/10/2026, un compte qui terminait une partie sur PC sans avoir jamais joué sur téléphone voyait son ancien record passer en PC : règle retirée, car un compte peut maintenant servir sur plusieurs appareils. bLOOons a été basculé à la main le 30/10/2026 (sauvegarde de ses valeurs d'avant dans `sauvegardes/`). Les classements d'anciennes soirées ne bougent pas. Adrien pense tout remettre à zéro avant la soirée. Limite : un tricheur décidé peut faire passer son PC pour un téléphone dans son navigateur.
-- Écran Classement : les 30 premiers, podium or, argent et bronze, puis ta place exacte si tu n'es pas dedans. La liste défile (remis le 31/10/2026, à la demande d'Adrien ; du 30/10 au 31/10 elle ne défilait pas et se coupait aux 10 premiers ou moins). Ta ligne reste toujours visible, collée en haut ou en bas de la liste quand elle sort de l'écran. Changer d'onglet remonte en haut.
-- L'écran Classement a les onglets Soirée (quand une soirée est annoncée, en cours ou vient de finir), Mobile et PC. Il s'ouvre sur la soirée en cours, sinon sur Mobile, et toujours sur PC depuis un PC. Quand une soirée est annoncée mais pas commencée, l'onglet Soirée donne son nom et « Prochaine soirée lundi 02/11 à 20h00 » (plus sur l'accueil).
-- Fiche joueur (31/10/2026) : toucher une ligne du classement (la sienne comprise) ouvre la fiche du joueur, « Retour » ramène au classement. En haut, son pseudo, puis sa tartine qui flotte avec tous ses skins (garniture, chapeau, côtés, pain). Sous la tartine, toujours deux cases, Mobile et PC : la place au classement en grand (aux couleurs du podium : or, argent, bronze) et le record, ou des tirets s'il n'a pas joué sur cet appareil. En dessous : Parties (jouées, temps de jeu, la somme de toutes ses parties, soirées jouées, meilleure place en soirée, meilleur frôlé), Progression Mobile puis Progression PC (03/11/2026, demande d'Adrien ; avant, une seule, celle de l'appareil du dernier record) : ses 10 derniers records battus sur cet appareil en barres, en secondes, chaque partie qui a battu son record d'alors ; une carte seulement à partir de 2 records ; toutes les barres en jaune, le chiffre du record actuel encadré, Collection (succès et objets débloqués sur le total). Tout en bas, « Depuis le … » et sa dernière partie. Pendant le chargement, des cartes vides gardent la place ; hors ligne, un bouton « Réessayer ». Sur un écran de plus de 900 px : la tartine et les places à gauche, les cartes à droite. Au clavier, Entrée ouvre la fiche et « Retour » rend la main à la même ligne. Meilleur frôlé : la plus longue série de frôlés d'une partie (« Frôlé x12 »), envoyée avec le score (colonne `combo` de `runs`, de 0 à 99, non vérifiée). Les parties d'avant le 31/10/2026 n'en ont pas : « - » tant que le joueur n'a pas rejoué. Code : `profile.js`, route `GET /api/players/:id` (gardée 10 s en mémoire par joueur, sauf un joueur introuvable, `card` dans `routes/player.ts`). Un joueur retiré n'a pas de fiche.
-- La tenue, le nombre de succès et les objets débloqués sont sur le téléphone : il les envoie au serveur (colonne `look` de `profiles`, JSON vérifié par `cleanLook`) au début de chaque partie, et 1,5 s après un changement de tenue ou un succès (`PUT /api/me/look`, seulement si ça a changé). Un joueur qui n'a pas rouvert le jeu depuis le 31/10/2026 a une tartine nature et pas de carte Collection. Rien n'est vérifié : un tricheur peut afficher n'importe quel objet, sans effet sur les classements. Le serveur n'accepte en revanche que des objets qui existent, chacun dans son emplacement (`cleanLook`, d'après `GEAR` et `SPREADS` de `palette.js`), et la fiche ignore le reste : avant le 01/11/2026 (revue de code), une tenue envoyée à la main avec l'aura `constructor` figeait le jeu de tous ceux qui ouvraient la fiche. Le dessin ignore lui aussi tout nom qui n'est pas un vrai objet (`own` dans `sprites.js`), et `npm run test:unit` le vérifie pour chaque emplacement.
-- La tenue suit le compte (01/11/2026, retour d'Adrien après avoir connecté son PC) : chaque changement de tenue fait sur un appareil est daté à l'heure du serveur (`cv-tenue-at`, envoyé dans `at`), et le serveur ne garde que la tenue la plus récente (`lookUpdate` dans `player.ts`, en une requête SQL ; nombres de succès et d'objets au plus haut des deux). Les autres appareils la prennent dans le classement (`me.look`, relu toutes les 30 s à l'accueil) ou dans la réponse de `PUT /api/me/look` (`adoptLook` dans `profile.js`). Un objet pas encore reçu sur l'appareil est porté dès que son succès arrive. Un appareil qui n'a encore rien reçu prend la tenue du compte. Un objet gagné en jouant est mis tout seul (et part sur les autres appareils), un objet reçu d'un autre appareil ou rattrapé ne l'est plus. Avant : un appareil qu'on venait de connecter envoyait sa tartine nature (la fiche montrait 0 succès), puis mettait le premier objet reçu dans chaque emplacement vide (boosters, Surchauffe, pain brûlé, bandeau ninja), et la fiche montrait la tenue du dernier appareil qui avait envoyé la sienne.
-- Une seule soirée à la fois, créée à l'avance dans l'admin pour être annoncée dans le jeu.
-- Fin de soirée stricte (03/11/2026, choix d'Adrien) : seules comptent les parties finies avant la fin, avec 15 s de marge pour le réseau (`LATE_MS` dans `routes/player.ts`). L'écran géant annonce le gagnant (« Bravo X ! ») dès que le chrono tombe à zéro, en direct. Les téléphones affichent « Soirée finie ! » tout de suite, puis « Bravo X ! » quand un classement relu au moins 10 s après les 15 s de marge (le temps du cache du serveur) le confirme : 25 à 55 s après la fin à l'accueil. Revue de code du 03/11/2026 : avec leur dernier classement, qui peut avoir 40 s de retard, ils pouvaient annoncer le mauvais gagnant. Une partie encore en cours à la fin compte seulement au général, et le téléphone l'écrit sous le score : « Soirée finie : partie comptée au général ». Avant : les parties commencées avant la fin comptaient encore 5 min après, et le gagnant n'était annoncé qu'au bout de ces 5 min.
-- Tartine d'or (01/11/2026, demande d'Adrien) : être 1er d'un classement d'au moins 10 joueurs (`WIN_MIN`), celui de la soirée, Mobile ou PC, à n'importe quel moment. Avant, il fallait finir 1er d'une soirée, même à 2 joueurs.
-- Les téléphones relisent le classement toutes les 10 s (30 s sur l'accueil), et plus du tout écran éteint. Le serveur le garde 10 s en mémoire, le général 60 s pendant une soirée : jusqu'à 20 s de retard (70 s pour le général). Ta place après une partie est à jour tout de suite. Une lecture abandonnée par le serveur (requête coupée, erreur passagère à côté) n'est plus attendue au-delà de 5 s (`LOAD_MS` dans `db.ts`, recherche de bugs du 03/11/2026) : avant, ce classement restait bloqué pour de bon sur cette copie du serveur, et les téléphones qui tombaient dessus voyaient « Pas de réseau ».
-- En base : `profiles` (joueurs, record Mobile `best` et record PC `pc_best`, tenue `look`, progression `progress`), `sessions` (une clé par appareil connecté, hachée ; les colonnes `token` et `client_id` de `profiles` ne servent plus), `links` (codes de liaison en cours, hachés), `entries` (record par soirée), `runs` (parties, avec `device`, meilleur frôlé `combo`, `invalid` à 1 pour une partie retirée des records, index `runs_player` pour les fiches), `events` (soirées). Migrations `0007_fiche` et `0008_records` à appliquer en ligne avant le déploiement de la fiche, `0009_comptes` avant celui des sessions, `0010_liaison` avant celui du code de liaison.
-- Nettoyage du 31/10/2026, à la demande d'Adrien (sauvegardes avant dans `sauvegardes/`) : le classement de la soirée Space Tartinade #3 a été vidé. Elle avait été ouverte par erreur le 29/10, puis décalée au 07/11 : 8 lignes et 301 parties, retirées de la soirée mais gardées au général. Les records faits sur le réglage trop facile (parties commencées le 30/10 entre 17h07 et 17h41, vitesse plafonnée à × 2,4, quand des joueurs tenaient 150 s) ont été recalculés sans ces parties : bLOOons PC 151,97 → 142,79 s, Alexisss 73,72 → 52,09 s, Lapin 66,21 → 66,10 s, et alexis et alrd n'ont plus de record (leurs seules parties). Le serveur refuse une partie lancée avec une ancienne version, donc l'heure de début suffit à savoir sur quel réglage elle a été jouée. Les parties restent dans l'historique, marquées `invalid` par la migration `0008_records` : la Progression des fiches les ignore.
+- Pas de compte à créer : le téléphone garde un jeton pour toujours. Le même téléphone qui retape son pseudo retrouve son compte.
+- Pseudo unique, 2 à 16 caractères : lettres latines, chiffres, espaces, tirets. Majuscules et accents ne comptent pas pour l'unicité.
+- Trois classements : la soirée (pour le lot), général Mobile, général PC. À égalité, le premier à avoir fait le temps passe devant.
+- Une seule soirée à la fois, créée à l'avance dans l'admin pour être annoncée.
+- Mobile ou PC : les joueurs sur PC faisaient bien mieux. L'appareil vient de ce qui a bougé la tartine (souris ou doigt), sinon de l'écran. Une partie sur PC ne compte qu'au général PC. Adrien pense tout remettre à zéro avant la soirée. Limite : un tricheur décidé peut faire passer son PC pour un téléphone.
+- Écran Classement : les 30 premiers, puis ta place, ligne toujours visible. Onglet PC d'office depuis un PC.
+- Tartine d'or : 1er d'un classement d'au moins 10 joueurs (`WIN_MIN`), soirée, Mobile ou PC, à n'importe quel moment.
+- Fin stricte : seules comptent les parties finies avant la fin, plus 15 s de marge réseau (`LATE_MS` dans `src/db.ts`). Une partie encore en cours compte au général, et le téléphone le dit.
+- Gagnant : l'écran géant dès le zéro. Les téléphones attendent un classement relu au moins 10 s après les 15 s de marge (25 à 55 s après la fin) : le dernier reçu, parfois vieux de 40 s, annonçait le mauvais gagnant.
+- Relecture : toutes les 10 s, 30 s sur l'accueil, jamais écran éteint. Serveur : 10 s en mémoire, général 60 s pendant une soirée. Ta place après une partie est à jour tout de suite.
+- Une lecture abandonnée par le serveur n'est plus attendue au-delà de 5 s (`LOAD_MS`) : sinon ce classement restait bloqué pour de bon sur cette copie du serveur.
+
+### Fiche joueur
+
+- Toucher une ligne ouvre la fiche (`profile.js`, `routes/card.ts`, 10 s en mémoire). Un joueur retiré n'en a pas.
+- Tenue, nombre de succès et objets sont sur le téléphone, envoyés dans `look` au début de chaque partie et 1,5 s après un changement.
+- Tenue non vérifiée, sans effet sur les classements. Le serveur n'accepte que des objets qui existent (`cleanLook`), et le dessin ignore tout nom inconnu (`own` dans `art/kit.js`) : une aura `constructor` figeait le jeu de ceux qui ouvraient la fiche.
+- La tenue suit le compte : chaque changement est daté à l'heure du serveur, le plus récent gagne (`lookUpdate`, en une requête SQL). Un appareil neuf prend la tenue du compte (`adoptLook`).
+- Un objet gagné en jouant est mis et part partout. Un objet reçu ou rattrapé ne l'est pas : un appareil neuf mettait le premier reçu.
+
+### Base
+
+- `invalid` à 1 dans `runs` : partie retirée des records, gardée, ignorée par la Progression.
+- Le serveur refuse une partie d'une ancienne version : l'heure de début suffit à savoir sur quel réglage elle a été jouée, pour nettoyer des records.
 
 ## Triche et sécurité
 
-- Le serveur refuse un score plus long que le temps réellement écoulé (15 s de marge, voir plus bas) ou au-delà de 15 min. Un score renvoyé deux fois ne compte qu'une fois.
-- Signalés dans l'admin : le 1er d'un classement quand il dépasse le 2e de plus de 30 % (et fait au moins 60 s), et une partie ralentie ou mise en pause (plus de 15 % et 15 s de temps réel en trop). Avant le 30/10/2026 : tout record de 90 s ou plus, devenu banal avec la nouvelle courbe. L'admin a les onglets Soirée, Mobile et PC.
-- Faille connue : un faux score plausible (vers 60 s) passe inaperçu. Rejouer les parties à partir des gestes pour la bloquer : écarté par Adrien le 31/10/2026.
-- Jetons des joueurs, identifiants des téléphones, connexions et invitations admin : rangés hachés (SHA-256). Une copie de la base ne permet pas de se faire passer pour quelqu'un.
-- Limites : 20 inscriptions par minute et par téléphone, 600 par minute et par adresse IP (tout le lieu partage souvent la même sur le wifi). Une inscription au pseudo invalide ne compte pas.
-- Admin : 30 échecs par minute et par adresse IP. Une bonne clé ou une bonne invitation passe toujours : elles sont bien trop longues pour être devinées, et un invité malveillant ne peut pas bloquer la connexion des admins.
-- 10 débuts de partie par 10 s et 5 changements de pseudo par minute, par joueur.
-- Un joueur retiré ne monte plus, ni au général ni dans le classement de la soirée.
-- En-têtes de sécurité (`public/_headers`) : pas de script externe, pas d'affichage dans le cadre d'un autre site.
-- Faille connue (audit du 02/11/2026) : les lectures publiques (`/api/board`, `/api/feed`, `/api/ecran`, `/api/players/…`) n'ont pas de limite. Un script en boucle pourrait user les 100 000 requêtes du jour (voir Technique) et couper l'API pour tout le monde jusqu'à 1 h. Un limiteur dans le Worker n'y peut rien, la requête compte déjà : il faut une règle Cloudflare devant le Worker, possible seulement avec un nom de domaine (voir À faire).
+- Score refusé s'il dépasse le temps mesuré par le serveur, avec 15 s de marge (`SLACK_MS`), ou 15 min. Avec 5 s, un départ lent sur réseau saturé faisait refuser un score honnête. Contrepartie : un tricheur peut gagner 15 s.
+- Signalés dans l'admin : le 1er quand il dépasse le 2e de plus de 30 % (au moins 60 s), et une partie ralentie ou en pause (plus de 15 % et 15 s de temps réel en trop).
+- Faille connue : un faux score plausible (vers 60 s) passe inaperçu. Rejouer les parties depuis les gestes : écarté par Adrien.
+- Jetons, identifiants, connexions et invitations hachés (SHA-256) : une copie de la base ne permet pas d'usurper un compte.
+- Limites : 20 inscriptions par minute et par téléphone, 600 par IP (tout le lieu partage souvent la même). 10 débuts de partie par 10 s et 5 changements de pseudo par minute, par joueur.
+- Admin : 30 échecs par minute et par IP. Une bonne clé ou invitation passe toujours : un invité malveillant ne peut pas bloquer les admins.
+- Un joueur retiré ne monte plus. Renvoyer son ancien record ne le remet pas dans les classements en mémoire : il pouvait être « Bravo » à la fin de la soirée.
+- En-têtes (`public/_headers`) : pas de script externe, pas d'affichage dans le cadre d'un autre site.
+- Faille connue : les lectures publiques (`/api/board`, `/api/feed`, `/api/ecran`, `/api/players/…`) n'ont pas de limite. Un script en boucle peut user les 100 000 requêtes du jour. Un limiteur dans le Worker n'y peut rien, la requête compte déjà : il faut une règle Cloudflare, possible seulement avec un nom de domaine (voir À faire).
 
 ## Admin
 
 - Accès : Paramètres, onglet Admin, sur un téléphone connecté. Ou `/admin`, ou 5 appuis rapides sur « Collectif Tartine Sauvage ».
-- Dans l'onglet Admin, le cadre de `/admin` prend la hauteur de son contenu (`fitAdmin` dans `settings.js`) : toute la page défile d'un seul tenant et « Retour » est tout en bas, comme sur les autres pages (03/11/2026, demande d'Adrien ; avant, l'admin défilait dans son cadre et « Retour » restait collé en bas de l'écran).
-- Premier accès avec la clé admin (`cle-admin.txt`) : elle crée un compte propriétaire et reste la clé de secours.
-- Le propriétaire invite : prénom et rôle, puis un lien à usage unique valable 48 h. Dans l'appli installée, on colle le lien dans « Lien d'invitation reçu ». Un admin déjà connecté qui rouvre un lien d'invitation arrive sur son tableau de bord ; si sa connexion a été retirée, l'invitation s'affiche (02/11/2026 : avant, un lien déjà utilisé resté dans l'adresse cachait le tableau de bord).
-- Réunir deux comptes (04/11/2026, demande d'Adrien : des joueurs iPhone se refaisaient un compte, voir Appli et réseau) : carte « Réunir deux comptes », pour le propriétaire seulement, car c'est définitif. On tape le pseudo à garder puis celui à réunir dedans (majuscules et accents ne comptent pas). Une confirmation montre les deux comptes avec record et parties ; « Annuler » ne change rien. Même fusion que « J'ai un code » côté joueur (`mergeInto` dans `link.ts`) : le pseudo gardé prend le meilleur record des deux, toutes les parties, les soirées et les succès ; les appareils des deux comptes restent connectés, sur le compte gardé ; l'autre pseudo disparaît et redevient libre. Refusé si l'un des deux est retiré du classement : le réintégrer d'abord. Route `POST /api/admin/merge` : sans `confirm: true`, elle renvoie seulement l'aperçu.
-- Rôles : propriétaire (soirées, joueurs, équipe) et admin (soirées, joueurs). Chaque téléphone connecté peut être retiré, sauf le dernier propriétaire. Le retirer annule aussi les invitations qu'il a créées et pas encore utilisées. Une connexion inutilisée pendant 30 jours expire.
-- Tableau de bord : soirée (créer, renommer, changer début et fin), classements soirée et général, bandeau rouge des records à vérifier, « Retirer » un joueur de tous les classements, et pour le propriétaire les erreurs des joueurs (voir Erreurs des joueurs). Une heure de fin déjà passée demande confirmation : le classement de la soirée se ferme tout de suite, et une soirée fermée ne se modifie plus (02/11/2026).
-- Joueur retiré (03/11/2026, recherche de bugs) : renvoyer le score de son ancien record ne le remet plus dans les classements gardés en mémoire par le serveur. Avant, il y revenait pendant 10 à 60 s, et pouvait être « Bravo » à la fin de la soirée sur les téléphones.
-- Joueurs actifs (03/11/2026, demande d'Adrien) : un point jaune devant le pseudo de ceux qui ont fini une partie ces 10 dernières minutes (`last_at` de `profiles`, `ACTIVE_MS`), et au-dessus de la liste « 3 joueurs actifs ». Rien n'est écrit en plus dans la base. Un joueur dans sa toute première partie n'a pas encore de point. Après une fusion, le compte gardé prend la date de partie la plus récente des deux (03/11/2026 : avant, il perdait son point).
-- Les nouveaux pseudos des 15 dernières minutes apparaissent dans la liste même sans partie : on peut retirer un pseudo déplacé affiché sur l'écran géant. Depuis le 03/11/2026, aussi ceux qui ont déjà joué hors de la soirée (sur PC, ou juste avant l'ouverture) : avant, l'écran géant les affichait sans que l'onglet Soirée les montre. Ils y sont listés sans score : leur record hors soirée ne leur donne ni rang ni « meilleur score » de la soirée.
+- Premier accès avec `cle-admin.txt` : crée un compte propriétaire et reste la clé de secours.
+- Le propriétaire invite : lien à usage unique valable 48 h. Dans l'appli installée, le coller dans « Lien d'invitation reçu ».
+- Rôles : propriétaire (soirées, joueurs, équipe, erreurs) et admin (soirées, joueurs). Chaque téléphone peut être retiré, sauf le dernier propriétaire, avec ses invitations pas utilisées. Connexion inutilisée 30 jours : expirée.
+- Heure de fin déjà passée : confirmation, le classement se ferme tout de suite. Une soirée fermée ne se modifie plus.
+- Réunir deux comptes (propriétaire, définitif) : pseudo à garder, pseudo à réunir, confirmation avec les deux comptes. Même fusion que côté joueur (`mergeInto`). Refusé si l'un est retiré. `POST /api/admin/merge` sans `confirm: true` renvoie seulement l'aperçu.
+- Joueurs actifs : point jaune pour une partie finie ces 10 dernières minutes (`ACTIVE_MS`), rien d'écrit en plus.
+- Nouveaux pseudos des 15 dernières minutes listés même sans partie et sans score, pour retirer un pseudo déplacé affiché sur l'écran géant.
 
 ## Écran géant
 
-- `/ecran`, en paysage : top 10 de la soirée (du général hors soirée) à gauche, QR code, nombre de joueurs et fil en direct à droite.
-- En haut : compte à rebours de fin ou de début. Dernier quart d'heure (03/11/2026, demande d'Adrien) : le chrono passe en gros chiffres rouges qui tremblent, plus fort pendant la dernière minute, où les chiffres battent chaque seconde. À zéro : « Bravo X ! » en grand (plus petit si le pseudo est long), la ligne du 1er grossit et brille, et une pluie de confettis tombe une fois. Plus de « Résultats dans » (voir la fin de soirée stricte). Si la soirée suivante commence moins de 24 h après, « Prochaine soirée dans » sous le top de l'ancienne (avant : « Début dans », qui faisait croire que l'ancienne allait commencer).
-- Fil « En direct » (agrandi le 03/11/2026) : les 6 derniers records et nouveaux pseudos des 15 dernières minutes, dans un cadre avec un point rouge qui clignote. Le QR code a rapetissé pour lui faire de la place.
-- Écrans en direct : 20 au plus, et 4 par adresse IP (03/11/2026, recherche de bugs). Au-delà, un écran de cette adresse qui ne répond plus depuis 1 min (`STALE_MS` dans `src/slots.ts`) laisse sa place : une seule machine ne peut plus prendre toutes les places, et un écran qui se reconnecte après une coupure chasse sa propre connexion morte. Si les 4 répondent, le nouveau est refusé et reste sans direct (classement relu toutes les 2 s). Revue de code du 03/11/2026 : avant, le plus ancien était fermé même s'il répondait ; il se reconnectait une seconde plus tard et chassait le suivant, en boucle dès 5 écrans sur le même wifi.
-- En direct (03/11/2026, choix d'Adrien) : pendant une soirée, jusqu'à 1 min après ses derniers scores, et dans les 24 h avant, l'écran ouvre une WebSocket (`/api/live`) vers un Durable Object (`Live` dans `src/live.ts`, en hibernation). À chaque record de soirée (record Mobile hors soirée), nouveau joueur, pseudo changé, joueur retiré ou soirée modifiée, le serveur le prévient (`tell`, sans retarder la réponse au joueur), et il dit « change » aux écrans. Ils relisent aussitôt `GET /api/ecran` (une fois par seconde au plus, pour ne pas suivre une rafale d'inscriptions) : top 10 lu en base sans cache, nombre de joueurs et fil. Le test navigateur vérifie qu'un record s'affiche en moins de 1,5 s. Les lignes du classement glissent jusqu'à leur nouvelle place. Avant : jusqu'à 20 s de retard (une demande toutes les 10 s, et un classement gardé 10 s en mémoire par le serveur).
-- Secours du direct : si la WebSocket tombe, nouvel essai après 1, 2, 5, 10 puis 30 s, et en attendant une demande toutes les 2 s avec `?v=` (repère du dernier record et du dernier inscrit) : le serveur lit 2 lignes et répond « rien de nouveau » tant que rien n'a bougé. Une relecture complète toutes les 15 s quand même, car le repère ne bouge pas quand un joueur est retiré ou change de pseudo (revue de code du 03/11/2026 : avant, un pseudo retiré restait affiché jusqu'au record suivant). WebSocket ouverte : une relecture complète par minute quand même. Ping toutes les 25 s, auquel le Durable Object répond sans se réveiller : sans réponse en 10 s, l'écran repasse au secours. 20 écrans au plus, 20 connexions par minute et par adresse (`LIVE_LIMIT`).
-- Panneau « Nouveau n°1 » en grand pendant 6 s quand un joueur bat le temps du 1er (pas quand le 1er est retiré). Ni quand un 1er retiré est réintégré : seulement pour un record plus récent que le dernier record connu à la lecture d'avant (03/11/2026, `at` dans le top et `last` dans `/api/ecran`). Comparer à l'heure de la lecture d'avant ne suffisait pas : un record noté juste avant cette lecture mais enregistré juste après n'était pas fêté.
-- À l'heure du début, l'écran relit le classement tout de suite (03/11/2026 : avant, « Début dans 0:00 » et le classement général jusqu'à une minute). Après chaque annonce du direct, il relit aussi 11 s plus tard : une copie du serveur qui n'a pas encore vu le changement garde au plus 10 s l'ancienne heure de fin ou l'ancien général.
-- « Plein écran » empêche la mise en veille. Après une mise en ligne, la page se recharge seule, sauf en plein écran : elle attend qu'on en sorte, pour ne pas perdre le plein écran pendant la soirée.
-- Hors ligne (02/11/2026) : après 2 demandes ratées, « Pas de réseau : classement de 21h04 » s'affiche en rouge sous le compte à rebours. Le compte à rebours suit l'heure même sans réseau : « Bravo » à l'heure prévue (avant, il restait sur « Fin dans 0:00 »). L'écran ne demande rien quand son onglet est caché (WebSocket fermée), et seulement toutes les minutes sans soirée en cours, juste finie ou dans les 24 h (avant : toutes les 10 s, environ 17 000 requêtes par jour pour un onglet oublié).
+- `/ecran`, en paysage : top 10 de la soirée (du général hors soirée), QR code, nombre de joueurs, fil des 6 derniers records et nouveaux pseudos des 15 dernières minutes.
+- Dernier quart d'heure : chiffres rouges qui tremblent. À zéro : « Bravo X ! » et confettis.
+- « Nouveau n°1 » pendant 6 s, seulement pour un record plus récent que le dernier connu (`at`, `last`), pas pour un 1er retiré ou réintégré. Comparer à l'heure de lecture ratait un record enregistré pendant la lecture.
+- « Plein écran » empêche la veille. Après une mise en ligne, la page se recharge seule, sauf en plein écran : elle attend qu'on en sorte.
+- Direct : pendant une soirée, 1 min après ses derniers scores et dans les 24 h avant, WebSocket (`/api/live`) vers un Durable Object (`Live`, hibernation). À chaque record, joueur, pseudo, retrait ou soirée modifiée, il dit « change » et les écrans relisent `GET /api/ecran` (une fois par seconde au plus). Un record s'affiche en moins de 1,5 s.
+- WebSocket ouverte : relecture complète par minute, ping toutes les 25 s (réponse sans réveil), secours après 10 s sans réponse.
+- Secours : nouvel essai après 1, 2, 5, 10 puis 30 s, demande toutes les 2 s avec `?v=` (le serveur lit 2 lignes), relecture complète toutes les 15 s car le repère ne bouge pas pour un joueur retiré ou renommé.
+- Relecture 11 s après chaque annonce : une copie du serveur garde 10 s l'ancien état.
+- Places : 20 écrans, 4 par IP, 20 connexions par minute (`LIVE_LIMIT`). Un écran muet depuis 1 min laisse sa place (`STALE_MS`). Si les 4 répondent, le nouveau reste sans direct : fermer le plus ancien créait une boucle dès 5 écrans sur le même wifi.
+- Hors ligne : « Pas de réseau : classement de 21h04 » après 2 demandes ratées. Le compte à rebours suit l'heure.
+- Onglet caché : aucune demande. Sans soirée proche : une par minute. Toutes les 10 s, un onglet oublié faisait 17 000 requêtes par jour.
 
 ## Son
 
-- En local (`LOCAL`, téléphone sur le wifi compris), musique et bruitages sont coupés à chaque chargement (demande d'Adrien, 01/11/2026). Les boutons les rallument jusqu'au rechargement suivant.
-- Musique : `public/music/theme.m4a` (ou `.mp3`), hors git pour les droits et le poids : à remettre avant de déployer depuis un autre PC. En prod : « Roundabout » de Blacklolita, en attendant les morceaux des collègues. Demander l'accord de l'artiste avant une diffusion plus large.
-- Elle ne joue qu'en partie et repart du début à chaque partie, pour suivre la montée de la difficulté. Hors partie, seulement 2 s d'aperçu quand on lâche le curseur. Rallumer le bouton Musique ne lance plus rien (01/11/2026, Adrien trouvait que la musique partait dans l'accueil).
-- Coupée et en boucle : elle joue jusqu'à 83,1 s (la voix finit de retomber), saute à la montée de 131,9 s qui mène au second passage énergique, puis reboucle sur la montée après 208,7 s. Coupes calées sur le tempo (172 BPM) et les débuts de mesure, (`MUSIC_PARTS` dans `audio.js`). Le morceau est décodé une fois au lancement, ses passages recollés en mémoire avec un fondu de 15 ms aux jointures, puis joué en boucle à l'échantillon près par une seule source (`stitch`) : plus aucun saut. Approximatives en attendant une version montée par un DJ.
-- À la mort, elle passe « sous l'eau » puis s'éteint (2,5 s), programmé sur l'horloge audio.
-- Moteur refait le 31/10/2026 après une analyse des bugs sur iPhone (musique qui partait au menu, impossible à couper, qui ne revenait pas, qui saccadait) : plus d'élément `<audio>`, tout passe par Web Audio. iOS relançait tout seul un `<audio>` après un appel, depuis le centre de contrôle ou les AirPods, chaque saut dans le morceau faisait un trou, et le mode audio du téléphone changeait à chaque partie. Maintenant : un seul état voulu (partie en cours, musique allumée, page visible, ou aperçu), recalculé à chaque évènement (`reconcile`) ; fondus et étouffement sur l'horloge audio ; volume et coupure sur un gain permanent. `navigator.audioSession` en « ambient » (choix d'Adrien, comme la plupart des jeux) : sur iPhone, le bouton silencieux coupe tout le jeu, et la musique d'une autre appli (Spotify) continue par-dessus. Ce mode a un bug connu d'iOS (contexte qui ne repart pas après l'arrière-plan, bug WebKit 281955) : rattrapé par la surveillance du contexte, recréé au toucher suivant. « playback » ferait l'inverse (son même en silencieux, Spotify en pause). Mémoire : environ 60 Mo pour le morceau décodé, pic d'environ 150 Mo pendant le décodage. Le morceau est toujours téléchargé en entier (le serveur ne sert pas les demandes « Range »), et seulement quand la musique est allumée : au démarrage, ou au moment où on la rallume (01/11/2026, revue de code : avant, il était téléchargé et décodé même coupée).
-- Recalage sur le chrono : seulement au-delà de 1,5 s d'écart, au plus toutes les 5 s, par un fondu de 50 ms (`DRIFT`, `RESYNC_S`). La musique n'est pas encore calée sur les attaques : mieux vaut un petit décalage qu'un saut.
-- Règle des navigateurs : le son ne démarre qu'après un vrai toucher. Le contexte audio est surveillé : bloqué, figé ou réveil refusé (bugs connus d'iOS, surtout au retour d'arrière-plan et dans l'appli installée), il est recréé au toucher suivant. En arrière-plan, la musique s'arrête et le contexte est suspendu.
-- Crédits (Infos, onglet Crédits, `renderCredits` dans `catalog.js`) : Collectif (Tartine Sauvage, lien Instagram, `CREW_URL`), Développeur (Adrien Morand, lien LinkedIn, `DEV`), Musique et Bruitages, avec un bouton pour écouter chaque son (03/11/2026, avant dans l'admin).
-- Changer de musique : remplacer le fichier, mettre à jour `MUSIC_CREDIT` et `MUSIC_PARTS` (`[[0, durée]]` pour tout jouer en boucle) dans `audio.js`, puis `npm run deploy`.
-- Bruitages Mixkit dans `public/sfx/` (départ, frôlé, mort, record, 1re place). Licence gratuite d'après la FAQ Mixkit, texte officiel à relire avant une diffusion hors soirée. Changer : remplacer le fichier, ou une ligne dans `SOUNDS` (`audio.js`).
-- Volumes Musique et Bruitages dans Paramètres. Curseur à 0 : silence, sans aperçu. Sur iPhone, le bouton silencieux coupe tout le jeu (mode « ambient »).
-- Diagnostic du son (31/10/2026, `diag.js`) : `?diag=son` affiche un panneau (contexte audio, musique, niveau réel dans le circuit) et tient le journal de tout ce que fait le son. En local, le journal part en direct vers le serveur de dev (`POST /api/diag`, lignes `[son]` du terminal), pour suivre un téléphone sur le wifi (`http://192.168.1.92:8787/?diag=son` chez Adrien). Sur iPhone, en prod, le jeu envoie seul jusqu'à 4 rapports par session : ses 2 premières parties, et les anomalies (musique hors partie, silence en partie, contexte figé, bloqué ou réveil refusé). Table `sound_reports` (date, type, version, appli installée ou non, navigateur, 150 dernières lignes du journal), gardée 14 jours, sans pseudo ni identifiant, 60 rapports par minute et par adresse IP (tout le lieu partage souvent la même sur le wifi), 2000 rapports au plus. Lire : `npx wrangler d1 execute croute-que-croute --remote --command "SELECT created_at, kind, standalone, ua FROM sound_reports ORDER BY id DESC LIMIT 20"`. Tester sur un vrai iPhone sans Mac : impossible sur le PC (le WebKit de Playwright sous Windows n'a pas Web Audio) ; BrowserStack Live transmet le son d'un vrai iPhone (compte à créer).
-- Pas de son sur les annonces d'attaque : ça avantagerait ceux qui jouent avec le son.
+- Pas de son sur les annonces : ça avantagerait ceux qui jouent avec le son.
+- En local (`LOCAL`), son coupé à chaque chargement.
+- Bruitages Mixkit dans `public/sfx/`, `SOUNDS` dans `audio.js`. Licence gratuite d'après la FAQ, texte officiel à relire avant une diffusion hors soirée.
+- Musique : `public/music/theme.m4a` ou `.mp3`, hors git : à remettre avant de déployer depuis un autre PC. En prod : « Roundabout » de Blacklolita, demander l'accord de l'artiste avant une diffusion plus large.
+- Changer : remplacer le fichier, `MUSIC_CREDIT` et `MUSIC_PARTS` (`[[0, durée]]` pour tout jouer), puis `npm run deploy`.
+- Elle ne joue qu'en partie et repart du début, pour suivre la difficulté. Hors partie, 2 s d'aperçu quand on lâche le curseur.
+- Coupes calées sur 172 BPM, approximatives (`MUSIC_PARTS`). Passages recollés en mémoire et joués par une seule source (`stitch`) : aucun saut.
+- À la mort, « sous l'eau » puis extinction (2,5 s). Recalage sur le chrono au-delà de 1,5 s d'écart, toutes les 5 s au plus (`DRIFT`) : mieux vaut un petit décalage qu'un saut.
+
+### Pièges iPhone
+
+- Web Audio, jamais `<audio>` : iOS le relançait seul après un appel ou depuis les AirPods, chaque saut faisait un trou, le mode audio changeait à chaque partie.
+- Un seul état voulu, recalculé à chaque évènement (`reconcile`). Fondus sur l'horloge audio, volume sur un gain permanent.
+- `navigator.audioSession` en « ambient » : le bouton silencieux coupe le jeu, Spotify continue. « playback » ferait l'inverse. Bug iOS connu du mode (WebKit 281955), rattrapé par la surveillance.
+- Le son ne démarre qu'après un vrai toucher. Contexte bloqué, figé ou réveil refusé (retour d'arrière-plan, appli installée) : recréé au toucher suivant.
+- Mémoire : 60 Mo décodé, pic de 150 Mo. Morceau téléchargé en entier (pas de « Range »), seulement si la musique est allumée.
+
+### Diagnostic
+
+- `?diag=son` : panneau et journal. En local, lignes `[son]` du terminal, pour suivre un téléphone sur le wifi.
+- iPhone en prod : 4 rapports par session au plus (2 premières parties, anomalies). Table `sound_reports`, 14 jours, 2 000 au plus, 60 par minute et par IP, sans pseudo ni identifiant.
+- Lire : `npx wrangler d1 execute croute-que-croute --remote --command "SELECT created_at, kind, standalone, ua FROM sound_reports ORDER BY id DESC LIMIT 20"`.
+- Pas de vrai test sur PC : le WebKit de Playwright sous Windows n'a pas Web Audio. BrowserStack Live transmet le son d'un vrai iPhone.
 
 ## Succès
 
-- 34 succès en 7 familles (survie, adresse, collection, habitué, soirées, le ciel, secrets) : liste et conditions dans `achievements.js`. Refonte du 01/11/2026 à la demande d'Adrien : les familles mélangeaient tout (Noël avec le classement, « Tout vu » avec les frôlés) et les 7 touchers du ciel noyaient les vrais secrets. Supprimés : « Joyeux Noël » (jouer en décembre, personne ne l'avait), « Chiffre rond » (finir pile sur une seconde, doublon de « Six Seven ») et « Ça change du beurre » (première garniture, doublon du message « Garniture … ») ; aucun ne donnait d'objet. Le même jour, « Fidèle du Space » (jouer à 3 soirées, personne ne l'avait) a été retiré à la demande d'Adrien. Ajoutés : « Intouchable » (frôlé x10), « Prudente » (tenir 60 s sans un frôlé), « Tout le tiroir » (se faire tartiner par chacune des 5 armes, retenues sur le téléphone dans `killers`), « Sur son 31 » (porter un chapeau, des côtés et un pain), « Première soirée » (jouer pendant une soirée) et « Tout le ciel » (toucher les 7 surprises du ciel). Aucun ne donne d'objet.
-- Un succès avec un indice (`hint` : les secrets et le ciel) montre « ??? » tant qu'il n'est pas trouvé.
-- Badge « Nouveau » sur les succès gagnés depuis la dernière visite de l'écran (`seen` dans `cv-succes`).
-- Un succès qui donne un objet de tenue l'écrit sous sa condition (« Débloque : … »), même pour un secret pas encore trouvé. Le nom de l'objet reste grisé tant que le succès n'est pas obtenu.
-- Écran Succès refait le 01/11/2026 après une critique de design demandée par Adrien : avant, il montrait ce qu'on a, jamais à quel point on est proche du suivant. En haut, une barre et « 31 / 34 » en gros (avant, un petit texte gris). Chaque famille affiche son compteur (« 5 / 6 », en moutarde quand elle est finie), et le ciel a une phrase d'intro au lieu de répéter « dans le ciel de l'accueil » dans ses 7 indices. Un succès à compteur pas encore obtenu a une barre d'avancement (`GOALS` dans `achievements.js`) : record pour la survie, parties, garnitures, attaques vues, armes subies et surprises du ciel. Le record et le nombre de parties sont gardés dans `cv-succes` (`best`, `runs`), repris du classement quand il arrive, et jamais sous le dernier palier gagné. Les récompenses sont en crème au lieu de moutarde, qui reste aux titres et aux étoiles. Un lecteur d'écran entend « Obtenu », « À débloquer » ou « Secret à trouver ». Les frôlés disent tous « Enchaîner 5 frôlés », « Faire 20 frôlés dans une partie » (avant « Faire un frôlé x5 » et « 20 frôlés dans une partie »).
-- Frôlés : « Insaisissable », faire un frôlé x5 (5 frôlés à moins de 1,5 s d'écart), a remplacé « Ça passe » (5 frôlés dans une partie) le 30/10/2026. Très dur : sur 300 parties du robot, x3 dans 10 % des parties, x4 dans 2 %, x5 jamais (un humain qui cherche les frôlés fait mieux). « Ça passe crème » (20 frôlés dans une partie) reste, et débloque la Hitbox depuis le 31/10/2026.
-- Heure : le secret « Tartine de minuit » (lancer une partie entre minuit et 3 h), d'après l'heure du téléphone.
-- « Première soirée » : seulement pour une partie jouée au doigt pendant une soirée, comptée à la fin de la partie (02/11/2026, après l'AG : une partie à la souris sur PC le donnait aussi, alors que le classement de la soirée ne compte que les téléphones). Ceux qui l'ont eu ainsi le gardent.
-- Secrets du ciel (31/10/2026) : « Ding ! », « Des bonbons ou un sort », « À l'abordage », « Chasse aux œufs », « Ho ho ho », « Rencontre du 3e type » et « Road trip spatial », toucher le grille-pain, la citrouille, la planète pirate, l'œuf de Pâques, le père Noël, la soucoupe volante ou la Tesla (étoiles filantes, `passerAt` dans `scene.js`) quand ils passent sur l'accueil. Le succès s'affiche sous le compte à rebours de l'accueil (`menuToast`, sous le titre quand il n'y a pas de compte à rebours), avec « déjà gagné » aux touchers suivants.
-- Temps de cuisson : 10, 30, 60, 90, 120 et 150 s (« Tartine de légende », la vitesse maximale). Avant le 30/10/2026 : 10, 20, 30, 45, 60 et 80 s, devenus trop faciles avec la nouvelle courbe. Les succès 20, 45 et 80 s déjà gagnés disparaissent du compte.
-- Secret « En détente » : rester 3 s sans bouger (5 s avant le 30/10/2026 : un joueur immobile survivait 5 s dans 0 % des cas, 3 s dans 5 à 15 %).
-- Garnitures : 4 puis toutes gagnées. Le secret « Ouaf » : se faire tartiner par un couteau à la pâtée pour chien.
-- Secret « Six Seven » (31/10/2026) : finir une partie à 67 s, peu importe les centièmes (de 67,00 à 67,99 s). Il donne les mains Six Seven.
-- Gardés sur le téléphone (`cv-succes`), sans effet sur le classement, et copiés sur le serveur depuis le 31/10/2026 (`progress` dans `profiles`) avec les attaques vues et les garnitures débloquées. À chaque chargement du classement, le téléphone envoie les siens avec la tenue (`PUT /api/me/look`) ; le serveur les réunit à ceux des autres appareils du compte (date la plus ancienne pour un succès) et renvoie le total, que le téléphone ajoute sans fête. La tenue portée et les réglages restent propres à chaque appareil. Sur iPhone, Safari et l'appli installée ne partagent pas leurs données locales.
-- Rattrapage (31/10/2026) : un succès ne se gagnait que pendant la partie, donc jamais après coup. Un record fait avant l'ajout d'un palier (le 94 s d'Adrien, fait le 30/10 à 17h51, avant le succès des 90 s ajouté à 18h37) ou sur un autre téléphone ne donnait rien. Maintenant le jeu rattrape ce que le serveur sait : les temps de cuisson d'après le meilleur record (Mobile ou PC), à chaque lecture du classement, et une fois à l'ouverture, d'après la fiche du joueur, première soirée, top 10 et Tartine d'or (1er d'un classement d'au moins 10 joueurs), et les secrets « Tartinée express » et « Six Seven » d'après ses parties enregistrées (`feats` de `GET /api/players/:id`, `onHistory` dans `achievements.js`). Un objet rattrapé est mis seulement si son emplacement est vide. Les autres succès (frôlés, attaques vues, garnitures, en détente, la nuit, Noël, Ouaf) restent sur le téléphone : le serveur ne les connaît pas.
-- Le nombre de parties prend le plus grand entre le compteur du téléphone et celui du serveur. Les succès de nombre de parties et la Tartine d'or vus au classement sont rattrapés sans être mis (03/11/2026) : un appareil neuf d'un compte de 50 parties ou plus mettait la brioche, datait sa tenue du moment et effaçait celle du compte sur tous ses appareils. La Tartine d'or gagnée par la partie qui vient de finir est toujours mise.
+- 34 succès en 7 familles : liste, conditions et objets dans `achievements.js`.
+- Insaisissable (5 frôlés enchaînés) est très dur : sur 300 parties du robot, x3 dans 10 %, x4 dans 2 %, x5 jamais.
+- En détente : 3 s sans bouger. Un joueur immobile survit 5 s dans 0 % des cas, 3 s dans 5 à 15 %.
+- Six Seven : finir de 67,00 à 67,99 s. Tartine de minuit : heure du téléphone, de minuit à 3 h.
+- Ciel : toucher grille-pain, citrouille, pirate, œuf, père Noël, soucoupe ou Tesla sur l'accueil (`touchSky`, `passerAt`).
+- Première soirée : seulement au doigt, comptée à la fin de la partie, car la soirée ne compte que les téléphones.
+- Retirés, à ne pas refaire : Joyeux Noël et Fidèle du Space (personne ne les avait), Chiffre rond et Ça change du beurre (doublons).
+- Gardés dans `cv-succes`, sans effet sur le classement, copiés sur le serveur (`progress`). Le serveur réunit ceux des appareils (date la plus ancienne), et le téléphone ajoute le total sans fête.
+- Rattrapage de ce que le serveur sait : temps de cuisson d'après le meilleur record à chaque classement ; à l'ouverture, première soirée, top 10, Tartine d'or, Tartinée express et Six Seven (`feats`, `onHistory`). Le reste vit sur le téléphone.
+- Objet rattrapé : mis seulement si l'emplacement est vide. Succès de parties et Tartine d'or vus au classement ne sont pas mis : un appareil neuf mettait la brioche, datait sa tenue et effaçait celle du compte partout.
 
 ## Appli et réseau
 
-- Installable : bouton Installer sur Android, Partager puis « Sur l'écran d'accueil » sur iPhone. Le jeu s'ouvre sans réseau s'il a déjà été ouvert une fois.
-- Compte sur plusieurs appareils (31/10/2026) : Paramètres, « Autre appareil », « Mon code » (« Afficher mon code » avant le 03/11/2026) montre un QR code et un code de 8 caractères (sans 0, O, 1, I ni L), valable 10 min et une seule fois ; un nouveau code annule l'ancien, et un code expiré est remplacé tant que l'écran reste ouvert. Si la demande échoue (pas de réseau, trop de codes), l'écran réessaie toutes les 20 s. Sur le nouvel appareil, scanner le QR avec l'appareil photo ouvre le jeu avec le code déjà rempli, il reste à toucher « Connecter » (`#lier=` dans l'adresse, jamais envoyé au serveur ; pas de connexion automatique, pour qu'un lien reçu ne branche pas quelqu'un sur le compte d'un autre sans qu'il le voie), ou bien « J'ai déjà un compte » sur l'accueil puis taper le code (minuscules et espaces acceptés). Chaque appareil a sa propre clé (`sessions`), les succès et garnitures suivent par la progression gardée sur le serveur, la tenue par `look` (le dernier changement gagne, voir Soirées et classements). Essais limités à 20 par minute et par adresse IP, 5 codes par minute et par compte. Code : `account.js`, `routes/link.ts` (table `links`, codes hachés), QR fabriqué par le serveur avec la bibliothèque `qrcode` et dessiné par le téléphone. Sur iPhone, l'appli installée ne partage pas son stockage avec Safari : le compte y suit tout seul depuis iOS 17.2 (voir juste en dessous), sinon y taper le code plutôt que scanner. Fusion : un appareil déjà connecté à un autre compte tape le code dans Paramètres, « Autre appareil », « J'ai un code » (ou scanne le QR, qui ouvre les Paramètres). La carte l'explique (03/11/2026, demande d'Adrien : les joueurs ne savaient pas qu'ils pouvaient réunir deux comptes) : une phrase dit que « J'ai un code » réunit deux comptes (« Un compte sur chaque appareil ? », pas « pseudo », pour que les joueurs comprennent de quoi on parle), et le détail s'ouvre avec « J'ai un code » (quel appareil affiche le code, celui dont on garde le pseudo, et ce qu'on garde ; avant, le même jour, ce détail était toujours affiché et faisait passer le Son sous l'écran d'un petit téléphone). Un seul parcours est ouvert à la fois : « J'ai un code » ferme la confirmation de « Déconnecter les autres », et l'inverse (avant, les deux s'empilaient dans la carte). Les erreurs du code et de « Déconnecter les autres » sont en rouge, comme celles du pseudo (avant, en gris). L'écran du code le rappelle sous « J'ai déjà un compte ». Si la fusion ou la connexion échoue côté serveur, le code reste valable (02/11/2026). Le jeu demande d'abord « Réunir « B » avec « A » ? » sans utiliser le code, puis « Réunir » fait tout en une fois sur le serveur : on garde le compte qui a affiché le code (A), avec le meilleur record Mobile et le meilleur PC des deux (avec leur date ; à égalité, le plus ancien, qui passe devant au classement), les parties additionnées, la plus ancienne date d'inscription, les soirées réunies (meilleur score et parties additionnées si les deux ont joué la même), les succès et garnitures réunis ; les parties et tous les appareils de B passent sur A, et le compte B est supprimé, son pseudo redevient libre. Refusée si l'un des deux comptes est retiré du classement. Si l'appareil avait été sorti de son compte entre-temps (« Déconnecter les autres » sur un autre appareil), le code le branche simplement sur l'autre compte, et le jeu le dit (avant le 01/11/2026, sans rien dire). L'appareil qui a fusionné récupère tout de suite les succès et garnitures réunis (la synchro repart quand le compte change) ; celui qui a affiché le code les récupère en revenant de l'écran du code, ou à la relance. L'écran du code ne voit pas qu'il a été utilisé : il reste affiché jusqu'à Retour. « Déconnecter les autres » (même carte, avec confirmation) sort tous les autres appareils du compte et annule le code en cours (`DELETE /api/me/devices`, 5 par minute et par compte) : si quelqu'un a utilisé ton code avant toi, il revient au choix du pseudo, et son ancien appareil ne peut plus reprendre ton pseudo. Boutons « Copier le code » sous le code et « Copier le lien » sur l'écran du QR du jeu (31/10/2026), avec une copie de secours si le presse-papiers est refusé (`copy` dans `settings.js`). Depuis le 02/11/2026 : un QR de liaison scanné sur un appareil déjà connecté attend la fin de la partie en cours pour ouvrir les Paramètres, et si la clé de l'appareil est refusée, le code va dans l'écran « J'ai déjà un compte » au lieu d'être perdu. « Déconnecter les autres » répond à chaque fois (avant, ses boutons restaient grisés après le premier essai), et « Valider » du code de fusion est grisé pendant la demande. Depuis le 03/11/2026 (recherche de bugs) : si la réponse de « Connecter » se perd, le même appareil peut réessayer le même code pendant 5 min (`RETRY_MS`) et reçoit une nouvelle clé. Avant, le code était déjà utilisé et le nouvel essai disait « Code inconnu ou expiré ». Un autre appareil ne peut toujours pas s'en servir, et « Déconnecter les autres » l'annule. Une réponse de code qui arrive après « Déconnecter les autres » n'ouvre plus « Réunir » en même temps que la confirmation. Revue de code du 03/11/2026 : si la base plante pendant « Connecter », le code redevient tel qu'il était (avant, le même appareil restait sur « Erreur serveur » jusqu'à un nouveau code), et un réessai qui croise une première demande lente garde sa clé (seules les clés plus anciennes de l'appareil sont remplacées). Depuis le 03/11/2026 : un QR scanné sur un appareil dont le compte revient par le cookie propose bien « Réunir » (avant, le code était perdu) ; une fusion faite dont la réponse se perd relit le classement et affiche « Comptes réunis » (avant, « Pas de réseau », puis « Code inconnu » au nouvel essai).
-- Compte gardé dans l'appli installée (01/11/2026, demande d'Adrien : un joueur qui jouait dans Safari puis installait le jeu devait refaire un compte). Le jeu garde la clé du joueur dans le stockage local, que Safari ne copie pas dans l'appli. Depuis iOS 17.2, il copie en revanche les cookies du site au moment de « Sur l'écran d'accueil ». Le serveur range donc aussi la clé dans un cookie (`cv_cle`, renvoyé par `/api/board` quand il manque ou a changé ; `HttpOnly`, `Secure`, `SameSite=Strict`, limité à `/api`, gardé 400 jours). Au démarrage, un téléphone sans clé demande une fois `POST /api/resume` : si le cookie mène à un appareil connecté, il reprend cette clé ; sinon le cookie est effacé. Marche aussi quand Safari a effacé le stockage local (il peut le faire après 7 jours sans visite) ou que le joueur l'a vidé sans toucher aux cookies. Ne marche pas pour une appli installée avant la création du compte, ni avant iOS 17.2 : le code de « Autre appareil » reste là pour ça. Sur Android, l'appli installée partageait déjà tout avec Chrome. En local, le cookie demande `localhost` (attribut `Secure`) : pas depuis un téléphone sur le wifi. Si cette demande échoue faute de réseau, elle est refaite au classement suivant (02/11/2026 : avant, une seule fois par ouverture, et créer un pseudo écrasait le cookie de l'ancien compte). Depuis le 03/11/2026 (recherche de bugs), tant qu'elle n'a pas répondu, réseau saturé ou erreur du serveur, le choix du pseudo n'apparaît pas et le jeu redemande toutes les 3 s : avant, il le proposait, et le joueur se créait un 2e compte en perdant l'accès au premier. Pareil après une connexion par code réussie dont le classement n'arrive pas : le jeu garde la clé reçue.
-- Navigateurs des applis (04/11/2026, demande d'Adrien : des joueurs iPhone perdaient leur compte). Sur iPhone, Safari, l'appli de l'écran d'accueil, Chrome et le navigateur intégré à Snapchat ou Instagram ont chacun leur stockage : un compte créé dans l'un n'existe pas dans les autres, et le cookie ne passe que de Safari à l'appli, au moment de l'installer. Les rapports de son de la prod montraient des iPhone qui jouaient dans Snapchat : clemou jouait dans Snapchat le 02/11, et le lendemain un iPhone de même version créait CLEMoucrazy dans l'appli de l'écran d'accueil, à la seconde près de ses premières parties. Le QR code des affiches ouvre toujours Safari, jamais l'appli : un compte resté dans l'appli ou dans Snapchat n'y est pas. Depuis :
-  - Dans Snapchat, Instagram, Facebook, Messenger ou TikTok (reconnus par le user agent, `inapp.js`), l'accueil dit « Tu es dans Snapchat : ton compte n'existera que dans Snapchat. Ouvre plutôt le jeu dans Safari », avec « Copier le lien » (Chrome au lieu de Safari sur Android). L'installation n'y est pas proposée (impossible depuis une appli) : Paramètres dit d'ouvrir d'abord le jeu dans le navigateur. Pas reconnu : le navigateur que Discord ou WhatsApp ouvrent dans l'appli, qui se présente comme Safari.
-  - « Ce pseudo est déjà pris » à l'inscription ajoute « C'est toi ? Touche « J'ai déjà un compte » ». L'écran du code dit où le trouver : Paramètres, Autre appareil, « Mon code », là où le compte est déjà ouvert, y compris sur le même iPhone (l'appli, Safari ou Snapchat).
-  - Si le joueur n'a plus accès à son ancien compte (Safari l'a effacé, Snapchat vidé), l'admin réunit ses deux comptes (voir Admin).
-- Chaque `npm run deploy` met en ligne une nouvelle version, avec son numéro (voir Versions). Le jeu se recharge seul quand elle change, seulement à l'accueil et pas pendant qu'on tape son pseudo ou un code : jamais en partie ni sur l'écran de mort, où « Rejouer » ou « Accueil » le recharge et ramène à l'accueil. Le serveur refuse les demandes d'une ancienne version (inscription, pseudo, tenue, code), sauf le départ d'une partie lancée par la version juste d'avant (`APP_PREVIOUS`, donné par `npm run deploy`). Avant le 01/11/2026, une partie lancée juste après une mise en prod était refusée et le jeu se rechargeait en pleine partie : un joueur l'a pris pour un gel. Pour une version encore plus vieille, la partie continue sans compter, et l'écran de mort le dit.
-- Une partie ne compte que si le réseau passe au départ (la demande abandonne après 8 s). Elle compte aussi quand on touche Jouer avant que le classement soit chargé, si le téléphone a déjà un compte. À la fin, l'envoi du score réessaie pendant 2 min (« Envoi en attente… »), même si on ferme le jeu ou si le serveur a une erreur passagère. Renvoyer le score d'une partie déjà enregistrée redonne la même réponse, record et N°1 compris.
-- Toute autre demande au serveur abandonne après 10 s, avec « Pas de réseau, réessaie. » (02/11/2026 : avant, l'inscription, le classement, la fiche ou le code d'un autre appareil pouvaient rester bloqués plusieurs minutes sur un wifi saturé). Même règle dans l'admin.
-- Connexion avec Google (04/11/2026), pour retrouver son compte sur un nouvel appareil sans code. Lier : Paramètres, Autre appareil. Se connecter : « J'ai déjà un compte », « Continuer avec Google ». Elle ne crée pas de compte : sans compte lié, le joueur reçoit un message.
-  - Le serveur parle à Google lui-même (`src/routes/google.ts`) : `POST /api/google/start` note la demande dans `google_states` (10 min, un seul usage) et pose le cookie `cv_google`, puis Google renvoie sur `GET /api/google/retour`, qui compare le cookie, échange le code et revient sur `/#google=<résultat>`. Aucun script Google dans la page, la politique de sécurité ne change pas.
-  - On demande `openid email`, parce que la documentation de Google l'exige, mais on ne garde que `sha256("google:" + sub)` dans `profiles.google_hash`. L'adresse e-mail n'est jamais enregistrée. La page `/confidentialite` le dit, elle est liée depuis Crédits.
-  - Bouton caché sans clés, dans les navigateurs d'applis (Google y refuse la connexion) et dans l'appli iPhone de l'écran d'accueil (la page de Google s'y ouvre dans un autre stockage : à vérifier sur un vrai iPhone avant de l'ouvrir).
-  - Mise en route, à faire par Adrien : projet Google Cloud, écran de consentement « Externe » avec la page `/confidentialite`, identifiant OAuth « Application Web » avec comme URI de redirection `https://<adresse du jeu>/api/google/retour`, puis `npx wrangler secret put GOOGLE_CLIENT_ID` et `npx wrangler secret put GOOGLE_CLIENT_SECRET`. Migration 0014 à appliquer en ligne avant la mise en ligne. Google vérifie le domaine de l'adresse : `workers.dev` risque de bloquer, à faire de préférence avec tartinesauvage.fr.
-  - Jamais essayée avec le vrai Google : les tests remplacent sa réponse.
-- Envoi du score tout ou rien (03/11/2026, recherche de bugs) : la partie est marquée finie dans la même opération que le record, le nombre de parties et la soirée, en dernière écriture : les autres ne passent que si elle n'est pas encore finie. Deux envois à la même milliseconde comptent donc une seule partie (04/11/2026, `runs.test.mjs`). Avant, une erreur passagère entre les deux perdait le record, et le renvoi le prenait pour « déjà enregistré ». Un renvoi qui arrive après la fin de la soirée la garde si la partie, elle, a été enregistrée à temps (avant, le téléphone affichait « partie comptée au général »). Deux envois du même score en même temps reçoivent la même réponse, record compris.
-- Le serveur refuse un score plus long que le temps qu'il a mesuré entre le départ et l'envoi, avec 15 s de marge (`SLACK_MS`). Avant le 31/10/2026, 5 s : un départ lent sur un réseau saturé pouvait faire refuser un score honnête. Contrepartie : un tricheur peut gagner jusqu'à 15 s.
-- Téléphone verrouillé ou appli quittée en pleine partie : la partie se met en pause, « Touche pour reprendre » (un simple clic suffit aussi sur ordinateur, même très bref). Le temps de pause compte dans le temps réel vu par le serveur, tout comme un envoi en retard : l'admin affiche alors « partie ralentie, mise en pause ou envoyée en retard ». Le doigt posé est relâché à la mise en pause (03/11/2026), au cas où un navigateur oublierait de le lever en arrière-plan : la tartine resterait figée.
-- Partie comptée même si le classement ne répond pas juste après l'inscription (03/11/2026, recherche de bugs, probable à l'ouverture d'une soirée sur un wifi saturé). Avant, toutes ses parties passaient en « Entraînement » sans rien envoyer, tant qu'il enchaînait « Rejouer ». Seul un joueur retiré joue sans envoyer. Une clé refusée au départ d'une partie relit le classement, qui ramène au choix du pseudo.
-- Records hors ligne (01/11/2026) : à chaque classement reçu, le jeu garde sur le téléphone les records du joueur, Mobile et PC (`cv-records`, `keepBests` dans `api.js`). Sans réseau, ils servent à dire « Nouveau record » et à l'afficher sur l'accueil. Avant, un joueur qui ouvrait le jeu hors ligne repartait de 0 et faisait un nouveau record à chaque partie. Un score fait hors ligne n'est pas envoyé : il ne compte que sur le téléphone, jusqu'au prochain classement reçu (vraiment depuis le 03/11/2026 : avant, il restait jusqu'au rechargement de la page et cachait un vrai record fait ensuite). Pour une partie comptée, l'écran de fin suit la réponse du serveur : « Nouveau record » s'affiche si le serveur l'a compté comme record, et s'enlève sinon (par exemple un score arrivé après la fin de la soirée, compté au général). Un classement demandé avant que le score soit enregistré, mais arrivé après, n'efface plus le nouveau record (revue de code du 03/11/2026 : l'ancien revenait jusqu'au classement suivant). Depuis le 03/11/2026, aussi quand le réseau tombe après un classement reçu : la partie suivante compare au record qu'on vient de faire (avant, chaque partie au-dessus de l'ancien record était fêtée « Nouveau record »).
-- Le cache hors ligne (`sw.js`) est renouvelé à chaque version. Il est rempli fichier par fichier, avec un 2e essai pour un fichier raté (03/11/2026 : avant, un seul fichier raté sur un réseau saturé, et rien n'était gardé ; le jeu ne s'ouvrait pas hors ligne avant une autre visite). Un fichier qui ne répond pas en 3 s (`NET_MS`, wifi saturé mais connecté) est pris dans le cache s'il y est ; la version du réseau le remplace dès qu'elle arrive. Si le jeu plante au démarrage (par exemple des fichiers de deux versions mélangés par un réseau instable juste après une mise en ligne), `boot.js` recharge la page une fois, au plus toutes les 15 s. Si la page et le code ne sont pas de la même version sans plantage au démarrage (un élément attendu par `screens.js` manque dans la page), le jeu se recharge aussi une fois (`applyUpdate`, au plus toutes les 15 s) : le 01/11/2026, juste après la mise en ligne de la 0.46.1, Paramètres plantait sur un Android avec une page d'avant la 0.44. Une erreur dans une image du jeu n'arrête plus l'animation : l'image suivante est demandée avant de dessiner (02/11/2026). L'écran géant est dans le cache (03/11/2026, recherche de bugs) : ouvert pendant une coupure de wifi, il s'affiche et se reconnecte tout seul. Avant, il montrait l'accueil du jeu et y restait. Une page autre que le jeu ne retombe jamais sur l'accueil du jeu. L'admin et ses scripts passent toujours par le réseau, jamais par le cache : juste après une mise en ligne, sur un réseau lent, l'ancien script sur la nouvelle page laissait l'admin vide. L'écran géant installe lui-même le cache (revue de code du 03/11/2026 : avant, seulement si le jeu ou l'admin avait déjà été ouvert dans ce navigateur, donc jamais sur un PC qui n'ouvre que `/ecran`). Sans réseau, l'onglet Admin des Paramètres ne remonte plus de fausse erreur dans « Erreurs des joueurs ».
-- Écran de chargement (31/10/2026) : la tartine de l'icône flotte, ses réacteurs crépitent, une barre avance à chaque fichier reçu (`boot.js`, sans jamais dire fini) puis se remplit quand le jeu est prêt, la police chargée et le classement reçu (ou au bout de 2,5 s, pour jouer hors ligne), et l'écran s'efface (`loader.js`). Sécurité : il disparaît au bout de 10 s quoi qu'il arrive. Juste avant, sur l'appli installée, le téléphone montre lui-même l'icône sur fond nuit : ça, on ne peut pas l'animer.
-- Petits téléphones (30/10/2026, des joueurs avaient des lags) : le jeu mesure sa fluidité. Si l'image médiane dépasse 20 ms (moins de 50 images par seconde ; 24 ms avant le 30/10/2026 au soir), il baisse sa netteté par paliers (`QUALITY` dans `scene.js` : densité 2, 1,5, 1,25 puis 1) et s'en souvient sur ce téléphone pendant 12 h (`cv-qualite`, avec l'heure). Avant le 03/11/2026, pour toujours : un iPhone en économie d'énergie, bloqué à 30 images par seconde, restait flou ensuite. Densité 2 au plus pour tout le monde (avant : 2,5). La couche des annonces n'est plus effacée quand elle est déjà vide. Tartine en image : gain faible, pas fait.
-- Planètes en image (31/10/2026, il restait des joueurs avec des lags) : chaque planète du fond est dessinée dans une image à part (`art` dans `scene.js`), puis seulement collée à chaque image du jeu. Les planètes fixes ne sont dessinées qu'une fois, les animées sont redessinées 30 fois par seconde (20 puis 15 fois quand le téléphone a baissé sa netteté, `REDRAW_S`). `reach` dans `BODIES` donne la taille de l'image (anneaux, ondes, Tung et sa batte compris). Mesuré sur un PC, par image : violette 3,4 ms, citrouille 3,8, lune de Méliès 3,6, grille-pain 2,2, crêpe et enceintes environ 1 ms en direct, contre 0,1 à 0,2 ms une fois en image. Fond du jeu opaque (`alpha: false`), plus léger à afficher. Jusqu'au 03/11/2026, l'image était posée au pixel près : à l'accueil, une planète avance d'environ un pixel toutes les 3 images, elle restait donc immobile puis sautait, et le défilement saccadait (vu par Adrien). Sa hauteur n'est plus arrondie : elle avance un peu à chaque image. Mettre les couverts en image est plus lent. Réécrire des bouts en Rust (WebAssembly) n'aiderait pas : le dessin se fait dans le navigateur, et le reste du calcul est devenu négligeable.
-- Vieux téléphones (03/11/2026, dernière passe avant la soirée du 07/11, demande d'Adrien). Mesuré dans Edge en simulant un téléphone 8 et 12 fois plus lent qu'un PC, écran 360 × 740 en densité 3 :
-  - Chrono : pendant la partie, il est réécrit 30 fois par seconde au plus (`DIGITS_MS` dans `main.js`) au lieu de chaque image. Chaque réécriture oblige le navigateur à recalculer la page (styles, mise en page, peinture) : deux fois moins de ce travail, de 99 à 50 ms par tranche de 5 s mesurées sur PC. Les centièmes défilent toujours, et la valeur exacte s'affiche dès que la partie s'arrête.
-  - Calques vides retirés : la couche des annonces (`fx`) est masquée quand rien n'y est dessiné (accueil, écran de fin, classement), et celle des confettis (`party`) est masquée et vidée entre deux fêtes. Avant, ces deux calques transparents plein écran restaient à assembler à chaque image, même vides.
-  - Préchargement : `index.html` annonce les 53 modules du jeu (`modulepreload`), que le téléphone demande tous d'un coup. Avant, chaque fichier ne découvrait ses imports qu'une fois reçu : cinq vagues l'une après l'autre. Mesuré en local avec 300 ms de latence : jeu prêt en 3,9 s au lieu de 4,6 s. Pas mesuré en ligne, où le gain devrait être plus grand (le serveur y envoie les fichiers en parallèle). Liste vérifiée par `shell.test.mjs`.
-  - Fiche d'un joueur : tartine dessinée en densité 2 au plus, comme le reste du jeu (avant : la densité du téléphone, jusqu'à 3).
-  - iPhone d'avant iOS 15.4 (recherche de bugs du 03/11/2026) : la tartine et les couverts ne se dessinaient pas, et le chrono restait à 0,00 (`Object.hasOwn`, trop récent, appelé à chaque image). Remplacé partout, et `shell.test.mjs` l'interdit dans le code du navigateur.
-  - Essayés et pas gardés : étoiles dessinées par paquets (moins d'appels, mais plus lent à peindre), chrono isolé du reste de la page (`contain`, gain trop faible). Le calcul du jeu n'est pas en cause : la vérification d'une attaque prend 0,05 ms en moyenne et 2,3 ms au pire sur PC.
+- Installable : Installer sur Android, Partager puis « Sur l'écran d'accueil » sur iPhone. S'ouvre sans réseau après une première visite.
+
+### Compte sur plusieurs appareils
+
+- « Autre appareil », « Mon code » : QR et code de 8 caractères (sans 0, O, 1, I, L), 10 min, une seule fois. Un nouveau code annule l'ancien. 20 essais par minute et par IP, 5 codes par minute et par compte.
+- Scanner remplit le code (`#lier=`, jamais envoyé au serveur), il reste à toucher « Connecter » : un lien reçu ne branche personne à son insu. Sinon « J'ai déjà un compte ».
+- Réponse perdue : le même appareil réessaie le même code 5 min (`RETRY_MS`). Base en panne pendant « Connecter » : le code redevient intact. Un QR scanné attend la fin de la partie.
+- Fusion : « J'ai un code » sur un appareil connecté. « Réunir « B » avec « A » ? » sans consommer le code, puis tout en une fois sur le serveur. Échec : code toujours valable. Réponse perdue : relit le classement, « Comptes réunis ».
+- On garde le compte qui a affiché le code : meilleurs records avec leur date (à égalité, le plus ancien), parties additionnées, soirées, succès, garnitures, appareils. L'autre pseudo redevient libre. Refusée si un compte est retiré.
+- « Déconnecter les autres » : sort les autres appareils et annule le code (5 par minute et par compte). Quelqu'un qui a utilisé ton code revient au choix du pseudo.
+
+### Compte gardé par cookie
+
+- Safari ne copie pas le stockage local dans l'appli installée, mais depuis iOS 17.2 il copie les cookies à l'installation. Le serveur range donc la clé dans un cookie (`cv_cle`, `HttpOnly`, `Secure`, `SameSite=Strict`, limité à `/api`, 400 jours). Un téléphone sans clé demande `POST /api/resume`.
+- Sert aussi quand Safari efface le stockage (possible après 7 jours sans visite). Pas pour une appli installée avant le compte, ni avant iOS 17.2 : utiliser le code. En local, `Secure` demande `localhost`.
+- Tant que `resume` n'a pas répondu, pas de choix du pseudo, nouvel essai toutes les 3 s : sinon le joueur se créait un 2e compte. Après une connexion par code dont le classement n'arrive pas, le jeu garde la clé.
+
+### Navigateurs des applis
+
+- Sur iPhone, Safari, l'appli, Chrome et le navigateur de Snapchat ou Instagram ont chacun leur stockage. Le QR des affiches ouvre toujours Safari. Vu en prod : un joueur dans Snapchat recrée un compte dans l'appli.
+- Dans Snapchat, Instagram, Facebook, Messenger ou TikTok (`inapp.js`), l'accueil dit d'ouvrir le jeu dans Safari (Chrome sur Android), avec « Copier le lien ». Pas d'installation proposée. Pas reconnu : Discord et WhatsApp, qui se présentent comme Safari.
+- « Ce pseudo est déjà pris » renvoie vers « J'ai déjà un compte », et l'écran du code dit où le trouver.
+- Plus d'accès à l'ancien compte : l'admin réunit les deux.
+
+### Connexion avec Google
+
+Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Paramètres, Autre appareil. Se connecter : « J'ai déjà un compte », « Continuer avec Google ». Elle ne crée pas de compte : sans compte lié, le joueur reçoit un message. Un compte Google ne se lie qu'à un joueur.
+
+- Le serveur parle à Google lui-même (`src/routes/google.ts`) : `POST /api/google/start` note la demande dans `google_states` (10 min, un seul usage) et pose le cookie `cv_google`, puis Google renvoie sur `GET /api/google/retour`, qui compare le cookie, échange le code et revient sur `/#google=<résultat>`. Aucun script Google dans la page, la politique de sécurité ne change pas.
+- On demande `openid email`, parce que la documentation de Google l'exige, mais on ne garde que `sha256("google:" + sub)` dans `profiles.google_hash`. L'adresse e-mail n'est jamais enregistrée. La page `/confidentialite` le dit, elle est liée depuis Crédits.
+- Bouton caché sans clés, dans les navigateurs d'applis (Google y refuse la connexion) et dans l'appli iPhone de l'écran d'accueil (la page de Google s'y ouvre dans un autre stockage : à vérifier sur un vrai iPhone avant de l'ouvrir).
+- Mise en route, à faire par Adrien : projet Google Cloud, écran de consentement « Externe » avec la page `/confidentialite`, identifiant OAuth « Application Web » avec comme URI de redirection `https://<adresse du jeu>/api/google/retour`, puis `npx wrangler secret put GOOGLE_CLIENT_ID` et `npx wrangler secret put GOOGLE_CLIENT_SECRET`. Migration 0014 à appliquer en ligne avant la mise en ligne. Google vérifie le domaine de l'adresse : `workers.dev` risque de bloquer, à faire de préférence avec tartinesauvage.fr.
+- Jamais essayée avec le vrai Google : les tests remplacent sa réponse.
+
+### Mises à jour
+
+- Le jeu se recharge seul quand la version change, seulement à l'accueil, pas pendant qu'on tape. Jamais en partie ni sur l'écran de mort, où « Rejouer » ou « Accueil » le fait.
+- Le serveur refuse les demandes d'une ancienne version, sauf le départ d'une partie lancée par la version juste d'avant (`APP_PREVIOUS`) : un rechargement en pleine partie passait pour un gel. Plus vieille encore : la partie continue sans compter, l'écran de mort le dit.
+- Page et code de deux versions sans plantage (élément attendu par `screens.js` absent) : rechargement une fois (`applyUpdate`, toutes les 15 s au plus).
+
+### Parties et score
+
+- Une partie ne compte que si le réseau passe au départ (8 s), même si le classement n'est pas encore là (wifi saturé). Seul un joueur retiré joue sans envoyer.
+- Toute autre demande abandonne après 10 s : « Pas de réseau, réessaie. »
+- L'envoi du score réessaie 2 min (« Envoi en attente… »), même si on ferme le jeu. Le renvoi d'une partie enregistrée redonne la même réponse.
+- Tout ou rien : la partie est marquée finie dans la même opération que le record et la soirée, en dernière écriture. Deux envois à la même milliseconde comptent une partie. Un renvoi après la fin de la soirée la garde.
+- Téléphone verrouillé : pause, « Touche pour reprendre ». Le temps compte pour le serveur, d'où l'alerte « partie ralentie » de l'admin. Le doigt posé est relâché.
+- Hors ligne : les records sont gardés (`cv-records`, `keepBests`). Un score hors ligne n'est pas envoyé et ne compte que jusqu'au prochain classement.
+- L'écran de fin suit la réponse du serveur : « Nouveau record » s'enlève si le serveur ne le compte pas. Un classement demandé avant le score, arrivé après, ne l'efface pas.
+
+### Cache et chargement
+
+- `sw.js` : renouvelé à chaque version, rempli fichier par fichier avec un 2e essai. Un seul fichier raté faisait tout perdre.
+- Fichier sans réponse en 3 s (`NET_MS`, wifi saturé) : pris dans le cache, remplacé dès que le réseau arrive.
+- Plantage au démarrage (fichiers de deux versions) : `boot.js` recharge une fois, toutes les 15 s au plus.
+- Une erreur dans une image n'arrête pas l'animation : l'image suivante est demandée avant de dessiner.
+- L'écran géant installe lui-même le cache, pour un PC qui n'ouvre que `/ecran`. Une page autre que le jeu ne retombe jamais sur l'accueil du jeu.
+- L'admin passe toujours par le réseau : l'ancien script sur la nouvelle page la laissait vide.
+- Écran de chargement : attend le classement 2,5 s au plus, pour jouer hors ligne, et disparaît à 10 s quoi qu'il arrive.
+
+### Performances
+
+- Image médiane au-dessus de 20 ms : netteté baissée par paliers (`QUALITY` : 2, 1,5, 1,25, 1), gardée 12 h. Pour toujours, un iPhone en économie d'énergie restait flou.
+- Planètes en image (`art` dans `scene.js`) : fixes dessinées une fois, animées 30 fois par seconde au plus (`REDRAW_S`). Mesuré : 2,2 à 3,8 ms en direct, 0,1 à 0,2 ms en image.
+- Hauteur des planètes non arrondie : au pixel près, elles restaient immobiles puis sautaient.
+- Chrono réécrit au plus toutes les 30 ms (`DIGITS_MS` dans `run.js`) : chaque réécriture recalcule la page. Mesuré : de 99 à 50 ms par tranche de 5 s sur PC.
+- Calques vides masqués (`fx`, `party`) : sinon deux calques plein écran à assembler à chaque image.
+- `modulepreload` des 58 modules dans `index.html` : prêt en 3,9 s au lieu de 4,6 s avec 300 ms de latence.
+- iPhone d'avant iOS 15.4 : `Object.hasOwn`, appelé à chaque image, empêchait tout dessin. Remplacé, interdit par `shell.test.mjs`.
+- Essayés et pas gardés : tartine ou couverts en image, étoiles par paquets, chrono en `contain`, Rust (WebAssembly) : le dessin se fait dans le navigateur, et une vérification d'attaque prend 0,05 ms.
 
 ## Versions
 
-- Ajoutées le 01/11/2026 à la demande d'Adrien : savoir sur quelle version on joue, et de quelle version vient chaque erreur. Le numéro s'affiche en bas des Paramètres (« Version 0.44.0 bêta », « Version dev » en local). Le jeu, l'admin et les erreurs des joueurs gardent aussi le commit, par exemple `0.44.0+d7379fd`.
-- Le numéro est dans `package.json` (`version`). Le monter avant chaque mise en prod : `npm run deploy` refuse un numéro déjà en ligne ou plus petit. Après la mise en ligne, il pose le tag git `v0.44.0` sur le commit et l'envoie sur GitHub. Depuis le 03/11/2026, le tag ne lance plus Safari : Safari tourne avant, et `npm run deploy` exige qu'il soit vert, comme Tests.
-- Quel chiffre monter (règles choisies le 01/11/2026). Si une mise en prod mélange plusieurs choses, on monte le chiffre le plus à gauche concerné, et ceux à sa droite repartent à 0.
+- Le numéro s'affiche en bas des Paramètres. Les erreurs gardent aussi le commit (`0.44.0+d7379fd`).
+- Le numéro est dans `package.json`. Le monter avant chaque mise en prod : `npm run deploy` refuse un numéro déjà en ligne ou plus petit, puis pose le tag `v0.44.0` et l'envoie sur GitHub.
+- Quel chiffre monter. Si une mise en prod mélange plusieurs choses, on monte le chiffre le plus à gauche concerné, et ceux à sa droite repartent à 0.
   - 1er chiffre : 0 tant que le jeu est en bêta. Passe à 1.0.0 quand Adrien décide la sortie de bêta, par exemple pour la première soirée ouverte au public. Ensuite, seulement pour un changement qui casse l'existant : classement remis à zéro, comptes à refaire.
-  - 2e chiffre : une nouveauté que le joueur voit ou peut faire. Nouvelle attaque, skin, écran, option, nouvelle règle d'enchaînement, ou attaque qui change de comportement (le rouleau qui fait l'aller-retour).
-  - 3e chiffre : tout le reste. Correction de bug, réglage d'un chiffre (vitesse, taille d'un trou), texte, performances, changement invisible pour le joueur.
-- Numéros donnés après coup le 01/11/2026 (demande d'Adrien) aux 70 mises en ligne d'avant, retrouvées avec leur commit dans les sessions de Claude Code (ligne « Version en ligne : » de `npm run deploy`). Cloudflare en compte 75 : les 5 autres n'ont pas laissé de trace. Chacune a son tag git (`v0.1.0` à `v0.43.1`) : `git show v0.26.3` montre le code de cette version, et `git describe --tags <commit>` retrouve la version d'un ancien identifiant comme `mvxswkrk-bdb42a4`. Le classement nouveauté ou correctif a été fait d'après les messages des commits.
-- Historique (une ligne par nouveauté ; la colonne de droite compte les mises en ligne de correctifs qui ont suivi) :
+  - 2e chiffre : une nouveauté que le joueur voit ou peut faire. Nouvelle attaque, skin, écran, option, nouvelle règle d'enchaînement, ou attaque qui change de comportement.
+  - 3e chiffre : tout le reste. Correction de bug, réglage d'un chiffre, texte, performances, changement invisible pour le joueur.
+- Chaque version a son tag (`git show v0.26.3`). `git describe --tags <commit>` retrouve la version d'un ancien identifiant comme `mvxswkrk-bdb42a4`.
+- La colonne de droite compte les mises en ligne de correctifs qui ont suivi (vide : aucune).
 
 | Version | Date | Nouveautés | Correctifs ensuite |
 |---|---|---|---|
-| 0.1 | 28/10 | première mise en ligne : jeu, classement de soirée, appli installable, musique | 2 |
-| 0.2 | 28/10 | appli admin avec invitations et rôles |  |
-| 0.3 | 28/10 | jeu et admin dans une seule appli, musique en prod |  |
-| 0.4 | 28/10 | boutons musique et sons, musique calée sur la partie |  |
+| 0.1 | 28/10 | première mise en ligne : jeu, classement, appli, musique | 2 |
+| 0.2 | 28/10 | appli admin avec invitations et rôles | |
+| 0.3 | 28/10 | jeu et admin dans une seule appli | |
+| 0.4 | 28/10 | boutons musique et sons, musique calée sur la partie | |
 | 0.5 | 28/10 | bruitages | 1 |
 | 0.6 | 28/10 | croix, couloir, double pluie, tartinades rares | 1 |
 | 0.7 | 28/10 | soirées et classements, profil gardé, classement général | 1 |
-| 0.8 | 28/10 | nom de soirée modifiable, page Infos qui défile |  |
-| 0.9 | 28/10 | annonces des attaques en pastilles |  |
+| 0.8 | 28/10 | nom de soirée modifiable, page Infos qui défile | |
+| 0.9 | 28/10 | annonces des attaques en pastilles | |
 | 0.10 | 29/10 | Paramètres, installation, partage, QR code, crédits | 1 |
-| 0.11 | 29/10 | choix des commandes : joystick ou pavé |  |
-| 0.12 | 29/10 | une seule commande : glisser partout |  |
-| 0.13 | 29/10 | confettis sur un nouveau record ou la 1re place |  |
-| 0.14 | 29/10 | volumes musique et bruitages |  |
-| 0.15 | 29/10 | alerte triche dans l'admin et l'écran géant |  |
+| 0.11 | 29/10 | choix des commandes : joystick ou pavé | |
+| 0.12 | 29/10 | une seule commande : glisser partout | |
+| 0.13 | 29/10 | confettis sur un record ou la 1re place | |
+| 0.14 | 29/10 | volumes musique et bruitages | |
+| 0.15 | 29/10 | alerte triche dans l'admin et l'écran géant | |
 | 0.16 | 29/10 | succès à débloquer | 3 |
 | 0.17 | 29/10 | fil en direct sur l'écran géant, envoi du score tenace | 1 |
 | 0.18 | 29/10 | planètes des affiches en fond | 1 |
-| 0.19 | 29/10 | rival à battre, série de frôlés, entraînement, traînées |  |
+| 0.19 | 29/10 | rival à battre, série de frôlés, entraînement, traînées | |
 | 0.20 | 29/10 | changer de pseudo | 1 |
-| 0.21 | 29/10 | ciel qui chauffe, cicatrices, murs en série |  |
-| 0.22 | 30/10 | arrêt sur image, Tartinée par…, garnitures |  |
+| 0.21 | 29/10 | ciel qui chauffe, cicatrices, murs en série | |
+| 0.22 | 30/10 | arrêt sur image, Tartinée par…, garnitures | |
 | 0.23 | 30/10 | succès secrets et badge Nouveau | 1 |
-| 0.24 | 30/10 | accessoires |  |
+| 0.24 | 30/10 | accessoires | |
 | 0.25 | 30/10 | étoiles filantes, prochaine soirée annoncée | 1 |
-| 0.26 | 30/10 | planètes drôles et Tung Tung Tung Sahur | 6 (réglages de difficulté, corrections, solveur plus rapide) |
-| 0.27 | 30/10 | classements Mobile et PC, succès revus |  |
-| 0.28 | 30/10 | tenue de la tartine |  |
-| 0.29 | 30/10 | tartine sans croûte |  |
-| 0.30 | 31/10 | nouvelles planètes du fond |  |
-| 0.31 | 31/10 | retours des joueurs, mains Six Seven |  |
+| 0.26 | 30/10 | planètes drôles et Tung Tung Tung Sahur | 6 |
+| 0.27 | 30/10 | classements Mobile et PC, succès revus | |
+| 0.28 | 30/10 | tenue de la tartine | |
+| 0.29 | 30/10 | tartine sans croûte | |
+| 0.30 | 31/10 | nouvelles planètes du fond | |
+| 0.31 | 31/10 | retours des joueurs, mains Six Seven | |
 | 0.32 | 31/10 | fiche joueur | 2 |
-| 0.33 | 31/10 | code et QR pour jouer sur un autre appareil |  |
+| 0.33 | 31/10 | code et QR pour un autre appareil | |
 | 0.34 | 31/10 | fusion de deux comptes | 3 |
-| 0.35 | 31/10 | déconnecter les autres appareils, Guide, planète pirate, son refait | 1 |
-| 0.36 | 31/10 | bonnet de Noël gagné sur le père Noël |  |
-| 0.37 | 31/10 | planète œuf de Pâques et oreilles de lapin |  |
-| 0.38 | 01/11 | sauce du chef, grille-pain secret, record hors ligne |  |
-| 0.39 | 01/11 | antennes d'alien et casque d'astronaute |  |
-| 0.40 | 01/11 | succès refaits en 7 familles |  |
-| 0.41 | 01/11 | page Succès avec progression |  |
-| 0.42 | 01/11 | remontée des erreurs des joueurs |  |
-| 0.43 | 01/11 | rouleau en aller-retour, enchaînements rééquilibrés, même trou pour tous les murs | 1 |
-| 0.44 | 01/11 | numéros de version, compte gardé dans l'appli installée, plus de mise à jour en partie, rouleaux espacés et jamais plus de 2, hachoir jamais deux fois d'affilée, mur par un côté après une pluie | 1 (tartine sans croûte refaite) |
-| 0.45 | 01/11 | auras : Surchauffe, Survoltée, Néon de soirée, Anneau planétaire | |
-| 0.46 | 01/11 | Tartine d'or : 1er d'un classement d'au moins 10 joueurs, soirée, Mobile ou PC | 1 (corrections de la revue de code) |
-| 0.47 | 01/11 | la tenue suit le compte sur tous les appareils (le dernier changement gagne) ; page et code de deux versions : rechargement ; tests du téléphone et vérification de la prod | 4 (02/11 : types vérifiés, Worker et dépendances à jour, test navigateur, écrans et dessins réorganisés ; puis variables de design communes, rouges plus lisibles, champ refusé en rouge ; puis espacements et tailles de texte en échelles, survol à la souris, fusion de comptes réparée après un échec ; puis fiche joueur légère et à jour juste après une partie) |
-| 0.48 | 02/11 | pluies espacées : ni pluie ni double pluie tant qu'une double pluie ou un hachoir n'est pas à mi-chemin |  |
-| 0.49 | 03/11 | grand écran en direct (WebSocket) ; 15 dernières minutes : chrono rouge qui tremble, 1er mis en valeur à la fin ; fin de soirée stricte (15 s de marge réseau) ; fil « En direct » agrandi ; mur mis de côté pendant une double pluie ; Première soirée seulement sur téléphone | 7 (vieux téléphones : chrono moins souvent, calques vides retirés, fichiers préchargés ; planètes qui défilent sans à-coups ; puis recherche de bugs : iPhone d'avant iOS 15.4, cache du serveur, score enregistré tout ou rien, liaison et fusion de comptes, écran géant, onglet Soirée de l'admin, cache hors ligne ; fusion de comptes expliquée dans Paramètres ; puis clavier sur PC : Échap pour revenir, « Espace pour jouer » ; puis bruitages dans Infos, « Retour » en bas de l'onglet Admin, joueurs actifs dans l'admin, deux progressions sur la fiche ; puis Paramètres revus : carte Autre appareil allégée, boutons lisibles sur petit écran ; puis 04/11 : 14 bugs corrigés (inscription, record, écran géant hors ligne, souris, clavier, autre appareil, serveur), variables de design partout, mise en ligne protégée, revue de code, sauce du chef enfin gagnable, comptes iPhone : message dans Snapchat et les autres applis, aide sur « pseudo déjà pris », réunir deux comptes dans l'admin ; puis stack à jour : wrangler 4.157, date de compatibilité du 03/11 ; outil de variantes réparé et cause des refus du solveur affichée par `npm run equite`) |
+| 0.35 | 31/10 | déconnecter les autres, Guide, planète pirate, son refait | 1 |
+| 0.36 | 31/10 | bonnet de Noël gagné sur le père Noël | |
+| 0.37 | 31/10 | planète œuf de Pâques et oreilles de lapin | |
+| 0.38 | 01/11 | sauce du chef, grille-pain secret, record hors ligne | |
+| 0.39 | 01/11 | antennes d'alien et casque d'astronaute | |
+| 0.40 | 01/11 | succès refaits en 7 familles | |
+| 0.41 | 01/11 | page Succès avec progression | |
+| 0.42 | 01/11 | remontée des erreurs des joueurs | |
+| 0.43 | 01/11 | rouleau en aller-retour, enchaînements, même trou partout | 1 |
+| 0.44 | 01/11 | numéros de version, compte gardé dans l'appli, rouleaux espacés | 1 |
+| 0.45 | 01/11 | auras : Surchauffe, Survoltée, Néon, Anneau planétaire | |
+| 0.46 | 01/11 | Tartine d'or : 1er d'un classement d'au moins 10 joueurs | 1 |
+| 0.47 | 01/11 | tenue qui suit le compte, rechargement si versions mélangées | 4 |
+| 0.48 | 02/11 | pluies espacées après une double pluie ou un hachoir | |
+| 0.49 | 03/11 | écran géant en direct, fin de soirée stricte, mur mis de côté | 7 |
 
 ## Erreurs des joueurs
 
-- Ajouté le 01/11/2026 à la demande d'Adrien, pour voir les bugs (surtout sur iPhone) avant la soirée plutôt que pendant. `public/js/errors.js`, chargé en premier dans le `<head>` du jeu, de l'admin et de l'écran géant. Script classique écrit prudemment : il attrape aussi les plantages des modules (fichier illisible par un vieux téléphone, fichiers de deux versions mélangés), que le jeu lui-même ne voit pas.
-- Ce qui remonte : les erreurs JavaScript non rattrapées, les promesses rejetées sans `catch`, les fichiers du site pas chargés, les blocages de la politique de sécurité (CSP), et « Jeu pas démarré au bout de 15 s » (accueil toujours pas prêt ; retiré si le jeu a fini par démarrer avant l'envoi). Ignoré : les extensions du navigateur, les scripts d'autres sites et « Script error. » (sans détail).
-- Avec chaque erreur : où (fichier, ligne, colonne), la pile d'appels, ce qui s'est passé avant (les 25 derniers évènements avec le temps depuis l'ouverture : écrans affichés, boutons touchés, page cachée ou visible, réseau perdu ou revenu, erreurs précédentes), la page, la version du jeu (numéro et commit, par exemple `0.44.0+d7379fd`), iPhone, iPad, Android ou PC, le navigateur, appli installée ou non, la taille de l'écran. La version est lue dans `version.js` dès l'ouverture, pour la connaître même quand le jeu plante au chargement. Ni pseudo ni clé de joueur : juste un numéro tiré au hasard par onglet (sessionStorage), pour compter les sessions touchées.
-- Économe : la même erreur part une seule fois par page, ses répétitions sont comptées puis envoyées quand on quitte la page (`sendBeacon`). Premier envoi 3 s après la première erreur, pour grouper celles qui s'enchaînent. Au plus 5 erreurs par envoi, 3 envois par page, 10 par onglet (rechargements en boucle de `boot.js`), 20 erreurs différentes par page.
-- Serveur (`routes/errors.ts`, `POST /api/errors`) : 64 Ko au plus par envoi (refusé dès l'en-tête quand il l'annonce), 10 envois par minute pour tout le monde (`ERROR_LIMIT`, une seule clé et pas une par adresse IP), et 60 erreurs gardées par heure au plus (`HOUR_ROWS`, compté sur 60 lignes au plus avant d'écrire), dont 10 au plus par onglet (`SESSION_ROWS`, ajouté le 01/11/2026 : un seul téléphone qui bouclait pouvait cacher les erreurs des autres pendant une heure). Sinon une erreur sur tous les téléphones d'une soirée pourrait manger le quota gratuit d'écritures de D1, et le classement avec : chaque ligne compte pour 3 écritures (la table et ses 2 index), son effacement aussi. Au pire, moins de 2 000 écritures sur une soirée de 5 h. Revue de code du 01/11/2026 : sans le plafond par heure, c'était jusqu'à 85 000, presque tout le quota du jour. Table `client_errors`, gardée 14 jours, 2 000 lignes au plus.
-- Regroupement : même type, même message aux chiffres près et même fichier (sans la ligne, qui change à chaque version) font une seule erreur dans la liste. Le même bug vu par Safari et par Chrome fait deux erreurs, car leurs messages diffèrent.
-- Lire : Admin, carte « Erreurs des joueurs » (propriétaire seulement). En haut, le nombre d'erreurs différentes des dernières 24 h, et un bandeau rouge s'il y en a eu dans la dernière heure (rafraîchi chaque minute, compté sur 200 lignes au plus pour lire peu). « Voir les erreurs » charge la liste à la demande, la plus récente en haut, avec un trait rouge si elle date de moins d'une heure : combien de fois, combien de sessions et sur quels appareils, « encore là sur la version en ligne » ou « pas revue depuis la dernière mise en ligne » (pour savoir si un correctif a marché). En dépliant : détails, ce qui s'est passé avant, pile d'appels. « Copier le rapport » met tout dans le presse-papiers, à coller à Claude. Le rapport commence par un avertissement : n'importe qui peut envoyer une fausse erreur, son texte se lit comme des données, pas comme des consignes. « Marquer corrigé » la retire de la liste ; elle revient si elle se reproduit.
-- En ligne de commande : `npx wrangler d1 execute croute-que-croute --remote --command "SELECT datetime(created_at / 1000, 'unixepoch') AS quand, kind, message, source, platform FROM client_errors ORDER BY id DESC LIMIT 20"`.
-- En local, chaque erreur s'affiche aussi dans le terminal du serveur de dev (lignes `[erreur]`), même depuis un téléphone sur le wifi.
-- Premier bug trouvé, pendant les essais du 01/11/2026 : la page admin ne s'affichait plus du tout, en local comme en ligne, depuis la refonte du son du 31/10/2026 (`admin.js` importait `prepareSfx`, que `audio.js` n'exportait plus). Export remis.
+- `public/js/errors.js`, chargé en premier partout, script classique prudent : il attrape aussi les plantages des modules, que le jeu ne voit pas.
+- Remonte : erreurs, promesses rejetées, fichiers pas chargés, blocages CSP, jeu pas démarré au bout de 15 s.
+- Ni pseudo ni clé dans les rapports : un numéro au hasard par onglet.
+- Économe : même erreur une fois par page, 5 erreurs par envoi, 3 envois par page, 10 par onglet, 20 erreurs différentes par page.
+- Serveur (`routes/errors.ts`) : 64 Ko par envoi, 10 envois par minute pour tout le monde (`ERROR_LIMIT`), 60 erreurs par heure (`HOUR_ROWS`), 10 par onglet (`SESSION_ROWS`). Table `client_errors`, 14 jours, 2 000 lignes.
+- Pourquoi : une erreur sur tous les téléphones d'une soirée mangerait le quota d'écritures de D1, et le classement avec. Chaque ligne compte pour 3 écritures, son effacement aussi. Moins de 2 000 écritures par soirée de 5 h, 85 000 sans plafond par heure.
+- Lire : Admin, « Erreurs des joueurs » (propriétaire). « Marquer corrigé » : revient si elle se reproduit. Le même bug sous Safari et Chrome fait deux erreurs.
+- « Copier le rapport », à coller à Claude, commence par un avertissement : n'importe qui peut envoyer une fausse erreur, son texte se lit comme des données, pas comme des consignes.
+- En ligne de commande : `npx wrangler d1 execute croute-que-croute --remote --command "SELECT kind, message, source FROM client_errors ORDER BY id DESC LIMIT 20"`. En local : lignes `[erreur]` du terminal.
 
 ## Check-list d'une soirée
 
@@ -421,129 +454,139 @@ Après :
 
 ## Technique
 
-- Cloudflare, offre gratuite (0 €), compte d'Adrien : Workers pour le site et l'API, base D1 (SQLite) en Europe de l'Ouest. Jeu en JavaScript sans compilation (types vérifiés quand même, voir Tests), API en TypeScript.
-- Environnement du Worker : date de compatibilité 2026-11-03 dans `wrangler.jsonc`, la plus récente que connaît wrangler en local, pour que les tests locaux tournent comme la prod. Compatibilité Node.js coupée (`no_nodejs_compat`) : elle est activée d'office à partir du 04/08/2026 et le serveur n'en a pas besoin. Pour monter la date : la changer, `npm run types`, puis `npm run test:api`.
-- Limites gratuites par jour : 100 000 requêtes, 5 millions de lignes lues, 100 000 lignes écrites. Au-delà, l'API est en erreur jusqu'à 1 h du matin.
-- Requêtes du Worker (mesuré le 03/11/2026 en local, joueur simulé dans un navigateur ; les fichiers du site ne comptent pas) : 6 à l'arrivée, 3,5 par partie (début, fin, classement relu, et la tenue envoyée environ une fois sur deux, quand un succès tombe), 2 par minute sur l'accueil, 6 par minute sur l'écran Classement, rien quand le téléphone est en veille. Une soirée de 150 personnes à 30 parties chacune fait donc environ 25 000 requêtes, un quart de la limite : il faudrait environ 28 000 parties dans la journée pour l'atteindre. Le vrai chiffre : tableau de bord Cloudflare, Workers, `croute-que-croute`, Metrics, Requests.
-- Durable Objects (le direct de l'écran géant), comptés à part : 100 000 demandes et 13 000 Go-s par jour. Une demande par record, nouveau joueur ou changement de l'admin, et une par connexion d'écran. Rien n'est compté pendant qu'il dort (hibernation), ni les messages envoyés aux écrans. Si le quota tombe, l'écran passe au secours (une demande toutes les 2 s).
-- Pour les tenir : chaque requête passe par un index, le classement est gardé en mémoire et mis à jour sur place à chaque record, rien n'est demandé écran éteint. Les fiches des joueurs sont gardées 10 s en mémoire, sauf la tienne, qui suit ta dernière partie. Quand le classement gardé en mémoire expire, les demandes qui arrivent en même temps attendent la même lecture au lieu de relire chacune jusqu'à 1 000 lignes (02/11/2026). Côté téléphone, les canettes du ciel sont dessinées une fois en image, et les formes fixes des garnitures calculées une seule fois.
-- Mesuré le 02/11/2026 sur 24 h (584 parties, 12 joueurs, `npx wrangler d1 info croute-que-croute`) : 425 lignes lues et 5,6 lignes écrites par partie. Près des trois quarts des lectures venaient de la fiche joueur, qui relisait toutes les parties du joueur, deux fois (734 lignes par fiche). Corrigé le même jour (voir Fiche joueur) : à remesurer pendant la soirée. Pointe mesurée : 401 parties en une heure à 10 joueurs (01/11/2026, minuit).
-- Requêtes qui lisent le plus : `npx wrangler d1 insights croute-que-croute --timePeriod 1d --sort-type sum --sort-by reads --limit 8`.
-- Fiche joueur (02/11/2026, après un audit d'architecture) : le profil garde ses totaux, tenus à jour à chaque partie dans la même écriture que le compteur de parties (`played` temps de jeu, `last_at`, `lowest` plus courte partie, `six_seven`, `best_combo`), et sa suite de records Mobile et PC (`steps`, complétée à chaque record). La fiche lit donc une ligne au lieu de toutes les parties. La place dans chaque soirée vient du classement de la soirée gardé en mémoire. `steps` vide (NULL) : la fiche recalcule une fois totaux et records depuis les parties, puis les garde. C'est le cas après la migration `0013_fiche_legere` et après une fusion de comptes. Après une retouche à la main des parties ou des records : `UPDATE profiles SET steps = NULL`.
-- Général : les 1 000 premiers en mémoire. Au-delà, la place se calcule en comptant les joueurs devant.
-- Journaux d'erreurs du serveur : gardés 3 jours dans Cloudflare, page du Worker `croute-que-croute`. En direct : `npx wrangler tail`. Celles des téléphones : voir Erreurs des joueurs.
-- Non retenus : un cache partagé entre les copies du serveur (Durable Object, dont le quota gratuit est à peu près ce qu'une soirée consomme si chaque demande y passe ; seul le direct de l'écran géant en utilise un) et une lecture partagée entre deux demandes (risque d'erreurs côté Cloudflare, gain faible).
-- Git : une branche par changement, fusionnée dans `master` avec `--no-ff`, puis poussée sur GitHub.
-- Node : version 26 (LTS) sur GitHub, écrite dans les 2 fichiers de `.github/workflows/` (`node-version`, que Dependabot ne monte pas). Le PC d'Adrien est en Node 26 depuis le 02/11/2026.
-- Design (02/11/2026, après un audit demandé par Adrien) : couleurs, polices, tailles de texte, interlettrage, interligne, espacements, rayons et contour de focus sont des variables de `public/tokens.css`, chargé en premier par le jeu, l'admin et l'écran géant. Avant, chaque page avait sa copie et elles ne disaient plus toutes la même chose. Depuis le 03/11/2026 (deuxième audit) : aussi les bordures, les marges intérieures en `em` des boutons, champs et pastilles (`--inset-*`), la taille tactile de 44 px (`--tap`), le relief sous les titres et les boutons (`--lift-*`), les contours (`--ring-*`), les durées d'animation (`--dur-*`, sauf les boucles, qui gardent leur rythme), les calques (`--z-*`) et les opacités (grisé, verrouillé, texte d'exemple). Trois durées très proches ont été alignées : barre de chargement, arrivée du gagnant et ligne qui monte sur l'écran géant. L'écran géant a sa propre échelle en `vh` (`--screen-text-*`, `--screen-space-*`, `--screen-radius`) : 8 tailles de texte au lieu de 17, donc certaines bougent un peu (podium un peu plus grand, places 4 à 10 un peu plus petites). Les boutons de l'admin font 44 px de haut comme ceux du jeu, n'affichent plus la main quand ils sont grisés, et ont le même écart de contour au focus. L'animation de l'écran géant s'appelle `cheer-soft`, pour ne plus porter le même nom que celle du jeu. Les deux pages gardent le même vocabulaire : `.ghost` est un bouton à contour, `.danger` un bouton rouge et `.error` un message d'erreur ; seule la classe de base change (`.btn` dans l'admin).
-  - Texte : `--text-xs` 0,65 rem (pastilles), `--text-sm` 0,72, `--text-md` 0,8, `--text-lg` 0,9 (texte gris d'aide), `--text-xl` 1 (boutons, champs), `--text-2xl` 1,1, `--text-3xl` 1,3, `--text-4xl` 1,6, `--text-5xl` 2, `--text-6xl` 2,6 (chrono). Les grands titres, le score et le gros bouton restent fluides (`clamp`) pour tenir sur tous les écrans. Avant, 21 tailles écrites à la main.
-  - Interlettrage : `--track-sm` 0,04 em, `--track-md` 0,08, `--track-lg` 0,12. Interligne : `--leading-none` 1 (titres, gros chiffres), `--leading-tight` 1,1, `--leading-snug` 1,3 (texte d'aide), `--leading-normal` 1,4 (paragraphes des Infos).
-  - Rayons : `--radius-sm` 8 px, `--radius-md` 12 (boutons, champs, lignes), `--radius-lg` 16 (cartes, gros bouton), `--radius-pill`, et 50 % pour les ronds. L'écran géant compte en `vh` pour suivre la taille de la télé.
-  - Rouge : `--jam` pour les titres et les ombres, `--jam-deep` sous un texte crème (5,4:1), `--jam-light` pour un texte d'erreur (6,5:1 sur le fond, 5,7:1 sur une carte). Avant, le texte d'erreur et les boutons rouges de l'admin restaient sous 4,5:1.
-  - Composants : `.cta` gros bouton (s'enfonce à l'appui), `.ghost` bouton secondaire (s'éclaire à l'appui), `.corner` bouton rond, `.board-tabs` onglets, `.note` texte gris (`.error` en rouge, les deux pages), `.card` carte, un libellé et sa valeur en `-label` / `-value`. Dans l'admin, `.btn` (plein), `.btn.ghost`, `.btn.danger` (rouge) et `.btn.small`. Avec une souris, le survol éclaire le bord des boutons, enfonce à moitié le gros bouton et éclaire les onglets, les lignes du classement et les plis des Infos. Un champ refusé par le serveur (400, 404, 409) passe en bord rouge avec `aria-invalid`, et le message d'erreur est lu avec le champ (`aria-describedby`).
-  - Calques (`z-index`) : `--z-raise` 1 dans une liste, `--z-corner` 10 boutons des coins, `--z-toast` 20 bulle de l'accueil, `--z-pop` 30 fenêtres, `--z-party` 40 confettis, `--z-top` 50 chargement.
-  - Espacements : `--space-2xs` 2 px, `--space-xs` 4, `--space-sm` 8, `--space-md` 12, `--space-lg` 16, `--space-xl` 24, `--space-2xl` 32, écrits en `rem` pour suivre la taille de texte choisie sur le téléphone. Le rembourrage des boutons, champs et pastilles suit leur texte, en `em` : `--inset-xs` à `--inset-xl` en largeur (0,3, 0,6, 0,9, 1,3 et 1,7 em), `--inset-y-xs` à `--inset-y-lg` en hauteur (0,15, 0,3, 0,5 et 0,6 em), depuis le 03/11/2026. Restent hors échelle : les écarts fluides du menu (`clamp` en `vh`) et les marges des bords d'écran (encoche et boutons des coins, en px avec `env()`). Avant, 119 valeurs en px, rem et em.
-- Outils locaux (`LOCAL` dans `shared/local.js` : localhost, 127.0.0.1 ou une adresse du réseau privé comme 192.168.x.x, donc aussi un téléphone sur le wifi ; jamais l'adresse en ligne) : `?accessoires=tous`, `?succes=tous`, `?garnitures=toutes`, `?planetes=souvent`, `?etoiles=souvent` (voir plus haut), `?jeton=<jeton>` qui connecte le téléphone à ce joueur (lien donné par `npm run seed`), et le mode invincible : carte « Mode test » de Paramètres (Non / Oui, gardé le temps de l'onglet, `cv-invincible` en sessionStorage). Allumé, les couverts ne tuent plus (option `immortal` de `createSim`), et une pastille « Invincible ✕ » sous le chrono rappelle qu'il est actif : la toucher l'enlève en pleine partie, pour mourir au prochain coup. Une partie invincible compte comme une autre (record, classement local, succès), pour pouvoir tester les longues parties.
+### Hébergement et quotas
 
-| Dossier | Rôle |
-|---|---|
-| `public/js/game/` | Le jeu sans affichage (terrain, armes, attaques, solveur, boucle), partagé avec les tests |
-| `public/js/app/` | Le jeu dans le navigateur : `main.js` (boucle et parties), `screens.js` (écran affiché), dessin, son, succès, appels au serveur |
-| `public/js/app/art/`, `public/js/app/sky/` | Dessins rangés par famille. `art/` : couverts, garnitures, côtés, pains, chapeaux, auras, assemblés par `sprites.js`. `sky/` : une famille de planètes ou d'étoiles filantes par fichier, listées dans `planets.js`. `kit.js` dans chacun : les outils de dessin communs |
-| `public/js/admin/`, `public/js/ecran/` | Tableau de bord admin, écran géant |
-| `public/js/shared/` | Stockage du téléphone, formats, couleurs (`palette.js`), bandeau des soirées commun au téléphone et à l'écran géant (`banner.js`) |
-| `public/tokens.css`, `style.css`, `catalog.css`, `admin.css`, `ecran.css` | Styles : variables communes (voir Design), jeu, cartes des Infos, Succès et fiches, admin, écran géant |
-| `public/sw.js`, `manifest.webmanifest` | Appli installable |
-| `src/` | API : routes (`routes/`, liste dans `worker.ts`), base et cache (`db.ts`), sécurité et contrôles |
-| `migrations/` | Schéma de la base |
-| `scripts/` | Mise en ligne, icônes, QR codes, seed de la base locale |
-| `test/` | Robot d'équité, tests unitaires (`unit/`), tests de l'API, outils d'équilibrage (`equilibrage/`) |
-| `.github/workflows/` | Tests lancés par GitHub à chaque envoi sur `master` |
-| `maquettes/` | Images de travail : pistes de redesign de la tartine (pas retenues), planches des garnitures, des accessoires, des canettes, des planètes drôles, du ciel (toutes les planètes, la Tesla et la soucoupe), des couleurs de la deuxième planète enceintes, de Tung Tung Tung Sahur et des mains Six Seven |
+- Cloudflare gratuit : Workers et D1 (Europe de l'Ouest). Jeu en JavaScript sans compilation, API en TypeScript.
+- `wrangler.jsonc` : date de compatibilité 2026-11-03, la plus récente connue de wrangler en local, `no_nodejs_compat`. Pour la monter : la changer, `npm run types`, `npm run test:api`.
+- Limites par jour : 100 000 requêtes, 5 millions de lignes lues, 100 000 écrites. Au-delà, API en erreur jusqu'à 1 h du matin.
+- Requêtes mesurées (hors fichiers) : 6 à l'arrivée, 3,5 par partie, 2 par minute sur l'accueil, 6 sur Classement, rien en veille. 150 personnes à 30 parties : 25 000 requêtes, un quart de la limite. Limite atteinte vers 28 000 parties par jour.
+- Durable Objects, à part : 100 000 demandes et 13 000 Go-s par jour. Une demande par record, joueur, changement admin ou connexion d'écran. Rien en hibernation. Quota tombé : l'écran passe au secours.
+- Pour les tenir : index partout, classement en mémoire mis à jour sur place, rien écran éteint, demandes simultanées sur la même lecture (`cached`).
+- Mesuré sur 24 h (584 parties) : 425 lignes lues et 5,6 écrites par partie, avant la fiche légère : à remesurer en soirée. Pointe : 401 parties en une heure à 10 joueurs.
+- Fiche légère : le profil garde ses totaux et ses records (`steps`), une ligne lue au lieu de 734. `steps` NULL : recalcul une fois depuis les parties, par exemple après une fusion. Après une retouche à la main : `UPDATE profiles SET steps = NULL`.
+- Général : 1 000 premiers en mémoire, au-delà la place se compte.
+- Lectures : `npx wrangler d1 insights croute-que-croute --timePeriod 1d --sort-type sum --sort-by reads --limit 8`. Erreurs serveur : 3 jours dans Cloudflare, `npx wrangler tail` en direct.
+- Non retenus : cache partagé en Durable Object (quota à peu près consommé par une soirée), lecture partagée entre deux demandes (risque d'erreurs, gain faible).
+- Node 26 (LTS), écrit dans les 3 fichiers de `.github/workflows/` : Dependabot ne le monte pas.
+
+### Design
+
+- Tout passe par `public/tokens.css`, chargé en premier partout : couleurs, tailles, espacements, rayons, durées, calques, opacités, `--tap` 44 px. Vérifié par `palette.test.mjs`.
+- Rouges : `--jam` titres, `--jam-deep` sous un texte crème (5,4:1), `--jam-light` texte d'erreur (6,5:1).
+
+### Outils locaux
+
+Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
+
+- `?garnitures=toutes`, `?accessoires=tous`, `?succes=tous` (pour de bon sur ce navigateur), `?planetes=souvent`, `?etoiles=souvent`, `?jeton=<jeton>` (lien de `npm run seed`).
+- Mode invincible : carte « Mode test » de Paramètres. La partie compte comme une autre.
+
+### Dossiers
+
+- `public/js/game/` : le jeu sans affichage, partagé avec les tests.
+- `public/js/app/` : `main.js` (branchements), `state.js` (état partagé), `run.js` (boucle, partie, mort), `over.js` (écran de fin), `pages.js` (navigation), `screens.js` (affichage), dessin, son, succès, serveur. Dessins dans `art/` et `sky/`.
+- `public/js/admin/`, `ecran/`, `shared/` (stockage, `palette.js`, `banner.js`).
+- `src/` : `worker.ts` (routes), `db.ts` (base et cache), `live.ts` et `slots.ts` (direct), `validate.ts`, `security.ts`.
+- `src/routes/` : `board.ts` (classements, écran), `player.ts` (inscription, reprise, pseudo), `look.ts` (tenue, progression), `card.ts` (fiche), `runs.ts` (parties), `link.ts` (codes, fusion), `google.ts`, `admin.ts`, `diag.ts`, `errors.ts`.
+
+### Commandes
 
 | Commande | À quoi ça sert |
 |---|---|
-| `npm install` | Installer les outils |
 | `npm run db:local` | Créer la base locale (à refaire après une migration) |
-| `npm run seed` | Remplir la base locale pour tester (jamais en ligne : refuse `--remote`). Efface puis recrée ses propres données, sans toucher aux tiennes : 24 joueurs (`seed-*`) avec parties, records Mobile et PC, tenues, et 3 soirées passées (« Space Tartinade test 1 à 3 », id 9001 à 9003). Dont « Testeur » (record 95,12 s, 1er de la soirée test 2, une partie à 1,80 s, une à 67,42 s, une à 40,00 s, sans tenue envoyée) et « Tricheur » (retiré, 14 min, pas de fiche). Affiche un lien `?jeton=` pour jouer en Testeur. `npm run seed -- --soiree` ajoute une soirée en cours (maintenant moins 1 h jusqu'à plus 3 h). `--persist-to <dossier>` remplit une autre base locale que celle de `npm run dev` |
-| `npm run dev` | Jeu en local sur http://localhost:8787, clé admin dans `.dev.vars`. Dans l'app Claude, le serveur « croute-que-croute » de `.claude/launch.json` lance la même chose, ouvert au wifi (`--ip 0.0.0.0`) pour tester sur téléphone |
-| `npm run equite` | Robot d'équité, 0 mort attendu (environ 4 min). C'était `npm test` avant le 03/11/2026 |
-| `npm test` ou `npm run test:unit` | Tests du code du téléphone, sans serveur (moins d'une seconde, voir Tests) |
-| `npm run test:navigateur` | Test de bout en bout dans un vrai navigateur, sur une base neuve à part comme `test:api` (même port, même `TEST_PORT`). Environ 30 s (voir Tests) |
-| `npm run test:api` | Tests de l'API sur une base neuve à part (serveur lancé seul sur le port 8790, effacé à la fin) : ni les données ni le serveur de `npm run dev` ne sont touchés. Refuse si le port est déjà pris ; autre port : `TEST_PORT=8796 npm run test:api`. `test/player.mjs` et `test/admin.mjs` ne se lancent pas seuls. Environ 1 min : deux parties attendent 47 s pour tester les alertes de l'admin |
-| `npm run equilibrage` et suivantes | Mesurer le dosage du jeu avec le robot « humain » (voir Équilibrage) |
-| `npm run check` | Vérifier les types de l'API et du code du navigateur (voir Tests) |
-| `npm run db:remote` | Appliquer les migrations en ligne, avant `npm run deploy` |
-| `npm run deploy` | Mettre en ligne. Refuse si git n'est pas à jour, hors de `master` ou si `master` n'est pas envoyé sur GitHub, si `node_modules` ne suit pas `package-lock.json` (arrêter le serveur local, puis `npm ci`), si la vérification des types ou un test unitaire échoue, si les tests de GitHub (Tests) ou Safari ne sont pas verts sur ce commit (un commit qui ne touche que ce que Tests ignore, README ou images, garde le résultat d'avant ; Safari se lance à la main : `gh workflow run safari.yml --ref master` ; `npm run deploy -- --sans-github` si GitHub ne répond pas), si une migration manque en ligne, si la prod ne répond pas normalement, si le numéro de version n'a pas monté ou si une soirée est ouverte ou dans les 15 s où ses derniers scores arrivent (`npm run deploy -- --pendant-soiree` en urgence ; règle dans `scripts/garde.mjs`, testée). Vérifie la prod à la fin (`npm run verif`) |
-| `npm run verif` | Vérifier la prod, en lecture seule (voir Tests). `npm run verif -- 0.46.1+373facb` exige aussi cette version |
-| `npm run icons`, `npm run qr` | Regénérer les icônes et les QR codes |
+| `npm run seed` | Remplir la base locale, jamais en ligne. Donne un lien `?jeton=`. `--soiree` : une soirée en cours. `--persist-to <dossier>` : une autre base |
+| `npm run dev` | Jeu sur http://localhost:8787. Dans l'app Claude, `.claude/launch.json` l'ouvre au wifi |
+| `npm run db:remote` | Migrations en ligne, avant `npm run deploy` |
+| `npm run deploy` | Mettre en ligne, puis `npm run verif`. Refuse si : git pas à jour, hors de `master`, pas envoyé, `node_modules` en retard (arrêter le serveur, `npm ci`), types ou tests en échec, Tests ou Safari pas verts, migration manquante, prod anormale, version pas montée, soirée ouverte ou 15 s de marge (`scripts/garde.mjs`) |
+| Options de `deploy` | `-- --pendant-soiree` en urgence, `-- --sans-github` si GitHub ne répond pas. Un commit README ou images garde le résultat d'avant |
+| `npm run verif` | Prod en lecture seule. `npm run verif -- 0.46.1+373facb` exige cette version |
+| `npm run icons`, `npm run qr` | Regénérer icônes et QR codes |
 
 ## Tests
 
-- `npm run check` : les types, avec TypeScript. L'API (`tsconfig.json`) et le code du navigateur, jeu, écran géant et admin (`tsconfig.navigateur.json`, mode souple, le JavaScript de `public/js` vérifié tel quel). Attrape un import qui n'existe plus (la page admin blanche du 01/11/2026), une fonction mal appelée, un nom mal tapé. Les éléments de la page (`getElementById`, `querySelector`) ne sont pas typés (`navigateur.d.ts`), et 6 tableaux ont une annotation `/** @type */` parce que TypeScript devine mal leur type.
-- `npm run test:navigateur` : le parcours d'un joueur dans un vrai navigateur (Playwright : Edge, déjà installé, sur Windows ; Chromium sur GitHub). Inscription, planètes de l'accueil qui avancent à chaque image (pas immobiles puis un saut d'un pixel), calques des annonces et des confettis retirés à l'accueil, une partie jusqu'à la mort avec ses annonces affichées, score envoyé, classement et fiche du joueur, classement depuis l'accueil, Échap qui ferme le classement, l'écran du QR code et les Paramètres, Infos et ses 4 onglets, les 5 bruitages à écouter dans Crédits, Paramètres avec le QR code et le code pour un autre appareil, « Déconnecter les autres » deux fois de suite, un seul parcours ouvert à la fois dans « Autre appareil » et l'erreur du code en rouge, Paramètres sur un écran de 320 px (chaque bouton sur une ligne, sans débordement, texte d'au moins 13 px), et depuis la recherche de bugs du 03/11/2026 : Échap après un curseur, partie comptée quand le classement ne répond pas après l'inscription, vrai record après une partie non comptée, « Nouveau record » retiré quand le serveur ne le compte pas, souris qui sort de la fenêtre, « Déconnecter les autres » pendant la vérification d'un code, Espace après un clic sur la tartine, premier Échap après les skins, Échap dans l'onglet Admin, écran géant ouvert seul dans un navigateur neuf qui se recharge sans réseau, onglet Admin sans réseau sans erreur (pour ces essais, le test ajoute à `main.js` une poignée `window.__jeu` vers l'état du jeu, seulement dans le navigateur du test), QR de liaison scanné quand le compte revient par le cookie (« Réunir » proposé), fusion dont la réponse se perd (« Comptes réunis »), Succès, un entraînement, Espace sur Infos ensuite qui ne le relance pas, l'écran géant qui ne demande le classement qu'une fois par minute sans soirée proche (horloge simulée) et affiche « Pas de réseau » quand le réseau tombe, l'écran géant qui montre la soirée dès son heure de début, l'écran géant en direct pendant une soirée (WebSocket ouverte, un record affiché en moins de 1,5 s, 3 relectures au plus pour 8 inscriptions en 1 s), son « Nouveau n°1 » (pour un vrai record, même enregistré pendant la lecture du classement d'avant, pas pour un n°1 réintégré), puis sans WebSocket (le secours affiche un record et enlève un joueur retiré), l'admin (connexion avec la clé de `.dev.vars`, « Retirer » un joueur qui demande confirmation et ne retire rien sur « Annuler », puis « Réintégrer », création d'une soirée, fin déjà passée qui demande confirmation et laisse la soirée ouverte sur « Annuler », onglet Admin des Paramètres sans défilement dans son cadre et « Retour » en dessous, réunir deux comptes qui demande confirmation avec les deux pseudos et ne réunit rien sur « Annuler »), pseudo déjà pris qui propose « J'ai déjà un compte » et l'écran du code qui dit où le trouver, le message de Snapchat (faux user agent) et son « Copier le lien », les pages `/ecran` et `/admin`, et aucune erreur dans la console ni fichier manquant (sauf la musique, hors git). Attrape un bouton qui ne répond plus ou un écran qui ne s'ouvre plus. Avec `NAVIGATEUR=webkit` devant (Git Bash), le même parcours dans WebKit, le moteur de Safari, en profil iPhone 13 (écran tactile), avec en plus la proposition « Installe le jeu » fermée par « Plus tard » : `NAVIGATEUR=webkit npm run test:navigateur` (avant, `npx playwright install webkit` si Playwright a été mis à jour). Sous WebKit, le test ignore « Refused to apply a stylesheet » : le WebKit de Linux dessine le menu « Rôle » de l'admin avec un style interne que la CSP bloque (02/11/2026). Aucun iPhone ne l'a signalé en prod, et sous Chromium le test attrape toujours les vraies erreurs CSP. Une page du test qui intercepte des requêtes bloque le service worker (`serviceWorkers: "block"`) : hors Chromium, Playwright n'intercepte plus les requêtes d'une page contrôlée par un service worker (04/11/2026 : depuis que l'écran géant installe lui-même le cache hors ligne, l'étape « Nouveau n°1 » échouait sous WebKit, son heure décalée n'arrivant plus). Chaque erreur de la console est rapportée avec l'étape et la ligne où elle arrive.
-- `npm run test:api` : le serveur. Chaque route avec son cas normal et ses refus (inscription, parties, scores, soirées et leur fin stricte, écran géant et son direct par WebSocket (record, nouveau joueur, joueur retiré), liaison d'appareils, tenue du compte, fusion, admin, erreurs, limites). Depuis le 03/11/2026 : même score envoyé deux fois en même temps (compté une fois, « record » dans les deux réponses ; la course ne se reproduit pas en local, le test garde surtout le compte juste), renvoi 16 s après la fin de la soirée, nouveau pseudo qui a joué sur PC listé dans l'onglet Soirée de l'admin, et celui qui a un record hors soirée listé sans score. Puis (recherche de bugs) : joueur retiré qui renvoie son record, code de liaison réessayé après une réponse perdue, compte gardé actif après une fusion, 4 écrans en direct par adresse, et un 5e refusé sans en chasser un qui répond. Puis réunir deux comptes depuis l'admin : aperçu sans rien changer, réunion après confirmation, appareils du compte réuni passés sur le compte gardé, pseudo réuni libre, et les refus (pseudo inconnu, même compte, pseudo manquant, compte retiré, admin qui n'est pas propriétaire).
-- `npm run test:unit` : le code du téléphone, dans Node (`node --test`, sans dépendance). `test/unit/env.mjs` remplace ce que le navigateur fournit : stockage, adresse de la page, faux contexte de dessin qui note chaque appel.
-  - `sprites.test.mjs` : chaque objet de `GEAR`, chaque garniture et chaque arme se dessine, sans coordonnée invalide. Un nom inventé (`constructor`, `toString`, `__proto__`, inconnu, vide) ne plante pas et ne dessine rien. Chaque planète du ciel (les 14, rares comprises) et chaque objet qui passe se dessinent, et sa traînée garde la transparence de la comète (celle du Père Noël l'ignorait avant le 02/11/2026).
-  - `attacks.test.mjs` : un mur tiré pendant une double pluie est mis de côté, puis lancé quand ses fourchettes ont quitté l'écran (4 parties simulées de 2 min). Chaque garniture à gagner, sauce du chef comprise, peut tomber sur un couteau.
-  - `achievements.test.mjs` : les règles des succès au bon moment (paliers de temps, Six Seven entre 67,00 et 67,99 s, En détente remis à zéro quand on bouge, Tartine d'or jamais si retiré, Tartine de minuit avec une horloge simulée, Première soirée jamais pour une partie sur PC), ce qui vient du serveur trié, rien de perdu entre deux onglets, chaque succès annoncé une seule fois.
-  - `api.test.mjs` : chaque demande au serveur a une limite d'attente, et la reprise du compte par cookie, ratée faute de réseau, est refaite au classement suivant.
-  - `offline.test.mjs` : hors ligne après un classement reçu, la partie suivante compare au record qu'on vient de faire ; un pseudo changé reste affiché si le classement n'arrive pas.
-  - `robustesse.test.mjs` : netteté baissée gardée 12 h puis remesurée ; une hauteur de départ invalide (fenêtre de 0 px) remplacée par la hauteur normale, la tartine peut mourir ; cache hors ligne rempli malgré un fichier raté (sw.js chargé tel quel avec un faux cache).
-  - `refus.test.mjs` : la cause d'un refus du solveur. Une attaque impossible à elle seule est comptée contre elle, avec ou sans solveur ; une tartine déjà trop près d'un couvert ne compte pas contre l'attaque ; pas de second calcul en vraie partie.
-  - `variante.test.mjs` : la copie faite par `npm run equilibrage:variante` se charge et démarre.
-  - `resume.test.mjs` : reprise du compte ratée (réseau ou erreur 500) : pas de choix du pseudo ; deux classements demandés pendant la reprise attendent la même ; connexion par code réussie mais classement raté : la clé est gardée, pas de choix du pseudo.
-  - `banner.test.mjs` : le bandeau des soirées (`shared/banner.js`). « Fin dans », le chrono en grand pendant les 15 dernières minutes de l'écran géant, « Bravo » dès la fin sur l'écran (plus de « Résultats dans »), « Soirée finie ! » puis « Bravo » sur le téléphone seulement avec un classement relu après les derniers scores, partie finie après les 15 s de marge comptée hors soirée, « Prochaine soirée dans », et le direct de l'écran qui reste ouvert 1 min après les derniers scores. Un écran resté hors ligne annonce le gagnant à l'heure de fin.
-  - `slots.test.mjs` : un écran en direct qui répond n'est jamais chassé, un écran muet depuis 1 min laisse sa place (revue de code du 03/11/2026).
-  - `link.test.mjs` : le code de liaison sur une vraie base SQLite en mémoire (`node:sqlite`, toutes les migrations) : après une erreur de la base pendant « Connecter », le même appareil peut réessayer et le code sert encore à un autre ; un réessai qui croise une demande lente garde sa clé (revue de code du 03/11/2026).
-  - `inapp.test.mjs` : les navigateurs de Snapchat, Instagram, Facebook, Messenger et TikTok reconnus sur iPhone et Android (vrais user agents), Safari, Chrome et l'appli installée jamais signalés ; le message renvoie vers Safari sur iPhone et Chrome sur Android ; l'installation n'est pas proposée dans Snapchat.
-  - `record.test.mjs` : un classement demandé avant l'enregistrement du score, arrivé après, n'efface pas le nouveau record (revue de code du 03/11/2026).
-  - `cache.test.mjs` : le cache des classements du serveur (`cached` dans `src/db.ts`). Plusieurs téléphones qui demandent en même temps : une seule lecture de la base. Une lecture commencée avant un changement (joueur retiré, soirée modifiée) ne remplace pas le classement relu après. Une lecture abandonnée n'est plus attendue au-delà de 5 s. Importe le TypeScript du serveur tel quel (Node 26), en ajoutant `.ts` aux imports.
-  - `deploy.test.mjs` : `npm run deploy` refuse pendant la soirée et les 15 s où ses derniers scores arrivent, accepte après, sans soirée, ou avec `--pendant-soiree`. Depuis le 03/11/2026 : refuse aussi si `node_modules` ne suit pas `package-lock.json`, ou si Tests ou Safari n'a pas tourné, tourne encore ou n'est pas vert sur le commit (un commit qui ne touche que le README ou les images garde le résultat d'avant), et Safari ne tourne plus sur le tag.
-  - `shell.test.mjs` : chaque fichier chargé par la page du jeu est dans le cache hors ligne (`SHELL` de `sw.js`), et chaque fichier du cache existe. Sinon le jeu ne démarre plus hors ligne. Chaque module du jeu est annoncé en `modulepreload` dans `index.html`, sans fichier en trop. Aucun `Object.hasOwn` dans le code du navigateur (iPhone d'avant iOS 15.4). Et chaque élément attendu par `screens.js` existe dans `index.html` : sinon le jeu se rechargerait à chaque ouverture.
-  - `palette.test.mjs` : les couleurs écrites à la fois dans `palette.js` (dessins) et dans `tokens.css` (`--void`, `--mustard`, `--jam`, `--ink`, `--flame`, `--steel`, `--planet-shade`) ont la même valeur. Les autres feuilles de style n'ont ni couleur écrite en dur ni variable à elles, n'utilisent que des variables de `tokens.css` (sauf `--load`, `--reach` et `--drop`, posées par le code), et les 3 pages chargent `tokens.css` en premier. Les tailles de texte fixes, les espacements (hors `em`, `vh` et bords d'écran), l'interlettrage et l'interligne passent aussi par les échelles. Pour changer une couleur : dans `tokens.css` et `palette.js`, le test dit où. Depuis le 03/11/2026, il vérifie aussi les ombres, les durées d'animation (hors étapes et boucles), les calques, les opacités, les bordures, la taille tactile, les marges intérieures en `em`, et l'échelle de l'écran géant (tailles de texte, espacements et rayons).
-  - `routes.test.mjs` : lit `src/worker.ts`. Chaque route `/api/admin` demande une connexion, sauf la connexion et l'invitation ; équipe, invitations et erreurs des joueurs sont réservées au propriétaire ; aucune route des joueurs ne demande de connexion admin. Une route admin ajoutée sans `access` serait ouverte à tous : ce test la refuse.
-  - `sync.test.mjs` : la tenue entre appareils. Un appareil neuf prend celle du compte sans rien écraser, une tenue plus récente remplace, une plus ancienne est ignorée, un objet pas encore reçu est porté dès que son succès arrive, et les garnitures reçues du serveur ne datent pas la tenue.
-  - `validate.test.mjs` : ce que le serveur accepte (`src/validate.ts`). Pseudos (sosies avec accents, autres alphabets, emoji, 2 à 16 caractères), tenue (chaque objet à son emplacement, noms inventés comme `__proto__` retirés, compteurs hors limites remis à 0), progression (100 succès au plus) et fusion de deux comptes (date la plus ancienne de chaque succès, attaques et garnitures sans doublon).
-- `npm run verif` : la prod, en lecture seule. Le jeu et le serveur ont la même version, l'en-tête CSP est là, et les pages, l'écran géant, l'admin et chaque fichier du cache hors ligne répondent. Après une mise en ligne, réessaie pendant 30 s le temps que la nouvelle version arrive partout.
-- GitHub (`.github/workflows/`, onglet Actions du dépôt) : à chaque envoi sur `master` qui touche au code et sur chaque pull request, `npm run check`, `test:unit`, `test:api` avec une clé admin tirée au hasard, puis `test:navigateur` (`tests.yml`, en Node 26 : 1 min 36 s mesurée le 02/11/2026, dont 23 s pour installer Chromium et jouer le parcours, comptée 2 min par GitHub qui arrondit à la minute). Le même parcours dans WebKit, le moteur de Safari, en profil iPhone (`safari.yml`, 1 min 40 s) : à la main, avant chaque mise en ligne (`gh workflow run safari.yml --ref master`, ou l'onglet Actions) : `npm run deploy` refuse tant qu'il n'est pas vert sur le commit (03/11/2026, audit de la dette technique ; avant, il tournait sur le tag, donc après la mise en ligne). Il tourne dans l'image Docker de Playwright, où WebKit est déjà installé : l'installer sur la machine de GitHub dépassait 10 min (02/11/2026). Pas à chaque envoi, pour garder les minutes gratuites. Le robot d'équité, puis `equilibrage:invariants` en petit, seulement quand `public/js/game/` change (`equite.yml`, environ 4 min), ou à la main depuis l'onglet Actions. Un envoi qui arrive pendant des tests en cours les annule. Dépôt privé : 2 000 min gratuites par mois, soit environ 30 envois de code par jour.
-- Dépendances : Dependabot (`.github/dependabot.yml`) ouvre une fois par mois une pull request qui regroupe les mises à jour npm, et une pour les actions GitHub. Les tests y tournent. La fusionner sur GitHub si c'est vert, puis `git pull` avant de continuer en local (sinon le prochain envoi de `master` sur GitHub est refusé).
-- Règle : chaque bug corrigé reçoit un test qui l'aurait attrapé, côté téléphone aussi.
+- Règle : chaque bug corrigé reçoit un test qui l'aurait attrapé, côté téléphone aussi, vérifié par mutation (on remet le bug, le test doit échouer).
 - Pas automatisé, à voir sur un vrai téléphone : le dessin au-delà du « ne plante pas », le son, la vibration, l'installation de l'appli et la fluidité.
+- `npm run check` : types de l'API et du JavaScript de `public/js`. Attrape un import disparu (la page admin blanche) ou un nom mal tapé.
+- `npm test` ou `npm run test:unit` : le code du téléphone, sans serveur (4 s).
+- `npm run test:api` (`test/api.mjs`, avec `player.mjs` et `admin.mjs`, 1 min) : chaque route, cas normal et refus, sur une base neuve à part, port 8790 (`TEST_PORT` pour un autre).
+- `npm run test:navigateur` (`test/navigateur.mjs`, Playwright, Edge sous Windows, Chromium sur GitHub, 30 s) : parcours complet joueur, écran géant, admin, sans erreur de console ni fichier manquant (sauf la musique). Le test ajoute à `run.js` une poignée `window.__jeu`, dans son navigateur seulement.
+- `npm run equite` (`test/fairness.mjs`, 4 min) : le robot parfait. `npm run verif` : la prod (réessaie 30 s après une mise en ligne).
+
+### Pièges WebKit
+
+- `NAVIGATEUR=webkit npm run test:navigateur` : même parcours en profil iPhone 13. Avant, `npx playwright install webkit` si Playwright a changé.
+- « Refused to apply a stylesheet » ignoré sous WebKit : celui de Linux dessine le menu « Rôle » avec un style que la CSP bloque. Jamais vu sur iPhone, Chromium attrape les vraies erreurs CSP.
+- `serviceWorkers: "block"` sur une page qui intercepte des requêtes : hors Chromium, Playwright ne les intercepte plus sous un service worker.
+- Sur GitHub, image Docker de Playwright : installer WebKit dépassait 10 min.
+
+### Tests unitaires
+
+`test/unit/*.test.mjs`, `node --test`, sans dépendance. `env.mjs` remplace le navigateur, `d1.mjs` donne une base SQLite en mémoire avec toutes les migrations.
+
+- `achievements` : succès au bon moment, rien de perdu entre onglets, annonce unique.
+- `api` : limite d'attente, reprise par cookie refaite.
+- `attacks` : mur mis de côté, chaque garniture sur un couteau.
+- `banner` : bandeau des soirées, « Bravo », direct ouvert 1 min.
+- `cache` : cache des classements, lecture unique, périmée écartée, abandon à 5 s.
+- `chemin` : chemin du robot, gardé hors du code des téléphones.
+- `deploy` : refus de `npm run deploy`.
+- `google` : empreinte sans e-mail, cookie, usage unique, 10 min, jeton refusé, délier.
+- `inapp` : navigateurs des applis (vrais user agents).
+- `link` : code de liaison, panne de base, réessai concurrent.
+- `offline` : record après coupure, pseudo gardé.
+- `palette` : `palette.js` et `tokens.css` identiques, feuilles sans valeur en dur.
+- `record` : classement tardif sans effet sur le record.
+- `refus` : cause d'un refus du solveur.
+- `resume` : reprise ratée, pas de choix du pseudo.
+- `robustesse` : netteté 12 h, hauteur invalide, cache malgré un fichier raté.
+- `routes` : route admin sans `access` refusée.
+- `runs` : même score à la même milliseconde, une partie.
+- `shell` : `SHELL` de `sw.js`, `modulepreload`, pas d'`Object.hasOwn`, éléments de `screens.js`.
+- `slots` : écran qui répond jamais chassé.
+- `sprites` : chaque objet et planète se dessine, nom inventé sans effet.
+- `sync` : tenue entre appareils.
+- `validate` : pseudos, tenue, progression, fusion.
+- `variante` : la copie d'`equilibrage:variante` démarre.
+
+### GitHub
+
+- `tests.yml` : à chaque envoi de code sur `master` et chaque pull request, types et trois niveaux de tests (2 min).
+- `safari.yml` : à la main avant chaque mise en ligne, `gh workflow run safari.yml --ref master`. `npm run deploy` exige qu'il soit vert.
+- `equite.yml` : robot et invariants en petit, quand `public/js/game/` ou le robot change (4 min).
+- Un envoi annule les tests en cours. Dépôt privé : 2 000 min par mois, environ 30 envois par jour.
+- Dependabot : une pull request npm et une d'actions par mois. Fusionner si c'est vert, puis `git pull` (sinon le prochain envoi est refusé).
 
 ## Ajouter du contenu
 
-- Attaque : une fonction dans `attacks.js` et une ligne dans `ATTACKS` (dès quand, poids, durée ; `solo: true` pour une grosse figure, `calm: true` pour qu'elle attende la fin des annonces en cours puis joue seule, `growsUntil` et `growth` si elle grossit avec le temps). `notice` sur une annonce ne l'affiche que peu avant son arrivée. Le solveur la vérifie tout seul.
-- Arme : sa taille dans `projectiles.js` et son dessin dans `art/cutlery.js` (`PROJECTILE_SPRITES`), sous le même nom.
-- Planète ou objet de tenue : son dessin dans le fichier de sa famille (`sky/` ou `art/`, un nouveau fichier pour une nouvelle famille, à ajouter dans `SHELL` de `sw.js`), puis sa ligne dans `BODIES` ou `PASSERS` (`planets.js`), ou dans `HATS`, `SIDES`, `BREADS`, `AURAS`.
-- Prototype : `lab: true` dans `ATTACKS` ou `PROJECTILES`. Visible dans Infos pour les admins seulement, jamais tiré en jeu.
-- Tartinade rare : une ligne dans `SPREADS` (`palette.js`, avec `with` pour « par un couteau au… ») et son nom dans `RARE_SPREADS` (`projectiles.js`). Elle devient aussi une garniture à débloquer.
-- Événement de partie : `sim.js` le renvoie dans les événements de `step`, `main.js` y réagit dans `ON_SIM`.
-- Succès : une ligne dans `ACHIEVEMENTS` et sa condition dans `runTick`, `runEnd`, `afterSubmit` ou `onBoard`.
-- Après un ajout qui touche aux attaques, refaire un point d'équilibrage (voir Équilibrage).
-- Route d'API : une fonction dans `src/routes/` et une ligne dans `src/worker.ts`, avec son niveau d'accès.
+- Attaque : une fonction dans `attacks.js` et une ligne dans `ATTACKS`. Le solveur la vérifie seul. Puis refaire un point d'équilibrage.
+- Arme : `projectiles.js` et `art/cutlery.js` (`PROJECTILE_SPRITES`), même nom.
+- Planète ou objet : dessin dans `sky/` ou `art/`, ligne dans `BODIES`, `PASSERS`, `HATS`, `SIDES`, `BREADS` ou `AURAS`. Nouveau fichier : dans `SHELL` de `sw.js` et en `modulepreload`.
+- Tartinade : une ligne dans `SPREADS` avec `with`. Sans `free`, elle tombe seule sur les couteaux.
+- Événement de partie : renvoyé par `step` de `sim.js`, traité dans `ON_SIM` de `run.js`.
+- Succès : `ACHIEVEMENTS`, condition dans `runTick`, `runEnd`, `afterSubmit` ou `onBoard`.
+- Route : `src/routes/` et une ligne dans `src/worker.ts`, avec son niveau d'accès.
 
 ## À faire
 
 - Adresse : garder « workers.dev » ou prendre un nom de domaine payant (le QR code changerait). Décision à l'AG du lundi 02/11/2026 à 20h, avant d'imprimer les affiches. Un domaine permettrait aussi de freiner les requêtes avant le Worker (voir Triche et sécurité).
-- Retirer la colonne `profiles.client_id`, plus écrite depuis le 02/11/2026, dans une migration d'une mise en ligne suivante : la retirer tout de suite casserait le retour à la version d'avant, qui l'écrit encore. `profiles.token` (hachage de la première clé du joueur, plus lu depuis `sessions`) reste : elle est obligatoire et unique, la retirer demande de reconstruire la table.
+- Retirer la colonne `profiles.client_id`, plus écrite depuis le 02/11/2026, dans une migration d'une mise en ligne suivante : la retirer tout de suite casserait le retour à la version d'avant, qui l'écrit encore. `profiles.token` reste : obligatoire et unique, la retirer demande de reconstruire la table.
 - Remplacer ou compléter la musique avec des morceaux des collègues DJ.
-- Faire monter le morceau par un ami DJ : coupes et transitions propres, fin qui boucle. Les coupes faites dans le code en attendant sont approximatives.
-- Compte sur plusieurs appareils (piste du 31/10/2026) : un joueur qui change d'appareil, ou qui vide son navigateur, ne peut pas reprendre son pseudo. Faits le 31/10/2026 : lot 1, une clé par appareil (`sessions`) et progression gardée sur le serveur ; lot 2, QR et code de liaison ; lot 3, fusion de deux comptes ; « Déconnecter les autres » (voir Appli et réseau). Reste, pour récupérer son compte sans autre appareil : un code de secours ou un code reçu par e-mail. L'e-mail passerait par le compte Resend de Movie Picker (gratuit : 3 domaines, 100 e-mails par jour et 3 000 par mois partagés entre les projets), avec un domaine à soi pour l'expéditeur, à voir avec la décision sur l'adresse du jeu.
+- Faire monter le morceau par un ami DJ : coupes et transitions propres, fin qui boucle.
+- Compte sur plusieurs appareils : reste, pour récupérer son compte sans autre appareil, un code de secours ou un code reçu par e-mail. L'e-mail passerait par le compte Resend de Movie Picker (gratuit : 3 domaines, 100 e-mails par jour et 3 000 par mois partagés entre les projets), avec un domaine à soi pour l'expéditeur, à voir avec la décision sur l'adresse du jeu.
 
 ### Après le compte multi-appareils
 
-Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du compte multi-appareils finis.
+À commencer seulement une fois les lots du compte multi-appareils finis.
 
 - Revoir le design du tableau de bord admin.
 
 ### Ajouté par Adrien le 01/11/2026
 
 - Débloquer des fonds de jeu tirés des affiches des soirées.
-- Toucher une bière (par exemple les canettes 8.6 et Maximator qui passent déjà en étoile filante) pour mettre un effet « bourré » sur le jeu.
+- Toucher une bière (par exemple les canettes 8.6 et Maximator de l'étoile filante) pour un effet « bourré » sur le jeu.
 - Skin Tung Tung Tung Sahur pour la tartine (le personnage de la planète drôle).
 - Débloquer des musiques (à rapprocher des morceaux des collègues DJ, plus haut).
-- Nouvel emplacement de tenue : une traînée derrière la tartine (miettes, paillettes) ou un effet de mort (la tartine éclate en confettis), à débloquer. À rapprocher des skins stylés, juste au-dessus.
+- Nouvel emplacement de tenue : une traînée derrière la tartine (miettes, paillettes) ou un effet de mort (la tartine éclate en confettis), à débloquer.
 
 ### Ajouté par Adrien le 02/11/2026
 
@@ -552,7 +595,7 @@ Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du c
 
 ### Recherche de bugs du 03/11/2026 : pas corrigé
 
-- Un appareil sorti du compte (« Déconnecter les autres ») garde les succès, garnitures et la tenue du compte, et les donne au pseudo qu'il crée ensuite. Pour le corriger sans risque, le serveur doit dire à l'appareil qu'il a été déconnecté (une petite migration) : vider la progression dès qu'une clé est refusée ferait aussi perdre leurs skins à tous les téléphones si les comptes étaient effacés un jour.
+- Un appareil sorti du compte (« Déconnecter les autres ») garde les succès, garnitures et la tenue, et les donne au pseudo qu'il crée ensuite. Pour corriger sans risque, le serveur doit dire à l'appareil qu'il a été déconnecté (une petite migration) : vider la progression dès qu'une clé est refusée ferait perdre leurs skins à tous si les comptes étaient effacés un jour.
 
 ### Analyse du solveur du 04/11/2026 : pas fait
 
@@ -566,9 +609,10 @@ Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du c
 
 ## Bon à savoir
 
-- Hors git, à garder de côté : `cle-admin.txt`, `.dev.vars`, `invitation-*.txt`, `sauvegardes/`, la musique, `ecoute-sons/` (écoute des bruitages candidats : `node ecoute-sons/serve.mjs`).
+- Hors git, à garder de côté : `cle-admin.txt`, `.dev.vars`, `invitation-*.txt`, `sauvegardes/`, la musique, `ecoute-sons/` (`node ecoute-sons/serve.mjs`).
 - Sauvegarde : `npx wrangler d1 export croute-que-croute --remote --output sauvegardes/<nom>.sql`. Celles d'avant le 29/10/2026 contiennent des jetons en clair : à garder pour soi.
-- Retour en arrière sans sauvegarde, à n'importe quel moment des 7 derniers jours (Time Travel, gratuit) : `npx wrangler d1 time-travel restore croute-que-croute --timestamp=<heure unix>`. Ça écrase la base en ligne : sauvegarder d'abord.
-- Remettre la version d'avant du jeu (code, fichiers et numéro) : `npx wrangler versions list`, puis `npx wrangler rollback <id> -m "<raison>"` (sans id : la version juste d'avant). Impossible de revenir de la 0.49.0 (ou d'une version plus récente) à la 0.48.0 ou avant : Cloudflare refuse le retour en arrière quand une classe Durable Object (ici `Live`, le direct de l'écran géant) a été ajoutée entre les deux. Plan B dans ce cas : corriger, puis remettre en ligne (`npm run deploy -- --pendant-soiree` en urgence). Entre deux versions qui ont toutes les deux `Live`, le retour en arrière reste possible. Pas encore essayé : le faire une fois hors soirée. La base ne revient pas en arrière avec : une migration doit toujours laisser marcher la version d'avant (ajouter des colonnes, jamais en retirer ni en renommer dans la même mise en ligne). Après un retour à une version d'avant le 02/11/2026 puis une remise en ligne : `UPDATE profiles SET steps = NULL`, car ces versions ne tiennent pas les fiches à jour.
+- Time Travel, 7 jours, gratuit : `npx wrangler d1 time-travel restore croute-que-croute --timestamp=<heure unix>`. Écrase la base en ligne : sauvegarder d'abord.
+- Revenir à la version d'avant : `npx wrangler versions list`, puis `npx wrangler rollback <id> -m "<raison>"`. Pas encore essayé : le faire une fois hors soirée.
+- Impossible de revenir de la 0.49.0 ou plus à la 0.48.0 ou avant : Cloudflare refuse quand une classe Durable Object (`Live`) a été ajoutée entre les deux. Plan B : corriger, puis `npm run deploy -- --pendant-soiree`. Entre deux versions avec `Live`, le retour reste possible.
+- La base ne revient pas en arrière : une migration doit laisser marcher la version d'avant (ajouter des colonnes, jamais en retirer ni en renommer dans la même mise en ligne). Après un retour avant le 02/11/2026 puis une remise en ligne : `UPDATE profiles SET steps = NULL`.
 - wrangler est connecté au compte Cloudflare sur le PC d'Adrien (`npx wrangler whoami`).
-- Base vidée le 29/10/2026 au changement d'adresse : chaque téléphone est reparti de zéro.
