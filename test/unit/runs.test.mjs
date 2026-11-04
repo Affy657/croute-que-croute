@@ -27,6 +27,12 @@ const count = (env) => env.DB.db.prepare("SELECT p.run_count AS runs, p.played, 
 
 test("score : envoyé deux fois à la même milliseconde, la partie compte une seule fois", async (t) => {
   const env = await setup(t);
+  let release, arrived = 0;
+  const second = new Promise((ok) => (release = ok));
+  env.DB.before = async () => {
+    if (++arrived === 2) release();
+    await second;
+  };
   const both = await Promise.all([send(env, 110), send(env, 110)]);
   assert.deepEqual(both.map((r) => r.status), [200, 200]);
   for (const r of both) {
