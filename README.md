@@ -202,6 +202,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 
 ### Base
 
+- Tables : `profiles` (joueurs), `sessions` (une clé par appareil), `runs` (parties), `events` et `entries` (soirées), `links` (codes de liaison), `google_states` (demandes Google en cours), `admins` et `admin_invites`, `client_errors`, `sound_reports`. Colonnes dans `migrations/`.
 - `invalid` à 1 dans `runs` : partie retirée des records, gardée, ignorée par la Progression.
 - Le serveur refuse une partie d'une ancienne version : l'heure de début suffit à savoir sur quel réglage elle a été jouée, pour nettoyer des records.
 
@@ -488,6 +489,13 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `public/js/admin/`, `ecran/`, `shared/` (stockage, `palette.js`, `banner.js`).
 - `src/` : `worker.ts` (routes), `db.ts` (base et cache), `live.ts` et `slots.ts` (direct), `validate.ts`, `security.ts`.
 - `src/routes/` : `board.ts` (classements, écran), `player.ts` (inscription, reprise, pseudo), `look.ts` (tenue, progression), `card.ts` (fiche), `runs.ts` (parties), `link.ts` (codes, fusion), `google.ts`, `admin.ts`, `diag.ts`, `errors.ts`.
+
+### Types
+
+- `npm run check` vérifie le serveur et le téléphone en mode strict.
+- Le code du téléphone se type en JSDoc d'une ligne (`@type`, `@param`), sans commentaire explicatif : il part tel quel sur les téléphones.
+- Les formes de données sont dans `navigateur.d.ts`. Les réponses d'API y sont écrites à la main d'après `src/` : les tenir à jour quand une réponse change.
+- Les variables qui démarrent à `null` dans `audio.js`, `diag.js` et `ecran.js` sont déclarées non nulles : le compilateur ne les protège pas, le code garde ses gardes.
 
 ### Commandes
 
