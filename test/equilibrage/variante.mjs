@@ -11,5 +11,6 @@ if (existsSync(dir)) {
   process.exit(1);
 }
 cpSync("public/js/game", dir, { recursive: true });
+cpSync("public/js/shared", ".equilibrage/shared", { recursive: true });
 console.log(`Copie du coeur du jeu dans ${dir}. Modifie les réglages dedans, puis compare :`);
 console.log(`npm run equilibrage -- public/js/game ${dir}`);

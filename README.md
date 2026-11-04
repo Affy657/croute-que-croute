@@ -72,10 +72,12 @@ Jeu de soirée du collectif Tartine Sauvage. La tartine-fusée esquive les couve
 ## Équité
 
 - Avant chaque attaque, le solveur simule les 3,5 s suivantes (jusqu'à 4,5 s si l'attaque dure plus longtemps, comme les murs en série) avec tout ce qui est en vol. S'il ne trouve pas de chemin pour la tartine, en comptant 0,1 s de réaction, l'attaque est remplacée (5 essais au plus).
-- Le modèle est prudent (grille de 12 px, doigt à 360 px/s au plus, marge de 11 px autour des couverts) : si le robot passe, un humain peut passer.
+- Le modèle est prudent (grille de 12 px, doigt à 360 px/s en ligne droite et 509 px/s en diagonale, marge de 11 px autour des couverts) : si le robot passe, un humain peut passer.
 - Le solveur range chaque ligne de sa grille (30 colonnes) dans un nombre de 32 bits. Depuis le 30/10/2026, il calcule d'un coup toute la zone balayée par chaque couvert pendant un pas de 1/30 s (avant : 5 instantanés par pas, avec de petits trous possibles entre deux instantanés quand les couverts vont vite), et fabrique ses masques de bits par décalages (avant : `2 **`, qui prenait la moitié du temps). Résultat : environ 6 fois plus rapide (0,15 ms par vérification sur un PC, 0,8 ms au pire), mêmes décisions sur 8 853 vérifications enregistrées en partie, zone balayée identique à un calcul avec 256 instantanés sur 20 000 couverts tirés au hasard. Le chemin du robot (tests) garde ses 5 instantanés : trajets identiques.
 - Un geste très rapide ne fait pas traverser un couvert : le trajet de la tartine est vérifié tous les 6 px. Un déplacement absurde (infini, ou plus de 10 000 px d'un coup) est borné pour ne pas figer le jeu.
-- `npm run equite` fait jouer le robot 100 parties de 150 s : 0 mort attendu. À relancer après un gros changement des règles, pas pour un petit réglage.
+- Ce que font vraiment les refus (mesuré le 04/11/2026 sur 38 132 vérifications de 360 parties simulées) : les 3 960 refus venaient tous de la situation en cours, jamais de la nouvelle attaque. La tartine est trop près d'un couvert, et le solveur la suppose immobile pendant la réaction. Les attaques sont saines d'elles-mêmes grâce à leurs règles (`shuns`, `avoids`, `calm`, `WALL_AWAY`) : 3 échecs sur 38 012 attaques seules, tartine placée au hasard. L'effet réel est un petit répit, environ 0,7 s par partie. Le retirer coûte environ 20 s au niveau le plus fort (médiane de 150 à 130 s, chiffres bruités). Son revers, en théorie : rester 35 à 55 px devant un rouleau fait tomber les nouvelles attaques de 1,42 à 0,59 par seconde (test avec une tartine parfaitement calée, jamais vu en prod).
+- Essayé sans gain le 04/11/2026 : réaction de 0,2 ou 0,3 s, filtre sur la marge pour s'échapper (morts à peu près égales quelle que soit la marge), horizon plus long (0 échec sur 34 172 attaques acceptées). Temps mesuré : 0,22 ms en médiane, 1,76 ms au pire sur 8 635 vérifications rejouées.
+- `npm run equite` fait jouer le robot 100 parties de 150 s : 0 mort attendu, et 0 refus « à cause de l'attaque elle-même » (option `audit` de `createSim`, coupée en vraie partie). Si ce chiffre monte, une attaque est vraiment impossible : le jeu la remplace sans rien dire. À relancer après un gros changement des règles, pas pour un petit réglage.
 
 ## Équilibrage
 
@@ -104,7 +106,7 @@ Le robot d'équité (`npm run equite`) joue parfaitement : il dit si le jeu est 
 - Morts pour 100 lancées : une attaque très au-dessus des autres est un piège, une attaque proche de 0 sert de respiration.
 
 **Tester un réglage**
-1. `npm run equilibrage:variante -- essai` copie le coeur du jeu dans `.equilibrage/essai` (hors git).
+1. `npm run equilibrage:variante -- essai` copie le coeur du jeu dans `.equilibrage/essai` et `public/js/shared` dans `.equilibrage/shared` (hors git).
 2. Changer les réglages dans cette copie.
 3. `npm run equilibrage -- public/js/game .equilibrage/essai` compare les deux versions. Les autres commandes acceptent aussi une copie : `GAME=.equilibrage/essai npm run equilibrage:attaques`.
 4. Si c'est mieux, reporter le changement dans `public/js/game`, puis `npm run equite` (0 mort) et `npm run equilibrage:invariants`.
@@ -373,7 +375,7 @@ Le robot d'équité (`npm run equite`) joue parfaitement : il dit si le jeu est 
 | 0.46 | 01/11 | Tartine d'or : 1er d'un classement d'au moins 10 joueurs, soirée, Mobile ou PC | 1 (corrections de la revue de code) |
 | 0.47 | 01/11 | la tenue suit le compte sur tous les appareils (le dernier changement gagne) ; page et code de deux versions : rechargement ; tests du téléphone et vérification de la prod | 4 (02/11 : types vérifiés, Worker et dépendances à jour, test navigateur, écrans et dessins réorganisés ; puis variables de design communes, rouges plus lisibles, champ refusé en rouge ; puis espacements et tailles de texte en échelles, survol à la souris, fusion de comptes réparée après un échec ; puis fiche joueur légère et à jour juste après une partie) |
 | 0.48 | 02/11 | pluies espacées : ni pluie ni double pluie tant qu'une double pluie ou un hachoir n'est pas à mi-chemin |  |
-| 0.49 | 03/11 | grand écran en direct (WebSocket) ; 15 dernières minutes : chrono rouge qui tremble, 1er mis en valeur à la fin ; fin de soirée stricte (15 s de marge réseau) ; fil « En direct » agrandi ; mur mis de côté pendant une double pluie ; Première soirée seulement sur téléphone | 6 (vieux téléphones : chrono moins souvent, calques vides retirés, fichiers préchargés ; planètes qui défilent sans à-coups ; puis recherche de bugs : iPhone d'avant iOS 15.4, cache du serveur, score enregistré tout ou rien, liaison et fusion de comptes, écran géant, onglet Soirée de l'admin, cache hors ligne ; fusion de comptes expliquée dans Paramètres ; puis clavier sur PC : Échap pour revenir, « Espace pour jouer » ; puis bruitages dans Infos, « Retour » en bas de l'onglet Admin, joueurs actifs dans l'admin, deux progressions sur la fiche ; puis Paramètres revus : carte Autre appareil allégée, boutons lisibles sur petit écran ; puis 04/11 : 14 bugs corrigés (inscription, record, écran géant hors ligne, souris, clavier, autre appareil, serveur), variables de design partout, mise en ligne protégée, revue de code, sauce du chef enfin gagnable, comptes iPhone : message dans Snapchat et les autres applis, aide sur « pseudo déjà pris », réunir deux comptes dans l'admin) |
+| 0.49 | 03/11 | grand écran en direct (WebSocket) ; 15 dernières minutes : chrono rouge qui tremble, 1er mis en valeur à la fin ; fin de soirée stricte (15 s de marge réseau) ; fil « En direct » agrandi ; mur mis de côté pendant une double pluie ; Première soirée seulement sur téléphone | 7 (vieux téléphones : chrono moins souvent, calques vides retirés, fichiers préchargés ; planètes qui défilent sans à-coups ; puis recherche de bugs : iPhone d'avant iOS 15.4, cache du serveur, score enregistré tout ou rien, liaison et fusion de comptes, écran géant, onglet Soirée de l'admin, cache hors ligne ; fusion de comptes expliquée dans Paramètres ; puis clavier sur PC : Échap pour revenir, « Espace pour jouer » ; puis bruitages dans Infos, « Retour » en bas de l'onglet Admin, joueurs actifs dans l'admin, deux progressions sur la fiche ; puis Paramètres revus : carte Autre appareil allégée, boutons lisibles sur petit écran ; puis 04/11 : 14 bugs corrigés (inscription, record, écran géant hors ligne, souris, clavier, autre appareil, serveur), variables de design partout, mise en ligne protégée, revue de code, sauce du chef enfin gagnable, comptes iPhone : message dans Snapchat et les autres applis, aide sur « pseudo déjà pris », réunir deux comptes dans l'admin ; puis stack à jour : wrangler 4.157, date de compatibilité du 03/11 ; outil de variantes réparé et cause des refus du solveur affichée par `npm run equite`) |
 
 ## Erreurs des joueurs
 
@@ -482,6 +484,8 @@ Après :
   - `api.test.mjs` : chaque demande au serveur a une limite d'attente, et la reprise du compte par cookie, ratée faute de réseau, est refaite au classement suivant.
   - `offline.test.mjs` : hors ligne après un classement reçu, la partie suivante compare au record qu'on vient de faire ; un pseudo changé reste affiché si le classement n'arrive pas.
   - `robustesse.test.mjs` : netteté baissée gardée 12 h puis remesurée ; une hauteur de départ invalide (fenêtre de 0 px) remplacée par la hauteur normale, la tartine peut mourir ; cache hors ligne rempli malgré un fichier raté (sw.js chargé tel quel avec un faux cache).
+  - `refus.test.mjs` : la cause d'un refus du solveur. Une attaque impossible à elle seule est comptée contre elle, avec ou sans solveur ; une tartine déjà trop près d'un couvert ne compte pas contre l'attaque ; pas de second calcul en vraie partie.
+  - `variante.test.mjs` : la copie faite par `npm run equilibrage:variante` se charge et démarre.
   - `resume.test.mjs` : reprise du compte ratée (réseau ou erreur 500) : pas de choix du pseudo ; deux classements demandés pendant la reprise attendent la même ; connexion par code réussie mais classement raté : la clé est gardée, pas de choix du pseudo.
   - `banner.test.mjs` : le bandeau des soirées (`shared/banner.js`). « Fin dans », le chrono en grand pendant les 15 dernières minutes de l'écran géant, « Bravo » dès la fin sur l'écran (plus de « Résultats dans »), « Soirée finie ! » puis « Bravo » sur le téléphone seulement avec un classement relu après les derniers scores, partie finie après les 15 s de marge comptée hors soirée, « Prochaine soirée dans », et le direct de l'écran qui reste ouvert 1 min après les derniers scores. Un écran resté hors ligne annonce le gagnant à l'heure de fin.
   - `slots.test.mjs` : un écran en direct qui répond n'est jamais chassé, un écran muet depuis 1 min laisse sa place (revue de code du 03/11/2026).
@@ -543,6 +547,11 @@ Demandé par Adrien le 31/10/2026, à commencer seulement une fois les lots du c
 ### Recherche de bugs du 03/11/2026 : pas corrigé
 
 - Un appareil sorti du compte (« Déconnecter les autres ») garde les succès, garnitures et la tenue du compte, et les donne au pseudo qu'il crée ensuite. Pour le corriger sans risque, le serveur doit dire à l'appareil qu'il a été déconnecté (une petite migration) : vider la progression dès qu'une clé est refusée ferait aussi perdre leurs skins à tous les téléphones si les comptes étaient effacés un jour.
+
+### Analyse du solveur du 04/11/2026 : pas fait
+
+- Plafonner le répit des refus à environ 0,3 s : fermerait le blocage devant un rouleau (voir Équité) et garderait 97 % des répits actuels. Pas encore mesuré, à décider après la soirée du 07/11.
+- Sortir `pathOf` du code envoyé aux téléphones : seuls les tests s'en servent (`plan` de `createSim`).
 
 ## Idées pour plus tard
 
