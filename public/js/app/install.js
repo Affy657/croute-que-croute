@@ -1,7 +1,9 @@
 import { store, KEYS } from "../shared/store.js";
 import { inApp } from "./inapp.js";
 
+/** @type {InstallPrompt | null} */
 let deferred = null;
+/** @type {Fn[]} */
 const listeners = [];
 
 const standalone = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
@@ -37,6 +39,7 @@ export function shouldSuggest() {
 
 export const markSuggested = () => store.set(KEYS.installAsked, 1);
 
+/** @param {Fn} fn */
 export function onInstallChange(fn) {
   listeners.push(fn);
 }

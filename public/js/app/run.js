@@ -20,6 +20,7 @@ const HUD_WIDEST = "000,00", HUD_PAD = 6;
 
 let lastShown = "", shownAt = 0;
 
+/** @param {Pt} e */
 function scar(e) {
   const tt = S.toast;
   if (tt.scars.length >= SCARS_MAX) return;
@@ -27,6 +28,7 @@ function scar(e) {
   tt.scars.push({ a, len: 7 + Math.random() * 3 });
 }
 
+/** @param {string | null} kind */
 function gainTopping(kind) {
   if (S.train || !kind || !unlockTopping(kind)) return;
   S.gotToppings.push(kind);
@@ -36,6 +38,7 @@ function gainTopping(kind) {
 }
 
 const ON_SIM = {
+  /** @param {Graze} e */
   near(e) {
     scar(e);
     gainTopping(e.spread);
@@ -48,12 +51,14 @@ const ON_SIM = {
     scene.pop(S.toast.x, S.toast.y - 32, S.chain > 1 ? "Frôlé x" + S.chain : "Frôlé !", { key: "near", size: 14 + step * 1.5 });
     audio.playSfx("near", 2 ** ((step * 2) / 12));
   },
+  /** @param {Killer} e */
   death(e) {
     die(e);
     gainTopping(e.spread);
   }
 };
 
+/** @param {Killer} killer */
 function die(killer) {
   S.mode = "dying";
   S.killer = killer;
@@ -88,6 +93,7 @@ function die(killer) {
   S.run = null;
 }
 
+/** @param {Attack | null} [train] */
 export function start(train = null) {
   const page = openPage();
   if ((page && !(train && page === "info")) || (!train && (!ui.joinForm.hidden || !ui.linkForm.hidden)) || !ui.installPop.hidden) return false;
@@ -121,8 +127,9 @@ export function start(train = null) {
   return true;
 }
 
-const probe = document.createElement("canvas").getContext("2d");
+const probe = /** @type {Ctx} */ (document.createElement("canvas").getContext("2d"));
 
+/** @param {Element} el @param {string} text */
 function textWidth(el, text) {
   const cs = getComputedStyle(el);
   probe.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
@@ -150,6 +157,7 @@ function placePicker() {
   ui.picker.style.setProperty("--drop", scale * PICK_DROP + "px");
 }
 
+/** @param {number} dt */
 function update(dt) {
   S.clock += dt;
   const pace = Math.min(speedMul(game.sim.state.t), SPEED_HOT);
@@ -198,10 +206,11 @@ function update(dt) {
   tt.y = st.y;
   tt.tilt += (clamp(vx / 900, -0.45, 0.45) - tt.tilt) * Math.min(1, dt * 14);
   tt.thrust += (clamp(Math.hypot(vx, vy) / 600, 0, 1) - tt.thrust) * Math.min(1, dt * 10);
-  for (const e of events) ON_SIM[e.type](e);
+  for (const e of events) ON_SIM[e.type](/** @type {never} */ (e));
 }
 
 let last = performance.now(), acc = 0;
+/** @param {number} now */
 export function frame(now) {
   requestAnimationFrame(frame);
   scene.pace(now - last);

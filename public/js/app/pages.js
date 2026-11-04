@@ -13,7 +13,8 @@ import { start } from "./run.js";
 
 const BOARD_POLL_MS = 10000;
 
-let boardTimer = null, pageFrom = "menu", infoTab = "attacks", cardId = null;
+/** @type {Timer} */
+let boardTimer = null, pageFrom = "menu", infoTab = "attacks", /** @type {string | null} */ cardId = null;
 
 export function showMenu() {
   S.mode = "menu";
@@ -29,6 +30,7 @@ export function maybeSuggest() {
   if (S.mode === "menu" && !ui.menu.hidden && api.registered()) suggestInstall();
 }
 
+/** @param {string} from */
 function backTo(from) {
   if (from === "over") {
     show("over");
@@ -39,6 +41,7 @@ function backTo(from) {
   }
 }
 
+/** @param {string} from */
 export function openBoard(from) {
   pageFrom = from;
   setBoardScope(null);
@@ -49,6 +52,7 @@ export function openBoard(from) {
   boardTimer = setInterval(() => { if (!document.hidden && openPage() === "board") api.refreshBoard(); }, BOARD_POLL_MS);
 }
 
+/** @param {Row} row */
 export function openBoardCard(row) {
   cardId = row.dataset.id;
   show("profile");
@@ -65,7 +69,7 @@ export function closeBoardCard() {
   show("board");
   renderControls(false);
   renderBoard();
-  const row = ui.boardList.querySelector(`li[data-id="${CSS.escape(id)}"]`);
+  const row = ui.boardList.querySelector(`li[data-id="${CSS.escape(/** @type {string} */ (id))}"]`);
   if (!row) return;
   row.focus({ preventScroll: true });
   row.scrollIntoView({ block: "nearest" });
@@ -87,6 +91,7 @@ function renderInfo() {
   ui.info.scrollTop = 0;
 }
 
+/** @param {string} tab */
 export function showInfoTab(tab) {
   infoTab = tab;
   renderInfo();
@@ -104,6 +109,7 @@ export function closeInfo() {
   backTo(pageFrom);
 }
 
+/** @param {Attack} attack */
 function train(attack) {
   if (start(attack)) animateAttacks(false);
 }
@@ -144,6 +150,7 @@ export function closeSettings() {
   backTo(pageFrom);
 }
 
+/** @type {Record<string, HTMLElement>} */
 const BACK = { board: ui.boardBack, profile: ui.profileBack, info: ui.infoBack, settings: ui.settingsBack, qr: ui.qrBack, link: ui.linkBack, ach: ui.achBack };
 
 export function goBack() {

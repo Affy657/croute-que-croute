@@ -5,6 +5,7 @@ import { BODIES, PASSERS } from "./planets.js";
 import { store, KEYS } from "../shared/store.js";
 import { LOCAL } from "../shared/local.js";
 
+/** @type {Rnd} */
 const rnd = (a, b) => a + Math.random() * (b - a);
 const POP_LIFE = 0.7, PUCK_R = 30, PUCK_LIFT = 110, GRAB_S = 0.6, FIELD_FADE = 5;
 const TOUR = ["rare", "normal", "wild", "normal", "normal", "normal", "wild", "normal"], SIDES = [0.8, 0.22], TOUCH_REACH = 1.8, PASSER_REACH = 0.6, SKIN_ODDS = 0.2;
@@ -13,13 +14,17 @@ const HEAT_EASE = 0.7, HEAT_LOW = 0.45, HEAT_FIELD = 0.85;
 const HINT = "Pose ton doigt où tu veux";
 const COMET_S = 9, COMET_TAIL = 0.35, COMET_ALPHA = 0.7;
 const OFTEN = LOCAL && new URLSearchParams(location.search).get("etoiles") === "souvent";
-const COMET_FIRST = OFTEN ? [1, 2] : [30, 180], COMET_GAP = OFTEN ? [4, 6] : [120, 240];
+/** @type {[number, number]} */
+const COMET_FIRST = OFTEN ? [1, 2] : [30, 180], /** @type {[number, number]} */ COMET_GAP = OFTEN ? [4, 6] : [120, 240];
 const ODD = LOCAL && new URLSearchParams(location.search).get("planetes") === "souvent";
 const QUALITY = [2, 1.5, 1.25, 1], REDRAW_S = [1 / 30, 1 / 20, 1 / 20, 1 / 15], SLOW_MS = 20, SAMPLE = 90, SETTLE = 60, GAP_MS = 250, QUALITY_KEEP_MS = 12 * 3600 * 1000;
 const HEAT_RGB = HEAT.map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
 
+/** @template T @param {T[]} list @param {number} [gap] @returns {() => T} */
 function dealer(list, gap = 1) {
+  /** @type {T[]} */
   const recent = [];
+  /** @type {T[]} */
   let pile = [];
   return () => {
     if (!pile.length) pile = [...list];
@@ -32,31 +37,37 @@ function dealer(list, gap = 1) {
   };
 }
 
+/** @param {string | null} raw */
 export function savedQuality(raw, now = Date.now()) {
   const [q, at] = String(raw || "").split(":").map(Number);
   return now - at < QUALITY_KEEP_MS ? Math.min(QUALITY.length - 1, Math.max(0, q || 0)) : 0;
 }
 
+/** @param {number} k */
 function heatColor(k, low = 1) {
   const [a, b, c] = HEAT_RGB;
   const rgb = a.map((v, j) => v + ((1 - k) * (1 - k) * v + 2 * k * (1 - k) * b[j] + k * k * c[j] - v) * low);
   return `rgb(${rgb.map(Math.round).join(",")})`;
 }
 
+/** @param {HTMLCanvasElement} canvas @param {HTMLCanvasElement} overlay */
 export function createScene(canvas, overlay) {
-  const ctx = canvas.getContext("2d", { alpha: false });
-  const fx = overlay.getContext("2d");
+  const ctx = /** @type {Ctx} */ (canvas.getContext("2d", { alpha: false }));
+  const fx = /** @type {Ctx} */ (overlay.getContext("2d"));
   const C = PALETTE;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const view = { W: 0, H: 0, dpr: 1, scale: 1, ox: 0, oy: 0 };
+  /** @type {HudBox | null} */
   let hudBox = null;
-  let stars = [], sky = 0, shake = 0, parts = [], pops = [], fieldA = 0, heat = 0, heatKey = "", heatFill = null;
+  /** @type {Star[]} */
+  let stars = [], sky = 0, shake = 0, /** @type {Crumb[]} */ parts = [], /** @type {Pop[]} */ pops = [], fieldA = 0, heat = 0, heatKey = "", /** @type {CanvasGradient | null} */ heatFill = null;
+  /** @type {Comet | null} */
   let comet = null, cometIn = rnd(...COMET_FIRST);
   const deal = Object.fromEntries(Object.entries(BODIES).map(([kind, list]) => [kind, dealer(list, kind === "normal" ? 2 : 1)]));
   const skin = dealer(BODIES.rare.filter((b) => b.key)), plain = dealer(BODIES.rare.filter((b) => !b.key));
   const rare = () => (Math.random() < SKIN_ODDS ? skin : plain)();
-  const nextPasser = dealer(Object.keys(PASSERS)), slots = [], slotY = [], arts = [], pick = (i) => (ODD ? deal.rare() : TOUR[i] === "rare" ? rare() : deal[TOUR[i]]());
-  let quality = savedQuality(store.get(KEYS.quality)), frames = [], settle = SETTLE, fxDirty = true;
+  const nextPasser = dealer(Object.keys(PASSERS)), /** @type {Planet[]} */ slots = [], /** @type {number[]} */ slotY = [], /** @type {SkyArt[]} */ arts = [], pick = /** @param {number} i */ (i) => (ODD ? deal.rare() : TOUR[i] === "rare" ? rare() : deal[TOUR[i]]());
+  let quality = savedQuality(store.get(KEYS.quality)), /** @type {number[]} */ frames = [], settle = SETTLE, fxDirty = true;
 
   function resize() {
     view.dpr = Math.min(window.devicePixelRatio || 1, QUALITY[quality]);
@@ -73,6 +84,7 @@ export function createScene(canvas, overlay) {
     stars = Array.from({ length: n }, () => ({ x: Math.random() * view.W, y: Math.random() * view.H, z: rnd(0.1, 1), tw: rnd(0, 6.28) }));
   }
 
+  /** @param {number} ms */
   function pace(ms) {
     if (ms > GAP_MS || document.hidden || quality === QUALITY.length - 1) return;
     if (settle > 0) {
@@ -91,6 +103,7 @@ export function createScene(canvas, overlay) {
     resize();
   }
 
+  /** @param {number} dt @param {number} warp @param {boolean} field */
   function update(dt, warp, field, hot = 0) {
     fieldA = clamp(fieldA + (field ? dt : -dt) * FIELD_FADE, 0, 1);
     heat += (hot - heat) * Math.min(1, dt * HEAT_EASE);
@@ -125,6 +138,7 @@ export function createScene(canvas, overlay) {
     pops = pops.filter((p) => p.life > 0);
   }
 
+  /** @param {number} x @param {number} y */
   function splash(x, y) {
     shake = reduceMotion ? 0 : 12;
     pops = [];
@@ -135,6 +149,7 @@ export function createScene(canvas, overlay) {
     return Array.from({ length: 7 }, () => ({ dx: rnd(-13, 13), dy: rnd(-11, 13), r: rnd(4.5, 10) }));
   }
 
+  /** @param {number} x @param {number} y @param {string} text @param {PopOptions} d */
   function pop(x, y, text, { key = null, size = 14 } = {}) {
     if (key) pops = pops.filter((p) => p.key !== key);
     pops.push({ x, y, text, key, size, life: POP_LIFE });
@@ -146,17 +161,19 @@ export function createScene(canvas, overlay) {
     pops = [];
   }
 
+  /** @param {number} i */
   function skyY(i) {
     return ((((sky - i * SKY_GAP) % SKY_LOOP) + SKY_LOOP) % SKY_LOOP) - SKY_TOP;
   }
 
+  /** @param {number} i @param {Planet} b @param {number} r @param {number} clock */
   function art(i, b, r, clock) {
     const { dpr } = view, size = Math.ceil(2 * r * b.reach * dpr);
     let a = arts[i];
     if (!a || a.size !== size) {
       const cv = document.createElement("canvas");
       cv.width = cv.height = size;
-      a = arts[i] = { cv, g: cv.getContext("2d"), size, body: null, r: 0, at: 0 };
+      a = arts[i] = { cv, g: /** @type {Ctx} */ (cv.getContext("2d")), size, body: null, r: 0, at: 0 };
     }
     const moving = !reduceMotion && b.draw.length > 2;
     if (a.body !== b || a.r !== r || (moving && Math.abs(clock - a.at) >= REDRAW_S[quality])) {
@@ -169,6 +186,7 @@ export function createScene(canvas, overlay) {
     return a.cv;
   }
 
+  /** @param {number} clock */
   function drawSky(clock) {
     const { W, H, dpr } = view, u = Math.min(W, H);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -181,6 +199,7 @@ export function createScene(canvas, overlay) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
+  /** @param {number} x @param {number} y */
   function passerAt(x, y) {
     if (!comet) return null;
     const { W, H } = view, u = Math.min(W, H), c = comet, P = PASSERS[c.kind];
@@ -188,6 +207,7 @@ export function createScene(canvas, overlay) {
     return Math.hypot(x - cx, y - cy) < u * P.size * (P.span || 1) * PASSER_REACH ? { key: c.kind } : null;
   }
 
+  /** @param {number} x @param {number} y */
   function bodyAt(x, y) {
     const { W, H } = view, u = Math.min(W, H);
     return slots.find((b, i) => b && Math.hypot(x - W * SIDES[i % 2], y - skyY(i) * H) < b.r * u * Math.min(b.reach, TOUCH_REACH)) || passerAt(x, y);
@@ -202,8 +222,9 @@ export function createScene(canvas, overlay) {
     };
   }
 
+  /** @param {number} clock */
   function drawComet(clock) {
-    const { W, H } = view, u = Math.min(W, H), c = comet, P = PASSERS[c.kind], s = u * P.size;
+    const { W, H } = view, u = Math.min(W, H), c = /** @type {Comet} */ (comet), P = PASSERS[c.kind], s = u * P.size;
     const dx = (c.x1 - c.x0) * W, dy = (c.y1 - c.y0) * H;
     ctx.save();
     ctx.translate(c.x0 * W + dx * c.k, c.y0 * H + dy * c.k);
@@ -222,6 +243,7 @@ export function createScene(canvas, overlay) {
     ctx.restore();
   }
 
+  /** @param {number} clock */
   function drawBackground(clock) {
     const { W, H, dpr } = view;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -233,7 +255,7 @@ export function createScene(canvas, overlay) {
         heatFill.addColorStop(0, heatColor(heat));
         heatFill.addColorStop(1, heatColor(heat, HEAT_LOW));
       }
-      ctx.fillStyle = heatFill;
+      ctx.fillStyle = /** @type {CanvasGradient} */ (heatFill);
     } else {
       ctx.fillStyle = C.void;
     }
@@ -272,6 +294,7 @@ export function createScene(canvas, overlay) {
     ctx.globalAlpha = 1;
   }
 
+  /** @param {number} x @param {number} y @param {number} dot @param {number} ring */
   function drawPuck(x, y, dot, ring) {
     fx.beginPath();
     fx.arc(x, y, PUCK_R, 0, Math.PI * 2);
@@ -303,6 +326,7 @@ export function createScene(canvas, overlay) {
     fx.fill();
   }
 
+  /** @param {Finger | null} finger @param {number} clock */
   function drawFinger(finger, clock) {
     if (!finger || (!finger.held && !finger.touch)) return;
     fxDirty = true;
@@ -336,6 +360,7 @@ export function createScene(canvas, overlay) {
     fx.globalAlpha = 1;
   }
 
+  /** @param {SimState} world @param {number} clock @param {number} sx @param {number} sy */
   function drawWarns(world, clock, sx, sy) {
     const { dpr, scale, ox, oy } = view;
     if (!world.warns.length) return;
@@ -350,6 +375,7 @@ export function createScene(canvas, overlay) {
     fx.restore();
   }
 
+  /** @param {Frame} a */
   function render({ clock, world, toast, splat, finger, dying }) {
     const { dpr, scale, ox, oy } = view;
     drawBackground(clock);
@@ -393,6 +419,7 @@ export function createScene(canvas, overlay) {
   });
   window.addEventListener("resize", resize);
 
+  /** @param {HudBox} box */
   const avoid = (box) => { hudBox = box; };
 
   return { view, update, render, splash, pop, clear, avoid, pace, bodyAt };

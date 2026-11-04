@@ -9,8 +9,10 @@ const RELOAD_GAP = 15000;
 const UPDATED = "Partie pas comptée : le jeu a été mis à jour, il se recharge quand tu rejoues.";
 const SEND_TRIES = 3, SEND_GAP_MS = 1500, WAIT_GAP_MS = 5000, WAIT_MS = 120000, SEND_TIMEOUT_MS = 8000, CALL_TIMEOUT_MS = 10000, RESUME_RETRY_MS = 3000;
 
-export const reason = (e, offline = "Pas de réseau, réessaie.") => (e.status ? e.message : offline);
-export const badInput = (e) => [400, 404, 409].includes(e.status);
+/** @param {unknown} e @param {string} [offline] */
+export const reason = (e, offline = "Pas de réseau, réessaie.") => (/** @type {Err} */ (e).status ? /** @type {Err} */ (e).message : offline);
+/** @param {unknown} e */
+export const badInput = (e) => [400, 404, 409].includes(/** @type {Err} */ (e).status);
 
 if (LOCAL) {
   const params = new URLSearchParams(location.search), seeded = params.get("jeton");
@@ -22,11 +24,14 @@ if (LOCAL) {
   }
 }
 
+/** @type {Net} */
 export const net = { token: store.get(KEYS.playerToken), board: null, offset: 0, online: true, updatePending: false };
 let localBest = parseInt(store.get(KEYS.localBest) || "0", 10) || 0, saved = readBests();
-let boardAsked = 0, boardShown = 0, lastDevice = null, resumed = false, resuming = null, retryTimer = null, runBests = {}, bestsAsked = 0;
+let boardAsked = 0, boardShown = 0, /** @type {string | null} */ lastDevice = null, resumed = false, /** @type {Promise<void> | null} */ resuming = null, /** @type {Timer} */ retryTimer = null, /** @type {Record<string, number>} */ runBests = {}, bestsAsked = 0;
+/** @type {Record<string, Listener[]>} */
 const listeners = { board: [], update: [], result: [] };
 
+/** @returns {Bests | null} */
 function readBests() {
   try {
     const b = JSON.parse(store.get(KEYS.myBests) || "null");
@@ -36,16 +41,22 @@ function readBests() {
   }
 }
 
+/** @param {Bests} me */
 function keepBests(me) {
   saved = { best: me.best || 0, pcBest: me.pcBest || 0 };
   store.set(KEYS.myBests, JSON.stringify(saved));
 }
 
+/** @param {string} name @param {Listener} fn */
 export const on = (name, fn) => listeners[name].push(fn);
+/** @param {string} name @param {RunAnswer} [value] */
 const emit = (name, value) => listeners[name].forEach((fn) => fn(value));
+/** @param {number | undefined} status */
 const settled = (status) => status && status < 500 && status !== 408 && status !== 429;
 
+/** @param {string} method @param {string} path @param {unknown} [body] @param {number} [timeoutMs] */
 export async function call(method, path, body, timeoutMs) {
+  /** @type {Record<string, string>} */
   const headers = { "content-type": "application/json", "x-app-version": VERSION };
   if (net.token) headers.authorization = "Bearer " + net.token;
   const signal = timeout(timeoutMs || CALL_TIMEOUT_MS);
@@ -69,18 +80,20 @@ export const pastEvent = () => lateFor(net.board, serverNow());
 export const recentEvent = () => recentOf(net.board, serverNow());
 export const upcomingEvent = () => upcomingOf(net.board, serverNow());
 
-export const canCompete = () => registered() && !net.board.me.banned;
+export const canCompete = () => registered() && !/** @type {Joined} */ (net.board).me.banned;
 
+/** @param {string} device */
 export const setDevice = (device) => { lastDevice = device; };
 export const onPc = () => (lastDevice || guessDevice()) === "pc";
 export const myScope = () => (onPc() ? "pc" : isOpen() ? "event" : "general");
 
+/** @returns {Standing} */
 export function standing(scope = myScope()) {
   if (!registered()) return { best: net.token && saved ? (scope === "pc" ? saved.pcBest : saved.best) : localBest, rank: null, count: 0 };
-  const { me } = net.board, mine = runBests[scope] || 0;
-  if (scope === "event") return { best: Math.max(me.eventBest || 0, mine), rank: me.eventRank, count: net.board.eventCount, rival: me.eventRival };
-  if (scope === "pc") return { best: Math.max(me.pcBest || 0, mine), rank: me.pcRank, count: net.board.pcCount, rival: me.pcRival };
-  return { best: Math.max(me.best, mine), rank: me.rank, count: net.board.count, rival: me.rival };
+  const { me } = /** @type {Joined} */ (net.board), mine = runBests[scope] || 0;
+  if (scope === "event") return { best: Math.max(me.eventBest || 0, mine), rank: me.eventRank, count: /** @type {Board} */ (net.board).eventCount, rival: me.eventRival };
+  if (scope === "pc") return { best: Math.max(me.pcBest || 0, mine), rank: me.pcRank, count: /** @type {Board} */ (net.board).pcCount, rival: me.pcRival };
+  return { best: Math.max(me.best, mine), rank: me.rank, count: /** @type {Board} */ (net.board).count, rival: me.rival };
 }
 
 export const knownBest = () => standing().best;
@@ -90,6 +103,7 @@ export function leader(scope = myScope()) {
   return (b && (scope === "event" ? b.eventTop || [] : scope === "pc" ? b.pcTop || [] : b.top)[0]) || null;
 }
 
+/** @param {number} score @param {string} scope */
 export function saveLocalBest(score, scope) {
   if (registered()) {
     runBests[scope] = Math.max(runBests[scope] || 0, score);
@@ -112,7 +126,7 @@ async function resume() {
     resumed = true;
     if (r.token && !net.token) setToken(r.token);
   } catch (e) {
-    if (e.status && e.status < 500 && e.status !== 408 && e.status !== 429) resumed = true;
+    if (/** @type {Err} */ (e).status && /** @type {number} */ (/** @type {Err} */ (e).status) < 500 && /** @type {Err} */ (e).status !== 408 && /** @type {Err} */ (e).status !== 429) resumed = true;
   }
 }
 
@@ -146,6 +160,7 @@ export async function refreshBoard() {
   emit("board");
 }
 
+/** @param {string | null} token */
 function setToken(token) {
   net.token = token;
   runBests = {};
@@ -162,12 +177,14 @@ function clientId() {
   return id;
 }
 
+/** @param {string} pseudo */
 export async function join(pseudo) {
   const r = await call("POST", "/api/join", { pseudo, clientId: clientId() });
   setToken(r.token);
   await refreshBoard();
 }
 
+/** @param {string} code */
 export async function linkWith(code, merge = false) {
   const r = await call("POST", "/api/link", { code, clientId: clientId(), merge });
   if (r.token) setToken(r.token);
@@ -179,25 +196,29 @@ export const newLinkCode = () => call("POST", "/api/me/link");
 export const logoutOthers = () => call("DELETE", "/api/me/devices");
 export const unlinkGoogle = () => call("DELETE", "/api/me/google");
 
+/** @param {boolean} link */
 export async function openGoogle(link) {
   const { url } = await call("POST", "/api/google/start", { link, clientId: clientId() });
   location.href = url;
 }
 
+/** @param {string} pseudo */
 export async function rename(pseudo) {
   const r = await call("PATCH", "/api/me", { pseudo });
   if (net.board && net.board.me && r && r.pseudo) net.board.me.pseudo = r.pseudo;
   await refreshBoard();
 }
 
+/** @param {unknown} body */
 export function startRun(body) {
-  if (!net.token || (registered() && net.board.me.banned)) return null;
+  if (!net.token || (registered() && /** @type {Joined} */ (net.board).me.banned)) return null;
   return call("POST", "/api/runs", body, SEND_TIMEOUT_MS).catch((e) => {
     if (e.status === 401) refreshBoard();
     return { error: e.status === 426 ? UPDATED : reason(e, "Hors ligne : score non compté"), status: e.status };
   });
 }
 
+/** @returns {Pending[]} */
 function pendingScores() {
   try {
     return JSON.parse(store.get(KEYS.pendingScores) || "[]");
@@ -206,28 +227,33 @@ function pendingScores() {
   }
 }
 
+/** @param {Pending[]} list */
 const keepPending = (list) => store.set(KEYS.pendingScores, list.length ? JSON.stringify(list) : null);
+/** @param {string} runId */
 const clearPending = (runId) => keepPending(pendingScores().filter((p) => p.runId !== runId));
 
+/** @param {string} runId @param {number} score @param {string} device @param {number} combo @param {number} at */
 function markPending(runId, score, device, combo, at) {
   const list = pendingScores();
   if (!list.some((p) => p.runId === runId)) keepPending([...list, { runId, score, device, combo, at }]);
 }
 
+/** @param {RunResult} r */
 function applyResult(r) {
   const me = net.board && net.board.me;
   if (me) {
     Object.assign(me, { best: r.best, rank: r.rank, rival: r.rival, pcBest: r.pcBest, pcRank: r.pcRank, pcRival: r.pcRival });
-    Object.assign(net.board, { count: r.count, pcCount: r.pcCount });
+    Object.assign(/** @type {Board} */ (net.board), { count: r.count, pcCount: r.pcCount });
     keepBests(me);
     if (r.eventBest !== null) {
       Object.assign(me, { eventBest: r.eventBest, eventRank: r.eventRank, eventRival: r.eventRival });
-      net.board.eventCount = r.eventCount;
+      /** @type {Board} */ (net.board).eventCount = r.eventCount;
     }
   }
   refreshBoard();
 }
 
+/** @param {string} runId @param {number} score @param {string} device @param {number} combo @param {(() => void) | null} onWait */
 async function send(runId, score, device, combo, onWait, since = Date.now()) {
   markPending(runId, score, device, combo, since);
   for (let i = 0; ; i++) {
@@ -239,9 +265,9 @@ async function send(runId, score, device, combo, onWait, since = Date.now()) {
       emit("result", r);
       return r;
     } catch (e) {
-      if (settled(e.status)) {
+      if (settled(/** @type {Err} */ (e).status)) {
         clearPending(runId);
-        return { error: e.message };
+        return { error: /** @type {Err} */ (e).message };
       }
       if (i === SEND_TRIES - 1 && onWait) onWait();
       if (i >= SEND_TRIES - 1 && Date.now() - since > WAIT_MS) {
@@ -253,10 +279,11 @@ async function send(runId, score, device, combo, onWait, since = Date.now()) {
   }
 }
 
+/** @param {number} score @param {string} device @param {number} combo @param {Promise<RunTicket | RunFail>} pending @param {() => void} onWait */
 export async function submitScore(score, device, combo, pending, onWait) {
   const run = await pending;
   if (run.error) return run;
-  return send(run.runId, score, device, combo, onWait);
+  return send(/** @type {RunTicket} */ (run).runId, score, device, combo, onWait);
 }
 
 export function resumePending() {

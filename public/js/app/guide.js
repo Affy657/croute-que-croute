@@ -7,22 +7,25 @@ import { unlocked } from "./toppings.js";
 import { drawToast } from "./sprites.js";
 import { BODIES, PASSERS } from "./planets.js";
 
-const ART_W = 84, ART_H = 76, SHELF_SCALE = { side: 0.7, aura: 0.62 }, SKY_W = 130, SKY_H = 100, PASSER_S = 56;
+const ART_W = 84, ART_H = 76, /** @type {Record<string, number>} */ SHELF_SCALE = { side: 0.7, aura: 0.62 }, SKY_W = 130, SKY_H = 100, PASSER_S = 56;
 const SHELVES = [["head", "Chapeaux"], ["side", "Côtés"], ["bread", "Pains"], ["aura", "Auras"]];
 const SOURCE = Object.fromEntries(ACHIEVEMENTS.filter((a) => a.gear).map((a) => [a.gear, a]));
 
+/** @param {(ctx: Ctx) => void} draw @param {number} scale */
 function art(draw, scale, w = ART_W, h = ART_H) {
   const cv = canvas(w, h);
-  const ctx = cv.getContext("2d");
+  const ctx = /** @type {Ctx} */ (cv.getContext("2d"));
   const k = cv.dpr * scale;
   ctx.setTransform(k, 0, 0, k, (cv.dpr * w) / 2, (cv.dpr * h) / 2);
   draw(ctx);
   return cv;
 }
 
+/** @param {Partial<Toast>} look @param {number} scale */
 const toastArt = (look, scale) =>
   art((ctx) => drawToast(ctx, { x: 0, y: 0, tilt: 0, thrust: 0.35, spread: "butter", head: null, side: null, bread: null, aura: null, ...look }, null), scale);
 
+/** @param {HTMLCanvasElement} cv @param {string | undefined} name @param {string | null} [meta] */
 function item(cv, name, meta, got = true) {
   const card = el("div", got ? "weapon" : "weapon locked");
   card.append(cv, el("span", "name", name));
@@ -30,24 +33,28 @@ function item(cv, name, meta, got = true) {
   return card;
 }
 
+/** @param {Node[]} cards */
 function gallery(cards, wide = false) {
   const grid = el("div", wide ? "gallery" : "gallery tight");
   grid.append(...cards);
   return grid;
 }
 
+/** @param {...string} lines */
 function bullets(...lines) {
   const list = el("ul", "rules");
   for (const text of lines) list.append(el("li", null, text));
   return list;
 }
 
+/** @param {...Node} children */
 function body(...children) {
   const node = el("div", "fold-body");
   node.append(...children);
   return node;
 }
 
+/** @param {number} got @param {number} total */
 const count = (got, total) => el("span", "fold-tag", `${got} / ${total}`);
 
 function nears() {
@@ -105,7 +112,9 @@ function feats() {
 }
 
 function sky() {
+  /** @param {Planet} b */
   const planet = (b) => item(art((ctx) => b.draw(ctx, (SKY_H / 2 - 2) / b.reach, 0), 1, SKY_W, SKY_H), b.name);
+  /** @param {Passer} p */
   const passer = (p) => item(art((ctx) => p.draw(ctx, (PASSER_S * p.size) / PASSERS.saucer.size / (p.span || 1), 0), 1), p.name);
   return fold("Le ciel", null, () => body(
     bullets(
@@ -149,6 +158,7 @@ function account() {
   )));
 }
 
+/** @param {Element} root */
 export function renderGuide(root) {
   root.replaceChildren(nears(), toppings(), gear(), feats(), sky(), boards(), nights(), account());
 }

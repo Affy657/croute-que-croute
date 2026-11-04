@@ -5,21 +5,27 @@ import { SPREADS, GEAR } from "../shared/palette.js";
 import { owned } from "./toppings.js";
 import { LOCAL } from "../shared/local.js";
 
+/** @type {[string, string, string?][]} */
 export const FAMILIES = [["time", "Survie"], ["play", "Adresse"], ["collect", "Collection"], ["loyal", "Habitué"], ["event", "Soirées"], ["sky", "Le ciel", "Touche ce qui passe dans le ciel de l'accueil."], ["secret", "Secrets"]];
-/** @type {[number, string][]} */
+/** @type {Steps} */
 const TIMES = [[10, "t10"], [30, "t30"], [60, "t60"], [90, "t90"], [120, "t120"], [150, "t150"]];
+/** @type {Steps} */
 const NEARS = [[20, "near20"]];
+/** @type {Steps} */
 const RUNS = [[10, "runs10"], [50, "runs50"], [100, "runs100"]];
 const SIX_SEVEN_S = 67, STILL_S = 3, COMBO = 5, COMBO_MAX = 10, CAREFUL_S = 60, NIGHT_UNTIL_H = 3, EXPRESS_CS = 200, TOP = 10, FRIDGE = 4, WIN_MIN = 10;
+/** @type {Steps} */
 const COMBOS = [[COMBO, "combo5"], [COMBO_MAX, "combo10"]];
 const LIVE = ATTACKS.filter((a) => !a.lab);
 const WEAPONS = Object.keys(PROJECTILES).filter((k) => !PROJECTILES[k].lab);
 const EXTRAS = Object.values(SPREADS).filter((s) => !s.free).length;
-/** @type {[number, string][]} */
+/** @type {Steps} */
 const TOPPINGS = [[FRIDGE, "top4"], [EXTRAS, "topAll"]];
+/** @type {Record<string, string>} */
 const SKY_TOUCH = { pumpkin: "pumpkin", pirate: "ahoy", santa: "hoho", egg: "eggHunt", toaster: "toaster", saucer: "ufo", tesla: "roadTrip" };
 const SKY_IDS = Object.values(SKY_TOUCH);
 
+/** @type {Feat[]} */
 export const ACHIEVEMENTS = [
   { id: "t10", family: "time", name: "Premiers pas", desc: "Tenir 10 s" },
   { id: "t30", family: "time", name: "Croustillante", desc: "Tenir 30 s" },
@@ -56,10 +62,13 @@ export const ACHIEVEMENTS = [
   { id: "woof", family: "secret", name: "Ouaf", desc: "Se faire tartiner par un couteau à la pâtée pour chien", hint: "ça sent un peu le chien.", gear: "dog" },
   { id: "night", family: "secret", name: "Tartine de minuit", desc: "Jouer entre minuit et " + NIGHT_UNTIL_H + " h", hint: "les chauves-souris sortent la nuit.", gear: "bat" }
 ];
+/** @type {Record<string, Feat>} */
 const BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
 const extras = () => owned().filter((k) => !SPREADS[k].free).length;
+/** @param {Steps} steps */
 const reached = (steps) => Math.max(0, ...steps.filter(([, id]) => data.got[id]).map(([n]) => n));
 const bestCs = () => Math.max(data.best, parseInt(store.get(KEYS.localBest) || "0", 10) || 0);
+/** @type {Record<string, () => Goal>} */
 const GOALS = {
   ...Object.fromEntries(TIMES.map(([s, id]) => [id, () => [Math.max(Math.floor(bestCs() / 100), reached(TIMES)), s, " s"]])),
   ...Object.fromEntries(RUNS.map(([n, id]) => [id, () => [Math.max(data.runs, reached(RUNS)), n]])),
@@ -69,8 +78,10 @@ const GOALS = {
   allSky: () => [SKY_IDS.filter((id) => data.got[id]).length, SKY_IDS.length]
 };
 
+/** @returns {FeatData} */
 const blank = () => ({ got: {}, attacks: [], events: [], killers: [], runs: 0, best: 0 });
 
+/** @returns {FeatData} */
 function load() {
   try {
     return { ...blank(), ...JSON.parse(store.get(KEYS.achievements) || "{}") };
@@ -79,11 +90,14 @@ function load() {
   }
 }
 
-let data = load(), fresh = [], run = null;
+let data = load(), /** @type {Feat[]} */ fresh = [], /** @type {{ still: number, eventKey: string | null } | null} */ run = null;
+/** @type {FeatListener[]} */
 const listeners = [];
 
+/** @param {string[]} a @param {string[]} b */
 const union = (a, b) => [...new Set([...a, ...b])];
 
+/** @param {FeatData} mine @param {FeatData} stored */
 function merge(mine, stored) {
   return {
     ...mine,
@@ -98,6 +112,7 @@ function merge(mine, stored) {
   };
 }
 
+/** @param {FeatChange} fn */
 function change(fn) {
   data = merge(data, load());
   const changed = fn(data);
@@ -122,6 +137,7 @@ window.addEventListener("storage", (e) => {
   if (e.key === KEYS.achievements) data = merge(data, load());
 });
 
+/** @param {string} id */
 function unlock(id, synced = false) {
   if (data.got[id]) return;
   const done = change((d) => {
@@ -134,7 +150,9 @@ function unlock(id, synced = false) {
   for (const fn of listeners) fn(a, synced);
 }
 
+/** @param {SyncData} remote */
 export function absorb(remote) {
+  /** @type {Record<string, number>} */
   const got = remote && remote.got && typeof remote.got === "object" ? remote.got : {};
   const attacks = remote && Array.isArray(remote.attacks) ? remote.attacks.filter((id) => typeof id === "string") : [];
   const news = Object.keys(got).filter((id) => BY_ID[id] && !data.got[id] && Number.isFinite(got[id]));
@@ -152,10 +170,12 @@ function checkSky(synced = false) {
 }
 
 export const forSync = () => ({ got: { ...data.got }, attacks: data.attacks.slice() });
+/** @param {FeatListener} fn */
 export const onUnlock = (fn) => listeners.push(fn);
 
+/** @param {string | undefined} key */
 export function touchSky(key) {
-  const id = SKY_TOUCH[key];
+  const id = SKY_TOUCH[/** @type {string} */ (key)];
   if (!id) return null;
   const fresh = !data.got[id], before = !!data.got.allSky;
   unlock(id);
@@ -163,24 +183,29 @@ export function touchSky(key) {
   return { feat: BY_ID[id], fresh, all: !before && data.got.allSky ? BY_ID.allSky : null };
 }
 
+/** @param {Worn} look */
 export function checkOutfit(look) {
   if (look.head && look.side && look.bread) unlock("dressed");
 }
+/** @param {string} id */
 export const has = (id) => !!data.got[id];
 export const runUnlocked = () => fresh.slice();
 export const progress = () => ({ got: ACHIEVEMENTS.filter((a) => data.got[a.id]).length, total: ACHIEVEMENTS.length });
 
+/** @param {number} n */
 function countRuns(n, synced = false) {
   for (const [k, id] of RUNS) if (n >= k) unlock(id, synced);
 }
 
-const first = (rank, count) => rank === 1 && count >= WIN_MIN;
+/** @param {number | null | undefined} rank @param {number} [count] */
+const first = (rank, count) => rank === 1 && /** @type {number} */ (count) >= WIN_MIN;
 
 export function countToppings() {
   const n = extras();
   for (const [k, id] of TOPPINGS) if (n >= k) unlock(id);
 }
 
+/** @param {string | null} eventKey */
 export function runStart(eventKey) {
   run = { still: 0, eventKey };
   fresh = [];
@@ -188,10 +213,12 @@ export function runStart(eventKey) {
   if (new Date().getHours() < NIGHT_UNTIL_H) unlock("night");
 }
 
+/** @param {number} chain */
 export function runCombo(chain) {
   if (run) for (const [n, id] of COMBOS) if (chain >= n) unlock(id);
 }
 
+/** @param {SimState} state @param {boolean} moved @param {number} dt */
 export function runTick(state, moved, dt) {
   if (!run) return;
   for (const [s, id] of TIMES) if (state.t >= s) unlock(id);
@@ -205,13 +232,14 @@ export function runTick(state, moved, dt) {
     if (o.from && !data.attacks.includes(o.from)) {
       change((d) => {
         if (d.attacks.includes(o.from)) return false;
-        d.attacks.push(o.from);
+        d.attacks.push(/** @type {string} */ (o.from));
       });
       if (LIVE.every((a) => data.attacks.includes(a.id))) unlock("allAttacks");
     }
   }
 }
 
+/** @param {number} score @param {Killer | null} killer @param {string} device */
 export function runEnd(score, killer, device) {
   if (!run) return;
   const { eventKey } = run;
@@ -235,18 +263,20 @@ export function runEnd(score, killer, device) {
   if (WEAPONS.every((k) => data.killers.includes(k))) unlock("allWeapons");
 }
 
+/** @param {RunAnswer} [r] */
 export function afterSubmit(r) {
   if (!r || r.error) return;
   if (r.eventRank && r.eventRank <= TOP) unlock("top10");
   if (first(r.eventRank, r.eventCount) || first(r.rank, r.count) || first(r.pcRank, r.pcCount)) unlock("eventWin");
 }
 
+/** @param {Board | null} b */
 export function onBoard(b) {
   if (b && b.me) countRuns(Math.max(data.runs, b.me.runs || 0), true);
   const top = b && b.me ? Math.max(b.me.best || 0, b.me.pcBest || 0) : 0;
   if (b && b.me && (b.me.runs > data.runs || top > data.best)) {
     change((d) => {
-      d.runs = Math.max(d.runs, b.me.runs || 0);
+      d.runs = Math.max(d.runs, /** @type {Joined} */ (b).me.runs || 0);
       d.best = Math.max(d.best, top);
     });
   }
@@ -255,11 +285,13 @@ export function onBoard(b) {
   checkSky(true);
 }
 
+/** @param {PlayerCard} c */
 export function onHistory(c) {
   if (c.events) unlock("event1", true);
   for (const [id, done] of Object.entries(c.feats || {})) if (done && BY_ID[id]) unlock(id, true);
 }
 
+/** @param {string} className @param {string} text */
 function line(className, text) {
   const p = document.createElement("p");
   p.className = className;
@@ -267,6 +299,7 @@ function line(className, text) {
   return p;
 }
 
+/** @param {string} className @param {string} text */
 function span(className, text) {
   const s = document.createElement("span");
   s.className = className;
@@ -274,6 +307,7 @@ function span(className, text) {
   return s;
 }
 
+/** @param {number} have @param {number} need */
 function meter(have, need, unit = "") {
   const row = document.createElement("div"), bar = span("ach-bar", ""), fill = span("ach-fill", "");
   row.className = "ach-meter";
@@ -284,6 +318,7 @@ function meter(have, need, unit = "") {
   return row;
 }
 
+/** @param {Feat} a @param {number} since */
 function item(a, since) {
   const at = data.got[a.id], hidden = !!a.hint && !at, goal = !at && GOALS[a.id];
   const row = document.createElement("div");
@@ -306,6 +341,7 @@ function item(a, since) {
   return row;
 }
 
+/** @param {Element} list @param {Element} count */
 export function renderAchievements(list, count) {
   const p = progress(), since = data.seen || 0;
   count.replaceChildren(meter(p.got, p.total));
