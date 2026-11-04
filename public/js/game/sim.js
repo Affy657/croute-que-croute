@@ -34,7 +34,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
 
   function solveTimed(extra) {
     const t0 = now();
-    const ok = solve(state, extra, false, react);
+    const ok = solve(state, extra, react);
     const ms = now() - t0;
     state.stats.solves++;
     state.stats.solveMs += ms;
@@ -43,7 +43,7 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
   }
 
   function blame(attack) {
-    if (audit && solve(state, null, false, react)) state.stats.own[attack.id] = (state.stats.own[attack.id] || 0) + 1;
+    if (audit && solve(state, null, react)) state.stats.own[attack.id] = (state.stats.own[attack.id] || 0) + 1;
   }
 
   function spawn() {
@@ -166,7 +166,6 @@ export function createSim(rng = Math.random, { fair = true, react = REACT, only 
   return {
     state,
     step,
-    drift: moveObs,
-    plan: () => solve(state, null, true)
+    drift: moveObs
   };
 }

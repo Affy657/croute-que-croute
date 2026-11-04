@@ -1,5 +1,6 @@
 import { createSim } from "../public/js/game/sim.js";
 import { STEP, FW, FH } from "../public/js/game/field.js";
+import { planPath } from "./chemin.mjs";
 
 const GAMES = Number(process.argv[2]) || 100;
 const LIMIT = Number(process.argv[3]) || 120;
@@ -23,7 +24,7 @@ function playSolver(seed, fair) {
     if (left === 0) {
       if (!path || s.stats.spawned !== seen || idx >= path.length - 1) {
         seen = s.stats.spawned;
-        path = sim.plan();
+        path = planPath(s);
         idx = 0;
         if (!path) stuck++;
       }
@@ -52,9 +53,9 @@ function sanity() {
   for (let x = 18; x < FW; x += 30) {
     s.warns.push({ x, y: 10, a: Math.PI / 2, at: 10.5, obs: [{ kind: "fork", x, y: -50, vx: 0, vy: 300, a: Math.PI / 2, spin: 0, len: 58, rad: 6, near: false }] });
   }
-  const closed = sim.plan() === null;
+  const closed = planPath(s) === null;
   s.warns = s.warns.filter((w) => Math.abs(w.x - FW / 2) > 50);
-  const open = sim.plan() !== null;
+  const open = planPath(s) !== null;
   return closed && open;
 }
 
