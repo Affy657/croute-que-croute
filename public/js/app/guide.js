@@ -143,7 +143,7 @@ function nights() {
   return fold("Soirées", null, () => body(bullets(
     "Pendant une soirée Space Tartinade, un classement à part s'ouvre : c'est lui qui compte pour le lot.",
     "Les parties sur PC n'y comptent pas.",
-    "Une partie commencée avant la fin compte encore 5 min après. Le gagnant est annoncé ensuite.",
+    "Seules les parties finies avant la fin comptent, à 15 s près. Le gagnant est annoncé ensuite.",
     "Succès à la clé : Première soirée, Dans le top (top 10) et Tartine d'or (1er d'un classement d'au moins 10 joueurs, Mobile et PC compris)."
   )));
 }
@@ -152,7 +152,7 @@ function account() {
   return fold("Compte", null, () => body(bullets(
     "Pas de mot de passe : ton compte est gardé sur ton téléphone.",
     "Pour jouer ailleurs : Paramètres, Autre appareil, « Mon code ». Sur l'autre appareil, scanne le QR ou touche « J'ai déjà un compte » et tape le code.",
-    "Succès et garnitures te suivent partout. La tenue portée et les réglages restent sur chaque appareil.",
+    "Succès, garnitures et tenue te suivent partout. Seuls les réglages restent sur chaque appareil.",
     "Deux comptes ? « J'ai un code » les réunit en un seul.",
     "Quelqu'un d'autre est sur ton compte ? « Déconnecter les autres » le sort."
   )));

@@ -1118,6 +1118,29 @@ try {
       await context.close();
     }
   });
+  await step("« Déconnecter les autres » : le classement est relu, l'état Google affiché suit", async () => {
+    const { context, p } = await freshPage(await joinApi("Lie" + hex(4)), null, { serviceWorkers: "block" });
+    try {
+      let linked = true;
+      await p.route((url) => url.pathname === "/api/board", async (route) => {
+        const res = await route.fetch();
+        const body = await res.json();
+        await route.fulfill({ response: res, json: { ...body, google: true, me: body.me && { ...body.me, google: linked } } });
+      });
+      await p.route("**/api/me/devices", async (route) => {
+        linked = false;
+        await route.continue();
+      });
+      await p.goto(BASE + "/");
+      await p.locator("#settingsBtn").click({ timeout: WAIT_MS });
+      await p.waitForFunction(() => document.getElementById("googleLabel").textContent === "Délier mon compte Google", null, { timeout: WAIT_MS });
+      await p.locator("#outBtn").click();
+      await p.locator("#outYes").click({ timeout: WAIT_MS });
+      await p.waitForFunction(() => document.getElementById("googleLabel").textContent === "Lier mon compte Google", null, { timeout: WAIT_MS });
+    } finally {
+      await context.close();
+    }
+  });
   await step("score sans réseau : la boucle s'arrête sans l'effacer, le dit, et il part au retour du réseau", async () => {
     const { context, p } = await testPage(await joinApi("Attente" + hex(4)));
     try {

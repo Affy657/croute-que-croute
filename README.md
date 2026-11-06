@@ -312,7 +312,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Réponse perdue : le même appareil réessaie le même code 5 min (`RETRY_MS`). Base en panne pendant « Connecter » : le code redevient intact. Un QR scanné attend la fin de la partie.
 - Fusion : « J'ai un code » sur un appareil connecté. « Réunir « B » avec « A » ? » sans consommer le code, puis tout en une fois sur le serveur. Échec : code toujours valable. Réponse perdue : relit le classement, « Comptes réunis ».
 - On garde le compte qui a affiché le code : meilleurs records avec leur date (à égalité, le plus ancien), parties additionnées, soirées, succès, garnitures, appareils. L'autre pseudo redevient libre. Refusée si un compte est retiré.
-- « Déconnecter les autres » : sort les autres appareils et annule le code (5 par minute et par compte). Quelqu'un qui a utilisé ton code revient au choix du pseudo, sans tes succès ni tes skins : le serveur garde la trace des clés sorties (`signed_out`) et dit `out` à l'appareil. Une clé simplement inconnue n'efface rien : si des comptes disparaissaient un jour, les joueurs garderaient leurs skins.
+- « Déconnecter les autres » : sort les autres appareils, annule le code (5 par minute et par compte) et efface le lien Google du compte : le classement est relu tout de suite pour que les Paramètres le montrent. Quelqu'un qui a utilisé ton code revient au choix du pseudo, sans tes succès ni tes skins : le serveur garde la trace des clés sorties (`signed_out`) et dit `out` à l'appareil. Une clé simplement inconnue n'efface rien : si des comptes disparaissaient un jour, les joueurs garderaient leurs skins.
 
 ### Compte gardé par cookie
 
