@@ -34,6 +34,24 @@ function limiter(ok = true) {
   return { keys, limit: async ({ key }) => (keys.push(key), { success: ok }) };
 }
 
+test("erreurs : 60 lignes dans l'heure, plafond atteint, rien d'écrit", async (t) => {
+  const env = setup(t, 60);
+  assert.equal((await report(env)).status, 429);
+  assert.equal(rows(env), 60);
+});
+
+test("erreurs : proche du plafond, seules les lignes qui tiennent sont écrites", async (t) => {
+  const env = setup(t, 58);
+  assert.equal((await report(env, 5)).status, 200);
+  assert.equal(rows(env), 60);
+});
+
+test("erreurs : les lignes de plus d'une heure ne comptent plus", async (t) => {
+  const env = setup(t, 60, HOUR + 1);
+  assert.equal((await report(env, 2)).status, 200);
+  assert.equal(rows(env), 62);
+});
+
 test("erreurs : compté par IP avant la limite commune", async (t) => {
   const env = { ...setup(t), ERROR_IP_LIMIT: limiter(), ERROR_LIMIT: limiter() };
   assert.equal((await report(env)).status, 200);
