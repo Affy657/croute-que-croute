@@ -348,8 +348,8 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 - Le serveur parle à Google lui-même (`src/routes/google.ts`) : `POST /api/google/start` note la demande dans `google_states` (10 min, un seul usage) et pose le cookie `cv_google`, puis Google renvoie sur `GET /api/google/retour`, qui compare le cookie, échange le code et revient sur `/#google=<résultat>`. Aucun script Google dans la page, la politique de sécurité ne change pas.
 - On demande `openid email`, parce que la documentation de Google l'exige, mais on ne garde que `sha256("google:" + sub)` dans `profiles.google_hash`. L'adresse e-mail n'est jamais enregistrée.
 - Bouton caché sans clés, sur l'ancienne adresse (elle n'est pas déclarée chez Google), dans les navigateurs d'applis (Google y refuse la connexion) et dans l'appli iPhone de l'écran d'accueil (la page de Google s'y ouvre dans un autre stockage : à vérifier sur un vrai iPhone avant de l'ouvrir).
-- Mise en route, à faire par Adrien : projet Google Cloud, écran de consentement « Externe » avec la page `/confidentialite`, identifiant OAuth « Application Web » avec comme URI de redirection `https://<adresse du jeu>/api/google/retour`, puis `npx wrangler secret put GOOGLE_CLIENT_ID` et `npx wrangler secret put GOOGLE_CLIENT_SECRET`. Migration 0014 à appliquer en ligne avant la mise en ligne. Google vérifie le domaine de l'adresse : À faire avec tartinesauvage.fr.
-- Jamais essayée avec le vrai Google : les tests remplacent sa réponse.
+- En place : projet Google Cloud `croute-que-croute-tts` sur le compte d'Adrien, appli « En production », identifiant OAuth « Application Web », URI de redirection `https://croute-que-croute.tartinesauvage.fr/api/google/retour`, clés posées avec `npx wrangler secret put GOOGLE_CLIENT_ID` et `npx wrangler secret put GOOGLE_CLIENT_SECRET`. Une autre adresse de jeu demande d'ajouter son URI chez Google. Il faut les deux clés : avec l'ID seul, le bouton s'affiche mais la connexion échoue.
+- Les tests automatiques remplacent la réponse de Google : après un changement de ce parcours, refaire la liaison et la connexion avec un vrai compte.
 
 ### Mises à jour
 
@@ -615,10 +615,9 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 
 - Freiner les requêtes avant le Worker avec une règle Cloudflare sur tartinesauvage.fr (voir Triche et sécurité). Tout le lieu partage souvent la même IP : choisir le seuil après une soirée mesurée.
 - Retirer la colonne `profiles.client_id`, plus écrite depuis le 02/11/2026, dans une migration d'une mise en ligne suivante : la retirer tout de suite casserait le retour à la version d'avant, qui l'écrit encore. `profiles.token` reste : obligatoire et unique, la retirer demande de reconstruire la table.
-- Activer la connexion avec Google une fois le nom de domaine en place (voir Appli et réseau).
 - Remplacer ou compléter la musique avec des morceaux des collègues DJ.
 - Faire monter le morceau par un ami DJ : coupes et transitions propres, fin qui boucle.
-- Compte sur plusieurs appareils : reste, pour récupérer son compte sans autre appareil, un code de secours ou un code reçu par e-mail. L'e-mail passerait par le compte Resend de Movie Picker (gratuit : 3 domaines, 100 e-mails par jour et 3 000 par mois partagés entre les projets), avec un domaine à soi pour l'expéditeur, à voir avec la décision sur l'adresse du jeu.
+- Compte sur plusieurs appareils : reste, pour récupérer son compte sans autre appareil, un code de secours ou un code reçu par e-mail. L'e-mail passerait par le compte Resend de Movie Picker (gratuit : 3 domaines, 100 e-mails par jour et 3 000 par mois partagés entre les projets), avec tartinesauvage.fr comme domaine d'expéditeur.
 
 ### Après le compte multi-appareils
 
