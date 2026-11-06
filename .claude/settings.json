@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npm test*)",
+      "Bash(npm run test*)",
+      "Bash(npm run check*)",
+      "Bash(rtk npm test*)",
+      "Bash(rtk npm run test*)",
+      "Bash(rtk npm run check*)"
+    ],
+    "ask": [
+      "Bash(npm run deploy*)",
+      "Bash(rtk npm run deploy*)",
+      "Bash(node scripts/deploy.mjs*)",
+      "Bash(npx wrangler deploy*)",
+      "Bash(rtk npx wrangler deploy*)",
+      "Bash(npm run db:remote*)",
+      "Bash(rtk npm run db:remote*)"
+    ],
+    "deny": [
+      "Read(./cle-admin.txt)",
+      "Read(./.dev.vars)",
+      "Read(./invitation-*.txt)",
+      "Edit(./cle-admin.txt)",
+      "Edit(./.dev.vars)",
+      "Edit(./invitation-*.txt)"
+    ]
+  }
+}
