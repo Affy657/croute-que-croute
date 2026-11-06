@@ -40,7 +40,7 @@ function dealer(list, gap = 1) {
 /** @param {string | null} raw */
 export function savedQuality(raw, now = Date.now()) {
   const [q, at] = String(raw || "").split(":").map(Number);
-  return now - at < QUALITY_KEEP_MS ? Math.min(QUALITY.length - 1, Math.max(0, q || 0)) : 0;
+  return now - at < QUALITY_KEEP_MS ? Math.min(QUALITY.length - 1, Math.max(0, Math.floor(q) || 0)) : 0;
 }
 
 /** @param {number} k */

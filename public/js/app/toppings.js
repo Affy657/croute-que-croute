@@ -13,7 +13,7 @@ if (LOCAL && new URLSearchParams(location.search).get("garnitures") === "toutes"
 function load() {
   try {
     const list = JSON.parse(store.get(KEYS.toppings) || "[]");
-    return Array.isArray(list) ? list.filter((k) => SPREADS[k]) : [];
+    return Array.isArray(list) ? list.filter((k) => own(SPREADS, k)) : [];
   } catch (e) {
     return [];
   }

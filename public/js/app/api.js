@@ -37,11 +37,14 @@ const sending = new Map();
 /** @type {Record<string, Listener[]>} */
 const listeners = { board: [], update: [], result: [] };
 
+/** @param {unknown} value */
+const finite = (value) => (typeof value === "number" && Number.isFinite(value) ? value : 0);
+
 /** @returns {Bests | null} */
 function readBests() {
   try {
     const b = JSON.parse(store.get(KEYS.myBests) || "null");
-    return b && typeof b === "object" ? b : null;
+    return b && typeof b === "object" ? { best: finite(b.best), pcBest: finite(b.pcBest) } : null;
   } catch (e) {
     return null;
   }

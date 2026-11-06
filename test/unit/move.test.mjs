@@ -9,11 +9,12 @@ globalThis.sessionStorage = {
   setItem: (k, v) => sessionItems.set(k, String(v)),
   removeItem: (k) => sessionItems.delete(k)
 };
-let cleaned = 0;
-globalThis.history = { replaceState: () => { cleaned++; } };
+let cleaned = 0, address = "";
+globalThis.history = { replaceState: (state, title, url) => { cleaned++; address = url; } };
 mock.timers.enable({ apis: ["setTimeout"] });
 
-const { moveUrl, moved, OLD_HOST, HOME } = await import("../../public/js/app/move.js");
+const { moveUrl, moved, OLD_HOST, HOME, KEPT } = await import("../../public/js/app/move.js");
+const { KEYS } = await import("../../public/js/shared/store.js");
 const arrive = new Function(readFileSync(new URL("../../public/js/arrive.js", import.meta.url), "utf8"));
 const OLD = "https://" + OLD_HOST;
 const flush = async () => {
@@ -47,9 +48,11 @@ function newcomer() {
   delete window.matchMedia;
 }
 
-function land(url) {
+function land(url, from = OLD + "/") {
+  document.referrer = from;
   location.hash = url.slice(url.indexOf("#"));
   location.pathname = "/";
+  location.search = "";
   arrive();
 }
 
@@ -262,6 +265,50 @@ test("déménagement : un lien fabriqué ne pose ni clé ni identifiant", () => 
   assert.equal(localStorage.getItem("autre"), null);
   assert.equal(localStorage.getItem("cv-sensibilite"), "1");
   assert.equal(sessionStorage.getItem("cv-arrivee"), null);
+});
+
+test("déménagement : arrive.js accepte exactement les mêmes clés que move.js envoie", () => {
+  const source = readFileSync("public/js/arrive.js", "utf8");
+  assert.deepEqual(JSON.parse(source.match(/KEPT = (\[[^\]]*\]);/)[1]), KEPT.map((name) => KEYS[name]));
+});
+
+test("lien fabriqué : seules les vraies clés de KEPT sont écrites, et seulement des textes", () => {
+  reset();
+  const data = { "cv-score-attente": "null", "cv-sonde-essais": "0", "cv-arrivee": "ABCD2345", "cv-diag": "1", "cv-invincible": "1", "cv-reload": "1", "cqc-admin-token": "pirate", "cv-inconnu": "x", "cv-sensibilite": 12, "cv-pain": "brioche", "cv-succes": { attacks: 1 } };
+  land(HOME + "/#demenage=" + encodeURIComponent(JSON.stringify({ code: null, data })));
+  assert.deepEqual(Object.keys(data).filter((key) => localStorage.getItem(key) !== null), ["cv-pain"]);
+});
+
+const CODE_LINK = HOME + "/#demenage=" + encodeURIComponent(JSON.stringify({ code: "ABCD2345", data: {} }));
+
+test("lien automatique depuis l'ancienne adresse : connexion sans aucune touche", () => {
+  reset();
+  land(CODE_LINK);
+  assert.equal(sessionStorage.getItem("cv-arrivee"), "ABCD2345");
+  assert.equal(address, "/");
+  assert.equal(cleaned, 1);
+});
+
+const ELSEWHERE = { "sans référent": "", "un autre site": "https://piege.example/", "une adresse qui commence pareil": OLD + ".piege.example/", "l'ancienne adresse en http": OLD.replace("https", "http") + "/" };
+for (const [name, from] of Object.entries(ELSEWHERE)) {
+  test(`lien reçu avec un code (${name}) : personne n'est connecté à son insu, le code attend « Connecter »`, () => {
+    reset();
+    land(CODE_LINK, from);
+    assert.equal(sessionStorage.getItem("cv-arrivee"), null);
+    assert.equal(address, "/#lier=ABCD2345");
+  });
+}
+
+test("lien sans code ou avec un code illisible : pas de #lier=", () => {
+  reset();
+  land(HOME + "/#demenage=" + encodeURIComponent(JSON.stringify({ code: "<script>", data: {} })), "");
+  assert.equal(address, "/");
+  land(HOME + "/#demenage=" + encodeURIComponent(JSON.stringify({ code: 12345678, data: {} })), "");
+  assert.equal(address, "/");
+});
+
+test("politique de référent : l'origine part, sinon le passage automatique demanderait une touche", () => {
+  assert.match(readFileSync("public/_headers", "utf8"), /Referrer-Policy: strict-origin\r?\n/);
 });
 
 test("déménagement : une adresse illisible ne plante pas et s'efface", () => {

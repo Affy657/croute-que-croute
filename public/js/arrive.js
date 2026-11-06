@@ -1,5 +1,6 @@
 (() => {
   const OLD = "https://croute-que-croute.tartine-sauvage.workers.dev", HOST = "croute-que-croute.tartinesauvage.fr";
+  const KEPT = ["cv-best-cs", "cv-records", "cv-muted", "cv-sfx-off", "cv-music-vol", "cv-sfx-vol", "cv-install-asked", "cv-succes", "cv-garnitures", "cv-garniture", "cv-tenue-vue", "cv-tenue-at", "cv-accessoire", "cv-cotes", "cv-pain", "cv-aura", "cv-qualite", "cv-sensibilite", "cv-souris"];
   const REACH_MS = 2500, TRIPS = 3, TRIPS_KEY = "cv-sonde-essais";
   const found = location.hash.match(/^#demenage=(.+)$/);
   /** @param {string} id */
@@ -33,10 +34,13 @@
     localStorage.setItem("cv-sonde", "1");
     const { code, data, retry } = JSON.parse(decodeURIComponent(found[1]));
     if (retry) localStorage.removeItem("cv-sonde");
-    if (/^[A-Za-z0-9-]{1,12}$/.test(code || "")) sessionStorage.setItem("cv-arrivee", code);
+    if (typeof code === "string" && /^[A-Za-z0-9-]{1,12}$/.test(code)) {
+      if (document.referrer.indexOf(OLD + "/") === 0) sessionStorage.setItem("cv-arrivee", code);
+      else history.replaceState(null, "", location.pathname + location.search + "#lier=" + code);
+    }
     if (localStorage.getItem("cv-token")) return;
-    for (const key of Object.keys(data || {})) {
-      if (/^cv-[a-z-]+$/.test(key) && key !== "cv-token" && key !== "cv-client") localStorage.setItem(key, String(data[key]));
+    for (const key of KEPT) {
+      if (data && typeof data[key] === "string") localStorage.setItem(key, data[key]);
     }
   } catch (e) {}
 })();

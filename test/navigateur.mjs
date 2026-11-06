@@ -1015,6 +1015,40 @@ try {
       await context.close();
     }
   });
+  await step("lien fabriqué ou valeurs abîmées : le jeu démarre quand même, sans plantage", async () => {
+    const bad = { "cv-score-attente": "null", "cv-succes": '{"attacks":1}', "cv-records": "[1]", "cv-garnitures": "{}", "cv-qualite": "1.5:9999999999999" };
+    const { context, p } = await freshPage(null, null, { serviceWorkers: "block" });
+    try {
+      await p.goto(BASE + "/#demenage=" + encodeURIComponent(JSON.stringify({ code: null, data: bad })));
+      await p.waitForFunction(() => document.documentElement.dataset.ready === "1", null, { timeout: WAIT_MS });
+      await p.locator("#joinForm").waitFor({ state: "visible", timeout: WAIT_MS });
+      if (await p.evaluate(() => localStorage.getItem("cv-score-attente"))) throw new Error("clé hors de KEPT écrite");
+      await p.evaluate((values) => Object.entries(values).forEach(([key, value]) => localStorage.setItem(key, value)), bad);
+      await p.reload();
+      await p.waitForFunction(() => document.documentElement.dataset.ready === "1", null, { timeout: WAIT_MS });
+      await p.locator("#joinForm").waitFor({ state: "visible", timeout: WAIT_MS });
+      await wait(500);
+      if (await p.evaluate(() => sessionStorage.getItem("cv-boot-reload"))) throw new Error("le démarrage a planté");
+    } finally {
+      await context.close();
+    }
+  });
+  await step("lien reçu avec un code de déménagement : rempli, il reste à toucher « Connecter »", async () => {
+    const name = "Recu" + hex(4), code = await codeOf(await joinApi(name));
+    const { context, p } = await freshPage(null, null, { serviceWorkers: "block" });
+    try {
+      await p.goto(BASE + "/#demenage=" + encodeURIComponent(JSON.stringify({ code, data: {} })), { referer: "https://piege.example/" });
+      await p.locator("#linkForm").waitFor({ state: "visible", timeout: WAIT_MS });
+      await wait(500);
+      const seen = await p.evaluate(() => [document.getElementById("linkInput").value, localStorage.getItem("cv-token"), sessionStorage.getItem("cv-arrivee"), location.hash]);
+      if (seen[0] !== code || seen[1] || seen[2] || seen[3]) throw new Error(JSON.stringify(seen));
+      await p.locator("#linkForm button[type=submit]").click();
+      await p.locator("#play").waitFor({ state: "visible", timeout: WAIT_MS });
+      if ((await boardOf(await p.evaluate(() => localStorage.getItem("cv-token")))).pseudo !== name) throw new Error("mauvais compte");
+    } finally {
+      await context.close();
+    }
+  });
   await step("score sans réseau : la boucle s'arrête sans l'effacer, le dit, et il part au retour du réseau", async () => {
     const { context, p } = await testPage(await joinApi("Attente" + hex(4)));
     try {
