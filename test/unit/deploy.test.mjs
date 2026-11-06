@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { blocked, checkFailed, drift, ignored, ignoredPaths, offGitProblem, OFF_GIT, URGENT } from "../../scripts/garde.mjs";
+import { blocked, checkFailed, drift, gitProblem, ignored, ignoredPaths, offGitProblem, OFF_GIT, URGENT } from "../../scripts/garde.mjs";
 
 const MIN = 60000, END = Date.UTC(2026, 10, 7, 22, 30), FINAL = END + 15000;
 const board = (now, status) => ({ now, event: status ? { name: "Space Tartinade #3", status, closesAt: END, finalAt: FINAL } : null });
@@ -81,6 +81,26 @@ test("mise en ligne refusée si node_modules ne suit pas package-lock.json (le P
   assert.deepEqual(drift(lock, (n) => ({ qrcode: "1.5.4", wrangler: "4.154.0" })[n]), ["wrangler 4.154.0 au lieu de 4.156.0"]);
   assert.deepEqual(drift(lock, (n) => ({ wrangler: "4.156.0" })[n]), ["qrcode absent au lieu de 1.5.4"]);
   assert.deepEqual(drift(lock, (n) => ({ qrcode: "1.5.4", wrangler: "4.156.0" })[n]), []);
+});
+
+const CLEAN = { status: "\n", branch: "master\n", ahead: "0\n" };
+
+test("mise en ligne et migration exigent git propre, master et tout envoyé", () => {
+  assert.equal(gitProblem(CLEAN), null);
+  assert.match(gitProblem({ ...CLEAN, status: " M README.md\n" }), /pas enregistrés/);
+  assert.match(gitProblem({ ...CLEAN, branch: "essais\n" }), /master/);
+  assert.match(gitProblem({ ...CLEAN, ahead: "2\n" }), /git push origin master/);
+});
+
+test("npm run db:remote passe par le garde-fou avant de lancer la migration en ligne", () => {
+  const scripts = JSON.parse(readFileSync("package.json", "utf8")).scripts;
+  assert.equal(scripts["db:remote"], "node scripts/migrer.mjs");
+  assert.ok(Object.entries(scripts).every(([name, cmd]) => name === "db:local" || !/migrations apply/.test(cmd)));
+  const migrer = readFileSync("scripts/migrer.mjs", "utf8");
+  const at = (s) => migrer.indexOf(s);
+  assert.ok(migrer.includes("/api/board"));
+  for (const step of ["if (dirty) stop(dirty)", "if (!board) stop(", "if (busy) stop(busy)"]) assert.ok(at(step) > 0 && at(step) < at("migrations apply"), step);
+  assert.match(migrer, /blocked\(board, process\.argv, "npm run db:remote"\)/);
 });
 
 const SOUNDS = ["public/music/theme.m4a", "public/sfx/death.mp3", "public/sfx/first.mp3", "public/sfx/near.mp3", "public/sfx/record.mp3", "public/sfx/start.mp3"];

@@ -541,7 +541,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 | `npm run db:local` | Créer la base locale (à refaire après une migration) |
 | `npm run seed` | Remplir la base locale, jamais en ligne. Donne un lien `?jeton=`. `--soiree` : une soirée en cours. `--persist-to <dossier>` : une autre base |
 | `npm run dev` | Jeu sur http://localhost:8787. Dans l'app Claude, `.claude/launch.json` l'ouvre au wifi |
-| `npm run db:remote` | Migrations en ligne, avant `npm run deploy` |
+| `npm run db:remote` | Migrations en ligne, avant `npm run deploy` (`scripts/migrer.mjs`). Refuse si : git pas à jour, hors de `master`, pas envoyé, prod sans réponse, soirée ouverte, 15 s de marge, ou soirée qui ouvre dans moins de 2 h. `-- --pendant-soiree` en urgence |
 | `npm run deploy` | Mettre en ligne, puis `npm run verif`. Refuse si : git pas à jour, hors de `master`, pas envoyé, fichiers hors git de `public/` absents ou en trop (`wrangler` envoie tout `public/`, attendus : `theme.m4a` et les 5 bruitages), `node_modules` en retard (arrêter le serveur, `npm ci`), types ou tests en échec, Tests ou Safari pas verts, migration manquante, prod anormale, version pas montée, soirée ouverte, 15 s de marge, ou soirée qui ouvre dans moins de 2 h (`scripts/garde.mjs`) |
 | Options de `deploy` | `-- --pendant-soiree` en urgence, `-- --sans-github` si GitHub ne répond pas. Un commit README ou images garde le résultat d'avant |
 | `npm run verif` | Prod en lecture seule. `npm run verif -- 0.46.1+373facb` exige cette version |

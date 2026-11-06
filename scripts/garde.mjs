@@ -3,6 +3,13 @@ export const NO_GITHUB = "--sans-github";
 export const CHECKS = [["tests.yml", "Tests"], ["safari.yml", "Safari"]];
 export const OFF_GIT = ["public/music/theme.m4a", ...["death", "first", "near", "record", "start"].map((name) => `public/sfx/${name}.mp3`)];
 
+export function gitProblem({ status, branch, ahead }) {
+  if (status.trim()) return "des changements ne sont pas enregistrés dans git.";
+  if (branch.trim() !== "master") return "on ne part que de master.";
+  if (ahead.trim() !== "0") return "master n'est pas envoyé sur GitHub : git push origin master.";
+  return null;
+}
+
 const SOON_MS = 2 * 3600 * 1000;
 
 export function blocked(board, args = [], command = "npm run deploy") {
