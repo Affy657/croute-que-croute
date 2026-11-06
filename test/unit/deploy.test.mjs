@@ -25,6 +25,31 @@ test("en urgence, permise même pendant la soirée", () => {
   assert.equal(blocked(board(END + MIN, "closed"), ["deploy", URGENT]), null);
 });
 
+const HOUR = 60 * MIN, OPENS = Date.UTC(2026, 10, 7, 19, 0);
+const coming = (now, event = null) => ({ now, event, next: { name: "Space Tartinade #4", opensAt: OPENS, closesAt: OPENS + 3 * HOUR, status: "upcoming" } });
+
+test("mise en ligne refusée moins de 2 h avant l'ouverture d'une soirée", () => {
+  assert.match(blocked(coming(OPENS - MIN)), /Space Tartinade #4 » ouvre dans 1 min/);
+  assert.match(blocked(coming(OPENS - 2 * HOUR + 1)), /ouvre dans 120 min/);
+  assert.match(blocked({ ...coming(OPENS - MIN), event: { name: "Space Tartinade #3", status: "closed", finalAt: OPENS - HOUR } }), /Space Tartinade #4/);
+});
+
+test("mise en ligne permise 2 h ou plus avant l'ouverture", () => {
+  assert.equal(blocked(coming(OPENS - 2 * HOUR)), null);
+  assert.equal(blocked(coming(OPENS - 24 * HOUR)), null);
+});
+
+test("en urgence, permise même juste avant l'ouverture", () => {
+  assert.equal(blocked(coming(OPENS - MIN), ["deploy", URGENT]), null);
+});
+
+test("le refus donne la commande d'urgence de ce qu'on vient de lancer", () => {
+  assert.match(blocked(coming(OPENS - MIN)), /npm run deploy -- --pendant-soiree/);
+  assert.match(blocked(board(END - MIN, "open")), /npm run deploy -- --pendant-soiree/);
+  assert.match(blocked(coming(OPENS - MIN), [], "npm run db:remote"), /npm run db:remote -- --pendant-soiree/);
+  assert.match(blocked(board(END - MIN, "open"), [], "npm run db:remote"), /npm run db:remote -- --pendant-soiree/);
+});
+
 const SKIP = ignoredPaths(readFileSync(".github/workflows/tests.yml", "utf8"));
 const HEAD = "c3", DOCS = "b2", OLD = "a1";
 const fits = (sha) => sha === HEAD || sha === DOCS;

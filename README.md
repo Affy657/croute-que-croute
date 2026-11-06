@@ -480,7 +480,7 @@ Pendant :
 - Surveiller le bandeau rouge « à vérifier » et retirer le joueur si besoin.
 - Surveiller aussi le bandeau rouge des erreurs des joueurs : copier le rapport, à corriger après la soirée.
 - Repousser la fin si la soirée glisse.
-- Ne rien mettre en ligne : le script refuse tant que la soirée est ouverte, et pendant les 15 s où ses derniers scores arrivent encore.
+- Ne rien mettre en ligne : le script refuse dès 2 h avant l'ouverture, tant que la soirée est ouverte, et pendant les 15 s où ses derniers scores arrivent encore.
 - Regarder la consommation de temps en temps : `npx wrangler d1 info croute-que-croute` (lignes lues et écrites sur 24 h, limites 5 millions et 100 000, voir Technique).
 
 Après :
@@ -542,7 +542,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 | `npm run seed` | Remplir la base locale, jamais en ligne. Donne un lien `?jeton=`. `--soiree` : une soirée en cours. `--persist-to <dossier>` : une autre base |
 | `npm run dev` | Jeu sur http://localhost:8787. Dans l'app Claude, `.claude/launch.json` l'ouvre au wifi |
 | `npm run db:remote` | Migrations en ligne, avant `npm run deploy` |
-| `npm run deploy` | Mettre en ligne, puis `npm run verif`. Refuse si : git pas à jour, hors de `master`, pas envoyé, fichiers hors git de `public/` absents ou en trop (`wrangler` envoie tout `public/`, attendus : `theme.m4a` et les 5 bruitages), `node_modules` en retard (arrêter le serveur, `npm ci`), types ou tests en échec, Tests ou Safari pas verts, migration manquante, prod anormale, version pas montée, soirée ouverte ou 15 s de marge (`scripts/garde.mjs`) |
+| `npm run deploy` | Mettre en ligne, puis `npm run verif`. Refuse si : git pas à jour, hors de `master`, pas envoyé, fichiers hors git de `public/` absents ou en trop (`wrangler` envoie tout `public/`, attendus : `theme.m4a` et les 5 bruitages), `node_modules` en retard (arrêter le serveur, `npm ci`), types ou tests en échec, Tests ou Safari pas verts, migration manquante, prod anormale, version pas montée, soirée ouverte, 15 s de marge, ou soirée qui ouvre dans moins de 2 h (`scripts/garde.mjs`) |
 | Options de `deploy` | `-- --pendant-soiree` en urgence, `-- --sans-github` si GitHub ne répond pas. Un commit README ou images garde le résultat d'avant |
 | `npm run verif` | Prod en lecture seule. `npm run verif -- 0.46.1+373facb` exige cette version |
 | `npm run icons`, `npm run qr` | Regénérer icônes et QR codes |

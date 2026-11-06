@@ -3,11 +3,18 @@ export const NO_GITHUB = "--sans-github";
 export const CHECKS = [["tests.yml", "Tests"], ["safari.yml", "Safari"]];
 export const OFF_GIT = ["public/music/theme.m4a", ...["death", "first", "near", "record", "start"].map((name) => `public/sfx/${name}.mp3`)];
 
-export function blocked(board, args = []) {
-  const ev = board.event;
-  if (!ev || board.now >= ev.finalAt || args.includes(URGENT)) return null;
-  const why = ev.status === "open" ? "est ouverte" : "compte encore ses dernières parties (15 s après la fin)";
-  return `la soirée « ${ev.name} » ${why}. En cas d'urgence seulement : npm run deploy -- ${URGENT}`;
+const SOON_MS = 2 * 3600 * 1000;
+
+export function blocked(board, args = [], command = "npm run deploy") {
+  if (args.includes(URGENT)) return null;
+  const urgent = `En cas d'urgence seulement : ${command} -- ${URGENT}`;
+  const { event: ev, next, now } = board;
+  if (ev && now < ev.finalAt) {
+    const why = ev.status === "open" ? "est ouverte" : "compte encore ses dernières parties (15 s après la fin)";
+    return `la soirée « ${ev.name} » ${why}. ${urgent}`;
+  }
+  if (next && next.opensAt - now < SOON_MS) return `la soirée « ${next.name} » ouvre dans ${Math.ceil((next.opensAt - now) / 60000)} min. ${urgent}`;
+  return null;
 }
 
 export function ignoredPaths(workflow) {
