@@ -13,6 +13,7 @@ import { SIX_SEVEN_CS } from "./card";
 const SLACK_MS = 15000;
 const MAX_SCORE = 15 * 60 * 100;
 const MAX_COMBO = 99;
+const MAX_WAITED = 12 * 3600 * 1000;
 
 interface RunRow {
   id: string;
@@ -116,10 +117,12 @@ export async function finishRun({ req, env, params, exec }: Ctx) {
   if (run.finished_at) return recorded(env, me, run, score);
   const device = body.device === "pc" ? "pc" : "mobile";
   const combo = typeof body.combo === "number" && Number.isInteger(body.combo) && body.combo >= 0 && body.combo <= MAX_COMBO ? body.combo : null;
+  const waited = typeof body.waited === "number" && Number.isInteger(body.waited) && body.waited >= 0 && body.waited <= MAX_WAITED ? body.waited : 0;
   const event = run.event_id && device === "mobile" ? await eventById(env, run.event_id) : null;
   const eventId = event && now <= event.closes_at + LATE_MS ? event.id : null;
   const elapsed = now - run.started_at;
   if (score * 10 > elapsed + SLACK_MS) return fail(422, "Score refusé.");
+  const played = Math.max(score * 10, elapsed - waited);
   const statements = [
     env.DB.prepare(
       `UPDATE profiles SET run_count = run_count + 1, played = played + ?2, last_at = ?3, lowest = MIN(COALESCE(lowest, ?2), ?2),
@@ -129,11 +132,11 @@ export async function finishRun({ req, env, params, exec }: Ctx) {
       ? env.DB.prepare(
           `UPDATE profiles SET pc_best = ?1, pc_best_at = ?2, pc_best_elapsed = ?3, steps = json_insert(steps, '$.pc[#]', json_array(?1, ?2))
            WHERE id = ?4 AND pc_best < ?1 AND banned = 0 AND ${unfinished("?5")}`,
-        ).bind(score, now, elapsed, me.id, run.id)
+        ).bind(score, now, played, me.id, run.id)
       : env.DB.prepare(
           `UPDATE profiles SET best = ?1, best_at = ?2, best_elapsed = ?3, steps = json_insert(steps, '$.mobile[#]', json_array(?1, ?2))
            WHERE id = ?4 AND best < ?1 AND banned = 0 AND ${unfinished("?5")}`,
-        ).bind(score, now, elapsed, me.id, run.id),
+        ).bind(score, now, played, me.id, run.id),
   ];
   if (eventId) {
     statements.push(
@@ -145,7 +148,7 @@ export async function finishRun({ req, env, params, exec }: Ctx) {
     if (!me.banned) {
       statements.push(
         env.DB.prepare(`UPDATE entries SET best = ?1, best_at = ?2, best_elapsed = ?3 WHERE event_id = ?4 AND player_id = ?5 AND best < ?1 AND ${unfinished("?6")}`)
-          .bind(score, now, elapsed, eventId, me.id, run.id),
+          .bind(score, now, played, eventId, me.id, run.id),
       );
     }
   }

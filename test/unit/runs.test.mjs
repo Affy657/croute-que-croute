@@ -157,3 +157,37 @@ for (const [ago, counted, name] of [[60000, false, "1 min après la fin : hors s
     assert.equal(body.best, 110);
   });
 }
+
+const kept = (env) => env.DB.db.prepare("SELECT p.best_elapsed AS best, p.pc_best_elapsed AS pc, e.best_elapsed AS entry FROM profiles p LEFT JOIN entries e ON e.player_id = p.id").get();
+
+test("score envoyé tard : l'attente ne compte pas dans le temps gardé, partout", async (t) => {
+  const env = await setup(t);
+  assert.equal((await send(env, 1000, { waited: 40000 })).status, 200);
+  assert.deepEqual({ ...kept(env) }, { best: 20000, pc: null, entry: 20000 });
+});
+
+test("score envoyé tard sur PC : l'attente ne compte pas non plus", async (t) => {
+  const env = await setup(t);
+  assert.equal((await send(env, 1000, { waited: 40000, device: "pc" })).status, 200);
+  assert.equal(kept(env).pc, 20000);
+});
+
+test("score envoyé tard : le temps gardé ne descend pas sous le score", async (t) => {
+  const env = await setup(t);
+  assert.equal((await send(env, 1000, { waited: 12 * 3600 * 1000 })).status, 200);
+  assert.equal(kept(env).best, 10000);
+});
+
+for (const waited of [-1, 1.5, "40000", 12 * 3600 * 1000 + 1, null]) {
+  test(`score envoyé tard : attente invalide (${waited}) comptée pour 0`, async (t) => {
+    const env = await setup(t);
+    assert.equal((await send(env, 1000, { waited })).status, 200);
+    assert.equal(kept(env).best, 60000);
+  });
+}
+
+test("score envoyé tard : le contrôle du score reste sur le temps réel", async (t) => {
+  const env = await setup(t);
+  assert.equal((await send(env, 8000, { waited: 1000 })).status, 422);
+  assert.equal((await send(env, 2000, { waited: 59000 })).status, 200);
+});

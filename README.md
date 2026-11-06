@@ -227,7 +227,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 ## Triche et sécurité
 
 - Score refusé s'il dépasse le temps mesuré par le serveur, avec 15 s de marge (`SLACK_MS`), ou 15 min. Avec 5 s, un départ lent sur réseau saturé faisait refuser un score honnête. Contrepartie : un tricheur peut gagner 15 s.
-- Signalés dans l'admin : le 1er quand il dépasse le 2e de plus de 30 % (au moins 60 s), et une partie ralentie ou en pause (plus de 15 % et 15 s de temps réel en trop).
+- Signalés dans l'admin : le 1er quand il dépasse le 2e de plus de 30 % (au moins 60 s), et une partie ralentie ou en pause (plus de 15 % et 15 s de temps réel en trop). `waited` vient du téléphone : un tricheur peut s'en servir pour cacher une pause à cette alerte, pas pour dépasser le temps réel.
 - Faille connue : un faux score plausible (vers 60 s) passe inaperçu. Rejouer les parties depuis les gestes : écarté par Adrien.
 - Jetons, identifiants, connexions et invitations hachés (SHA-256) : une copie de la base ne permet pas d'usurper un compte.
 - Limites : 20 inscriptions par minute et par téléphone, 600 par IP (tout le lieu partage souvent la même), 500 nouveaux comptes par heure en tout. Ce plafond se compte en base, gardé 10 s, et ne touche jamais un joueur qui retrouve son pseudo. 30 débuts de partie par minute et par joueur, 300 par IP. 10 envois de tenue par 10 s et 5 changements de pseudo par minute, par joueur.
@@ -369,6 +369,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 - Tout ou rien : la partie est marquée finie dans la même opération que le record et la soirée, en dernière écriture. Deux envois à la même milliseconde comptent une partie. Un renvoi après la fin de la soirée la garde.
 - Compte fusionné pendant l'envoi : la partie reste ouverte et le serveur répond 503. Le téléphone renvoie, le score compte sur le compte gardé.
 - Téléphone verrouillé : pause, « Touche pour reprendre ». Le temps compte pour le serveur, d'où l'alerte « partie ralentie » de l'admin. Le doigt posé est relâché.
+- Score envoyé tard : le téléphone dit depuis combien de temps la partie est finie (`waited`, entier en millisecondes, 12 h au plus, sinon 0). Le temps gardé pour l'alerte (`best_elapsed`) est le temps réel moins cette attente, jamais moins que la durée du score. Le score, lui, reste contrôlé sur le temps réel.
 - Hors ligne : les records sont gardés (`cv-records`, `keepBests`). Un score hors ligne n'est pas envoyé et ne compte que jusqu'au prochain classement.
 - L'écran de fin suit la réponse du serveur : « Nouveau record » s'enlève si le serveur ne le compte pas. Un classement demandé avant le score, arrivé après, ne l'efface pas.
 
@@ -595,7 +596,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `resume` : reprise ratée, pas de choix du pseudo.
 - `robustesse` : netteté 12 h, hauteur invalide, cache malgré un fichier raté.
 - `routes` : route admin sans `access` refusée.
-- `runs` : même score à la même milliseconde, une partie. Limites du départ. Généraux gardés 60 s après une partie PC en soirée. Compte fusionné pendant l'envoi.
+- `runs` : même score à la même milliseconde, une partie. Limites du départ. Généraux gardés 60 s après une partie PC en soirée. Compte fusionné pendant l'envoi. Marge de fin de soirée. Score envoyé tard (`waited`).
 - `shell` : `SHELL` de `sw.js`, `modulepreload`, pas d'`Object.hasOwn`, éléments de `screens.js`.
 - `slots` : écran qui répond jamais chassé.
 - `sprites` : chaque objet et planète se dessine, nom inventé sans effet.
