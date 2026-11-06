@@ -1,7 +1,7 @@
-import { json, fail, readJson, outdated, updateRequired, tooFast, allowed } from "../http";
+import { json, fail, readJson, clientIp, outdated, updateRequired, tooFast, allowed } from "../http";
 import { cleanLook } from "../validate";
 import {
-  openEventNow, eventById, findProfile, entryBest, entryMark, generalRanking, generalCount, generalRank, eventRanking, rankIn, rivalIn,
+  openEventNow, eventById, findProfile, entryBest, entryMark, generalRanking, generalCount, generalRank, eventRanking, eventCount, rankIn, rivalIn,
   promoteGeneral, promoteEvent, LATE_MS,
   type Profile,
 } from "../db";
@@ -38,7 +38,7 @@ export async function startRun({ req, env }: Ctx) {
   const me = await findProfile(req, env);
   if (!me) return fail(401, "Joueur inconnu.");
   if (me.banned) return fail(403, "Tu as été retiré du classement.");
-  if (!(await allowed(env.RUN_LIMIT, me.id))) return tooFast();
+  if (!(await allowed(env.START_LIMIT, me.id)) || !(await allowed(env.START_IP_LIMIT, clientIp(req)))) return tooFast();
   const event = await openEventNow(env, now);
   const runId = crypto.randomUUID();
   const look = cleanLook((await readJson(req)).look);
@@ -56,11 +56,12 @@ async function standing(env: Env, me: Profile, eventId: number | null, mobile: M
     generalRanking(env, !!eventId, "pc"),
     eventId ? eventRanking(env, eventId) : Promise.resolve(null),
   ]);
-  const [rank, count, pcRank, pcCount] = await Promise.all([
+  const [rank, count, pcRank, pcCount, players] = await Promise.all([
     me.banned ? null : generalRank(env, general, me.id, mobile.best, mobile.at),
     generalCount(env, general, mobile.improved && !me.best),
     me.banned ? null : generalRank(env, pcList, me.id, pc.best, pc.at, "pc"),
     generalCount(env, pcList, pc.improved && !me.pc_best, "pc"),
+    eventId && eventList ? eventCount(env, eventId, eventList) : 0,
   ]);
   return {
     best: mobile.best,
@@ -77,7 +78,7 @@ async function standing(env: Env, me: Profile, eventId: number | null, mobile: M
     eventImproved,
     eventRank: me.banned || !eventList ? null : rankIn(eventList, me.id),
     eventRival: me.banned || !eventList ? null : rivalIn(eventList, me.id),
-    eventCount: eventList ? eventList.length : 0,
+    eventCount: players,
   };
 }
 

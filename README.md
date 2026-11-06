@@ -228,7 +228,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Signalés dans l'admin : le 1er quand il dépasse le 2e de plus de 30 % (au moins 60 s), et une partie ralentie ou en pause (plus de 15 % et 15 s de temps réel en trop).
 - Faille connue : un faux score plausible (vers 60 s) passe inaperçu. Rejouer les parties depuis les gestes : écarté par Adrien.
 - Jetons, identifiants, connexions et invitations hachés (SHA-256) : une copie de la base ne permet pas d'usurper un compte.
-- Limites : 20 inscriptions par minute et par téléphone, 600 par IP (tout le lieu partage souvent la même). 10 débuts de partie par 10 s et 5 changements de pseudo par minute, par joueur.
+- Limites : 20 inscriptions par minute et par téléphone, 600 par IP (tout le lieu partage souvent la même), 500 nouveaux comptes par heure en tout. Ce plafond se compte en base, gardé 10 s, et ne touche jamais un joueur qui retrouve son pseudo. 30 débuts de partie par minute et par joueur, 300 par IP. 10 envois de tenue par 10 s et 5 changements de pseudo par minute, par joueur.
 - Admin : 30 échecs par minute et par IP. Une bonne clé ou invitation passe toujours : un invité malveillant ne peut pas bloquer les admins.
 - Un joueur retiré ne monte plus. Renvoyer son ancien record ne le remet pas dans les classements en mémoire : il pouvait être « Bravo » à la fin de la soirée.
 - En-têtes (`public/_headers`) : pas de script externe, pas d'affichage dans le cadre d'un autre site.
@@ -241,7 +241,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Le propriétaire invite : lien à usage unique valable 48 h. Dans l'appli installée, le coller dans « Lien d'invitation reçu ».
 - Rôles : propriétaire (soirées, joueurs, équipe, erreurs) et admin (soirées, joueurs). Chaque téléphone peut être retiré, sauf le dernier propriétaire, avec ses invitations pas utilisées. Connexion inutilisée 30 jours : expirée.
 - Heure de fin déjà passée : confirmation, le classement se ferme tout de suite. Une soirée fermée ne se modifie plus.
-- Réunir deux comptes (propriétaire, définitif) : pseudo à garder, pseudo à réunir, confirmation avec les deux comptes. Même fusion que côté joueur (`mergeInto`). Refusé si l'un est retiré. `POST /api/admin/merge` sans `confirm: true` renvoie seulement l'aperçu.
+- Réunir deux comptes (propriétaire, définitif) : pseudo à garder, pseudo à réunir, confirmation avec les deux comptes. Même fusion que côté joueur (`mergeInto`), sans plafond de parties. Refusé si l'un est retiré. `POST /api/admin/merge` sans `confirm: true` renvoie seulement l'aperçu.
 - Joueurs actifs : point jaune pour une partie finie ces 10 dernières minutes (`ACTIVE_MS`), rien d'écrit en plus.
 - Nouveaux pseudos des 15 dernières minutes listés même sans partie et sans score, pour retirer un pseudo déplacé affiché sur l'écran géant.
 
@@ -310,6 +310,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Réponse perdue : le même appareil réessaie le même code 5 min (`RETRY_MS`). Base en panne pendant « Connecter » : le code redevient intact. Un QR scanné attend la fin de la partie.
 - Fusion : « J'ai un code » sur un appareil connecté. « Réunir « B » avec « A » ? » sans consommer le code, puis tout en une fois sur le serveur. Échec : code toujours valable. Réponse perdue : relit le classement, « Comptes réunis ».
 - On garde le compte qui a affiché le code : meilleurs records avec leur date (à égalité, le plus ancien), parties additionnées, soirées, succès, garnitures, appareils. L'autre pseudo redevient libre. Refusée si un compte est retiré.
+- Le compte qui disparaît a plus de 2 000 parties : fusion refusée, le code reste valable, un admin la fait. Déplacer autant de lignes coûte trop d'écritures pour un joueur seul.
 - « Déconnecter les autres » : sort les autres appareils et annule le code (5 par minute et par compte). Quelqu'un qui a utilisé ton code revient au choix du pseudo, sans tes succès ni tes skins : le serveur garde la trace des clés sorties (`signed_out`) et dit `out` à l'appareil. Une clé simplement inconnue n'efface rien : si des comptes disparaissaient un jour, les joueurs garderaient leurs skins.
 
 ### Compte gardé par cookie
@@ -501,7 +502,7 @@ Après :
 - Pour les tenir : index partout, classement en mémoire mis à jour sur place, rien écran éteint, demandes simultanées sur la même lecture (`cached`).
 - Mesuré sur 24 h (584 parties) : 425 lignes lues et 5,6 écrites par partie, avant la fiche légère : à remesurer en soirée. Pointe : 401 parties en une heure à 10 joueurs.
 - Fiche légère : le profil garde ses totaux et ses records (`steps`), une ligne lue au lieu de 734. `steps` NULL : recalcul une fois depuis les parties, par exemple après une fusion. Après une retouche à la main : `UPDATE profiles SET steps = NULL`.
-- Général : 1 000 premiers en mémoire, au-delà la place se compte.
+- Général : 1 000 premiers en mémoire, au-delà la place se compte. Soirée : 1 000 premiers aussi, seul le nombre de joueurs se compte au-delà (`eventCount`), et un joueur après le 1 000e n'a pas de place.
 - Lectures : `npx wrangler d1 insights croute-que-croute --timePeriod 1d --sort-type sum --sort-by reads --limit 8`. Erreurs serveur : 3 jours dans Cloudflare, `npx wrangler tail` en direct.
 - Non retenus : cache partagé en Durable Object (quota à peu près consommé par une soirée), lecture partagée entre deux demandes (risque d'erreurs, gain faible).
 - Node 26 (LTS), écrit dans les 3 fichiers de `.github/workflows/` : Dependabot ne le monte pas.
@@ -572,12 +573,14 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `api` : limite d'attente, reprise par cookie refaite.
 - `attacks` : mur mis de côté, chaque garniture sur un couteau.
 - `banner` : bandeau des soirées, « Bravo », direct ouvert 1 min.
+- `board` : `GET /api/board` sur une base en mémoire, soirée de plus de 1 000 joueurs.
 - `cache` : cache des classements, lecture unique, périmée écartée, abandon à 5 s.
 - `chemin` : chemin du robot, gardé hors du code des téléphones.
 - `deploy` : refus de `npm run deploy`.
 - `google` : empreinte sans e-mail, cookie, usage unique, 10 min, jeton refusé, délier.
 - `inapp` : navigateurs des applis (vrais user agents).
-- `link` : code de liaison, panne de base, réessai concurrent.
+- `join` : plafond de nouveaux comptes.
+- `link` : code de liaison, panne de base, réessai concurrent, plafond de la fusion.
 - `move` : changement d'adresse, jamais la clé dans le lien, lien fabriqué ou illisible.
 - `offline` : record après coupure, pseudo gardé.
 - `palette` : `palette.js` et `tokens.css` identiques, feuilles sans valeur en dur.
@@ -586,7 +589,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `resume` : reprise ratée, pas de choix du pseudo.
 - `robustesse` : netteté 12 h, hauteur invalide, cache malgré un fichier raté.
 - `routes` : route admin sans `access` refusée.
-- `runs` : même score à la même milliseconde, une partie.
+- `runs` : même score à la même milliseconde, une partie. Limites du départ.
 - `shell` : `SHELL` de `sw.js`, `modulepreload`, pas d'`Object.hasOwn`, éléments de `screens.js`.
 - `slots` : écran qui répond jamais chassé.
 - `sprites` : chaque objet et planète se dessine, nom inventé sans effet.

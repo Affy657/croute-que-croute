@@ -43,8 +43,10 @@ const EVENT_GENERAL_MS = 60000;
 const LOAD_MS = 5000;
 export const RECENT_MS = 12 * 3600 * 1000;
 const GENERAL_LIMIT = 1000;
+const EVENT_LIMIT = 1000;
 const CACHE_KEEP = 300;
 const EVENT_COLS = "id, name, opens_at, closes_at";
+const EVENT_ROWS = "FROM entries e JOIN profiles p ON p.id = e.player_id WHERE e.event_id = ? AND e.best > 0 AND p.banned = 0";
 const COLS: Record<Board, { best: string; at: string }> = { general: { best: "best", at: "best_at" }, pc: { best: "pc_best", at: "pc_best_at" } };
 const above = ({ best, at }: { best: string; at: string }) => `banned = 0 AND ${best} > 0 AND (${best} > ?1 OR (${best} = ?1 AND ${at} < ?2))`;
 
@@ -153,12 +155,17 @@ export async function generalRank(env: Env, list: Ranked[], playerId: string, be
 export const eventRanking = (env: Env, eventId: number) =>
   cached("event:" + eventId, CACHE_MS, async () =>
     (await env.DB.prepare(
-      `SELECT e.player_id AS id, p.pseudo, e.best FROM entries e JOIN profiles p ON p.id = e.player_id
-       WHERE e.event_id = ? AND e.best > 0 AND p.banned = 0
-       ORDER BY e.best DESC, e.best_at ASC`,
+      `SELECT e.player_id AS id, p.pseudo, e.best ${EVENT_ROWS}
+       ORDER BY e.best DESC, e.best_at ASC LIMIT ?`,
     )
-      .bind(eventId)
+      .bind(eventId, EVENT_LIMIT)
       .all<Ranked>()).results);
+
+export const eventCount = (env: Env, eventId: number, list: Ranked[]) =>
+  list.length < EVENT_LIMIT
+    ? Promise.resolve(list.length)
+    : cached("event-count:" + eventId, CACHE_MS, async () =>
+        (await env.DB.prepare(`SELECT COUNT(*) AS n ${EVENT_ROWS}`).bind(eventId).first<{ n: number }>())!.n);
 
 function promote(key: string, row: Ranked, limit: number) {
   const hit = rankingCache.get(key);
@@ -171,7 +178,7 @@ function promote(key: string, row: Ranked, limit: number) {
 
 export const promoteGeneral = (row: Ranked, board: Board = "general") => promote(board, row, GENERAL_LIMIT);
 
-export const promoteEvent = (eventId: number, row: Ranked) => promote("event:" + eventId, row, Infinity);
+export const promoteEvent = (eventId: number, row: Ranked) => promote("event:" + eventId, row, EVENT_LIMIT);
 
 export function forgetCaches() {
   eventsCache = null;

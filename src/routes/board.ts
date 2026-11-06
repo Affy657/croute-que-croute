@@ -1,6 +1,6 @@
 import { json, bearer, keyCookie, withKey } from "../http";
 import { sha256 } from "../security";
-import { events, findProfile, entryBest, generalRanking, generalCount, generalRank, eventRanking, rankIn, rivalIn, LATE_MS, type EventRow, type Profile, type Ranked } from "../db";
+import { events, findProfile, entryBest, generalRanking, generalCount, generalRank, eventRanking, eventCount, rankIn, rivalIn, LATE_MS, type EventRow, type Profile, type Ranked } from "../db";
 import type { Ctx } from "../router";
 
 const TOP = 50;
@@ -19,9 +19,10 @@ export async function board({ req, env }: Ctx) {
   const out = !me && !!token && !!(await env.DB.prepare("SELECT 1 FROM signed_out WHERE token_hash = ?").bind(await sha256(token)).first());
   const [general, pc] = await Promise.all([generalRanking(env, !!view.open), generalRanking(env, !!view.open, "pc")]);
   const shown = view.open ?? view.recent;
-  const [eventList, eventMine, count, rank, pcCount, pcRank] = await Promise.all([
-    shown ? eventRanking(env, shown.id) : null,
+  const eventList = shown ? await eventRanking(env, shown.id) : null;
+  const [eventMine, players, count, rank, pcCount, pcRank] = await Promise.all([
     shown && me ? entryBest(env, shown.id, me.id) : 0,
+    shown && eventList ? eventCount(env, shown.id, eventList) : 0,
     generalCount(env, general),
     me && !me.banned ? generalRank(env, general, me.id, me.best, me.best_at) : null,
     generalCount(env, pc, false, "pc"),
@@ -38,7 +39,7 @@ export async function board({ req, env }: Ctx) {
     pcTop: topOf(pc, me),
     pcCount,
     eventTop: eventList ? topOf(eventList, me) : [],
-    eventCount: eventList ? eventList.length : 0,
+    eventCount: players,
     me: me
       ? {
           id: me.id,

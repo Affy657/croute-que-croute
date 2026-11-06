@@ -274,7 +274,7 @@ check("admin : joueur qui vient de finir une partie marqué actif", row && row.a
 
 const beforeBan = await startRun(token);
 let limited = 0;
-for (let i = 0; i < 25; i++) if ((await call("POST", "/api/runs", { token })).status === 429) limited++;
+for (let i = 0; i < 40; i++) if ((await call("POST", "/api/runs", { token })).status === 429) limited++;
 check("trop de parties d'affilée freinées (429)", limited > 0, { limited });
 
 r = await call("POST", `/api/admin/players/${row.id}/ban`, { key: KEY, body: { banned: true } });

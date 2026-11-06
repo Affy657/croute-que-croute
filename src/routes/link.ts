@@ -7,6 +7,7 @@ import type { Ctx } from "../router";
 
 const LINK_MS = 10 * 60 * 1000;
 const RETRY_MS = 5 * 60 * 1000;
+const MERGE_RUNS_MAX = 2000;
 const UNKNOWN = "Code inconnu ou expiré.";
 const wins = (b: string, a: string, best: string, at: string) => `${b}.${best} > ${a}.${best} OR (${b}.${best} = ${a}.${best} AND ${b}.${at} < ${a}.${at})`;
 const better = (col: string, best: string, at: string) => `${col} = CASE WHEN ${wins("b", "a", best, at)} THEN b.${col} ELSE a.${col} END`;
@@ -76,6 +77,9 @@ async function openSession(env: Env, link: LinkRow, clientId: string | null, cli
   return json({ token: await addSession(env, link.id, clientId, clientHash, now), pseudo: link.pseudo });
 }
 
+const tooManyRuns = async (env: Env, id: string) =>
+  (await env.DB.prepare("SELECT COUNT(*) AS n FROM (SELECT 1 FROM runs WHERE player_id = ? LIMIT ?)").bind(id, MERGE_RUNS_MAX + 1).first<{ n: number }>())!.n > MERGE_RUNS_MAX;
+
 export async function useLink({ req, env }: Ctx) {
   if (outdated(req, env)) return updateRequired();
   if (!(await allowed(env.JOIN_IP_LIMIT, "link:" + clientIp(req)))) return tooFast();
@@ -93,6 +97,7 @@ export async function useLink({ req, env }: Ctx) {
   if (me && me.id === link.id) return fail(409, "Cet appareil est déjà sur ce compte.");
   if (me && (me.banned || link.banned)) return fail(403, "Impossible de réunir un compte retiré du classement.");
   if (me && body.merge !== true) return json({ error: "Cet appareil a déjà un compte.", merge: { from: me.pseudo, into: link.pseudo } }, 409);
+  if (me && (await tooManyRuns(env, me.id))) return fail(403, "Trop de parties pour réunir ces comptes ici : demande à un admin.");
   const retry = !me && !!retryHash;
   const claim = retry
     ? env.DB.prepare("UPDATE links SET code_hash = ?1, expires_at = ?2 WHERE code_hash = ?3").bind(retryHash, now + RETRY_MS, hash)
