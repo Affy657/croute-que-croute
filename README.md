@@ -346,10 +346,9 @@ Désactivée en prod tant qu'on n'a pas le nom de domaine : sans les clés, les 
 Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Paramètres, Autre appareil. Se connecter : « J'ai déjà un compte », « Continuer avec Google ». Elle ne crée pas de compte : sans compte lié, le joueur reçoit un message. Un compte Google ne se lie qu'à un joueur.
 
 - Le serveur parle à Google lui-même (`src/routes/google.ts`) : `POST /api/google/start` note la demande dans `google_states` (10 min, un seul usage) et pose le cookie `cv_google`, puis Google renvoie sur `GET /api/google/retour`, qui compare le cookie, échange le code et revient sur `/#google=<résultat>`. Aucun script Google dans la page, la politique de sécurité ne change pas.
-- On demande `openid email`, parce que la documentation de Google l'exige, mais on ne garde que `sha256("google:" + sub)` dans `profiles.google_hash`. L'adresse e-mail n'est jamais enregistrée. La page `/confidentialite`, liée depuis Crédits, ne parle pas de Google tant que la connexion est coupée.
-- Bouton caché sans clés, dans les navigateurs d'applis (Google y refuse la connexion) et dans l'appli iPhone de l'écran d'accueil (la page de Google s'y ouvre dans un autre stockage : à vérifier sur un vrai iPhone avant de l'ouvrir).
+- On demande `openid email`, parce que la documentation de Google l'exige, mais on ne garde que `sha256("google:" + sub)` dans `profiles.google_hash`. L'adresse e-mail n'est jamais enregistrée.
+- Bouton caché sans clés, sur l'ancienne adresse (elle n'est pas déclarée chez Google), dans les navigateurs d'applis (Google y refuse la connexion) et dans l'appli iPhone de l'écran d'accueil (la page de Google s'y ouvre dans un autre stockage : à vérifier sur un vrai iPhone avant de l'ouvrir).
 - Mise en route, à faire par Adrien : projet Google Cloud, écran de consentement « Externe » avec la page `/confidentialite`, identifiant OAuth « Application Web » avec comme URI de redirection `https://<adresse du jeu>/api/google/retour`, puis `npx wrangler secret put GOOGLE_CLIENT_ID` et `npx wrangler secret put GOOGLE_CLIENT_SECRET`. Migration 0014 à appliquer en ligne avant la mise en ligne. Google vérifie le domaine de l'adresse : À faire avec tartinesauvage.fr.
-- Pour l'activer : poser les clés, puis remettre dans `public/confidentialite.html` la section « Compte Google, si tu le lies » (texte dans le commit 99e2cb2).
 - Jamais essayée avec le vrai Google : les tests remplacent sa réponse.
 
 ### Mises à jour
@@ -453,6 +452,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 | 0.49 | 03/11 | écran géant en direct, fin de soirée stricte, mur mis de côté | 8 |
 | 1.0 | 06/11 | sortie de bêta, adresse tartinesauvage.fr, comptes qui suivent seuls | 1 |
 | 1.1 | 06/11 | succès secret Le jeu de la tartine | 1 |
+| 1.2 | 06/11 | ancien joueur reconnu avec le nouveau QR, appareil sorti qui oublie ses skins, connexion Google prête | |
 
 ## Erreurs des joueurs
 
@@ -598,7 +598,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `tests.yml` : à chaque envoi de code sur `master` et chaque pull request, types et trois niveaux de tests (2 min).
 - `safari.yml` : à la main avant chaque mise en ligne, `gh workflow run safari.yml --ref master`. `npm run deploy` exige qu'il soit vert.
 - `equite.yml` : robot et invariants en petit, quand `public/js/game/` ou le robot change (4 min).
-- Un envoi annule les tests en cours. Dépôt privé : 2 000 min par mois, environ 30 envois par jour.
+- Un envoi annule les tests en cours. Dépôt public : minutes gratuites.
 - Dependabot : une pull request npm et une d'actions par mois. Fusionner si c'est vert, puis `git pull` (sinon le prochain envoi est refusé).
 
 ## Ajouter du contenu
