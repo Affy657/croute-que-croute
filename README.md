@@ -602,7 +602,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `safari.yml` : à la main avant chaque mise en ligne, `gh workflow run safari.yml --ref master`. `npm run deploy` exige qu'il soit vert.
 - `equite.yml` : robot et invariants en petit, quand `public/js/game/`, `palette.js` ou le robot change (4 min). `npm run deploy` exige qu'il soit vert : sans passage valable, `gh workflow run equite.yml --ref master`.
 - Un envoi annule les tests en cours. Dépôt public : minutes gratuites.
-- Dependabot : une pull request npm et une d'actions par mois. Fusionner si c'est vert, puis `git pull` (sinon le prochain envoi est refusé).
+- Dependabot : `.github/dependabot.yml` demande une pull request npm et une d'actions par mois, mais aucune n'a encore été vue sur le dépôt public. Si une arrive : fusionner si c'est vert, puis `git pull` (sinon le prochain envoi est refusé).
 
 ## Ajouter du contenu
 
