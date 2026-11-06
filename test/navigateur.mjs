@@ -249,6 +249,11 @@ try {
       const text = (await res.text()).replace(/OLD_HOST = "[^"]+"/, `OLD_HOST = "${new URL(BASE).hostname}"`).replace(/HOME = "[^"]+"/, `HOME = "${moveTo}"`);
       await route.fulfill({ response: res, body: text });
     });
+    await context.route("**/js/arrive.js", async (route) => {
+      const res = await route.fetch();
+      const text = (await res.text()).replace(/OLD = "[^"]+"/, `OLD = "${BASE}"`).replace(/HOST = "[^"]+"/, `HOST = "${new URL(moveTo).hostname}"`);
+      await route.fulfill({ response: res, body: text });
+    });
     await context.route((u) => u.pathname === "/", async (route) => {
       const res = await route.fetch();
       const headers = res.headers();
@@ -316,6 +321,29 @@ try {
       const after = await p.evaluate(() => ({ token: localStorage.getItem("cv-token"), speed: localStorage.getItem("cv-sensibilite"), hash: location.hash }));
       const pseudoOf = async (t) => (await (await fetch(BASE + "/api/board", { headers: { ...apiHeaders, authorization: "Bearer " + t } })).json()).me?.pseudo;
       if (after.token === token || after.speed !== "2.2" || after.hash || await pseudoOf(after.token) !== name || await pseudoOf(token) !== name) throw new Error(JSON.stringify(after));
+    } finally {
+      await context.close();
+    }
+  });
+  await step("nouveau QR scanné par un ancien joueur : il retrouve son compte sans rien faire", async () => {
+    const name = "Scan" + hex(4), token = await joinApi(name);
+    const { context, p } = await movingPage(token);
+    try {
+      await p.goto(moveTo + "/");
+      await p.waitForFunction((home) => location.origin === home && localStorage.getItem("cv-token"), moveTo, { timeout: WAIT_MS });
+      const mine = await p.evaluate(async () => (await (await fetch("/api/board", { headers: { authorization: "Bearer " + localStorage.getItem("cv-token") } })).json()).me?.pseudo);
+      if (mine !== name) throw new Error(String(mine));
+    } finally {
+      await context.close();
+    }
+  });
+  await step("nouveau QR scanné par un nouveau joueur : choix du pseudo, sans boucle", async () => {
+    const { context, p } = await movingPage(null);
+    try {
+      await p.goto(moveTo + "/");
+      await p.locator("#joinForm").waitFor({ state: "visible", timeout: WAIT_MS });
+      await wait(1000);
+      if (p.url() !== moveTo + "/") throw new Error(p.url());
     } finally {
       await context.close();
     }

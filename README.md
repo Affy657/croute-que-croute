@@ -305,7 +305,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 
 ### Compte sur plusieurs appareils
 
-- « Autre appareil », « Mon code » : QR et code de 8 caractères (sans 0, O, 1, I, L), 10 min, une seule fois. Un nouveau code annule l'ancien. 20 essais par minute et par IP, 5 codes par minute et par compte.
+- « Autre appareil », « Mon code » : QR et code de 8 caractères (sans 0, O, 1, I, L), 10 min, une seule fois. Un nouveau code annule l'ancien. 600 essais par minute et par IP, car tout le lieu partage souvent la même, 5 codes par minute et par compte.
 - Scanner remplit le code (`#lier=`, jamais envoyé au serveur), il reste à toucher « Connecter » : un lien reçu ne branche personne à son insu. Sinon « J'ai déjà un compte ».
 - Réponse perdue : le même appareil réessaie le même code 5 min (`RETRY_MS`). Base en panne pendant « Connecter » : le code redevient intact. Un QR scanné attend la fin de la partie.
 - Fusion : « J'ai un code » sur un appareil connecté. « Réunir « B » avec « A » ? » sans consommer le code, puis tout en une fois sur le serveur. Échec : code toujours valable. Réponse perdue : relit le classement, « Comptes réunis ».
@@ -331,7 +331,9 @@ Le stockage d'un navigateur et le cookie `cv_cle` sont liés à l'adresse. Pour 
 
 - Le même Worker répond sur les deux adresses (`workers_dev: true` et `routes` dans `wrangler.jsonc`). Sans `workers_dev`, l'ancienne s'éteindrait au déploiement.
 - Dans un navigateur, l'ancienne adresse crée un code de liaison et renvoie vers la nouvelle avec `#demenage=` : le code, les succès, la tenue et les réglages (`KEPT`), jamais la clé. Pas pendant une partie, pas avec un score en attente. Joueur connecté sans code : il reste, nouvel essai au classement suivant.
-- `arrive.js`, chargé avant le jeu, pose ces valeurs et efface l'adresse. Le téléphone se connecte seul avec le code, sans toucher « Connecter », et garde aussi sa session sur l'ancienne adresse. Un appareil déjà connecté ignore tout.
+- `arrive.js`, chargé avant le jeu, pose ces valeurs et efface l'adresse. Le téléphone se connecte seul avec le code, sans toucher « Connecter », et garde aussi sa session sur l'ancienne adresse. Le code reste jusqu'à une réponse du serveur : sans réseau ou avec une limite, nouvel essai au classement suivant.
+- Nouveau QR scanné par un ancien joueur : le téléphone n'a pas de clé sur la nouvelle adresse. `arrive.js` fait une seule fois un aller-retour par `/depart` sur l'ancienne (`depart.js`, une page légère, 8 s au plus), qui rapporte le compte s'il y en a un. Un nouveau joueur ne perd qu'un chargement de page. « J'ai déjà un compte » propose aussi d'y retourner à la main.
+- Un appareil déjà connecté garde ses réglages. S'il a un autre compte, il propose de réunir les deux.
 - Une appli installée reste sur l'ancienne adresse et continue de marcher : elle ne peut pas changer d'adresse. L'accueil propose « Copier le lien » vers la nouvelle, avec un code renouvelé toutes les 9 min, puis il faut réinstaller.
 - `/ecran` et `/admin` ne suivent pas : les ouvrir sur la nouvelle adresse. Admin : `cle-admin.txt` la première fois.
 - Avant de partir, l'ancienne adresse teste la nouvelle (`reachable`, 4 s). Injoignable : le joueur reste et joue, nouvel essai au classement suivant. Un DNS en retard, comme une box ou un fournisseur, peut ignorer un sous-domaine jusqu'à 24 h après un changement de serveurs de noms.

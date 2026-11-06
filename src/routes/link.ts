@@ -78,7 +78,7 @@ async function openSession(env: Env, link: LinkRow, clientId: string | null, cli
 
 export async function useLink({ req, env }: Ctx) {
   if (outdated(req, env)) return updateRequired();
-  if (!(await allowed(env.JOIN_LIMIT, "link:" + clientIp(req)))) return tooFast();
+  if (!(await allowed(env.JOIN_IP_LIMIT, "link:" + clientIp(req)))) return tooFast();
   const body = await readJson(req);
   const code = cleanLinkCode(body.code);
   if (!code) return fail(400, "Le code fait " + LINK_LENGTH + " caractères.");

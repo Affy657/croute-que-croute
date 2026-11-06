@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#0d0b24">
 <title>Croûte que Croûte</title>
 <script src="/js/errors.js"></script>
-<script src="/js/arrive.js"></script>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -141,6 +140,7 @@
       <input id="linkInput" aria-describedby="linkError" name="code" maxlength="9" placeholder="Code à 8 caractères" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required>
       <p id="linkError" class="note error" hidden></p>
       <p id="linkHelp" class="note">Ton code s'affiche là où tu joues déjà avec ce compte : Paramètres, Autre appareil, «&nbsp;Mon&nbsp;code&nbsp;». Sur iPhone, ça peut être ce téléphone : l'appli de l'écran d'accueil, Safari et Snapchat ne partagent pas le compte.</p>
+      <a class="note" href="https://croute-que-croute.tartine-sauvage.workers.dev/depart">Retrouver mon compte de l'ancienne adresse</a>
       <button class="cta" type="submit">Connecter</button>
       <button id="googleLogin" class="ghost google" type="button" hidden><img src="/icons/google.svg" alt="" loading="lazy" width="18" height="18">Continuer avec Google</button>
       <button id="newAccount" class="ghost" type="button">Nouveau joueur</button>
@@ -450,6 +450,7 @@
 <canvas id="party" aria-hidden="true" hidden></canvas>
 
 <script src="/js/boot.js"></script>
+<script src="/js/arrive.js"></script>
 <script type="module" src="/js/app/main.js"></script>
 </body>
 </html>

@@ -241,7 +241,7 @@ for (const el of document.querySelectorAll(".keys")) el.hidden = !hasMouse();
 showMenu();
 finishLoading(new Promise((ok) => api.on("board", ok)));
 api.refreshBoard();
-initAccount(openSettings, () => !playing());
+initAccount(openSettings, () => !playing() && !typing());
 api.resumePending();
 if (new URLSearchParams(location.search).get("diag") === "son") session.set(KEYS.diag, "1");
 startDiag(session.get(KEYS.diag) === "1");
