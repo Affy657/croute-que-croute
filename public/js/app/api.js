@@ -24,6 +24,8 @@ if (LOCAL) {
   }
 }
 
+const ACCOUNT_KEYS = [KEYS.localBest, KEYS.myBests, KEYS.achievements, KEYS.toppings, KEYS.topping, KEYS.outfitSeen, KEYS.outfitAt, KEYS.gear, KEYS.side, KEYS.bread, KEYS.aura];
+
 /** @type {Net} */
 export const net = { token: store.get(KEYS.playerToken), board: null, offset: 0, online: true, updatePending: false };
 let localBest = parseInt(store.get(KEYS.localBest) || "0", 10) || 0, saved = readBests();
@@ -143,7 +145,10 @@ export async function refreshBoard() {
     boardShown = asked;
     net.offset = b.now - Date.now();
     net.online = true;
-    if (net.token && !b.me) setToken(null);
+    if (net.token && !b.me) {
+      setToken(null);
+      if (b.out) forgetAccount();
+    }
     if (asked > bestsAsked && !pendingScores().length) runBests = {};
     net.board = b;
     if (b.me) keepBests(b.me);
@@ -158,6 +163,11 @@ export async function refreshBoard() {
     }, RESUME_RETRY_MS);
   }
   emit("board");
+}
+
+function forgetAccount() {
+  for (const key of ACCOUNT_KEYS) store.set(key, null);
+  requestUpdate();
 }
 
 /** @param {string | null} token */

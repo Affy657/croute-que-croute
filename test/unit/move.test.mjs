@@ -53,7 +53,28 @@ test("déménagement : le lien garde succès et réglages, jamais la clé", () =
   assert.equal(cleaned, 1);
 });
 
-test("déménagement : un appareil déjà connecté ignore tout", () => {
+test("nouvelle adresse : un visiteur sans compte passe une seule fois voir l'ancienne", () => {
+  reset();
+  const went = [];
+  location.replace = (url) => went.push(url);
+  location.hash = "";
+  location.hostname = new URL(HOME).hostname;
+  arrive();
+  arrive();
+  assert.deepEqual(went, ["https://" + OLD_HOST + "/depart"]);
+  reset();
+  localStorage.setItem("cv-token", "deja");
+  arrive();
+  reset();
+  location.hash = "#lier=ABCD2345";
+  arrive();
+  location.hash = "";
+  location.hostname = "test.invalid";
+  arrive();
+  assert.equal(went.length, 1);
+});
+
+test("déménagement : un appareil déjà connecté garde ses réglages et retient le code pour proposer de réunir", () => {
   reset();
   localStorage.setItem("cv-sensibilite", "2.2");
   const url = moveUrl("ABCD2345");
@@ -61,7 +82,7 @@ test("déménagement : un appareil déjà connecté ignore tout", () => {
   localStorage.setItem("cv-token", "deja");
   land(url);
   assert.equal(localStorage.getItem("cv-sensibilite"), null);
-  assert.equal(sessionStorage.getItem("cv-arrivee"), null);
+  assert.equal(sessionStorage.getItem("cv-arrivee"), "ABCD2345");
   assert.equal(cleaned, 1);
 });
 

@@ -228,11 +228,16 @@ check("classements général et soirée : le joueur y est", r.status === 200 && 
   const first = await call("POST", "/api/link", { body: { code, clientId: device } });
   r = await call("POST", "/api/link", { body: { code, clientId: device } });
   check("code de liaison : réponse perdue, le même appareil réessaie et se connecte", first.status === 200 && r.status === 200 && !!r.data.token && r.data.token !== first.data.token && r.data.pseudo === first.data.pseudo, r.data);
+  const second = r.data.token;
   const [lost, kept] = await Promise.all([call("GET", "/api/board", { token: first.data.token }), call("GET", "/api/board", { token: r.data.token })]);
   check("code de liaison : une seule clé gardée pour l'appareil qui a réessayé", lost.data.me === null && !!kept.data.me, [lost.data.me, kept.data.me]);
   r = await call("POST", "/api/link", { body: { code, clientId: hex(32) } });
   check("code de liaison déjà utilisé : refusé à un autre appareil", r.status === 404, r);
   await call("DELETE", "/api/me/devices", { token: owner });
+  r = await call("GET", "/api/board", { token: second });
+  check("appareil sorti du compte : le classement le lui dit", !r.data.me && r.data.out === true);
+  r = await call("GET", "/api/board", { token: "a".repeat(48) });
+  check("jeton inconnu : rien à oublier", !r.data.me && !r.data.out);
   r = await call("POST", "/api/link", { body: { code, clientId: device } });
   check("code de liaison utilisé puis « Déconnecter les autres » : plus de nouvel essai", r.status === 404, r);
 }

@@ -19,7 +19,7 @@ const GOOGLE_NOTES = {
 const MOVE_NOTE = "Le jeu change d'adresse. Copie le lien, ouvre-le dans ton navigateur, puis réinstalle le jeu : ton compte te suit.";
 const MOVE_CODE_MS = 9 * 60 * 1000;
 const OUT_ASK = "Tes autres appareils sortent du compte. Pour revenir, il leur faudra un nouveau code.";
-let leaving = false;
+let leaving = false, arriving = false;
 /** @type {Timer} */
 let timer = null, until = Infinity, live = false, asked = 0, shown = "", /** @type {string | null} */ merging = null, /** @type {string | null} */ mergeInto = null, flow = 0, /** @type {string | null} */ waiting = null, /** @type {string | null} */ googleResult = null, opener = () => {}, idle = () => true;
 
@@ -198,7 +198,7 @@ async function confirmMerge() {
 }
 
 function renderGoogle() {
-  const usable = !!(net.board && net.board.google) && !googleBlocked();
+  const usable = !!(net.board && net.board.google) && !googleBlocked() && !moved();
   const me = net.board && net.board.me;
   ui.googleLogin.hidden = !usable;
   ui.googleBox.hidden = !usable || !me;
@@ -314,13 +314,20 @@ function pickUp() {
 
 async function arrive() {
   const code = session.get(KEYS.arrival);
-  if (!code || !net.board || !joinReady()) return;
-  session.set(KEYS.arrival, null);
+  if (arriving || !code || !net.board || (!registered() && !joinReady())) return;
+  arriving = true;
   try {
     await linkWith(code);
+    session.set(KEYS.arrival, null);
   } catch (e) {
+    const err = /** @type {Err} */ (e);
+    if (!badInput(err)) return;
+    session.set(KEYS.arrival, null);
+    if (registered() && !(err.data && err.data.merge)) return;
     waiting = code;
     pickUp();
+  } finally {
+    arriving = false;
   }
 }
 
@@ -330,7 +337,7 @@ async function leave() {
   leaving = true;
   const open = await reachable();
   const code = open && net.token ? await newLinkCode().then((r) => r.code, () => null) : null;
-  if (!open || (net.token && !code)) {
+  if (!open || (net.token && !code) || !idle() || hasPending()) {
     leaving = false;
     return;
   }
@@ -402,7 +409,8 @@ ui.linkForm.addEventListener("submit", /** @param {Event} e */ (e) => {
 if (moved() && installMode() === "installed") {
   let link = moveUrl(null), asked = false;
   const prepare = () => {
-    if (net.token) newLinkCode().then((r) => { link = moveUrl(r.code); }).catch(() => {});
+    if (net.token) newLinkCode().then((r) => { link = moveUrl(r.code); }, () => { asked = false; });
+    else asked = false;
   };
   on("board", () => {
     if (asked) return;

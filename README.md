@@ -305,12 +305,12 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 
 ### Compte sur plusieurs appareils
 
-- « Autre appareil », « Mon code » : QR et code de 8 caractères (sans 0, O, 1, I, L), 10 min, une seule fois. Un nouveau code annule l'ancien. 20 essais par minute et par IP, 5 codes par minute et par compte.
+- « Autre appareil », « Mon code » : QR et code de 8 caractères (sans 0, O, 1, I, L), 10 min, une seule fois. Un nouveau code annule l'ancien. 600 essais par minute et par IP, car tout le lieu partage souvent la même, 5 codes par minute et par compte.
 - Scanner remplit le code (`#lier=`, jamais envoyé au serveur), il reste à toucher « Connecter » : un lien reçu ne branche personne à son insu. Sinon « J'ai déjà un compte ».
 - Réponse perdue : le même appareil réessaie le même code 5 min (`RETRY_MS`). Base en panne pendant « Connecter » : le code redevient intact. Un QR scanné attend la fin de la partie.
 - Fusion : « J'ai un code » sur un appareil connecté. « Réunir « B » avec « A » ? » sans consommer le code, puis tout en une fois sur le serveur. Échec : code toujours valable. Réponse perdue : relit le classement, « Comptes réunis ».
 - On garde le compte qui a affiché le code : meilleurs records avec leur date (à égalité, le plus ancien), parties additionnées, soirées, succès, garnitures, appareils. L'autre pseudo redevient libre. Refusée si un compte est retiré.
-- « Déconnecter les autres » : sort les autres appareils et annule le code (5 par minute et par compte). Quelqu'un qui a utilisé ton code revient au choix du pseudo.
+- « Déconnecter les autres » : sort les autres appareils et annule le code (5 par minute et par compte). Quelqu'un qui a utilisé ton code revient au choix du pseudo, sans tes succès ni tes skins : le serveur garde la trace des clés sorties (`signed_out`) et dit `out` à l'appareil. Une clé simplement inconnue n'efface rien : si des comptes disparaissaient un jour, les joueurs garderaient leurs skins.
 
 ### Compte gardé par cookie
 
@@ -331,7 +331,9 @@ Le stockage d'un navigateur et le cookie `cv_cle` sont liés à l'adresse. Pour 
 
 - Le même Worker répond sur les deux adresses (`workers_dev: true` et `routes` dans `wrangler.jsonc`). Sans `workers_dev`, l'ancienne s'éteindrait au déploiement.
 - Dans un navigateur, l'ancienne adresse crée un code de liaison et renvoie vers la nouvelle avec `#demenage=` : le code, les succès, la tenue et les réglages (`KEPT`), jamais la clé. Pas pendant une partie, pas avec un score en attente. Joueur connecté sans code : il reste, nouvel essai au classement suivant.
-- `arrive.js`, chargé avant le jeu, pose ces valeurs et efface l'adresse. Le téléphone se connecte seul avec le code, sans toucher « Connecter », et garde aussi sa session sur l'ancienne adresse. Un appareil déjà connecté ignore tout.
+- `arrive.js`, chargé avant le jeu, pose ces valeurs et efface l'adresse. Le téléphone se connecte seul avec le code, sans toucher « Connecter », et garde aussi sa session sur l'ancienne adresse. Le code reste jusqu'à une réponse du serveur : sans réseau ou avec une limite, nouvel essai au classement suivant.
+- Nouveau QR scanné par un ancien joueur : le téléphone n'a pas de clé sur la nouvelle adresse. `arrive.js` fait une seule fois un aller-retour par `/depart` sur l'ancienne (`depart.js`, une page légère, 8 s au plus), qui rapporte le compte s'il y en a un. Un nouveau joueur ne perd qu'un chargement de page. « J'ai déjà un compte » propose aussi d'y retourner à la main.
+- Un appareil déjà connecté garde ses réglages. S'il a un autre compte, il propose de réunir les deux.
 - Une appli installée reste sur l'ancienne adresse et continue de marcher : elle ne peut pas changer d'adresse. L'accueil propose « Copier le lien » vers la nouvelle, avec un code renouvelé toutes les 9 min, puis il faut réinstaller.
 - `/ecran` et `/admin` ne suivent pas : les ouvrir sur la nouvelle adresse. Admin : `cle-admin.txt` la première fois.
 - Avant de partir, l'ancienne adresse teste la nouvelle (`reachable`, 4 s). Injoignable : le joueur reste et joue, nouvel essai au classement suivant. Un DNS en retard, comme une box ou un fournisseur, peut ignorer un sous-domaine jusqu'à 24 h après un changement de serveurs de noms.
@@ -344,10 +346,9 @@ Désactivée en prod tant qu'on n'a pas le nom de domaine : sans les clés, les 
 Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Paramètres, Autre appareil. Se connecter : « J'ai déjà un compte », « Continuer avec Google ». Elle ne crée pas de compte : sans compte lié, le joueur reçoit un message. Un compte Google ne se lie qu'à un joueur.
 
 - Le serveur parle à Google lui-même (`src/routes/google.ts`) : `POST /api/google/start` note la demande dans `google_states` (10 min, un seul usage) et pose le cookie `cv_google`, puis Google renvoie sur `GET /api/google/retour`, qui compare le cookie, échange le code et revient sur `/#google=<résultat>`. Aucun script Google dans la page, la politique de sécurité ne change pas.
-- On demande `openid email`, parce que la documentation de Google l'exige, mais on ne garde que `sha256("google:" + sub)` dans `profiles.google_hash`. L'adresse e-mail n'est jamais enregistrée. La page `/confidentialite`, liée depuis Crédits, ne parle pas de Google tant que la connexion est coupée.
-- Bouton caché sans clés, dans les navigateurs d'applis (Google y refuse la connexion) et dans l'appli iPhone de l'écran d'accueil (la page de Google s'y ouvre dans un autre stockage : à vérifier sur un vrai iPhone avant de l'ouvrir).
+- On demande `openid email`, parce que la documentation de Google l'exige, mais on ne garde que `sha256("google:" + sub)` dans `profiles.google_hash`. L'adresse e-mail n'est jamais enregistrée.
+- Bouton caché sans clés, sur l'ancienne adresse (elle n'est pas déclarée chez Google), dans les navigateurs d'applis (Google y refuse la connexion) et dans l'appli iPhone de l'écran d'accueil (la page de Google s'y ouvre dans un autre stockage : à vérifier sur un vrai iPhone avant de l'ouvrir).
 - Mise en route, à faire par Adrien : projet Google Cloud, écran de consentement « Externe » avec la page `/confidentialite`, identifiant OAuth « Application Web » avec comme URI de redirection `https://<adresse du jeu>/api/google/retour`, puis `npx wrangler secret put GOOGLE_CLIENT_ID` et `npx wrangler secret put GOOGLE_CLIENT_SECRET`. Migration 0014 à appliquer en ligne avant la mise en ligne. Google vérifie le domaine de l'adresse : À faire avec tartinesauvage.fr.
-- Pour l'activer : poser les clés, puis remettre dans `public/confidentialite.html` la section « Compte Google, si tu le lies » (texte dans le commit 99e2cb2).
 - Jamais essayée avec le vrai Google : les tests remplacent sa réponse.
 
 ### Mises à jour
@@ -451,6 +452,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 | 0.49 | 03/11 | écran géant en direct, fin de soirée stricte, mur mis de côté | 8 |
 | 1.0 | 06/11 | sortie de bêta, adresse tartinesauvage.fr, comptes qui suivent seuls | 1 |
 | 1.1 | 06/11 | succès secret Le jeu de la tartine | 1 |
+| 1.2 | 06/11 | ancien joueur reconnu avec le nouveau QR, appareil sorti qui oublie ses skins, connexion Google prête | |
 
 ## Erreurs des joueurs
 
@@ -596,7 +598,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `tests.yml` : à chaque envoi de code sur `master` et chaque pull request, types et trois niveaux de tests (2 min).
 - `safari.yml` : à la main avant chaque mise en ligne, `gh workflow run safari.yml --ref master`. `npm run deploy` exige qu'il soit vert.
 - `equite.yml` : robot et invariants en petit, quand `public/js/game/` ou le robot change (4 min).
-- Un envoi annule les tests en cours. Dépôt privé : 2 000 min par mois, environ 30 envois par jour.
+- Un envoi annule les tests en cours. Dépôt public : minutes gratuites.
 - Dependabot : une pull request npm et une d'actions par mois. Fusionner si c'est vert, puis `git pull` (sinon le prochain envoi est refusé).
 
 ## Ajouter du contenu
@@ -635,10 +637,6 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 ### Ajouté par Adrien le 02/11/2026
 
 - Page `/tech` comme sur Movie Picker (movie-picker.fr/tech) : le dossier technique publié dans le jeu, avec des chiffres relevés dans le dépôt plutôt qu'estimés.
-
-### Recherche de bugs du 03/11/2026 : pas corrigé
-
-- Un appareil sorti du compte (« Déconnecter les autres ») garde les succès, garnitures et la tenue, et les donne au pseudo qu'il crée ensuite. Pour corriger sans risque, le serveur doit dire à l'appareil qu'il a été déconnecté (une petite migration) : vider la progression dès qu'une clé est refusée ferait perdre leurs skins à tous si les comptes étaient effacés un jour.
 
 ### Analyse du solveur du 04/11/2026 : pas fait
 
