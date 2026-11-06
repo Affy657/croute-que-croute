@@ -963,7 +963,7 @@ try {
     await p.waitForLoadState("networkidle");
   };
   await step("admin : relecture toutes les 30 s, tout de suite au retour sur l'onglet, nouvel essai 10 s après un démarrage raté", async () => {
-    const other = await browser.newPage();
+    const other = await browser.newPage({ serviceWorkers: "block" });
     watch(other);
     await other.clock.install();
     let reads = 0;
@@ -994,7 +994,7 @@ try {
     }
   });
   await step("admin : relecture ratée, message au-dessus de la liste avec l'heure des données, effacé à la relecture suivante", async () => {
-    const other = await browser.newPage();
+    const other = await browser.newPage({ serviceWorkers: "block" });
     watch(other);
     await other.clock.install({ time: new Date(2026, 10, 7, 21, 4) });
     try {
@@ -1012,7 +1012,7 @@ try {
     }
   });
   await step("admin : premier chargement raté, pas de « Aucune soirée » inventé, le texte vient du serveur", async () => {
-    const other = await browser.newPage();
+    const other = await browser.newPage({ serviceWorkers: "block" });
     watch(other);
     let answer = (route) => route.abort();
     await other.route(playersRead, (route) => answer(route));
