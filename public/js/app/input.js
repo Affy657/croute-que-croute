@@ -25,6 +25,9 @@ export function setAim(on) {
 
 export const guessDevice = () => (window.matchMedia("(pointer: coarse)").matches ? "mobile" : "pc");
 
+/** @param {Element | null} el */
+const scrolls = (el) => !!el && (el.id !== "menu" || el.scrollHeight > el.clientHeight);
+
 /** @param {HTMLCanvasElement} canvas @param {InputHooks} b */
 export function createInput(canvas, { active, scale, view, toast }) {
   const pend = { x: 0, y: 0 };
@@ -108,7 +111,7 @@ export function createInput(canvas, { active, scale, view, toast }) {
   window.addEventListener("pointerup", end);
   window.addEventListener("pointercancel", end);
   document.addEventListener("touchmove", (e) => {
-    if (!(e.target instanceof Element && e.target.closest(".board-list, .info-screen"))) e.preventDefault();
+    if (!(e.target instanceof Element && scrolls(e.target.closest(".board-list, .info-screen, #menu")))) e.preventDefault();
   }, { passive: false });
 
   const offAim = () => {

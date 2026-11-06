@@ -303,6 +303,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 ## Appli et réseau
 
 - Installable : Installer sur Android, Partager puis « Sur l'écran d'accueil » sur iPhone. S'ouvre sans réseau après une première visite.
+- L'accueil défile seulement quand il dépasse de l'écran (petit téléphone, formulaire du code). Partout ailleurs `input.js` bloque le glissé : le jeu lui-même ne défile jamais.
 
 ### Compte sur plusieurs appareils
 

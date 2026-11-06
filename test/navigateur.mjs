@@ -1049,6 +1049,75 @@ try {
       await context.close();
     }
   });
+  for (const size of [{ width: 375, height: 553 }, { width: 320, height: 454 }]) {
+    await step(`petit écran ${size.width}×${size.height} : « Connecter » et « Nouveau joueur » s'atteignent en faisant défiler l'accueil`, async () => {
+      const { context, p } = await testPage(null, size);
+      try {
+        await p.goto(BASE + "/");
+        await p.locator("#haveAccount").click({ timeout: WAIT_MS });
+        await p.locator("#linkForm").waitFor({ state: "visible", timeout: WAIT_MS });
+        const before = await p.evaluate(() => {
+          const menu = document.getElementById("menu");
+          return { scrolls: menu.scrollHeight > menu.clientHeight, bottom: document.getElementById("newAccount").getBoundingClientRect().bottom, height: innerHeight };
+        });
+        if (!before.scrolls || before.bottom <= before.height) throw new Error("rien à faire défiler : " + JSON.stringify(before));
+        for (const button of ["#linkForm button[type=submit]", "#newAccount"]) {
+          await p.locator(button).scrollIntoViewIfNeeded();
+          const box = await p.evaluate((css) => {
+            const b = document.querySelector(css).getBoundingClientRect(), top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+            return { fits: b.top >= 0 && b.bottom <= innerHeight, mine: top === document.querySelector(css) };
+          }, button);
+          if (!box.fits || !box.mine) throw new Error(button + " : " + JSON.stringify(box));
+        }
+        await p.locator("#newAccount").click();
+        await p.locator("#joinForm").waitFor({ state: "visible", timeout: WAIT_MS });
+      } finally {
+        await context.close();
+      }
+    });
+  }
+  if (!SAFARI) {
+    await step("doigt sur petit écran : l'accueil qui dépasse défile, le jeu jamais", async () => {
+      const { context, p } = await testPage(await joinApi("Doigt" + hex(4)), { width: 320, height: 300 });
+      const swipe = async (cdp) => {
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: 8, y: 250 }] });
+        for (let y = 230; y >= 50; y -= 20) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: 8, y }] });
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+        await wait(300);
+      };
+      try {
+        const cdp = await context.newCDPSession(p);
+        await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: true });
+        await p.goto(BASE + "/");
+        await p.locator("#play").waitFor({ state: "visible", timeout: WAIT_MS });
+        await wait(600);
+        await swipe(cdp);
+        const moved = await p.evaluate(() => [document.getElementById("menu").scrollTop, scrollY]);
+        if (moved[0] <= 0 || moved[1] !== 0) throw new Error("accueil : " + JSON.stringify(moved));
+        await p.keyboard.press("Space");
+        await p.waitForFunction(() => window.__jeu.S.mode === "play", null, { timeout: WAIT_MS });
+        await swipe(cdp);
+        const still = await p.evaluate(() => [scrollY, document.documentElement.scrollTop, document.body.scrollTop, document.getElementById("cv").getBoundingClientRect().top]);
+        if (still.some((n) => n !== 0)) throw new Error("jeu : " + JSON.stringify(still));
+      } finally {
+        await context.close();
+      }
+    });
+  }
+  await step("grand écran : l'accueil tient dans la page, rien à faire défiler", async () => {
+    const { context, p } = await testPage(await joinApi("Grand" + hex(4)));
+    try {
+      await p.goto(BASE + "/");
+      await p.locator("#play").waitFor({ state: "visible", timeout: WAIT_MS });
+      const sizes = await p.evaluate(() => {
+        const menu = document.getElementById("menu");
+        return [menu.scrollHeight, menu.clientHeight];
+      });
+      if (sizes[0] > sizes[1]) throw new Error(JSON.stringify(sizes));
+    } finally {
+      await context.close();
+    }
+  });
   await step("score sans réseau : la boucle s'arrête sans l'effacer, le dit, et il part au retour du réseau", async () => {
     const { context, p } = await testPage(await joinApi("Attente" + hex(4)));
     try {
