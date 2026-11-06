@@ -275,6 +275,7 @@ async function confirmOut() {
     const { removed } = await logoutOthers();
     const s = removed > 1 ? "s" : "";
     askOut(false, removed ? `C'est fait : ${removed} appareil${s} déconnecté${s}.` : "Aucun autre appareil n'était connecté.");
+    await refreshBoard();
   } catch (e) {
     say(ui.outNote, reason(e), true);
   } finally {

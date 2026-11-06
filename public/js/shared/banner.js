@@ -2,7 +2,7 @@ import { when } from "./format.js";
 
 export const SOON_MS = 24 * 3600 * 1000;
 export const FINAL_MS = 15 * 60 * 1000;
-export const SETTLE_MS = 10000;
+export const SETTLE_MS = 12000;
 export const AFTER_MS = 60000;
 
 /** @param {Slate | null} b @param {number} now */
@@ -53,11 +53,21 @@ export function liveScreen(b, now) {
 }
 
 /** @param {ScreenBoard} b @param {number} now */
+export function settleDue(b, now) {
+  const ev = b.event;
+  return !!ev && now >= ev.finalAt + SETTLE_MS && !settled(b, ev);
+}
+
+/** @param {ScreenBoard} b @param {number} now */
 export function screenBanner(b, now) {
   const ev = b.event, next = b.next;
   if (ev && now < ev.closesAt) return { label: "Fin dans ", target: ev.closesAt, final: ev.closesAt - now <= FINAL_MS };
   if (next && next.opensAt - now < SOON_MS) return { label: ev ? "Prochaine soirée dans " : "Début dans ", target: next.opensAt };
   if (next) return { text: "Prochaine soirée " + when(next.opensAt) };
+  if (ev && !settled(b, ev)) return { text: "Soirée finie !", done: true };
   if (ev && b.top[0]) return { text: "Bravo " + b.top[0].pseudo + " !", win: true };
   return null;
 }
+
+/** @param {Ranked | undefined} first @param {Shown} seen */
+export const newFirst = (first, seen) => !!first && !!seen.first && first.pseudo !== seen.first.pseudo && first.best > seen.first.best && !(first.at > 0 && first.at <= seen.last);

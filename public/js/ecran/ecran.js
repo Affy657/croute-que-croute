@@ -1,5 +1,5 @@
 import { fmtCs, clock, hourOf } from "../shared/format.js";
-import { screenBanner, liveScreen } from "../shared/banner.js";
+import { screenBanner, liveScreen, settleDue, newFirst } from "../shared/banner.js";
 import { rain, bounce } from "../app/party.js";
 import { timeout } from "../shared/timeout.js";
 import { VERSION } from "../version.js";
@@ -63,7 +63,7 @@ function render() {
       if (!/** @type {Shown} */ (shown).bests.has(r.best)) rows[i].classList.add("up");
     });
     const first = top[0];
-    if (first && shown.first && first.pseudo !== shown.first.pseudo && first.best > shown.first.best && !(first.at <= shown.last)) {
+    if (newFirst(first, shown)) {
       bounce(rows[0]);
       crown(first);
       rain();
@@ -87,16 +87,15 @@ function setCountdown(label, ms) {
   el.hidden = false;
 }
 
-/** @param {number} t */
-function celebrate(t) {
-  const ev = board.event, over = !!(ev && t >= ev.closesAt);
-  $("list").classList.toggle("over", over);
-  if (over && ended === false) {
+/** @param {boolean} win */
+function celebrate(win) {
+  $("list").classList.toggle("over", win);
+  if (win && ended === false) {
     const first = $("list").firstElementChild;
     if (first) bounce(first);
     rain();
   }
-  ended = over;
+  ended = win;
 }
 
 function tick() {
@@ -109,20 +108,22 @@ function tick() {
     opened = board.next.opensAt;
     refresh(true);
   }
-  const hot = !!(s && s.final), win = !!(s && s.win);
+  if (!document.hidden && settleDue(board, t) && Date.now() - lastAsk >= FAST_POLL_MS) refresh(true);
+  const hot = !!(s && s.final), win = !!(s && s.win), done = !!(s && s.done);
   $("title").textContent = title();
   el.classList.toggle("final", hot);
   el.classList.toggle("last", hot && s.target - t <= LAST_MS);
   el.classList.toggle("win", win);
+  el.classList.toggle("done", done);
   el.classList.toggle("long", win && s.text.length > LONG_WIN);
-  document.body.classList.toggle("hot", hot || win);
+  document.body.classList.toggle("hot", hot || win || done);
   if (!s) el.hidden = true;
   else if (s.label) setCountdown(s.label, s.target - t);
   else {
     el.textContent = s.text;
     el.hidden = false;
   }
-  celebrate(t);
+  celebrate(win);
 }
 
 /** @param {FeedItem} item */

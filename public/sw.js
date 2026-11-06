@@ -1,6 +1,6 @@
 const CACHE = "croute-" + (new URL(self.location.href).searchParams.get("v") || "v19");
 const SHELL = [
-  "/", "/tokens.css", "/style.css", "/catalog.css", "/manifest.webmanifest", "/icons/icon-192.png", "/qr.svg",
+  "/", "/tokens.css", "/fonts/bungee-latin-400-normal.woff2", "/style.css", "/catalog.css", "/manifest.webmanifest", "/icons/icon-192.png", "/qr.svg",
   "/ecran", "/ecran.css", "/js/ecran/ecran.js",
   "/js/version.js", "/js/errors.js", "/js/arrive.js", "/js/boot.js", "/js/shared/store.js", "/js/shared/format.js", "/js/shared/palette.js", "/js/shared/local.js", "/js/shared/timeout.js", "/js/shared/banner.js",
   "/js/game/field.js", "/js/game/projectiles.js", "/js/game/attacks.js", "/js/game/solver.js", "/js/game/sim.js",
@@ -8,7 +8,6 @@ const SHELL = [
   "/js/app/art/auras.js", "/js/app/art/breads.js", "/js/app/art/cutlery.js", "/js/app/art/hats.js", "/js/app/art/kit.js", "/js/app/art/sides.js", "/js/app/art/spreads.js",
   "/js/app/sky/cans.js", "/js/app/sky/cheese.js", "/js/app/sky/classic.js", "/js/app/sky/egg.js", "/js/app/sky/kit.js", "/js/app/sky/melies.js", "/js/app/sky/music.js", "/js/app/sky/pancake.js", "/js/app/sky/pirate.js", "/js/app/sky/pumpkin.js", "/js/app/sky/santa.js", "/js/app/sky/toaster.js", "/js/app/sky/tung.js", "/js/app/sky/vehicles.js"
 ];
-const FONTS = ["https://fonts.googleapis.com", "https://fonts.gstatic.com"];
 const NET_MS = 3000;
 
 self.addEventListener("install", (event) => {
@@ -28,19 +27,6 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-
-  if (FONTS.includes(url.origin)) {
-    event.respondWith(
-      caches.match(req).then((hit) => hit || fetch(req).then((res) => {
-        if (res.ok || res.type === "opaque") {
-          const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(req, copy));
-        }
-        return res;
-      }))
-    );
-    return;
-  }
 
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/music/") || url.pathname.startsWith("/admin") || url.pathname.startsWith("/js/admin/")) return;

@@ -14,9 +14,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Croûte">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&display=swap">
 <link rel="stylesheet" href="/tokens.css">
 <link rel="stylesheet" href="/admin.css">
 </head>
@@ -60,13 +57,8 @@
     <div class="stack">
       <section class="card">
         <p id="eventStatus" class="eyebrow">Soirée</p>
-        <h2 id="eventName">Aucune soirée</h2>
+        <h2 id="eventName">Chargement…</h2>
         <p id="eventEnd" class="sub"></p>
-        <div class="stats">
-          <p class="stat"><span class="stat-label">Joueurs</span><span id="statPlayers" class="stat-value">0</span></p>
-          <p class="stat"><span class="stat-label">Parties</span><span id="statRuns" class="stat-value">0</span></p>
-          <p class="stat"><span class="stat-label">Record</span><span id="statBest" class="stat-value">-</span></p>
-        </div>
         <div class="row">
           <button id="editEndBtn" class="btn ghost" type="button">Modifier</button>
           <button id="newEventBtn" class="btn ghost" type="button">Nouvelle soirée</button>
@@ -100,11 +92,16 @@
           <button class="btn ghost small scope" type="button" data-scope="general" aria-selected="false">Mobile</button>
           <button class="btn ghost small scope" type="button" data-scope="pc" aria-selected="false">PC</button>
         </div>
+        <p id="playersMsg" class="msg alert" hidden></p>
+        <div class="stats">
+          <p class="stat"><span class="stat-label">Joueurs</span><span id="statPlayers" class="stat-value">-</span></p>
+          <p class="stat"><span class="stat-label">Parties</span><span id="statRuns" class="stat-value">-</span></p>
+          <p class="stat"><span class="stat-label">Record</span><span id="statBest" class="stat-value">-</span></p>
+        </div>
         <p id="suspectAlert" class="msg error alert" hidden></p>
         <p id="activeNote" class="note" hidden></p>
         <ol id="players" class="list"></ol>
         <p id="playersEmpty" class="note" hidden>Aucun joueur pour l'instant.</p>
-        <p id="playersMsg" class="msg" hidden></p>
       </section>
 
       <section id="mergeCard" class="card" hidden>

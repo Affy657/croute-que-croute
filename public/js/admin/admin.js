@@ -5,7 +5,7 @@ import { timeout } from "../shared/timeout.js";
 
 /** @param {string} id */
 const $ = (id) => document.getElementById(id);
-const CALL_MS = 10000, REFRESH_MS = 10000, ERRORS_MS = 60000, FRESH_MS = 3600 * 1000, COPIED_MS = 2000;
+const CALL_MS = 10000, REFRESH_MS = 30000, RETRY_MS = 10000, ERRORS_MS = 60000, FRESH_MS = 3600 * 1000, COPIED_MS = 2000;
 const store = {
   get: () => storage.get(KEYS.adminToken),
   set: /** @param {string | null} v */ (v) => storage.set(KEYS.adminToken, v || null)
@@ -25,6 +25,7 @@ let timer = null;
 let retry = null;
 let scope = "event";
 let loads = 0;
+let loadedAt = 0;
 let invited = new URLSearchParams(location.hash.slice(1)).get("invite");
 /** @type {Set<string>} */
 const opened = new Set();
@@ -73,6 +74,12 @@ function say(el, text, error) {
   el.textContent = text || "";
   el.hidden = !text;
   el.classList.toggle("error", !!error);
+}
+
+/** @param {string} message */
+function unread(message) {
+  say($("playersMsg"), message + (loadedAt ? " Données de " + hour(loadedAt) + "." : ""), true);
+  if (!data) $("eventName").textContent = "Soirée pas chargée";
 }
 
 /** @param {string} method @param {string} path @param {unknown} [body] */
@@ -156,7 +163,7 @@ function renderEvent() {
 function tick() {
   const ev = data && data.event;
   if (!ev) {
-    $("eventEnd").textContent = "Crée une soirée pour ouvrir son classement. En dehors, le classement général tourne tout le temps.";
+    $("eventEnd").textContent = data ? "Crée une soirée pour ouvrir son classement. En dehors, le classement général tourne tout le temps." : "";
     return;
   }
   const now = Date.now();
@@ -194,7 +201,7 @@ function renderPlayers() {
     const btn = cell("button", "btn ghost small", p.banned ? "Réintégrer" : "Retirer");
     btn.type = "button";
     btn.addEventListener("click", async () => {
-      if (!p.banned && !confirm("Retirer " + p.pseudo + " du classement ?")) return;
+      if (!confirm(p.banned ? "Réintégrer " + p.pseudo + " au classement ?" : "Retirer " + p.pseudo + " du classement ?")) return;
       btn.disabled = true;
       try {
         await call("POST", "/api/admin/players/" + p.id + "/ban", { banned: !p.banned });
@@ -216,12 +223,13 @@ async function load() {
     const next = await call("GET", "/api/admin/players" + (asked === "event" ? "" : "?scope=" + asked));
     if (asked !== scope || mine !== loads) return;
     data = next;
+    loadedAt = Date.now();
     for (const b of document.querySelectorAll(".scope")) b.setAttribute("aria-selected", String(b.dataset.scope === scope));
     say($("playersMsg"), "");
     renderEvent();
     renderPlayers();
   } catch (e) {
-    if (asked === scope && mine === loads) say($("playersMsg"), /** @type {Error} */ (e).message, true);
+    if (asked === scope && mine === loads) unread(/** @type {Error} */ (e).message);
   }
 }
 
@@ -423,9 +431,9 @@ async function boot() {
   } catch (e) {
     if (!token) return;
     show("app");
-    say($("playersMsg"), /** @type {Error} */ (e).message, true);
+    unread(/** @type {Error} */ (e).message);
     clearTimeout(retry);
-    retry = setTimeout(boot, REFRESH_MS);
+    retry = setTimeout(boot, RETRY_MS);
     return;
   }
   if (invited) {
@@ -539,12 +547,13 @@ for (const b of document.querySelectorAll(".scope")) {
 }
 
 onSubmit("endForm", async () => {
-  const closesAt = fromInput($("endAt").value);
-  if (closesAt <= Date.now() && !confirm("Cette fin est déjà passée : le classement de la soirée se ferme tout de suite et ne pourra plus être rouvert. Continuer ?")) return;
+  const opensAt = fromInput($("startAt").value), closesAt = fromInput($("endAt").value), now = Date.now(), ev = data && data.event;
+  if (closesAt <= now && !confirm("Cette fin est déjà passée : le classement de la soirée se ferme tout de suite et ne pourra plus être rouvert. Continuer ?")) return;
+  if (ev && ev.opensAt <= now && now < ev.closesAt && opensAt > now && !confirm("Ce début est dans le futur : la soirée quitte l'écran géant et ne compte plus de parties jusqu'à cette heure. Continuer ?")) return;
   try {
     await call("PATCH", "/api/admin/events/current", {
       name: $("editName").value,
-      opensAt: fromInput($("startAt").value),
+      opensAt,
       closesAt
     });
     $("endForm").hidden = true;

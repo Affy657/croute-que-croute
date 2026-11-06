@@ -14,6 +14,8 @@ test("netteté baissée (téléphone lent, ou iPhone en économie d'énergie à 
   assert.equal(savedQuality("3", now), 0);
   assert.equal(savedQuality(null, now), 0);
   assert.equal(savedQuality("9:" + now, now), 3);
+  assert.equal(savedQuality("1.5:" + now, now), 1);
+  assert.equal(savedQuality("x:" + now, now), 0);
 });
 
 test("partie lancée avec une hauteur invalide (fenêtre de 0 px) : la tartine part d'une vraie place et peut mourir", () => {

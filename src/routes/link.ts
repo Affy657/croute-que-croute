@@ -4,9 +4,11 @@ import { randomToken, randomCode, sha256 } from "../security";
 import { cleanClientId, cleanLinkCode, cleanProgress, mergeProgress, LINK_CHARS, LINK_LENGTH } from "../validate";
 import { findProfile, forgetCaches } from "../db";
 import type { Ctx } from "../router";
+import { tell } from "../live";
 
 const LINK_MS = 10 * 60 * 1000;
 const RETRY_MS = 5 * 60 * 1000;
+const MERGE_RUNS_MAX = 2000;
 const UNKNOWN = "Code inconnu ou expiré.";
 const wins = (b: string, a: string, best: string, at: string) => `${b}.${best} > ${a}.${best} OR (${b}.${best} = ${a}.${best} AND ${b}.${at} < ${a}.${at})`;
 const better = (col: string, best: string, at: string) => `${col} = CASE WHEN ${wins("b", "a", best, at)} THEN b.${col} ELSE a.${col} END`;
@@ -76,9 +78,11 @@ async function openSession(env: Env, link: LinkRow, clientId: string | null, cli
   return json({ token: await addSession(env, link.id, clientId, clientHash, now), pseudo: link.pseudo });
 }
 
-export async function useLink({ req, env }: Ctx) {
+const tooManyRuns = async (env: Env, id: string) =>
+  (await env.DB.prepare("SELECT COUNT(*) AS n FROM (SELECT 1 FROM runs WHERE player_id = ? LIMIT ?)").bind(id, MERGE_RUNS_MAX + 1).first<{ n: number }>())!.n > MERGE_RUNS_MAX;
+
+export async function useLink({ req, env, exec }: Ctx) {
   if (outdated(req, env)) return updateRequired();
-  if (!(await allowed(env.JOIN_IP_LIMIT, "link:" + clientIp(req)))) return tooFast();
   const body = await readJson(req);
   const code = cleanLinkCode(body.code);
   if (!code) return fail(400, "Le code fait " + LINK_LENGTH + " caractères.");
@@ -88,11 +92,13 @@ export async function useLink({ req, env }: Ctx) {
   const [link, me] = await Promise.all([findLink(env, hash, now), findProfile(req, env)]);
   if (!link) {
     const again = !me && retryHash ? await findLink(env, retryHash, now) : null;
-    return again ? openSession(env, again, clientId, clientHash, now) : fail(404, UNKNOWN);
+    if (again) return openSession(env, again, clientId, clientHash, now);
+    return (await allowed(env.JOIN_IP_LIMIT, "link:" + clientIp(req))) ? fail(404, UNKNOWN) : tooFast();
   }
   if (me && me.id === link.id) return fail(409, "Cet appareil est déjà sur ce compte.");
   if (me && (me.banned || link.banned)) return fail(403, "Impossible de réunir un compte retiré du classement.");
   if (me && body.merge !== true) return json({ error: "Cet appareil a déjà un compte.", merge: { from: me.pseudo, into: link.pseudo } }, 409);
+  if (me && (await tooManyRuns(env, me.id))) return fail(403, "Trop de parties pour réunir ces comptes ici : demande à un admin.");
   const retry = !me && !!retryHash;
   const claim = retry
     ? env.DB.prepare("UPDATE links SET code_hash = ?1, expires_at = ?2 WHERE code_hash = ?3").bind(retryHash, now + RETRY_MS, hash)
@@ -101,6 +107,7 @@ export async function useLink({ req, env }: Ctx) {
   try {
     if (me) {
       await mergeInto(env, link.id, me.id);
+      tell(env, exec);
       return json({ pseudo: link.pseudo, merged: true });
     }
     return await openSession(env, link, clientId, clientHash, now);
@@ -123,6 +130,8 @@ export async function logoutOthers({ req, env }: Ctx) {
     env.DB.prepare("INSERT OR IGNORE INTO signed_out (token_hash, signed_at) SELECT token_hash, ?1 FROM sessions WHERE player_id = ?2 AND token_hash <> ?3").bind(Date.now(), me.id, mine),
     env.DB.prepare("DELETE FROM sessions WHERE player_id = ?1 AND token_hash <> ?2").bind(me.id, mine),
     env.DB.prepare("DELETE FROM links WHERE player_id = ?").bind(me.id),
+    env.DB.prepare("UPDATE profiles SET google_hash = NULL WHERE id = ?").bind(me.id),
+    env.DB.prepare("DELETE FROM google_states WHERE player_id = ?").bind(me.id),
   ]);
   return json({ removed: out.meta.changes });
 }

@@ -8,7 +8,7 @@ globalThis.localStorage = {
 };
 globalThis.location = { hostname: "test.invalid", search: "" };
 
-globalThis.document = { getElementById: () => ({ getContext: () => fakeCtx().ctx }) };
+globalThis.document = { hidden: false, getElementById: () => ({ getContext: () => fakeCtx().ctx }), addEventListener: () => {} };
 
 export const storageListeners = [];
 globalThis.window = { addEventListener: (type, fn) => type === "storage" && storageListeners.push(fn) };

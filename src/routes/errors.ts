@@ -1,8 +1,8 @@
-import { json, fail, allowed, tooFast } from "../http";
+import { json, fail, clientIp, allowed, tooFast, cappedText } from "../http";
 import { sha256 } from "../security";
 import type { Ctx } from "../router";
 
-const BODY_MAX = 64 * 1024, BATCH = 5, TRAIL_LINES = 30, COUNT_MAX = 100000, HOUR_ROWS = 60, SESSION_ROWS = 10;
+const BATCH = 5, TRAIL_LINES = 30, COUNT_MAX = 100000, HOUR_ROWS = 60, SESSION_ROWS = 10;
 const KEEP_MS = 14 * 24 * 3600 * 1000, KEEP_ROWS = 2000, GROUPS = 50, RECENT_ROWS = 200;
 const HOUR_MS = 3600 * 1000, DAY_MS = 24 * HOUR_MS;
 const KINDS = ["erreur", "promesse", "fichier", "csp", "blocage"];
@@ -62,9 +62,12 @@ function clean(raw: unknown): Omit<ErrorRow, "fingerprint"> | null {
 }
 
 export async function collect({ req, env }: Ctx) {
-  if (Number(req.headers.get("content-length")) > BODY_MAX) return fail(413, "Rapport trop gros.");
-  const raw = await req.text();
-  if (raw.length > BODY_MAX) return fail(413, "Rapport trop gros.");
+  let raw: string;
+  try {
+    raw = await cappedText(req);
+  } catch {
+    return fail(413, "Rapport trop gros.");
+  }
   let body: Record<string, unknown>;
   try {
     body = JSON.parse(raw);
@@ -73,7 +76,7 @@ export async function collect({ req, env }: Ctx) {
   }
   const found = body && Array.isArray(body.errors) ? body.errors.slice(0, BATCH).map(clean).filter((e) => e !== null) : [];
   if (!found.length) return fail(400, "Rapport invalide.");
-  if (!(await allowed(env.ERROR_LIMIT, "toutes"))) return tooFast();
+  if (!(await allowed(env.ERROR_IP_LIMIT, clientIp(req))) || !(await allowed(env.ERROR_LIMIT, "toutes"))) return tooFast();
   const now = Date.now();
   const session = /^[a-f0-9]{16}$/.test(String(body.session)) ? String(body.session) : "";
   const used = await env.DB.prepare(

@@ -69,7 +69,7 @@ test("ecran.css : tailles de texte, espacements et rayons viennent de l'échelle
   assert.deepEqual(decls(css, /^(gap|row-gap|column-gap|padding(-[a-z]+)?|margin(-[a-z]+)?|border-radius)$/).filter((d) => /\d(px|rem|em|vh|vw)\b/.test(raw(d))), []);
 });
 
-for (const page of ["index.html", "admin.html", "ecran.html"]) {
+for (const page of ["index.html", "admin.html", "ecran.html", "confidentialite.html"]) {
   test(`${page} : charge tokens.css avant ses styles`, () => {
     const links = [...read(page).matchAll(/<link[^>]*rel="stylesheet"[^>]*href="(\/[^"]+)"/g)].map((m) => m[1]);
     assert.equal(links[0], "/tokens.css");

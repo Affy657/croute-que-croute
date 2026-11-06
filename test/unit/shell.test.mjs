@@ -49,6 +49,28 @@ test("l'écran géant hors ligne : sa page et chaque fichier qu'elle charge sont
   assert.deepEqual(needed.filter((f) => !SHELL.includes(f)), []);
 });
 
+test("police hébergée dans le jeu : de vrais woff2, déclarés dans tokens.css avec swap et unicode-range, la latine dans le cache", () => {
+  const faces = [...read("/tokens.css").matchAll(/@font-face\s*\{([^}]*)\}/g)].map((m) => m[1]);
+  const files = faces.map((face) => face.match(/url\("([^"]+)"\)/)[1]);
+  assert.deepEqual(files.sort(), ["/fonts/bungee-latin-400-normal.woff2", "/fonts/bungee-latin-ext-400-normal.woff2"]);
+  for (const face of faces) {
+    assert.match(face, /font-family: "Bungee"/);
+    assert.match(face, /font-display: swap/);
+    assert.match(face, /unicode-range: U\+/);
+  }
+  for (const file of files) assert.equal(readFileSync("public" + file).subarray(0, 4).toString("latin1"), "wOF2");
+  assert.ok(SHELL.includes("/fonts/bungee-latin-400-normal.woff2"));
+  assert.ok(existsSync("public/fonts/OFL.txt"));
+});
+
+test("aucune page ne dépend de Google Fonts : ni dans les pages, ni dans le service worker, ni dans la politique de sécurité", () => {
+  const files = ["/index.html", "/admin.html", "/ecran.html", "/depart.html", "/confidentialite.html", "/sw.js", "/_headers", "/tokens.css"];
+  assert.deepEqual(files.filter((f) => /fonts\.(googleapis|gstatic)\.com|Google Fonts/.test(read(f))), []);
+  const policy = read("/_headers").match(/Content-Security-Policy: (.+)/)[1];
+  assert.match(policy, /style-src 'self';/);
+  assert.match(policy, /font-src 'self';/);
+});
+
 test("chaque élément attendu par screens.js existe dans la page, sinon le jeu se recharge à chaque ouverture", () => {
   const block = read("/js/app/screens.js").match(/export const ui = \{([\s\S]*?)\n\};/)[1];
   const ids = [...block.matchAll(/\$\("([^"]+)"\)/g)].map((m) => m[1]);

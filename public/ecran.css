@@ -126,6 +126,13 @@ body.hot .head h1 {
   font-size: var(--screen-text-xl);
 }
 
+.countdown.done {
+  margin: var(--screen-space-2xs) 0 0;
+  font-size: var(--screen-text-3xl);
+  line-height: var(--leading-tight);
+  color: var(--ink);
+}
+
 .offline {
   margin: var(--screen-space-xs) 0 0;
   font-size: var(--screen-text-sm);

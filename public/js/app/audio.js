@@ -144,6 +144,7 @@ async function fetchSong() {
     }
   }
   songFailed = !song;
+  if (!song) songLoad = null;
   changed();
   reconcile();
 }
@@ -153,11 +154,9 @@ function loadSong() {
   return songLoad;
 }
 
-export async function initAudio() {
+export function initAudio() {
   ensureContext();
-  if (!ctx) return;
-  if (prefs.music) await loadSong();
-  else changed();
+  if (ctx) changed();
 }
 
 /** @param {number} t */
@@ -271,6 +270,7 @@ export function musicRunStart() {
   clearTimeout(previewTimer);
   previewTimer = null;
   halt();
+  if (prefs.music) loadSong();
   reconcile();
 }
 
@@ -346,8 +346,13 @@ export function setLevel(kind, value) {
 }
 
 export function previewMusic() {
-  if (!song || running || !prefs.music || !prefs.musicLevel) return;
+  if (running || !prefs.music || !prefs.musicLevel) return;
   ensureContext();
+  if (!song) {
+    const loading = loadSong();
+    if (loading) loading.then(() => { if (song) previewMusic(); });
+    return;
+  }
   wake();
   clearTimeout(previewTimer);
   previewTimer = setTimeout(() => {

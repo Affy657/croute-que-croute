@@ -150,6 +150,17 @@ body {
   touch-action: none;
 }
 
+#menu {
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+}
+
+#menu > * {
+  flex-shrink: 0;
+}
+
 .screen.veil {
   background: var(--veil);
   justify-content: center;

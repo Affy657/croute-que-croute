@@ -6,9 +6,29 @@ export const json = (data: unknown, status = 200) =>
 
 export const fail = (status: number, error: string) => json({ error }, status);
 
+const BODY_MAX = 64 * 1024;
+
+export async function cappedText(req: Request) {
+  if (Number(req.headers.get("content-length")) > BODY_MAX) throw new Error("Corps trop gros.");
+  const reader = req.body?.getReader();
+  const decoder = new TextDecoder();
+  let text = "", size = 0;
+  while (reader) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > BODY_MAX) {
+      await reader.cancel();
+      throw new Error("Corps trop gros.");
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+  return text;
+}
+
 export async function readJson(req: Request): Promise<Record<string, unknown>> {
   try {
-    const data = await req.json();
+    const data: unknown = JSON.parse(await cappedText(req));
     return data && typeof data === "object" ? (data as Record<string, unknown>) : {};
   } catch {
     return {};
@@ -20,7 +40,16 @@ export function bearer(req: Request) {
   return header.startsWith("Bearer ") ? header.slice(7).trim() : "";
 }
 
-export const clientIp = (req: Request) => req.headers.get("cf-connecting-ip") ?? "local";
+function network(ip: string) {
+  if (!ip.includes(":")) return ip;
+  if (ip.includes(".")) return ip.slice(ip.lastIndexOf(":") + 1);
+  const [head, tail = ""] = ip.toLowerCase().split("::");
+  const left = head ? head.split(":") : [], right = tail ? tail.split(":") : [];
+  const zeros = ip.includes("::") ? Array<string>(Math.max(0, 8 - left.length - right.length)).fill("0") : [];
+  return [...left, ...zeros, ...right].slice(0, 4).map((part) => part.replace(/^0+(?=.)/, "")).join(":") + "::/64";
+}
+
+export const clientIp = (req: Request) => network(req.headers.get("cf-connecting-ip") ?? "local");
 
 export function outdated(req: Request, env: Env, previousOk = false) {
   const version = req.headers.get("x-app-version");
