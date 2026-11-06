@@ -119,6 +119,11 @@ test("Équité suit tout ce que son robot et le jeu importent, palette.js compri
   assert.deepEqual(todo.filter((f) => !ignored(f, WATCHED)), []);
 });
 
+test("le robot d'équité échoue sur une mort, une partie sans chemin ou un refus à cause de l'attaque elle-même", () => {
+  const exit = readFileSync("test/fairness.mjs", "utf8").split(/\r?\n/).find((line) => line.startsWith("process.exit("));
+  for (const part of ["sane", "!fair.deaths", "!fair.stuck", "!Object.keys(fair.own).length"]) assert.ok(exit.includes(part), part);
+});
+
 test("mise en ligne refusée si node_modules ne suit pas package-lock.json (le PC met en ligne avec ses propres outils)", () => {
   const lock = { packages: { "": { dependencies: { qrcode: "^1" }, devDependencies: { wrangler: "^4" } }, "node_modules/qrcode": { version: "1.5.4" }, "node_modules/wrangler": { version: "4.156.0" } } };
   assert.deepEqual(drift(lock, (n) => ({ qrcode: "1.5.4", wrangler: "4.154.0" })[n]), ["wrangler 4.154.0 au lieu de 4.156.0"]);
