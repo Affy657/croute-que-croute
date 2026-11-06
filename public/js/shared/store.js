@@ -24,7 +24,8 @@ export const KEYS = {
   sensitivity: "cv-sensibilite",
   mouseAim: "cv-souris",
   invincible: "cv-invincible",
-  diag: "cv-diag"
+  diag: "cv-diag",
+  arrival: "cv-arrivee"
 };
 
 /** @param {() => Storage} storage @returns {Store} */

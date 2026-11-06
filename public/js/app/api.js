@@ -218,6 +218,8 @@ export function startRun(body) {
   });
 }
 
+export const hasPending = () => pendingScores().length > 0;
+
 /** @returns {Pending[]} */
 function pendingScores() {
   try {
