@@ -8,6 +8,10 @@ import { S } from "./state.js";
 
 const ACH_TOAST_MS = 2600, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200, LAP_CS = 1000;
 
+api.on("result", () => {
+  if (S.mode === "over" && ui.overNote.textContent === api.WAITING) setText(ui.overNote, "");
+});
+
 function cheer() {
   const mine = S.submit, prev = S.prevRank;
   /** @type {Promise<null>} */

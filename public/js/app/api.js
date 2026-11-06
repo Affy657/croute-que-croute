@@ -7,7 +7,9 @@ import { openOf, recentOf, upcomingOf, lateFor } from "../shared/banner.js";
 
 const RELOAD_GAP = 15000;
 const UPDATED = "Partie pas comptée : le jeu a été mis à jour, il se recharge quand tu rejoues.";
-const SEND_TRIES = 3, SEND_GAP_MS = 1500, WAIT_GAP_MS = 5000, WAIT_MS = 120000, SEND_TIMEOUT_MS = 8000, CALL_TIMEOUT_MS = 10000, RESUME_RETRY_MS = 3000;
+export const WAITING = "Pas de réseau. Ton score partira dès qu'il revient.";
+const SEND_TRIES = 3, SEND_GAP_MS = 1500, WAIT_GAP_MS = 5000, WAIT_MS = 120000, KEEP_MS = 12 * 3600 * 1000, SEND_TIMEOUT_MS = 8000, CALL_TIMEOUT_MS = 10000, RESUME_RETRY_MS = 3000;
+const START_MS = 12000, START_TRY_MS = 3500, START_GAP_MS = 500, START_GAP_MAX_MS = 3000;
 
 /** @param {unknown} e @param {string} [offline] */
 export const reason = (e, offline = "Pas de réseau, réessaie.") => (/** @type {Err} */ (e).status ? /** @type {Err} */ (e).message : offline);
@@ -29,7 +31,9 @@ const ACCOUNT_KEYS = [KEYS.localBest, KEYS.myBests, KEYS.achievements, KEYS.topp
 /** @type {Net} */
 export const net = { token: store.get(KEYS.playerToken), board: null, offset: 0, online: true, updatePending: false };
 let localBest = parseInt(store.get(KEYS.localBest) || "0", 10) || 0, saved = readBests();
-let boardAsked = 0, boardShown = 0, /** @type {string | null} */ lastDevice = null, resumed = false, /** @type {Promise<void> | null} */ resuming = null, /** @type {Timer} */ retryTimer = null, /** @type {Record<string, number>} */ runBests = {}, bestsAsked = 0;
+let boardAsked = 0, boardShown = 0, /** @type {string | null} */ lastDevice = null, resumed = false, /** @type {Promise<void> | null} */ resuming = null, /** @type {Timer} */ retryTimer = null, /** @type {Record<string, number>} */ runBests = {}, bestsAsked = 0, draining = false;
+/** @type {Map<string, Promise<RunAnswer>>} */
+const sending = new Map();
 /** @type {Record<string, Listener[]>} */
 const listeners = { board: [], update: [], result: [] };
 
@@ -55,6 +59,8 @@ export const on = (name, fn) => listeners[name].push(fn);
 const emit = (name, value) => listeners[name].forEach((fn) => fn(value));
 /** @param {number | undefined} status */
 const settled = (status) => status && status < 500 && status !== 408 && status !== 429;
+/** @param {number} ms */
+const pause = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 /** @param {string} method @param {string} path @param {unknown} [body] @param {number} [timeoutMs] */
 export async function call(method, path, body, timeoutMs) {
@@ -70,6 +76,7 @@ export async function call(method, path, body, timeoutMs) {
     if (res.status === 426) requestUpdate();
     throw err;
   }
+  if (data === null) throw new Error("Erreur réseau.");
   return data;
 }
 
@@ -153,6 +160,7 @@ export async function refreshBoard() {
     net.board = b;
     if (b.me) keepBests(b.me);
     if (b.version && b.version !== VERSION) requestUpdate();
+    resumePending();
   } catch (e) {
     net.online = false;
   }
@@ -219,21 +227,39 @@ export async function rename(pseudo) {
   await refreshBoard();
 }
 
+/** @param {unknown} body @returns {Promise<RunTicket | RunFail>} */
+async function launch(body) {
+  const until = Date.now() + START_MS;
+  for (let gap = START_GAP_MS; ; gap = Math.min(gap * 2, START_GAP_MAX_MS)) {
+    try {
+      return await call("POST", "/api/runs", body, Math.max(1, Math.min(START_TRY_MS, until - Date.now())));
+    } catch (e) {
+      const err = /** @type {Err} */ (e);
+      if (settled(err.status) || Date.now() + gap >= until) {
+        if (err.status === 401) refreshBoard();
+        return { error: err.status === 426 ? UPDATED : reason(err, "Hors ligne : score non compté"), status: err.status };
+      }
+      await pause(gap);
+    }
+  }
+}
+
 /** @param {unknown} body */
 export function startRun(body) {
   if (!net.token || (registered() && /** @type {Joined} */ (net.board).me.banned)) return null;
-  return call("POST", "/api/runs", body, SEND_TIMEOUT_MS).catch((e) => {
-    if (e.status === 401) refreshBoard();
-    return { error: e.status === 426 ? UPDATED : reason(e, "Hors ligne : score non compté"), status: e.status };
-  });
+  return launch(body);
 }
 
 export const hasPending = () => pendingScores().length > 0;
 
+/** @param {Pending} p */
+const fresh = (p) => !!p && typeof p.runId === "string" && Number.isInteger(p.score) && typeof p.device === "string" && Number.isFinite(p.at) && Date.now() - p.at < KEEP_MS;
+
 /** @returns {Pending[]} */
 function pendingScores() {
   try {
-    return JSON.parse(store.get(KEYS.pendingScores) || "[]");
+    const list = JSON.parse(store.get(KEYS.pendingScores) || "[]");
+    return Array.isArray(list) ? list.filter(fresh) : [];
   } catch (e) {
     return [];
   }
@@ -244,10 +270,10 @@ const keepPending = (list) => store.set(KEYS.pendingScores, list.length ? JSON.s
 /** @param {string} runId */
 const clearPending = (runId) => keepPending(pendingScores().filter((p) => p.runId !== runId));
 
-/** @param {string} runId @param {number} score @param {string} device @param {number} combo @param {number} at */
-function markPending(runId, score, device, combo, at) {
+/** @param {Pending} score */
+function markPending(score) {
   const list = pendingScores();
-  if (!list.some((p) => p.runId === runId)) keepPending([...list, { runId, score, device, combo, at }]);
+  if (!list.some((p) => p.runId === score.runId)) keepPending([...list, score]);
 }
 
 /** @param {RunResult} r */
@@ -265,12 +291,13 @@ function applyResult(r) {
   refreshBoard();
 }
 
-/** @param {string} runId @param {number} score @param {string} device @param {number} combo @param {(() => void) | null} onWait */
-async function send(runId, score, device, combo, onWait, since = Date.now()) {
-  markPending(runId, score, device, combo, since);
+/** @param {Pending} pending @param {(() => void) | null} onWait @returns {Promise<RunAnswer>} */
+async function deliver(pending, onWait) {
+  const { runId, score, device, combo, at } = pending, since = Date.now();
+  markPending(pending);
   for (let i = 0; ; i++) {
     try {
-      const r = await call("POST", "/api/runs/" + runId, { score, device, combo }, SEND_TIMEOUT_MS);
+      const r = await call("POST", "/api/runs/" + runId, { score, device, combo, waited: Math.max(0, Date.now() - at) }, SEND_TIMEOUT_MS);
       clearPending(runId);
       bestsAsked = boardAsked;
       applyResult(r);
@@ -282,28 +309,47 @@ async function send(runId, score, device, combo, onWait, since = Date.now()) {
         return { error: /** @type {Err} */ (e).message };
       }
       if (i === SEND_TRIES - 1 && onWait) onWait();
-      if (i >= SEND_TRIES - 1 && Date.now() - since > WAIT_MS) {
-        clearPending(runId);
-        return { error: reason(e, "Hors ligne : score non envoyé") };
-      }
-      await new Promise((ok) => setTimeout(ok, i < SEND_TRIES - 1 ? SEND_GAP_MS : WAIT_GAP_MS));
+      if (i >= SEND_TRIES - 1 && Date.now() - since > WAIT_MS) return { error: WAITING };
+      await pause(i < SEND_TRIES - 1 ? SEND_GAP_MS : WAIT_GAP_MS);
     }
   }
 }
 
-/** @param {number} score @param {string} device @param {number} combo @param {Promise<RunTicket | RunFail>} pending @param {() => void} onWait */
-export async function submitScore(score, device, combo, pending, onWait) {
-  const run = await pending;
-  if (run.error) return run;
-  return send(/** @type {RunTicket} */ (run).runId, score, device, combo, onWait);
+/** @param {Pending} pending @param {(() => void) | null} onWait */
+function send(pending, onWait) {
+  const going = sending.get(pending.runId);
+  if (going) return going;
+  const sent = deliver(pending, onWait).finally(() => sending.delete(pending.runId));
+  sending.set(pending.runId, sent);
+  return sent;
 }
 
-export function resumePending() {
-  const now = Date.now();
-  const list = pendingScores().filter((p) => now - p.at < WAIT_MS);
-  keepPending(list);
-  for (const p of list) send(p.runId, p.score, p.device, p.combo, null, p.at);
+/** @param {number} score @param {string} device @param {number} combo @param {Promise<RunTicket | RunFail>} pending @param {() => void} onWait */
+export async function submitScore(score, device, combo, pending, onWait) {
+  const at = Date.now();
+  const run = await pending;
+  if (run.error) return run;
+  return send({ runId: /** @type {RunTicket} */ (run).runId, score, device, combo, at }, onWait);
 }
+
+export async function resumePending() {
+  if (draining || !net.token) return;
+  draining = true;
+  keepPending(pendingScores());
+  try {
+    for (const p of pendingScores()) {
+      const r = await send(p, null);
+      if (r.error === WAITING) break;
+    }
+  } finally {
+    draining = false;
+  }
+}
+
+window.addEventListener("online", resumePending);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) resumePending();
+});
 
 export function requestUpdate() {
   net.updatePending = true;

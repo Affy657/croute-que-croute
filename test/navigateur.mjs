@@ -901,6 +901,31 @@ try {
       await admin.close();
     }
   });
+  await step("score sans réseau : la boucle s'arrête sans l'effacer, le dit, et il part au retour du réseau", async () => {
+    const { context, p } = await testPage(await joinApi("Attente" + hex(4)));
+    try {
+      await p.route("**/js/app/api.js", async (route) => {
+        const res = await route.fetch();
+        await route.fulfill({ response: res, body: (await res.text()).replace("WAIT_MS = 120000", "WAIT_MS = 500") });
+      });
+      let down = true, sent = 0;
+      await p.route(/\/api\/runs\/[^/]+$/, (route) => {
+        if (down) return route.abort();
+        sent++;
+        return route.continue();
+      });
+      await p.goto(BASE + "/");
+      await runFor(p, "#play", 500);
+      await p.waitForFunction(() => document.getElementById("overNote").textContent.includes("partira"), null, { timeout: WAIT_MS });
+      if (!(await p.evaluate(() => JSON.parse(localStorage.getItem("cv-score-attente")).length))) throw new Error("score effacé");
+      down = false;
+      await p.evaluate(() => window.dispatchEvent(new Event("online")));
+      await p.waitForFunction(() => !localStorage.getItem("cv-score-attente") && document.getElementById("overNote").hidden, null, { timeout: WAIT_MS });
+      if (sent !== 1) throw new Error(sent + " envois");
+    } finally {
+      await context.close();
+    }
+  });
   for (const path of ["/ecran", "/admin"]) {
     await step(`la page ${path} s'ouvre`, async () => {
       const other = await browser.newPage();

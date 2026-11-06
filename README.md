@@ -359,12 +359,16 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 
 ### Parties et score
 
-- Une partie ne compte que si le réseau passe au départ (8 s), même si le classement n'est pas encore là (wifi saturé). Seul un joueur retiré joue sans envoyer.
+- Une partie ne compte que si le réseau passe au départ, même si le classement n'est pas encore là (wifi saturé). Seul un joueur retiré joue sans envoyer.
+- Le départ est relancé sur erreur réseau, 5xx, 408 ou 429, jusqu'à 12 s après le début de la partie (`START_MS`), 3,5 s par essai au plus. Pas plus : le serveur tolère 15 s d'écart entre le score et son horloge. Pas de relance sur un refus définitif (401, 403, 426). Le score attend la fin de ces essais.
 - Toute autre demande abandonne après 10 s : « Pas de réseau, réessaie. »
-- L'envoi du score réessaie 2 min (« Envoi en attente… »), même si on ferme le jeu. Le renvoi d'une partie enregistrée redonne la même réponse.
+- Une réponse 200 au corps illisible (portail wifi, coupure) compte comme une erreur réseau.
+- Le score est gardé 12 h dans `cv-score-attente` (`KEEP_MS`), même si on ferme le jeu. « Envoi en attente… » après 3 essais. Après 2 min d'essais dans la page, la boucle s'arrête sans rien effacer (« Pas de réseau. Ton score partira dès qu'il revient. »), et repart à chaque classement reçu, au retour du réseau (`online`) et au retour à l'écran.
+- Un seul envoi à la fois pour une partie, et les scores gardés partent l'un après l'autre. Une réponse définitive du serveur efface le score. Le renvoi d'une partie enregistrée redonne la même réponse.
+- `waited` dans `POST /api/runs/:id` : millisecondes depuis la fin de la partie, 0 pour un envoi immédiat. Le serveur s'en sert pour ne pas signaler « partie ralentie ».
 - Tout ou rien : la partie est marquée finie dans la même opération que le record et la soirée, en dernière écriture. Deux envois à la même milliseconde comptent une partie. Un renvoi après la fin de la soirée la garde.
 - Téléphone verrouillé : pause, « Touche pour reprendre ». Le temps compte pour le serveur, d'où l'alerte « partie ralentie » de l'admin. Le doigt posé est relâché.
-- Hors ligne : les records sont gardés (`cv-records`, `keepBests`). Un score hors ligne n'est pas envoyé et ne compte que jusqu'au prochain classement.
+- Hors ligne : les records sont gardés (`cv-records`, `keepBests`). Une partie dont le départ n'est pas passé n'est pas envoyée et ne compte que jusqu'au prochain classement.
 - L'écran de fin suit la réponse du serveur : « Nouveau record » s'enlève si le serveur ne le compte pas. Un classement demandé avant le score, arrivé après, ne l'efface pas.
 
 ### Cache et chargement
