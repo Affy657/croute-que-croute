@@ -1,5 +1,5 @@
 import { fmtCs, clock, hourOf } from "../shared/format.js";
-import { screenBanner, liveScreen, settleDue } from "../shared/banner.js";
+import { screenBanner, liveScreen, settleDue, newFirst } from "../shared/banner.js";
 import { rain, bounce } from "../app/party.js";
 import { timeout } from "../shared/timeout.js";
 import { VERSION } from "../version.js";
@@ -63,7 +63,7 @@ function render() {
       if (!/** @type {Shown} */ (shown).bests.has(r.best)) rows[i].classList.add("up");
     });
     const first = top[0];
-    if (first && shown.first && first.pseudo !== shown.first.pseudo && first.best > shown.first.best && !(first.at <= shown.last)) {
+    if (newFirst(first, shown)) {
       bounce(rows[0]);
       crown(first);
       rain();

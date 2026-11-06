@@ -572,7 +572,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `achievements` : succès au bon moment, rien de perdu entre onglets, annonce unique.
 - `api` : limite d'attente, reprise par cookie refaite.
 - `attacks` : mur mis de côté, chaque garniture sur un couteau.
-- `banner` : bandeau des soirées, « Bravo », direct ouvert 1 min.
+- `banner` : bandeau des soirées, « Bravo », « Nouveau n°1 », direct ouvert 1 min.
 - `cache` : cache des classements, lecture unique, périmée écartée, abandon à 5 s.
 - `chemin` : chemin du robot, gardé hors du code des téléphones.
 - `deploy` : refus de `npm run deploy`.

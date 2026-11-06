@@ -68,3 +68,6 @@ export function screenBanner(b, now) {
   if (ev && b.top[0]) return { text: "Bravo " + b.top[0].pseudo + " !", win: true };
   return null;
 }
+
+/** @param {Ranked | undefined} first @param {Shown} seen */
+export const newFirst = (first, seen) => !!first && !!seen.first && first.pseudo !== seen.first.pseudo && first.best > seen.first.best && !(first.at <= seen.last);
