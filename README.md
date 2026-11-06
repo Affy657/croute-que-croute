@@ -197,7 +197,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 ## Soirées et classements
 
 - Pas de compte à créer : le téléphone garde un jeton pour toujours. Le même téléphone qui retape son pseudo retrouve son compte.
-- Pseudo unique, 2 à 16 caractères : lettres latines, chiffres, espaces, tirets. Majuscules et accents ne comptent pas pour l'unicité.
+- Pseudo unique, 2 à 16 caractères : lettres latines, chiffres, espaces, tirets et `_ . '`. Majuscules et accents ne comptent pas pour l'unicité.
 - Trois classements : la soirée (pour le lot), général Mobile, général PC. À égalité, le premier à avoir fait le temps passe devant.
 - Une seule soirée à la fois, créée à l'avance dans l'admin pour être annoncée.
 - Mobile ou PC : les joueurs sur PC faisaient bien mieux. L'appareil vient de ce qui a bougé la tartine (souris ou doigt), sinon de l'écran. Une partie sur PC ne compte qu'au général PC. Adrien pense tout remettre à zéro avant la soirée. Limite : un tricheur décidé peut faire passer son PC pour un téléphone.
@@ -289,6 +289,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - `navigator.audioSession` en « ambient » : le bouton silencieux coupe le jeu, Spotify continue. « playback » ferait l'inverse. Bug iOS connu du mode (WebKit 281955), rattrapé par la surveillance.
 - Le son ne démarre qu'après un vrai toucher. Contexte bloqué, figé ou réveil refusé (retour d'arrière-plan, appli installée) : recréé au toucher suivant.
 - Mémoire : 60 Mo décodé, pic de 150 Mo. Morceau téléchargé en entier (pas de « Range »), seulement si la musique est allumée.
+- Jamais au chargement : 3,8 Mo sur un wifi saturé. Le morceau part au premier appui sur Jouer (`fetchSong` rattrape la partie en cours) ou quand on lâche le curseur de musique (aperçu joué dès qu'il arrive). Un échec retente à la partie suivante.
 
 ### Diagnostic
 
@@ -309,11 +310,12 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Retirés, à ne pas refaire : Joyeux Noël et Fidèle du Space (personne ne les avait), Chiffre rond et Ça change du beurre (doublons).
 - Gardés dans `cv-succes`, sans effet sur le classement, copiés sur le serveur (`progress`). Le serveur réunit ceux des appareils (date la plus ancienne), et le téléphone ajoute le total sans fête.
 - Rattrapage de ce que le serveur sait : temps de cuisson d'après le meilleur record à chaque classement ; à l'ouverture, première soirée, top 10, Tartine d'or, Tartinée express et Six Seven (`feats`, `onHistory`). Le reste vit sur le téléphone.
-- Objet rattrapé : mis seulement si l'emplacement est vide. Succès de parties et Tartine d'or vus au classement ne sont pas mis : un appareil neuf mettait la brioche, datait sa tenue et effaçait celle du compte partout.
+- Objet rattrapé : jamais mis (`synced`), même sur un emplacement vide. Seul un objet gagné en jouant l'est : un appareil neuf mettait la brioche, datait sa tenue et effaçait celle du compte partout.
 
 ## Appli et réseau
 
 - Installable : Installer sur Android, Partager puis « Sur l'écran d'accueil » sur iPhone. S'ouvre sans réseau après une première visite.
+- L'accueil défile seulement quand il dépasse de l'écran (petit téléphone, formulaire du code). Partout ailleurs `input.js` bloque le glissé : le jeu lui-même ne défile jamais.
 
 ### Compte sur plusieurs appareils
 
@@ -323,7 +325,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Fusion : « J'ai un code » sur un appareil connecté. « Réunir « B » avec « A » ? » sans consommer le code, puis tout en une fois sur le serveur. Échec : code toujours valable. Réponse perdue : relit le classement, « Comptes réunis ».
 - On garde le compte qui a affiché le code : meilleurs records avec leur date (à égalité, le plus ancien), parties additionnées, soirées, succès, garnitures, appareils. L'autre pseudo redevient libre. Refusée si un compte est retiré.
 - Le compte qui disparaît a plus de 2 000 parties : fusion refusée, le code reste valable, un admin la fait. Déplacer autant de lignes coûte trop d'écritures pour un joueur seul.
-- « Déconnecter les autres » : sort les autres appareils, annule le code (5 par minute et par compte) et retire le lien Google avec les liaisons en cours, sinon un intrus qui a lié son Google reviendrait. Le joueur relie son Google ensuite. Quelqu'un qui a utilisé ton code revient au choix du pseudo, sans tes succès ni tes skins : le serveur garde la trace des clés sorties (`signed_out`) et dit `out` à l'appareil. Une clé simplement inconnue n'efface rien : si des comptes disparaissaient un jour, les joueurs garderaient leurs skins.
+- « Déconnecter les autres » : sort les autres appareils, annule le code (5 par minute et par compte) et retire le lien Google avec les liaisons en cours, sinon un intrus qui a lié son Google reviendrait. Le classement est relu tout de suite pour que les Paramètres le montrent, et le joueur relie son Google ensuite. Quelqu'un qui a utilisé ton code revient au choix du pseudo, sans tes succès ni tes skins : le serveur garde la trace des clés sorties (`signed_out`) et dit `out` à l'appareil. Une clé simplement inconnue n'efface rien : si des comptes disparaissaient un jour, les joueurs garderaient leurs skins.
 
 ### Compte gardé par cookie
 
@@ -344,8 +346,14 @@ Le stockage d'un navigateur et le cookie `cv_cle` sont liés à l'adresse. Pour 
 
 - Le même Worker répond sur les deux adresses (`workers_dev: true` et `routes` dans `wrangler.jsonc`). Sans `workers_dev`, l'ancienne s'éteindrait au déploiement.
 - Dans un navigateur, l'ancienne adresse crée un code de liaison et renvoie vers la nouvelle avec `#demenage=` : le code, les succès, la tenue et les réglages (`KEPT`), jamais la clé. Pas pendant une partie, pas avec un score en attente. Joueur connecté sans code : il reste, nouvel essai au classement suivant.
-- `arrive.js`, chargé avant le jeu, pose ces valeurs et efface l'adresse. Le téléphone se connecte seul avec le code, sans toucher « Connecter », et garde aussi sa session sur l'ancienne adresse. Le code reste jusqu'à une réponse du serveur : sans réseau ou avec une limite, nouvel essai au classement suivant.
-- Nouveau QR scanné par un ancien joueur : le téléphone n'a pas de clé sur la nouvelle adresse. `arrive.js` fait une seule fois un aller-retour par `/depart` sur l'ancienne (`depart.js`, une page légère, 8 s au plus), qui rapporte le compte s'il y en a un. Un nouveau joueur ne perd qu'un chargement de page. « J'ai déjà un compte » propose aussi d'y retourner à la main.
+- `arrive.js`, chargé avant le jeu, pose ces valeurs et efface l'adresse. Il n'accepte que les clés de `KEPT`, liste recopiée de `move.js` (script classique, sans import), identique d'après un test. Chaque valeur est contrôlée à la lecture : un lien fabriqué ne bloque jamais le démarrage.
+- Venu de l'ancienne adresse (`document.referrer`), le téléphone se connecte seul avec le code, sans toucher « Connecter », et garde aussi sa session sur l'ancienne adresse. Le code reste jusqu'à une réponse du serveur : sans réseau ou avec une limite, nouvel essai au classement suivant.
+- Venu d'ailleurs ou sans référent (lien reçu, lien copié depuis l'appli) : le code est traité comme `#lier=`, rempli, il reste à toucher « Connecter ». Un lien reçu ne branche personne à son insu. `Referrer-Policy: strict-origin` envoie seulement l'origine : `no-referrer` viderait ce champ et supprimerait le passage automatique.
+- Nouveau QR scanné par un ancien joueur : le téléphone n'a pas de clé sur la nouvelle adresse. `arrive.js` teste d'abord l'ancienne, 2,5 s au plus, sans bloquer le jeu et sans `AbortSignal.timeout` (absent des vieux iPhone). Injoignable : le joueur reste, sans `cv-sonde`, nouvel essai au chargement suivant. Joignable : aller-retour par `/depart` (`depart.js`, une page légère), qui rapporte le compte s'il y en a un. Un nouveau joueur ne perd qu'un chargement de page. « J'ai déjà un compte » propose aussi d'y retourner à la main.
+- Réponse arrivée alors que le joueur n'est plus sur l'accueil ou qu'il tape (`busy`) : il reste, nouvel essai au chargement suivant. La garde regarde l'écran et pas le chargement : le classement arrive parfois avant la sonde, et un ancien joueur aurait été oublié.
+- Pas de sonde dans l'appli installée : `/depart` s'y ouvrirait dans un autre stockage, `POST /api/resume` s'en charge.
+- `/depart` : sans clé locale, `POST /api/resume` cherche le compte gardé par cookie. Avec une clé, 2 essais pour le code. 8 s au plus une fois le script lancé (`ALL_MS`), `meta refresh` à 10 s une fois le HTML arrivé : l'attente du HTML lui-même n'est pas bornée.
+- Code pas arrivé ou reprise ratée : `retry` dans le lien, `arrive.js` efface `cv-sonde`, et le joueur retente au chargement suivant. 3 allers-retours au total (`cv-sonde-essais`), jamais deux dans le même chargement : pas de boucle possible.
 - Un appareil déjà connecté garde ses réglages. S'il a un autre compte, il propose de réunir les deux.
 - Une appli installée reste sur l'ancienne adresse et continue de marcher : elle ne peut pas changer d'adresse. L'accueil propose « Copier le lien » vers la nouvelle, avec un code renouvelé toutes les 9 min, puis il faut réinstaller.
 - `/ecran` et `/admin` ne suivent pas : les ouvrir sur la nouvelle adresse. Admin : `cle-admin.txt` la première fois.
@@ -372,25 +380,30 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 
 ### Parties et score
 
-- Une partie ne compte que si le réseau passe au départ (8 s), même si le classement n'est pas encore là (wifi saturé). Seul un joueur retiré joue sans envoyer.
+- Une partie ne compte que si le réseau passe au départ, même si le classement n'est pas encore là (wifi saturé). Seul un joueur retiré joue sans envoyer.
+- Le départ est relancé sur erreur réseau, 5xx, 408 ou 429, jusqu'à 12 s après le début de la partie (`START_MS`), 3,5 s par essai au plus. Pas plus : le serveur tolère 15 s d'écart entre le score et son horloge. Pas de relance sur un refus définitif (401, 403, 426). Le score attend la fin de ces essais.
 - Toute autre demande abandonne après 10 s : « Pas de réseau, réessaie. »
-- L'envoi du score réessaie 2 min (« Envoi en attente… »), même si on ferme le jeu. Le renvoi d'une partie enregistrée redonne la même réponse.
+- Une réponse 200 au corps illisible (portail wifi, coupure) compte comme une erreur réseau.
+- Le score est gardé 12 h dans `cv-score-attente` (`KEEP_MS`), même si on ferme le jeu. « Envoi en attente… » après 3 essais. Après 2 min d'essais dans la page, la boucle s'arrête sans rien effacer (« Pas de réseau. Ton score partira dès qu'il revient. »), et repart à chaque classement reçu, au retour du réseau (`online`) et au retour à l'écran.
+- Un seul envoi à la fois pour une partie, et les scores gardés partent l'un après l'autre. Une réponse définitive du serveur efface le score. Le renvoi d'une partie enregistrée redonne la même réponse.
+- `waited` dans `POST /api/runs/:id` : millisecondes depuis la fin de la partie, 0 pour un envoi immédiat. Le serveur s'en sert pour ne pas signaler « partie ralentie ».
 - Tout ou rien : la partie est marquée finie dans la même opération que le record et la soirée, en dernière écriture. Deux envois à la même milliseconde comptent une partie. Un renvoi après la fin de la soirée la garde.
 - Compte fusionné pendant l'envoi : la partie reste ouverte et le serveur répond 503. Le téléphone renvoie, le score compte sur le compte gardé.
 - Téléphone verrouillé : pause, « Touche pour reprendre ». Le temps compte pour le serveur, d'où l'alerte « partie ralentie » de l'admin. Le doigt posé est relâché.
 - Score envoyé tard : le téléphone dit depuis combien de temps la partie est finie (`waited`, entier en millisecondes, 12 h au plus, sinon 0). Le temps gardé pour l'alerte (`best_elapsed`) est le temps réel moins cette attente, jamais moins que la durée du score. Le score, lui, reste contrôlé sur le temps réel.
-- Hors ligne : les records sont gardés (`cv-records`, `keepBests`). Un score hors ligne n'est pas envoyé et ne compte que jusqu'au prochain classement.
+- Hors ligne : les records sont gardés (`cv-records`, `keepBests`). Une partie dont le départ n'est pas passé n'est pas envoyée et ne compte que jusqu'au prochain classement.
 - L'écran de fin suit la réponse du serveur : « Nouveau record » s'enlève si le serveur ne le compte pas. Un classement demandé avant le score, arrivé après, ne l'efface pas.
 
 ### Cache et chargement
 
+- Bungee est hébergée dans le jeu (`public/fonts/`, `@font-face` en tête de `tokens.css`, `font-display: swap`) : la feuille de Google bloquait tout l'affichage, sans délai maximum. Rien n'est demandé à un autre site au chargement. Police latine dans `SHELL`, latine étendue chargée seulement si un pseudo en a besoin.
 - `sw.js` : renouvelé à chaque version, rempli fichier par fichier avec un 2e essai. Un seul fichier raté faisait tout perdre.
 - Fichier sans réponse en 3 s (`NET_MS`, wifi saturé) : pris dans le cache, remplacé dès que le réseau arrive.
 - Plantage au démarrage (fichiers de deux versions, par exemple l'ancienne page du cache avec du code neuf sur réseau lent) : `boot.js` recharge. Si ça replante dans la minute, il vide le cache, retire le service worker et redemande chaque fichier au serveur avant de recharger, en ligne seulement : sur iPhone, un simple rechargement garde le module déjà en mémoire. Troisième échec : il s'arrête. Une seule recharge laissait le joueur bloqué sur l'écran.
 - Une erreur dans une image n'arrête pas l'animation : l'image suivante est demandée avant de dessiner.
 - L'écran géant installe lui-même le cache, pour un PC qui n'ouvre que `/ecran`. Une page autre que le jeu ne retombe jamais sur l'accueil du jeu.
 - L'admin passe toujours par le réseau : l'ancien script sur la nouvelle page la laissait vide.
-- Écran de chargement : attend le classement 2,5 s au plus, pour jouer hors ligne, et disparaît à 10 s quoi qu'il arrive.
+- Écran de chargement : attend le classement et la police 2,5 s au plus (`finishLoading`), pour jouer hors ligne, et disparaît à 10 s quoi qu'il arrive (`boot.js`). Le texte s'affiche tout de suite dans la police de secours, et rien ne l'attend : ni Google, ni la musique, ni la sonde de l'ancienne adresse, qui passent à côté.
 
 ### Performances
 
@@ -569,13 +582,14 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `npm run check` : types de l'API et du JavaScript de `public/js`. Attrape un import disparu (la page admin blanche) ou un nom mal tapé.
 - `npm test` ou `npm run test:unit` : le code du téléphone, sans serveur (4 s).
 - `npm run test:api` (`test/api.mjs`, avec `player.mjs` et `admin.mjs`, 1 min) : chaque route, cas normal et refus, sur une base neuve à part, port 8790 (`TEST_PORT` pour un autre).
-- `npm run test:navigateur` (`test/navigateur.mjs`, Playwright, Edge sous Windows, Chromium sur GitHub, 30 s) : parcours complet joueur, écran géant, admin, sans erreur de console ni fichier manquant (sauf la musique et les bruitages). Le test ajoute à `run.js` une poignée `window.__jeu`, dans son navigateur seulement.
+- `npm run test:navigateur` (`test/navigateur.mjs`, Playwright, Edge sous Windows, Chromium sur GitHub, 3 min) : parcours complet joueur, écran géant, admin, sans erreur de console ni fichier manquant (sauf la musique et les bruitages). Le test ajoute à `run.js` une poignée `window.__jeu`, dans son navigateur seulement.
 - `npm run equite` (`test/fairness.mjs`, 4 min) : le robot parfait. `npm run verif` : la prod (réessaie 30 s après une mise en ligne).
 
 ### Pièges WebKit
 
 - `NAVIGATEUR=webkit npm run test:navigateur` : même parcours en profil iPhone 13. Avant, `npx playwright install webkit` si Playwright a changé.
 - « Refused to apply a stylesheet » ignoré sous WebKit : celui de Linux dessine le menu « Rôle » avec un style que la CSP bloque. Jamais vu sur iPhone, Chromium attrape les vraies erreurs CSP.
+- « due to access control checks » sur `/api/` ignoré sous WebKit : c'est une demande coupée parce que la page part, par exemple après la sonde de l'ancienne adresse. Sans effet pour le joueur.
 - `serviceWorkers: "block"` sur une page qui intercepte des requêtes : hors Chromium, Playwright ne les intercepte plus sous un service worker.
 - Sur GitHub, image Docker de Playwright : installer WebKit dépassait 10 min.
 
@@ -592,15 +606,19 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `cache` : cache des classements, lecture unique, périmée écartée, abandon à 5 s, ligne déjà à ce score.
 - `card` : classement d'une soirée fermée gardé 10 min.
 - `chemin` : chemin du robot, gardé hors du code des téléphones.
+- `depart` : `/depart`, 2 essais pour le code, compte gardé par cookie, échec signalé, sous le `meta refresh`.
 - `deploy` : refus de `npm run deploy`.
+- `envoi` : départ relancé 12 s, score gardé 12 h, un seul envoi à la fois, corps illisible, `waited`.
 - `errors` : plafond de 60 erreurs par heure, limite par IP avant la limite commune.
 - `google` : empreinte sans e-mail, cookie, usage unique, 10 min, jeton refusé, délier, limite du lieu, « Déconnecter les autres ».
 - `http` : IPv6 groupée par /64, plafond de 64 Ko à la lecture.
 - `inapp` : navigateurs des applis (vrais user agents).
+- `input` : glissé bloqué, sauf là où la page défile.
 - `join` : plafond de nouveaux comptes.
+- `lien` : valeurs abîmées du stockage, le démarrage ne plante jamais.
 - `link` : code de liaison, panne de base, réessai concurrent, plafond de la fusion, écran prévenu, seuls les échecs comptent.
 - `live` : page d'un autre site refusée au direct.
-- `move` : changement d'adresse, jamais la clé dans le lien, lien fabriqué ou illisible.
+- `move` : changement d'adresse, sonde de l'ancienne adresse, 3 allers-retours, `KEPT` identique, référent, jamais la clé dans le lien, lien fabriqué ou illisible.
 - `offline` : record après coupure, pseudo gardé.
 - `palette` : `palette.js` et `tokens.css` identiques, feuilles sans valeur en dur.
 - `record` : classement tardif sans effet sur le record.
@@ -611,8 +629,10 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `runs` : même score à la même milliseconde, une partie. Limites du départ. Généraux gardés 60 s après une partie PC en soirée. Compte fusionné pendant l'envoi. Marge de fin de soirée. Score envoyé tard (`waited`).
 - `shell` : `SHELL` de `sw.js`, `modulepreload`, pas d'`Object.hasOwn`, éléments de `screens.js`.
 - `slots` : écran qui répond jamais chassé.
+- `son` : musique au premier appui sur Jouer, aperçu, nouvel essai.
 - `sprites` : chaque objet et planète se dessine, nom inventé sans effet.
 - `sync` : tenue entre appareils.
+- `textes` : le guide dit les vraies règles.
 - `validate` : pseudos, tenue, progression, fusion.
 - `variante` : la copie d'`equilibrage:variante` démarre.
 
@@ -686,5 +706,5 @@ Code sous licence MIT (`LICENSE`). Ne sont pas couverts :
 
 - le nom, le logo, les affiches et l'univers du collectif Tartine Sauvage ;
 - les bruitages et la musique ;
-- la police Bungee (SIL OFL, chargée depuis Google Fonts) et le logo Google ;
+- la police Bungee (SIL OFL, licence dans `public/fonts/OFL.txt`) et le logo Google ;
 - les marques citées ou dessinées dans le jeu, qui restent à leurs propriétaires.

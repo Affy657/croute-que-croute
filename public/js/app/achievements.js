@@ -82,10 +82,18 @@ const GOALS = {
 /** @returns {FeatData} */
 const blank = () => ({ got: {}, attacks: [], events: [], killers: [], runs: 0, best: 0 });
 
+/** @param {unknown} value @returns {string[]} */
+const names = (value) => (Array.isArray(value) ? value.filter((id) => typeof id === "string") : []);
+/** @param {unknown} value */
+const total = (value) => (typeof value === "number" && Number.isFinite(value) ? value : 0);
+
 /** @returns {FeatData} */
 function load() {
   try {
-    return { ...blank(), ...JSON.parse(store.get(KEYS.achievements) || "{}") };
+    const d = JSON.parse(store.get(KEYS.achievements) || "{}");
+    if (!d || typeof d !== "object" || Array.isArray(d)) return blank();
+    const got = d.got && typeof d.got === "object" && !Array.isArray(d.got) ? d.got : {};
+    return { ...d, got, attacks: names(d.attacks), events: names(d.events), killers: names(d.killers), runs: total(d.runs), best: total(d.best), seen: total(d.seen) };
   } catch (e) {
     return blank();
   }
