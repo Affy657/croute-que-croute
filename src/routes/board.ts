@@ -1,4 +1,5 @@
 import { json, bearer, keyCookie, withKey } from "../http";
+import { sha256 } from "../security";
 import { events, findProfile, entryBest, generalRanking, generalCount, generalRank, eventRanking, rankIn, rivalIn, LATE_MS, type EventRow, type Profile, type Ranked } from "../db";
 import type { Ctx } from "../router";
 
@@ -14,6 +15,8 @@ const topOf = (list: Ranked[], me: Profile | null) =>
 export async function board({ req, env }: Ctx) {
   const now = Date.now();
   const [view, me] = await Promise.all([events(env, now), findProfile(req, env)]);
+  const token = bearer(req);
+  const out = !me && !!token && !!(await env.DB.prepare("SELECT 1 FROM signed_out WHERE token_hash = ?").bind(await sha256(token)).first());
   const [general, pc] = await Promise.all([generalRanking(env, !!view.open), generalRanking(env, !!view.open, "pc")]);
   const shown = view.open ?? view.recent;
   const [eventList, eventMine, count, rank, pcCount, pcRank] = await Promise.all([
@@ -55,8 +58,8 @@ export async function board({ req, env }: Ctx) {
           google: !!me.google_hash,
         }
       : null,
+    ...(out ? { out: true } : {}),
   });
-  const token = bearer(req);
   return me && keyCookie(req) !== token ? withKey(res, token) : res;
 }
 

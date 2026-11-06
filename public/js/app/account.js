@@ -198,7 +198,7 @@ async function confirmMerge() {
 }
 
 function renderGoogle() {
-  const usable = !!(net.board && net.board.google) && !googleBlocked();
+  const usable = !!(net.board && net.board.google) && !googleBlocked() && !moved();
   const me = net.board && net.board.me;
   ui.googleLogin.hidden = !usable;
   ui.googleBox.hidden = !usable || !me;

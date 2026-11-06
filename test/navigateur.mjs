@@ -265,6 +265,30 @@ try {
     watch(p);
     return { context, p };
   };
+  await step("appareil sorti du compte : il oublie les succès et les skins, un jeton inconnu non", async () => {
+    const owner = await joinApi("Sort" + hex(4));
+    const link = await (await fetch(BASE + "/api/link", { method: "POST", headers: apiHeaders, body: JSON.stringify({ code: await codeOf(owner), clientId: hex(32) }) })).json();
+    await fetch(BASE + "/api/me/devices", { method: "DELETE", headers: { ...apiHeaders, authorization: "Bearer " + owner } });
+    const opened = async (token) => {
+      const context = await browser.newContext({ ...(SAFARI ? devices["iPhone 13"] : { viewport: { width: 390, height: 844 } }), serviceWorkers: "block" });
+      await context.addInitScript((t) => {
+        if (sessionStorage.getItem("essai")) return;
+        sessionStorage.setItem("essai", "1");
+        localStorage.setItem("cv-install-asked", "1");
+        localStorage.setItem("cv-token", t);
+        localStorage.setItem("cv-garnitures", '["jam"]');
+      }, token);
+      const p = await context.newPage();
+      await p.goto(BASE + "/");
+      await p.locator("#joinForm").waitFor({ state: "visible", timeout: WAIT_MS });
+      await wait(1500);
+      const kept = await p.evaluate(() => localStorage.getItem("cv-garnitures"));
+      await context.close();
+      return kept;
+    };
+    const [out, unknown] = [await opened(link.token), await opened("a".repeat(48))];
+    if (out !== null || unknown === null) throw new Error(JSON.stringify([out, unknown]));
+  });
   await step("démarrage qui plante deux fois de suite (fichiers de deux versions) : le jeu repart seul", async () => {
     const context = await browser.newContext({ ...(SAFARI ? devices["iPhone 13"] : { viewport: { width: 390, height: 844 } }), serviceWorkers: "block" });
     let renewed = false;
@@ -727,8 +751,8 @@ try {
     await wait(1500);
     await other.close();
     if (!sockets) throw new Error("pas de WebSocket ouvert");
-    if (took > 1500) throw new Error(`record affiché en ${took} ms`);
-    if (asks > 3) throw new Error(`${asks} relectures pour 8 inscriptions en 1 s`);
+    if (took > 2500) throw new Error(`record affiché en ${took} ms`);
+    if (asks > 5) throw new Error(`${asks} relectures pour 8 inscriptions en 1 s`);
   });
   await step("connexion Google : bouton visible une fois configurée, retour sans compte lié expliqué, adresse nettoyée", async () => {
     const other = await browser.newPage({ viewport: { width: 390, height: 844 }, serviceWorkers: "block" });

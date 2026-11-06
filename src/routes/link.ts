@@ -118,8 +118,10 @@ export async function logoutOthers({ req, env }: Ctx) {
   const me = await findProfile(req, env);
   if (!me) return fail(401, "Joueur inconnu.");
   if (!(await allowed(env.RENAME_LIMIT, "out:" + me.id))) return tooFast();
-  const [out] = await env.DB.batch([
-    env.DB.prepare("DELETE FROM sessions WHERE player_id = ?1 AND token_hash <> ?2").bind(me.id, await sha256(bearer(req))),
+  const mine = await sha256(bearer(req));
+  const [, out] = await env.DB.batch([
+    env.DB.prepare("INSERT OR IGNORE INTO signed_out (token_hash, signed_at) SELECT token_hash, ?1 FROM sessions WHERE player_id = ?2 AND token_hash <> ?3").bind(Date.now(), me.id, mine),
+    env.DB.prepare("DELETE FROM sessions WHERE player_id = ?1 AND token_hash <> ?2").bind(me.id, mine),
     env.DB.prepare("DELETE FROM links WHERE player_id = ?").bind(me.id),
   ]);
   return json({ removed: out.meta.changes });

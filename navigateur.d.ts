@@ -430,6 +430,7 @@ interface Me {
 
 interface Board extends Slate {
   google: boolean;
+  out?: boolean;
   top: Ranked[];
   count: number;
   pcTop: Ranked[];
