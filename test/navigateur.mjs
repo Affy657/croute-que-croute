@@ -241,6 +241,48 @@ try {
     watch(p);
     return { context, p };
   };
+  const moveTo = BASE.includes("127.0.0.1") ? BASE.replace("127.0.0.1", "localhost") : BASE.replace("localhost", "127.0.0.1");
+  const movingPage = async (token) => {
+    const context = await browser.newContext({ ...(SAFARI ? devices["iPhone 13"] : { viewport: { width: 390, height: 844 } }), serviceWorkers: "block" });
+    await context.route("**/js/app/move.js", async (route) => {
+      const res = await route.fetch();
+      const text = (await res.text()).replace(/OLD_HOST = "[^"]+"/, `OLD_HOST = "${new URL(BASE).hostname}"`).replace(/HOME = "[^"]+"/, `HOME = "${moveTo}"`);
+      await route.fulfill({ response: res, body: text });
+    });
+    await context.addInitScript(({ host, t }) => {
+      if (location.hostname !== host || localStorage.getItem("cv-sensibilite")) return;
+      localStorage.setItem("cv-install-asked", "1");
+      localStorage.setItem("cv-sensibilite", "2.2");
+      if (t) localStorage.setItem("cv-token", t);
+    }, { host: new URL(BASE).hostname, t: token });
+    const p = await context.newPage();
+    watch(p);
+    return { context, p };
+  };
+  await step("nouvelle adresse : le compte et les réglages suivent, l'ancienne clé reste valable", async () => {
+    const name = "Part" + hex(4), token = await joinApi(name);
+    const { context, p } = await movingPage(token);
+    try {
+      await p.goto(BASE + "/");
+      await p.waitForURL((u) => u.origin === moveTo, { timeout: WAIT_MS });
+      await p.waitForFunction(() => localStorage.getItem("cv-token"), null, { timeout: WAIT_MS });
+      const after = await p.evaluate(() => ({ token: localStorage.getItem("cv-token"), speed: localStorage.getItem("cv-sensibilite"), hash: location.hash }));
+      const pseudoOf = async (t) => (await (await fetch(BASE + "/api/board", { headers: { ...apiHeaders, authorization: "Bearer " + t } })).json()).me?.pseudo;
+      if (after.token === token || after.speed !== "2.2" || after.hash || await pseudoOf(after.token) !== name || await pseudoOf(token) !== name) throw new Error(JSON.stringify(after));
+    } finally {
+      await context.close();
+    }
+  });
+  await step("nouvelle adresse : un joueur sans compte y est renvoyé aussi", async () => {
+    const { context, p } = await movingPage(null);
+    try {
+      await p.goto(BASE + "/");
+      await p.waitForURL((u) => u.origin === moveTo, { timeout: WAIT_MS });
+      await p.locator("#joinForm").waitFor({ state: "visible", timeout: WAIT_MS });
+    } finally {
+      await context.close();
+    }
+  });
   await step("Paramètres sur un écran de 320 px : chaque bouton lisible et sur une ligne", async () => {
     const { context, p } = await freshPage(await joinApi("Petit" + hex(4)), { width: 320, height: 568 });
     try {

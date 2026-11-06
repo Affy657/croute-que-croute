@@ -10,7 +10,8 @@ Source unique de connaissance du projet. Si le README et le code se contredisent
 
 ## Liens
 
-- Jeu : https://croute-que-croute.tartine-sauvage.workers.dev
+- Jeu : https://croute-que-croute.tartinesauvage.fr
+- Ancienne adresse, encore en ligne pour les applis installées : https://croute-que-croute.tartine-sauvage.workers.dev
 - Admin : `/admin`
 - Écran géant : `/ecran`, sur l'ordinateur branché à l'écran
 - Code : https://github.com/Affy657/croute-que-croute
@@ -323,6 +324,16 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - « Ce pseudo est déjà pris » renvoie vers « J'ai déjà un compte », et l'écran du code dit où le trouver.
 - Plus d'accès à l'ancien compte : l'admin réunit les deux.
 
+### Changement d'adresse
+
+Le stockage d'un navigateur et le cookie `cv_cle` sont liés à l'adresse. Pour passer de `croute-que-croute.tartine-sauvage.workers.dev` à `croute-que-croute.tartinesauvage.fr`, le compte fait le trajet tout seul (`move.js`, `arrive.js`).
+
+- Le même Worker répond sur les deux adresses (`workers_dev: true` et `routes` dans `wrangler.jsonc`). Sans `workers_dev`, l'ancienne s'éteindrait au déploiement.
+- Dans un navigateur, l'ancienne adresse crée un code de liaison et renvoie vers la nouvelle avec `#demenage=` : le code, les succès, la tenue et les réglages (`KEPT`), jamais la clé. Pas pendant une partie, pas avec un score en attente. Joueur connecté sans code : il reste, nouvel essai au classement suivant.
+- `arrive.js`, chargé avant le jeu, pose ces valeurs et efface l'adresse. Le téléphone se connecte seul avec le code, sans toucher « Connecter », et garde aussi sa session sur l'ancienne adresse. Un appareil déjà connecté ignore tout.
+- Une appli installée reste sur l'ancienne adresse et continue de marcher : elle ne peut pas changer d'adresse. L'accueil propose « Copier le lien » vers la nouvelle, avec un code renouvelé toutes les 9 min, puis il faut réinstaller.
+- `/ecran` et `/admin` ne suivent pas : les ouvrir sur la nouvelle adresse. Admin : `cle-admin.txt` la première fois.
+
 ### Connexion avec Google
 
 Désactivée en prod tant qu'on n'a pas le nom de domaine : sans les clés, les 3 routes répondent 404, les boutons restent cachés et un `#google=` tapé à la main est ignoré. La migration 0014 est appliquée, sa colonne et sa table restent vides.
@@ -332,7 +343,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 - Le serveur parle à Google lui-même (`src/routes/google.ts`) : `POST /api/google/start` note la demande dans `google_states` (10 min, un seul usage) et pose le cookie `cv_google`, puis Google renvoie sur `GET /api/google/retour`, qui compare le cookie, échange le code et revient sur `/#google=<résultat>`. Aucun script Google dans la page, la politique de sécurité ne change pas.
 - On demande `openid email`, parce que la documentation de Google l'exige, mais on ne garde que `sha256("google:" + sub)` dans `profiles.google_hash`. L'adresse e-mail n'est jamais enregistrée. La page `/confidentialite`, liée depuis Crédits, ne parle pas de Google tant que la connexion est coupée.
 - Bouton caché sans clés, dans les navigateurs d'applis (Google y refuse la connexion) et dans l'appli iPhone de l'écran d'accueil (la page de Google s'y ouvre dans un autre stockage : à vérifier sur un vrai iPhone avant de l'ouvrir).
-- Mise en route, à faire par Adrien : projet Google Cloud, écran de consentement « Externe » avec la page `/confidentialite`, identifiant OAuth « Application Web » avec comme URI de redirection `https://<adresse du jeu>/api/google/retour`, puis `npx wrangler secret put GOOGLE_CLIENT_ID` et `npx wrangler secret put GOOGLE_CLIENT_SECRET`. Migration 0014 à appliquer en ligne avant la mise en ligne. Google vérifie le domaine de l'adresse : `workers.dev` risque de bloquer, à faire de préférence avec tartinesauvage.fr.
+- Mise en route, à faire par Adrien : projet Google Cloud, écran de consentement « Externe » avec la page `/confidentialite`, identifiant OAuth « Application Web » avec comme URI de redirection `https://<adresse du jeu>/api/google/retour`, puis `npx wrangler secret put GOOGLE_CLIENT_ID` et `npx wrangler secret put GOOGLE_CLIENT_SECRET`. Migration 0014 à appliquer en ligne avant la mise en ligne. Google vérifie le domaine de l'adresse : À faire avec tartinesauvage.fr.
 - Pour l'activer : poser les clés, puis remettre dans `public/confidentialite.html` la section « Compte Google, si tu le lies » (texte dans le commit 99e2cb2).
 - Jamais essayée avec le vrai Google : les tests remplacent sa réponse.
 
@@ -369,7 +380,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 - Hauteur des planètes non arrondie : au pixel près, elles restaient immobiles puis sautaient.
 - Chrono réécrit au plus toutes les 30 ms (`DIGITS_MS` dans `run.js`) : chaque réécriture recalcule la page. Mesuré : de 99 à 50 ms par tranche de 5 s sur PC.
 - Calques vides masqués (`fx`, `party`) : sinon deux calques plein écran à assembler à chaque image.
-- `modulepreload` des 58 modules dans `index.html` : prêt en 3,9 s au lieu de 4,6 s avec 300 ms de latence.
+- `modulepreload` des 59 modules dans `index.html` : prêt en 3,9 s au lieu de 4,6 s avec 300 ms de latence.
 - iPhone d'avant iOS 15.4 : `Object.hasOwn`, appelé à chaque image, empêchait tout dessin. Remplacé, interdit par `shell.test.mjs`.
 - Essayés et pas gardés : tartine ou couverts en image, étoiles par paquets, chrono en `contain`, Rust (WebAssembly) : le dessin se fait dans le navigateur, et une vérification d'attaque prend 0,05 ms.
 
@@ -435,6 +446,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 | 0.47 | 01/11 | tenue qui suit le compte, rechargement si versions mélangées | 4 |
 | 0.48 | 02/11 | pluies espacées après une double pluie ou un hachoir | |
 | 0.49 | 03/11 | écran géant en direct, fin de soirée stricte, mur mis de côté | 8 |
+| 1.0 | 06/11 | sortie de bêta, adresse tartinesauvage.fr, comptes qui suivent seuls | |
 
 ## Erreurs des joueurs
 
@@ -559,6 +571,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `google` : empreinte sans e-mail, cookie, usage unique, 10 min, jeton refusé, délier.
 - `inapp` : navigateurs des applis (vrais user agents).
 - `link` : code de liaison, panne de base, réessai concurrent.
+- `move` : changement d'adresse, jamais la clé dans le lien, lien fabriqué ou illisible.
 - `offline` : record après coupure, pseudo gardé.
 - `palette` : `palette.js` et `tokens.css` identiques, feuilles sans valeur en dur.
 - `record` : classement tardif sans effet sur le record.
@@ -594,7 +607,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 
 ## À faire
 
-- Adresse : passer au nom de domaine tartinesauvage.fr, puis `npm run qr` (le QR code change). Il permettra aussi de freiner les requêtes avant le Worker (voir Triche et sécurité).
+- Freiner les requêtes avant le Worker avec une règle Cloudflare sur tartinesauvage.fr (voir Triche et sécurité). Tout le lieu partage souvent la même IP : choisir le seuil après une soirée mesurée.
 - Retirer la colonne `profiles.client_id`, plus écrite depuis le 02/11/2026, dans une migration d'une mise en ligne suivante : la retirer tout de suite casserait le retour à la version d'avant, qui l'écrit encore. `profiles.token` reste : obligatoire et unique, la retirer demande de reconstruire la table.
 - Activer la connexion avec Google une fois le nom de domaine en place (voir Appli et réseau).
 - Remplacer ou compléter la musique avec des morceaux des collègues DJ.

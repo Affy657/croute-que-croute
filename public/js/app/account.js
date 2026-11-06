@@ -1,10 +1,12 @@
 import { clock } from "../shared/format.js";
+import { session, KEYS } from "../shared/store.js";
 import { ui, show, setText, markInvalid, renderControls, setLinking } from "./screens.js";
-import { net, on, registered, joinReady, refreshBoard, serverNow, linkWith, newLinkCode, logoutOthers, openGoogle, unlinkGoogle, reason, badInput } from "./api.js";
+import { net, on, hasPending, registered, joinReady, refreshBoard, serverNow, linkWith, newLinkCode, logoutOthers, openGoogle, unlinkGoogle, reason, badInput } from "./api.js";
 import { renderSettings, copy } from "./settings.js";
 import { resync } from "./profile.js";
 import { inAppNote } from "./inapp.js";
-import { googleBlocked } from "./install.js";
+import { googleBlocked, installMode } from "./install.js";
+import { moved, moveUrl } from "./move.js";
 
 const TICK_MS = 1000, RETRY_MS = 20000, QUIET = 4;
 /** @type {Record<string, string>} */
@@ -14,7 +16,10 @@ const GOOGLE_NOTES = {
   inconnu: "Aucun joueur n'est lié à ce compte Google. Utilise ton code, ou crée un pseudo.",
   erreur: "La connexion Google a échoué. Réessaie."
 };
+const MOVE_NOTE = "Le jeu change d'adresse. Copie le lien, ouvre-le dans ton navigateur, puis réinstalle le jeu : ton compte te suit.";
+const MOVE_CODE_MS = 9 * 60 * 1000;
 const OUT_ASK = "Tes autres appareils sortent du compte. Pour revenir, il leur faudra un nouveau code.";
+let leaving = false;
 /** @type {Timer} */
 let timer = null, until = Infinity, live = false, asked = 0, shown = "", /** @type {string | null} */ merging = null, /** @type {string | null} */ mergeInto = null, flow = 0, /** @type {string | null} */ waiting = null, /** @type {string | null} */ googleResult = null, opener = () => {}, idle = () => true;
 
@@ -307,6 +312,30 @@ function pickUp() {
   }
 }
 
+async function arrive() {
+  const code = session.get(KEYS.arrival);
+  if (!code || !net.board || !joinReady()) return;
+  session.set(KEYS.arrival, null);
+  try {
+    await linkWith(code);
+  } catch (e) {
+    waiting = code;
+    pickUp();
+  }
+}
+
+async function leave() {
+  if (leaving || !moved() || installMode() === "installed" || !net.board || !idle() || hasPending()) return;
+  if (!net.token && !joinReady()) return;
+  leaving = true;
+  const code = net.token ? await newLinkCode().then((r) => r.code, () => null) : null;
+  if (net.token && !code) {
+    leaving = false;
+    return;
+  }
+  location.replace(moveUrl(code));
+}
+
 function linkFromUrl() {
   const m = location.hash.match(/^#lier=([A-Za-z0-9-]{1,12})$/);
   if (!m) return;
@@ -345,6 +374,8 @@ ui.outBtn.addEventListener("click", () => {
 ui.outNo.addEventListener("click", () => askOut(false));
 ui.outYes.addEventListener("click", confirmOut);
 on("board", pickUp);
+on("board", arrive);
+on("board", leave);
 on("board", renderGoogle);
 on("board", showGoogleResult);
 ui.googleLogin.addEventListener("click", () => goGoogle(ui.googleLogin, false));
@@ -367,4 +398,20 @@ ui.linkForm.addEventListener("submit", /** @param {Event} e */ (e) => {
   e.preventDefault();
   connect(ui.linkInput.value);
 });
+if (moved() && installMode() === "installed") {
+  let link = moveUrl(null), asked = false;
+  const prepare = () => {
+    if (net.token) newLinkCode().then((r) => { link = moveUrl(r.code); }).catch(() => {});
+  };
+  on("board", () => {
+    if (asked) return;
+    asked = true;
+    prepare();
+  });
+  setInterval(prepare, MOVE_CODE_MS);
+  ui.inAppText.textContent = MOVE_NOTE;
+  ui.inApp.hidden = false;
+  ui.inAppCopy.addEventListener("click", () => copy(ui.inAppCopy, link, "Lien copié"));
+}
+
 window.addEventListener("hashchange", linkFromUrl);

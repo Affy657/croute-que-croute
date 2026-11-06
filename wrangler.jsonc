@@ -5,6 +5,8 @@
   "compatibility_date": "2026-11-03",
   "compatibility_flags": ["no_nodejs_compat", "no_nodejs_compat_v2"],
   "preview_urls": false,
+  "workers_dev": true,
+  "routes": [{ "pattern": "croute-que-croute.tartinesauvage.fr", "custom_domain": true }],
   "observability": {
     "enabled": true
   },
