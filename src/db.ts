@@ -29,7 +29,7 @@ export interface Ranked {
   id: string;
   pseudo: string;
   best: number;
-  at?: number;
+  at: number | null;
 }
 
 export interface EventView {
@@ -42,8 +42,7 @@ const CACHE_MS = 10000;
 const EVENT_GENERAL_MS = 60000;
 const LOAD_MS = 5000;
 export const RECENT_MS = 12 * 3600 * 1000;
-const GENERAL_LIMIT = 1000;
-const EVENT_LIMIT = 1000;
+const LIST_LIMIT = 1000;
 const CACHE_KEEP = 300;
 const EVENT_COLS = "id, name, opens_at, closes_at";
 const EVENT_ROWS = "FROM entries e JOIN profiles p ON p.id = e.player_id WHERE e.event_id = ? AND e.best > 0 AND p.banned = 0";
@@ -102,8 +101,6 @@ export async function entryMark(env: Env, eventId: number, playerId: string) {
   return row ?? { best: 0, at: null };
 }
 
-export const entryBest = async (env: Env, eventId: number, playerId: string) => (await entryMark(env, eventId, playerId)).best;
-
 export function cached<T>(key: string, maxAge: number, load: () => Promise<T>): Promise<T> {
   const now = Date.now();
   const hit = rankingCache.get(key);
@@ -133,21 +130,21 @@ export const generalRanking = (env: Env, during = false, board: Board = "general
   const { best, at } = COLS[board];
   return cached(board, during ? EVENT_GENERAL_MS : CACHE_MS, async () =>
     (await env.DB.prepare(
-      `SELECT id, pseudo, ${best} AS best FROM profiles WHERE banned = 0 AND ${best} > 0 ORDER BY ${best} DESC, ${at} ASC LIMIT ?`,
+      `SELECT id, pseudo, ${best} AS best, ${at} AS at FROM profiles WHERE banned = 0 AND ${best} > 0 ORDER BY ${best} DESC, ${at} ASC LIMIT ?`,
     )
-      .bind(GENERAL_LIMIT)
+      .bind(LIST_LIMIT)
       .all<Ranked>()).results);
 };
 
 export const generalCount = (env: Env, list: Ranked[], fresh = false, board: Board = "general") =>
-  list.length < GENERAL_LIMIT
+  list.length < LIST_LIMIT
     ? Promise.resolve(list.length)
     : cached("count:" + board, fresh ? 0 : CACHE_MS, async () =>
         (await env.DB.prepare(`SELECT COUNT(*) AS n FROM profiles WHERE banned = 0 AND ${COLS[board].best} > 0`).first<{ n: number }>())!.n);
 
 export async function generalRank(env: Env, list: Ranked[], playerId: string, best: number, bestAt: number | null, board: Board = "general") {
   const rank = rankIn(list, playerId);
-  if (rank || best <= 0 || list.length < GENERAL_LIMIT) return rank;
+  if (rank || best <= 0 || list.length < LIST_LIMIT) return rank;
   const n = await env.DB.prepare(`SELECT COUNT(*) AS n FROM profiles WHERE ${above(COLS[board])}`).bind(best, bestAt ?? 0).first<{ n: number }>();
   return n!.n + 1;
 }
@@ -155,30 +152,40 @@ export async function generalRank(env: Env, list: Ranked[], playerId: string, be
 export const eventRanking = (env: Env, eventId: number, maxAge = CACHE_MS) =>
   cached("event:" + eventId, maxAge, async () =>
     (await env.DB.prepare(
-      `SELECT e.player_id AS id, p.pseudo, e.best ${EVENT_ROWS}
+      `SELECT e.player_id AS id, p.pseudo, e.best, e.best_at AS at ${EVENT_ROWS}
        ORDER BY e.best DESC, e.best_at ASC LIMIT ?`,
     )
-      .bind(eventId, EVENT_LIMIT)
+      .bind(eventId, LIST_LIMIT)
       .all<Ranked>()).results);
 
 export const eventCount = (env: Env, eventId: number, list: Ranked[]) =>
-  list.length < EVENT_LIMIT
+  list.length < LIST_LIMIT
     ? Promise.resolve(list.length)
     : cached("event-count:" + eventId, CACHE_MS, async () =>
         (await env.DB.prepare(`SELECT COUNT(*) AS n ${EVENT_ROWS}`).bind(eventId).first<{ n: number }>())!.n);
 
-function promote(key: string, row: Ranked, limit: number) {
-  const hit = rankingCache.get(key);
-  if (!hit) return;
-  const list = (hit.value as Ranked[]).filter((r) => r.id !== row.id);
-  const below = list.findIndex((r) => r.best < row.best);
-  list.splice(below < 0 ? list.length : below, 0, row);
-  hit.value = list.slice(0, limit);
+const behind = (r: Ranked, row: Ranked) => r.best < row.best || (r.best === row.best && (r.at ?? 0) > (row.at ?? 0));
+
+function withRow(list: Ranked[], row: Ranked) {
+  const others = list.filter((r) => r.id !== row.id);
+  const spot = others.findIndex((r) => behind(r, row));
+  others.splice(spot < 0 ? others.length : spot, 0, row);
+  return others.slice(0, LIST_LIMIT);
 }
 
-export const promoteGeneral = (row: Ranked, board: Board = "general") => promote(board, row, GENERAL_LIMIT);
+export const seated = (list: Ranked[], me: Profile | null, best: number, at: number | null) =>
+  me && !me.banned && best > 0 ? withRow(list, { id: me.id, pseudo: me.pseudo, best, at }) : list;
 
-export const promoteEvent = (eventId: number, row: Ranked) => promote("event:" + eventId, row, EVENT_LIMIT);
+function promote(key: string, row: Ranked) {
+  const hit = rankingCache.get(key);
+  if (!hit) return;
+  const list = hit.value as Ranked[];
+  if (list.find((r) => r.id === row.id)?.best !== row.best) hit.value = withRow(list, row);
+}
+
+export const promoteGeneral = (row: Ranked, board: Board = "general") => promote(board, row);
+
+export const promoteEvent = (eventId: number, row: Ranked) => promote("event:" + eventId, row);
 
 export function forgetCaches() {
   eventsCache = null;

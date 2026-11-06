@@ -111,6 +111,13 @@ test("fusion côté joueur : à 2 000 parties, elle passe", async () => {
   assert.equal(runsOf(env, "lou"), 2000);
 });
 
+test("fusion côté joueur : l'écran géant est prévenu", async () => {
+  const env = await setup();
+  await withMax(env, 1);
+  assert.equal((await useLink({ req: merging(), env })).status, 200);
+  assert.equal(env.told, 1);
+});
+
 test("fusion du propriétaire : pas de plafond de parties", async () => {
   const env = await setup();
   await withMax(env, 2001);

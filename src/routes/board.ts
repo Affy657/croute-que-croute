@@ -1,6 +1,6 @@
 import { json, bearer, keyCookie, withKey } from "../http";
 import { sha256 } from "../security";
-import { events, findProfile, entryBest, generalRanking, generalCount, generalRank, eventRanking, eventCount, rankIn, rivalIn, LATE_MS, type EventRow, type Profile, type Ranked } from "../db";
+import { events, findProfile, entryMark, generalRanking, generalCount, generalRank, eventRanking, eventCount, rankIn, rivalIn, seated, LATE_MS, type EventRow, type Profile, type Ranked } from "../db";
 import type { Ctx } from "../router";
 
 const TOP = 50;
@@ -17,11 +17,17 @@ export async function board({ req, env }: Ctx) {
   const [view, me] = await Promise.all([events(env, now), findProfile(req, env)]);
   const token = bearer(req);
   const out = !me && !!token && !!(await env.DB.prepare("SELECT 1 FROM signed_out WHERE token_hash = ?").bind(await sha256(token)).first());
-  const [general, pc] = await Promise.all([generalRanking(env, !!view.open), generalRanking(env, !!view.open, "pc")]);
   const shown = view.open ?? view.recent;
-  const eventList = shown ? await eventRanking(env, shown.id) : null;
-  const [eventMine, players, count, rank, pcCount, pcRank] = await Promise.all([
-    shown && me ? entryBest(env, shown.id, me.id) : 0,
+  const [readGeneral, readPc, readEvent, eventMine] = await Promise.all([
+    generalRanking(env, !!view.open),
+    generalRanking(env, !!view.open, "pc"),
+    shown ? eventRanking(env, shown.id) : null,
+    shown && me ? entryMark(env, shown.id, me.id) : { best: 0, at: null },
+  ]);
+  const general = seated(readGeneral, me, me?.best ?? 0, me?.best_at ?? null);
+  const pc = seated(readPc, me, me?.pc_best ?? 0, me?.pc_best_at ?? null);
+  const eventList = readEvent && seated(readEvent, me, eventMine.best, eventMine.at);
+  const [players, count, rank, pcCount, pcRank] = await Promise.all([
     shown && eventList ? eventCount(env, shown.id, eventList) : 0,
     generalCount(env, general),
     me && !me.banned ? generalRank(env, general, me.id, me.best, me.best_at) : null,
@@ -51,7 +57,7 @@ export async function board({ req, env }: Ctx) {
           pcBest: me.pc_best,
           pcRank,
           pcRival: me.banned ? null : rivalIn(pc, me.id),
-          eventBest: eventMine,
+          eventBest: eventMine.best,
           eventRank: me.banned || !eventList ? null : rankIn(eventList, me.id),
           eventRival: me.banned || !eventList ? null : rivalIn(eventList, me.id),
           banned: !!me.banned,

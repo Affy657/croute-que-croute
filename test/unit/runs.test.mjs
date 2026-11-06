@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { database } from "./d1.mjs";
 
 const { finishRun, startRun } = await import(new URL("../../src/routes/runs.ts", import.meta.url).href);
+const { mergeInto } = await import(new URL("../../src/routes/link.ts", import.meta.url).href);
 const { sha256 } = await import(new URL("../../src/security.ts", import.meta.url).href);
 const { forgetCaches } = await import(new URL("../../src/db.ts", import.meta.url).href);
 
@@ -103,4 +104,45 @@ test("partie PC pendant une soirée : les généraux gardent leurs 60 s en mémo
   clock.now += 30000;
   assert.equal((await send(env, 90, { device: "pc" }, "deux")).status, 200);
   assert.equal(reads, first);
+});
+
+function mergedDuring(env) {
+  env.DB.db.prepare("INSERT INTO profiles (id, pseudo, pseudo_key, token, created_at) VALUES ('max', 'Max', 'max', 'jeton-max', 0)").run();
+  let done = false;
+  env.DB.before = async (list) => {
+    if (done || !list.some((s) => s.sql.startsWith("UPDATE runs SET finished_at"))) return;
+    done = true;
+    await mergeInto(env, "max", "lou");
+  };
+}
+
+const theRun = (env) => env.DB.db.prepare("SELECT player_id, finished_at, score FROM runs WHERE id = ?").get(RUN);
+
+for (const [name, extra, field] of [["téléphone en soirée", {}, "best"], ["PC", { device: "pc" }, "pcBest"]]) {
+  test(`compte fusionné pendant l'envoi (${name}) : 503, partie pas finie, le renvoi compte sur le compte gardé`, async (t) => {
+    const env = await setup(t);
+    mergedDuring(env);
+    const lost = await send(env, 110, extra);
+    assert.equal(lost.status, 503);
+    assert.equal(theRun(env).finished_at, null);
+    assert.equal(env.DB.db.prepare("SELECT COUNT(*) AS n FROM entries").get().n, 0);
+    const again = await send(env, 110, extra);
+    assert.equal(again.status, 200);
+    assert.equal((await again.json())[field], 110);
+    assert.deepEqual({ ...theRun(env) }, { player_id: "max", finished_at: NOW, score: 110 });
+    assert.equal(env.DB.db.prepare("SELECT run_count FROM profiles WHERE id = 'max'").get().run_count, 1);
+  });
+}
+
+test("double envoi de la même partie : le perdant retrouve la partie finie, sans 503", async (t) => {
+  const env = await setup(t);
+  let first = true;
+  env.DB.before = async (list) => {
+    if (!first || !list.some((s) => s.sql.startsWith("UPDATE runs SET finished_at"))) return;
+    first = false;
+    assert.equal((await send(env, 110)).status, 200);
+  };
+  const r = await send(env, 110);
+  assert.equal(r.status, 200);
+  assert.deepEqual({ ...count(env) }, { runs: 1, played: 110, entered: 1 });
 });

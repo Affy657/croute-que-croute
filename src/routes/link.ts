@@ -4,6 +4,7 @@ import { randomToken, randomCode, sha256 } from "../security";
 import { cleanClientId, cleanLinkCode, cleanProgress, mergeProgress, LINK_CHARS, LINK_LENGTH } from "../validate";
 import { findProfile, forgetCaches } from "../db";
 import type { Ctx } from "../router";
+import { tell } from "../live";
 
 const LINK_MS = 10 * 60 * 1000;
 const RETRY_MS = 5 * 60 * 1000;
@@ -80,7 +81,7 @@ async function openSession(env: Env, link: LinkRow, clientId: string | null, cli
 const tooManyRuns = async (env: Env, id: string) =>
   (await env.DB.prepare("SELECT COUNT(*) AS n FROM (SELECT 1 FROM runs WHERE player_id = ? LIMIT ?)").bind(id, MERGE_RUNS_MAX + 1).first<{ n: number }>())!.n > MERGE_RUNS_MAX;
 
-export async function useLink({ req, env }: Ctx) {
+export async function useLink({ req, env, exec }: Ctx) {
   if (outdated(req, env)) return updateRequired();
   if (!(await allowed(env.JOIN_IP_LIMIT, "link:" + clientIp(req)))) return tooFast();
   const body = await readJson(req);
@@ -106,6 +107,7 @@ export async function useLink({ req, env }: Ctx) {
   try {
     if (me) {
       await mergeInto(env, link.id, me.id);
+      tell(env, exec);
       return json({ pseudo: link.pseudo, merged: true });
     }
     return await openSession(env, link, clientId, clientHash, now);
