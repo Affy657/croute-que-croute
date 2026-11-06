@@ -2,7 +2,7 @@ import { store, KEYS } from "../shared/store.js";
 import { ATTACKS } from "../game/attacks.js";
 import { PROJECTILES } from "../game/projectiles.js";
 import { SPREADS, GEAR } from "../shared/palette.js";
-import { owned } from "./toppings.js";
+import { owned, unlocked } from "./toppings.js";
 import { LOCAL } from "../shared/local.js";
 
 /** @type {[string, string, string?][]} */
@@ -59,6 +59,7 @@ export const ACHIEVEMENTS = [
   { id: "express", family: "secret", name: "Tartinée express", desc: "Se faire tartiner en moins de 2 s", hint: "il y a des records qu'on ne cherche pas.", gear: "halo" },
   { id: "zen", family: "secret", name: "En détente", desc: "Rester " + STILL_S + " s sans bouger", hint: "le meilleur coup, c'est parfois de ne rien faire.", gear: "nightcap" },
   { id: "sixSeven", family: "secret", name: "Six Seven", desc: "Finir une partie à " + SIX_SEVEN_S + " s", hint: "un chiffre que tout le monde mime avec les mains.", gear: "sixseven" },
+  { id: "locker", family: "secret", name: "Le jeu de la tartine", desc: "Récupérer la sauce du chef sur un couteau", hint: "une vieille tradition de vestiaire." },
   { id: "woof", family: "secret", name: "Ouaf", desc: "Se faire tartiner par un couteau à la pâtée pour chien", hint: "ça sent un peu le chien.", gear: "dog" },
   { id: "night", family: "secret", name: "Tartine de minuit", desc: "Jouer entre minuit et " + NIGHT_UNTIL_H + " h", hint: "les chauves-souris sortent la nuit.", gear: "bat" }
 ];
@@ -203,6 +204,7 @@ const first = (rank, count) => rank === 1 && /** @type {number} */ (count) >= WI
 export function countToppings() {
   const n = extras();
   for (const [k, id] of TOPPINGS) if (n >= k) unlock(id);
+  if (unlocked("sauce")) unlock("locker");
 }
 
 /** @param {string | null} eventKey */

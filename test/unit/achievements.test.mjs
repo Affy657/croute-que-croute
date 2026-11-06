@@ -218,6 +218,15 @@ test("Le frigo est plein : 4 garnitures gagnées", () => {
   assert.ok(has("top4"));
 });
 
+test("Le jeu de la tartine : gagné avec la sauce du chef, pas avec une autre garniture", () => {
+  const mine = JSON.parse(localStorage.getItem(KEYS.toppings));
+  A.countToppings();
+  assert.ok(!has("locker"));
+  localStorage.setItem(KEYS.toppings, JSON.stringify([...mine, "sauce"]));
+  A.countToppings();
+  assert.ok(has("locker"));
+});
+
 test("Tartine de minuit : seulement entre minuit et 3 h", () => {
   assert.ok(!has("night"), "parties jouées à midi");
   mock.timers.setTime(new Date(2026, 10, 2, 3, 0).getTime());
