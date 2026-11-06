@@ -9,7 +9,7 @@ registerHooks({
   },
 });
 
-const { cached, forgetCaches } = await import(new URL("../../src/db.ts", import.meta.url).href);
+const { cached, forgetCaches, promoteGeneral, promoteEvent } = await import(new URL("../../src/db.ts", import.meta.url).href);
 
 function slow() {
   const waiting = [];
@@ -81,6 +81,17 @@ test("sans cache demandé (0) : chaque appel relit la base", async () => {
   const load = async () => ++reads;
   assert.deepEqual(await Promise.all([cached("frais", 0, load), cached("frais", 0, load)]), [1, 2]);
   assert.equal(await cached("frais", 0, load), 3);
+});
+
+test("ligne déjà à ce score : le classement en mémoire ne bouge pas", async () => {
+  forgetCaches();
+  const list = [{ id: "a", pseudo: "A", best: 500, at: 1 }, { id: "b", pseudo: "B", best: 500, at: 2 }];
+  await cached("general", 10000, async () => list);
+  await cached("event:1", 10000, async () => list);
+  promoteGeneral({ id: "b", pseudo: "B", best: 500, at: 0 });
+  promoteEvent(1, { id: "b", pseudo: "B", best: 500, at: 0 });
+  assert.equal(await cached("general", 10000, async () => []), list);
+  assert.equal(await cached("event:1", 10000, async () => []), list);
 });
 
 test("résultat vide (null) : pas gardé", async () => {

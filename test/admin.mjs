@@ -9,10 +9,11 @@ const KEY = readFileSync(".dev.vars", "utf8").match(/ADMIN_KEY=(\w+)/)[1];
 const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
 const results = [];
 
-async function call(method, path, { body, token, key } = {}) {
+async function call(method, path, { body, token, key, ip } = {}) {
   const headers = { "content-type": "application/json" };
   if (token) headers.authorization = "Bearer " + token;
   if (key) headers["x-admin-key"] = key;
+  if (ip) headers["cf-connecting-ip"] = ip;
   const res = await fetch(BASE + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   return { status: res.status, data: await res.json().catch(() => null) };
 }
@@ -60,7 +61,8 @@ r = await call("POST", "/api/admin/merge", { body: { keep: "Aaaa", from: "Bbbb",
 check("admin ne peut pas réunir deux comptes (propriétaire seulement)", r.status === 403, r);
 
 const oops = { kind: "erreur", message: "TypeError: test admin 12", source: "/js/app/main.js:12:3", stack: "frame@/js/app/main.js:12:3", trail: ["   1.00  clic #play"], device: "390x844 x3", count: 2 };
-const report = (session, errors) => call("POST", "/api/errors", { body: { version: "dev", page: "/", platform: "iPhone", standalone: true, ua: "test", session, errors } });
+let reporters = 0;
+const report = (session, errors) => call("POST", "/api/errors", { ip: "10.66.0." + ++reporters, body: { version: "dev", page: "/", platform: "iPhone", standalone: true, ua: "test", session, errors } });
 await report("a1a1a1a1a1a1a1a1", [oops]);
 await report("b2b2b2b2b2b2b2b2", [{ ...oops, message: "TypeError: test admin 99", source: "/js/app/main.js:40:1", count: 1 }]);
 await report("b2b2b2b2b2b2b2b2", [{ kind: oops.kind, message: oops.message, source: oops.source, count: 5 }]);

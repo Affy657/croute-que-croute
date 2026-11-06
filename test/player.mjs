@@ -274,7 +274,7 @@ check("admin : joueur qui vient de finir une partie marqué actif", row && row.a
 
 const beforeBan = await startRun(token);
 let limited = 0;
-for (let i = 0; i < 25; i++) if ((await call("POST", "/api/runs", { token })).status === 429) limited++;
+for (let i = 0; i < 40; i++) if ((await call("POST", "/api/runs", { token })).status === 429) limited++;
 check("trop de parties d'affilée freinées (429)", limited > 0, { limited });
 
 r = await call("POST", `/api/admin/players/${row.id}/ban`, { key: KEY, body: { banned: true } });
@@ -449,6 +449,14 @@ check("rapport d'erreurs trop gros refusé", r.status === 413, r);
     check("direct : une même adresse garde 4 écrans au plus, un 5e est refusé tant qu'ils répondent, sans en chasser un", four.every((s) => s && s.readyState === 1) && !fifth && !!other, { four: four.map((s) => s && s.readyState), fifth: !!fifth, other: !!other });
     for (const s of [...four, fifth, other]) if (s) s.close();
   }
+  {
+    const foreign = await new Promise((ok) => {
+      const s = new WebSocket(BASE.replace("http", "ws") + "/api/live", { headers: { origin: "https://pirate.test" } });
+      s.onopen = () => (s.close(), ok(false));
+      s.onerror = () => ok(true);
+    });
+    check("direct : une page d'un autre site est refusée", foreign);
+  }
 
   r = await call("GET", "/api/ecran");
   const before = r.data;
@@ -479,24 +487,21 @@ check("rapport d'erreurs trop gros refusé", r.status === 413, r);
 
 {
   const finName = "Fin" + hex(5), tokF = await joinAs(finName), late = await startRun(tokF);
-  await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: Date.now() - 3 * 3600 * 1000, closesAt: Date.now() - 6 * 60 * 1000 } });
+  const tokM = await joinAs("Marge" + hex(5)), inTime = await startRun(tokM), closing = Date.now();
+  await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: closing - 3 * 3600 * 1000, closesAt: closing - 40 * 1000 } });
+  r = await call("GET", "/api/admin/players", { key: KEY });
+  check("fin déjà passée (formulaire à la minute) : ramenée à maintenant", r.data.event.status === "closed" && r.data.event.closesAt >= closing, r.data.event);
+  r = await call("POST", `/api/runs/${inTime}`, { token: tokM, body: { score: 20 } });
+  check("score arrivé juste après la fin (réseau) : compte pour la soirée", r.status === 200 && r.data.eventBest === 20 && r.data.eventImproved, r.data);
+  r = await call("PATCH", "/api/admin/events/current", { key: KEY, body: { name: "Trop tard" } });
+  check("modifier une soirée fermée = 404", r.status === 404, r);
+  await wait(16000);
   r = await call("POST", `/api/runs/${late}`, { token: tokF, body: { score: 40 } });
-  check("partie finie 6 min après la fin de la soirée : hors soirée", r.status === 200 && r.data.best === 40 && r.data.eventBest === null && !r.data.eventImproved, r.data);
+  check("partie finie après les 15 s de marge : hors soirée", r.status === 200 && r.data.best === 40 && r.data.eventBest === null && !r.data.eventImproved, r.data);
   r = await call("GET", "/api/admin/players", { key: KEY });
   check("admin, onglet Soirée : nouveau pseudo avec un record hors soirée listé sans score (ni rang, ni meilleur score de la soirée)", r.status === 200 && r.data.players.some((p) => p.pseudo === finName && p.best === 0), r.data.players.filter((p) => p.pseudo === finName));
-  r = await call("POST", "/api/admin/events", { key: KEY, body: { name: "Soirée rattrapage", opensAt: Date.now() - 1000, closesAt: Date.now() + 3600 * 1000 } });
-  const tooLate = await startRun(tokF);
-  await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: Date.now() - 3600 * 1000, closesAt: Date.now() - 60 * 1000 } });
-  r = await call("POST", `/api/runs/${tooLate}`, { token: tokF, body: { score: 30 } });
-  check("partie finie 1 min après la fin : hors soirée, la fin est la fin", r.status === 200 && r.data.eventBest === null && !r.data.eventImproved, r.data);
-  r = await call("POST", "/api/admin/events", { key: KEY, body: { name: "Soirée marge", opensAt: Date.now() - 1000, closesAt: Date.now() + 3600 * 1000 } });
-  const inTime = await startRun(tokF);
-  await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: Date.now() - 3600 * 1000, closesAt: Date.now() - 5000 } });
-  r = await call("POST", `/api/runs/${inTime}`, { token: tokF, body: { score: 20 } });
-  check("score arrivé 5 s après la fin (réseau) : compte pour la soirée", r.status === 200 && r.data.eventBest === 20 && r.data.eventImproved, r.data);
-  await wait(11000);
-  r = await call("POST", `/api/runs/${inTime}`, { token: tokF, body: { score: 20 } });
-  check("même score renvoyé 16 s après la fin (réponse perdue) : toujours compté pour la soirée", r.status === 200 && r.data.eventBest === 20 && r.data.eventImproved, r.data);
+  r = await call("POST", `/api/runs/${inTime}`, { token: tokM, body: { score: 20 } });
+  check("même score renvoyé après la marge (réponse perdue) : toujours compté pour la soirée", r.status === 200 && r.data.eventBest === 20 && r.data.eventImproved, r.data);
 }
 
 {

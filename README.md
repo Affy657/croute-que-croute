@@ -206,11 +206,13 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Fin stricte : seules comptent les parties finies avant la fin, plus 15 s de marge réseau (`LATE_MS` dans `src/db.ts`). Une partie encore en cours compte au général, et le téléphone le dit.
 - Gagnant : l'écran géant dès le zéro. Les téléphones attendent un classement relu au moins 10 s après les 15 s de marge (25 à 55 s après la fin) : le dernier reçu, parfois vieux de 40 s, annonçait le mauvais gagnant.
 - Relecture : toutes les 10 s, 30 s sur l'accueil, jamais écran éteint. Serveur : 10 s en mémoire, général 60 s pendant une soirée. Ta place après une partie est à jour tout de suite.
+- Place et rival se calculent sur une copie du classement où ton record frais est inséré, égalités comprises (`seated`). La liste en mémoire peut dater d'avant ton record, sur une autre copie du serveur ou pendant une relecture, et elle n'est pas modifiée.
 - Une lecture abandonnée par le serveur n'est plus attendue au-delà de 5 s (`LOAD_MS`) : sinon ce classement restait bloqué pour de bon sur cette copie du serveur.
 
 ### Fiche joueur
 
 - Toucher une ligne ouvre la fiche (`profile.js`, `routes/card.ts`, 10 s en mémoire). Un joueur retiré n'en a pas.
+- Classement d'une soirée fermée depuis plus de 1 min : gardé 10 min en mémoire pour les fiches, il ne bouge plus. Un changement admin le vide comme le reste (`forgetCaches`).
 - Tenue, nombre de succès et objets sont sur le téléphone, envoyés dans `look` au début de chaque partie et 1,5 s après un changement.
 - Tenue non vérifiée, sans effet sur les classements. Le serveur n'accepte que des objets qui existent (`cleanLook`), et le dessin ignore tout nom inconnu (`own` dans `art/kit.js`) : une aura `constructor` figeait le jeu de ceux qui ouvraient la fiche.
 - La tenue suit le compte : chaque changement est daté à l'heure du serveur, le plus récent gagne (`lookUpdate`, en une requête SQL). Un appareil neuf prend la tenue du compte (`adoptLook`).
@@ -218,18 +220,20 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 
 ### Base
 
-- Tables : `profiles` (joueurs), `sessions` (une clé par appareil), `runs` (parties), `events` et `entries` (soirées), `links` (codes de liaison), `google_states` (demandes Google en cours), `admins` et `admin_invites`, `client_errors`, `sound_reports`. Colonnes dans `migrations/`.
+- Tables : `profiles` (joueurs), `sessions` (une clé par appareil), `runs` (parties), `events` et `entries` (soirées), `links` (codes de liaison), `signed_out` (clés sorties par « Déconnecter les autres »), `google_states` (demandes Google en cours), `admins` et `admin_invites`, `client_errors`, `sound_reports`. Colonnes dans `migrations/`.
 - `invalid` à 1 dans `runs` : partie retirée des records, gardée, ignorée par la Progression.
-- Le serveur refuse une partie d'une ancienne version : l'heure de début suffit à savoir sur quel réglage elle a été jouée, pour nettoyer des records.
+- Le serveur refuse le départ d'une partie d'une ancienne version, sauf celle de la version juste d'avant (`APP_PREVIOUS`), pour une partie lancée pendant une mise en ligne. Pour nettoyer des records, l'heure de début dit donc sur quel réglage une partie a été jouée, à cette version près.
 
 ## Triche et sécurité
 
 - Score refusé s'il dépasse le temps mesuré par le serveur, avec 15 s de marge (`SLACK_MS`), ou 15 min. Avec 5 s, un départ lent sur réseau saturé faisait refuser un score honnête. Contrepartie : un tricheur peut gagner 15 s.
-- Signalés dans l'admin : le 1er quand il dépasse le 2e de plus de 30 % (au moins 60 s), et une partie ralentie ou en pause (plus de 15 % et 15 s de temps réel en trop).
+- Signalés dans l'admin : le 1er quand il dépasse le 2e de plus de 30 % (au moins 60 s), et une partie ralentie ou en pause (plus de 15 % et 15 s de temps réel en trop). `waited` vient du téléphone : un tricheur peut s'en servir pour cacher une pause à cette alerte, pas pour dépasser le temps réel.
 - Faille connue : un faux score plausible (vers 60 s) passe inaperçu. Rejouer les parties depuis les gestes : écarté par Adrien.
 - Jetons, identifiants, connexions et invitations hachés (SHA-256) : une copie de la base ne permet pas d'usurper un compte.
-- Limites : 20 inscriptions par minute et par téléphone, 600 par IP (tout le lieu partage souvent la même). 10 débuts de partie par 10 s et 5 changements de pseudo par minute, par joueur.
+- Limites : 20 inscriptions par minute et par téléphone, 600 par IP (tout le lieu partage souvent la même), 500 nouveaux comptes par heure en tout. Ce plafond se compte en base, gardé 10 s, et ne touche jamais un joueur qui retrouve son pseudo. 30 débuts de partie par minute et par joueur, 300 par IP. 10 envois de tenue par 10 s et 5 changements de pseudo par minute, par joueur.
 - Admin : 30 échecs par minute et par IP. Une bonne clé ou invitation passe toujours : un invité malveillant ne peut pas bloquer les admins.
+- Une IPv6 compte par réseau /64, le `::` déplié : un même appareil ou une même box en change à volonté à l'intérieur. L'IPv4 ne change pas.
+- Corps JSON : 64 Ko au plus, comptés à la lecture et pas seulement d'après `content-length`. Au-delà, il vaut un JSON invalide. La progression la plus lourde tient en moins d'un quart de ce plafond.
 - Un joueur retiré ne monte plus. Renvoyer son ancien record ne le remet pas dans les classements en mémoire : il pouvait être « Bravo » à la fin de la soirée.
 - En-têtes (`public/_headers`) : pas de script externe, pas d'affichage dans le cadre d'un autre site.
 - Lectures publiques (`/api/board`, `/api/feed`, `/api/ecran`, `/api/players/…`) : pas de limite dans le Worker, la requête y compte déjà. À freiner par une règle Cloudflare, possible seulement avec un nom de domaine (voir À faire).
@@ -240,8 +244,8 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Premier accès avec `cle-admin.txt` : crée un compte propriétaire et reste la clé de secours.
 - Le propriétaire invite : lien à usage unique valable 48 h. Dans l'appli installée, le coller dans « Lien d'invitation reçu ».
 - Rôles : propriétaire (soirées, joueurs, équipe, erreurs) et admin (soirées, joueurs). Chaque téléphone peut être retiré, sauf le dernier propriétaire, avec ses invitations pas utilisées. Connexion inutilisée 30 jours : expirée.
-- Heure de fin déjà passée : confirmation, le classement se ferme tout de suite. Une soirée fermée ne se modifie plus.
-- Réunir deux comptes (propriétaire, définitif) : pseudo à garder, pseudo à réunir, confirmation avec les deux comptes. Même fusion que côté joueur (`mergeInto`). Refusé si l'un est retiré. `POST /api/admin/merge` sans `confirm: true` renvoie seulement l'aperçu.
+- Heure de fin déjà passée : confirmation, le classement se ferme tout de suite. Le serveur enregistre l'heure du clic, jamais une heure passée : le formulaire est à la minute, et 59 s d'écart annulaient la marge de 15 s. Une soirée fermée ne se modifie plus.
+- Réunir deux comptes (propriétaire, définitif) : pseudo à garder, pseudo à réunir, confirmation avec les deux comptes. Même fusion que côté joueur (`mergeInto`), sans plafond de parties. Refusé si l'un est retiré. `POST /api/admin/merge` sans `confirm: true` renvoie seulement l'aperçu.
 - Joueurs actifs : point jaune pour une partie finie ces 10 dernières minutes (`ACTIVE_MS`), rien d'écrit en plus.
 - Nouveaux pseudos des 15 dernières minutes listés même sans partie et sans score, pour retirer un pseudo déplacé affiché sur l'écran géant.
 
@@ -251,10 +255,12 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Dernier quart d'heure : chiffres rouges qui tremblent. À zéro : « Bravo X ! » et confettis.
 - « Nouveau n°1 » pendant 6 s, seulement pour un record plus récent que le dernier connu (`at`, `last`), pas pour un 1er retiré ou réintégré. Comparer à l'heure de lecture ratait un record enregistré pendant la lecture.
 - « Plein écran » empêche la veille. Après une mise en ligne, la page se recharge seule, sauf en plein écran : elle attend qu'on en sorte.
-- Direct : pendant une soirée, 1 min après ses derniers scores et dans les 24 h avant, WebSocket (`/api/live`) vers un Durable Object (`Live`, hibernation). À chaque record, joueur, pseudo, retrait ou soirée modifiée, il dit « change » et les écrans relisent `GET /api/ecran` (une fois par seconde au plus). Un record s'affiche en moins de 1,5 s.
+- Direct : pendant une soirée, 1 min après ses derniers scores et dans les 24 h avant, WebSocket (`/api/live`) vers un Durable Object (`Live`, hibernation). À chaque record, joueur, pseudo, retrait, fusion ou soirée modifiée, il dit « change » et les écrans relisent `GET /api/ecran` (une fois par seconde au plus). Un record s'affiche en moins de 1,5 s.
+- Relecture complète : top 10 relu en base à chaque fois, nombre de joueurs pris dans le classement en mémoire, à 10 s près.
 - WebSocket ouverte : relecture complète par minute, ping toutes les 25 s (réponse sans réveil), secours après 10 s sans réponse.
 - Secours : nouvel essai après 1, 2, 5, 10 puis 30 s, demande toutes les 2 s avec `?v=` (le serveur lit 2 lignes), relecture complète toutes les 15 s car le repère ne bouge pas pour un joueur retiré ou renommé.
 - Relecture 11 s après chaque annonce : une copie du serveur garde 10 s l'ancien état.
+- Connexion refusée (403) si l'en-tête `Origin` donne un autre hôte que la requête : une page d'un autre site ne prend pas une place d'écran. Sans `Origin` (scripts), elle passe.
 - Places : 20 écrans, 4 par IP, 20 connexions par minute (`LIVE_LIMIT`). Un écran muet depuis 1 min laisse sa place (`STALE_MS`). Si les 4 répondent, le nouveau reste sans direct : fermer le plus ancien créait une boucle dès 5 écrans sur le même wifi.
 - Hors ligne : « Pas de réseau : classement de 21h04 » après 2 demandes ratées. Le compte à rebours suit l'heure.
 - Onglet caché : aucune demande. Sans soirée proche : une par minute. Toutes les 10 s, un onglet oublié faisait 17 000 requêtes par jour.
@@ -305,12 +311,13 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 
 ### Compte sur plusieurs appareils
 
-- « Autre appareil », « Mon code » : QR et code de 8 caractères (sans 0, O, 1, I, L), 10 min, une seule fois. Un nouveau code annule l'ancien. 600 essais par minute et par IP, car tout le lieu partage souvent la même, 5 codes par minute et par compte.
+- « Autre appareil », « Mon code » : QR et code de 8 caractères (sans 0, O, 1, I, L), 10 min, une seule fois. Un nouveau code annule l'ancien. 600 échecs par minute et par IP, car tout le lieu partage souvent la même. Un bon code passe toujours : un invité qui envoie des faux codes ne bloque pas les vrais. 5 codes par minute et par compte.
 - Scanner remplit le code (`#lier=`, jamais envoyé au serveur), il reste à toucher « Connecter » : un lien reçu ne branche personne à son insu. Sinon « J'ai déjà un compte ».
 - Réponse perdue : le même appareil réessaie le même code 5 min (`RETRY_MS`). Base en panne pendant « Connecter » : le code redevient intact. Un QR scanné attend la fin de la partie.
 - Fusion : « J'ai un code » sur un appareil connecté. « Réunir « B » avec « A » ? » sans consommer le code, puis tout en une fois sur le serveur. Échec : code toujours valable. Réponse perdue : relit le classement, « Comptes réunis ».
 - On garde le compte qui a affiché le code : meilleurs records avec leur date (à égalité, le plus ancien), parties additionnées, soirées, succès, garnitures, appareils. L'autre pseudo redevient libre. Refusée si un compte est retiré.
-- « Déconnecter les autres » : sort les autres appareils et annule le code (5 par minute et par compte). Quelqu'un qui a utilisé ton code revient au choix du pseudo, sans tes succès ni tes skins : le serveur garde la trace des clés sorties (`signed_out`) et dit `out` à l'appareil. Une clé simplement inconnue n'efface rien : si des comptes disparaissaient un jour, les joueurs garderaient leurs skins.
+- Le compte qui disparaît a plus de 2 000 parties : fusion refusée, le code reste valable, un admin la fait. Déplacer autant de lignes coûte trop d'écritures pour un joueur seul.
+- « Déconnecter les autres » : sort les autres appareils, annule le code (5 par minute et par compte) et retire le lien Google avec les liaisons en cours, sinon un intrus qui a lié son Google reviendrait. Le joueur relie son Google ensuite. Quelqu'un qui a utilisé ton code revient au choix du pseudo, sans tes succès ni tes skins : le serveur garde la trace des clés sorties (`signed_out`) et dit `out` à l'appareil. Une clé simplement inconnue n'efface rien : si des comptes disparaissaient un jour, les joueurs garderaient leurs skins.
 
 ### Compte gardé par cookie
 
@@ -345,7 +352,7 @@ Désactivée en prod tant qu'on n'a pas le nom de domaine : sans les clés, les 
 
 Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Paramètres, Autre appareil. Se connecter : « J'ai déjà un compte », « Continuer avec Google ». Elle ne crée pas de compte : sans compte lié, le joueur reçoit un message. Un compte Google ne se lie qu'à un joueur.
 
-- Le serveur parle à Google lui-même (`src/routes/google.ts`) : `POST /api/google/start` note la demande dans `google_states` (10 min, un seul usage) et pose le cookie `cv_google`, puis Google renvoie sur `GET /api/google/retour`, qui compare le cookie, échange le code et revient sur `/#google=<résultat>`. Aucun script Google dans la page, la politique de sécurité ne change pas.
+- Le serveur parle à Google lui-même (`src/routes/google.ts`) : `POST /api/google/start` note la demande dans `google_states` (10 min, un seul usage) et pose le cookie `cv_google`, puis Google renvoie sur `GET /api/google/retour`, qui compare le cookie, échange le code et revient sur `/#google=<résultat>`. Aucun script Google dans la page, la politique de sécurité ne change pas. `start` est limité comme un lieu qui partage une IP (`JOIN_IP_LIMIT`, clé `google:`).
 - On demande `openid email`, parce que la documentation de Google l'exige, mais on ne garde que `sha256("google:" + sub)` dans `profiles.google_hash`. L'adresse e-mail n'est jamais enregistrée.
 - Bouton caché sans clés, sur l'ancienne adresse (elle n'est pas déclarée chez Google), dans les navigateurs d'applis (Google y refuse la connexion) et dans l'appli iPhone de l'écran d'accueil (la page de Google s'y ouvre dans un autre stockage : à vérifier sur un vrai iPhone avant de l'ouvrir).
 - En place : projet Google Cloud `croute-que-croute-tts` sur le compte d'Adrien, appli « En production », identifiant OAuth « Application Web », URI de redirection `https://croute-que-croute.tartinesauvage.fr/api/google/retour`, clés posées avec `npx wrangler secret put GOOGLE_CLIENT_ID` et `npx wrangler secret put GOOGLE_CLIENT_SECRET`. Une autre adresse de jeu demande d'ajouter son URI chez Google. Il faut les deux clés : avec l'ID seul, le bouton s'affiche mais la connexion échoue.
@@ -363,7 +370,9 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 - Toute autre demande abandonne après 10 s : « Pas de réseau, réessaie. »
 - L'envoi du score réessaie 2 min (« Envoi en attente… »), même si on ferme le jeu. Le renvoi d'une partie enregistrée redonne la même réponse.
 - Tout ou rien : la partie est marquée finie dans la même opération que le record et la soirée, en dernière écriture. Deux envois à la même milliseconde comptent une partie. Un renvoi après la fin de la soirée la garde.
+- Compte fusionné pendant l'envoi : la partie reste ouverte et le serveur répond 503. Le téléphone renvoie, le score compte sur le compte gardé.
 - Téléphone verrouillé : pause, « Touche pour reprendre ». Le temps compte pour le serveur, d'où l'alerte « partie ralentie » de l'admin. Le doigt posé est relâché.
+- Score envoyé tard : le téléphone dit depuis combien de temps la partie est finie (`waited`, entier en millisecondes, 12 h au plus, sinon 0). Le temps gardé pour l'alerte (`best_elapsed`) est le temps réel moins cette attente, jamais moins que la durée du score. Le score, lui, reste contrôlé sur le temps réel.
 - Hors ligne : les records sont gardés (`cv-records`, `keepBests`). Un score hors ligne n'est pas envoyé et ne compte que jusqu'au prochain classement.
 - L'écran de fin suit la réponse du serveur : « Nouveau record » s'enlève si le serveur ne le compte pas. Un classement demandé avant le score, arrivé après, ne l'efface pas.
 
@@ -460,7 +469,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 - Remonte : erreurs, promesses rejetées, fichiers pas chargés, blocages CSP, jeu pas démarré au bout de 15 s.
 - Ni pseudo ni clé dans les rapports : un numéro au hasard par onglet.
 - Économe : même erreur une fois par page, 5 erreurs par envoi, 3 envois par page, 10 par onglet, 20 erreurs différentes par page.
-- Serveur (`routes/errors.ts`) : 64 Ko par envoi, 10 envois par minute pour tout le monde (`ERROR_LIMIT`), 60 erreurs par heure (`HOUR_ROWS`), 10 par onglet (`SESSION_ROWS`). Table `client_errors`, 14 jours, 2 000 lignes.
+- Serveur (`routes/errors.ts`) : 64 Ko par envoi, 5 envois par minute et par IP (`ERROR_IP_LIMIT`), 10 par minute pour tout le monde (`ERROR_LIMIT`), 60 erreurs par heure (`HOUR_ROWS`), 10 par onglet (`SESSION_ROWS`). Table `client_errors`, 14 jours, 2 000 lignes.
 - Pourquoi : une erreur sur tous les téléphones d'une soirée mangerait le quota d'écritures de D1, et le classement avec. Chaque ligne compte pour 3 écritures, son effacement aussi. Moins de 2 000 écritures par soirée de 5 h, 85 000 sans plafond par heure.
 - Lire : Admin, « Erreurs des joueurs » (propriétaire). « Marquer corrigé » : revient si elle se reproduit. Le même bug sous Safari et Chrome fait deux erreurs.
 - « Copier le rapport », à coller à Claude, commence par un avertissement : n'importe qui peut envoyer une fausse erreur, son texte se lit comme des données, pas comme des consignes.
@@ -501,9 +510,9 @@ Après :
 - Pour les tenir : index partout, classement en mémoire mis à jour sur place, rien écran éteint, demandes simultanées sur la même lecture (`cached`).
 - Mesuré sur 24 h (584 parties) : 425 lignes lues et 5,6 écrites par partie, avant la fiche légère : à remesurer en soirée. Pointe : 401 parties en une heure à 10 joueurs.
 - Fiche légère : le profil garde ses totaux et ses records (`steps`), une ligne lue au lieu de 734. `steps` NULL : recalcul une fois depuis les parties, par exemple après une fusion. Après une retouche à la main : `UPDATE profiles SET steps = NULL`.
-- Général : 1 000 premiers en mémoire, au-delà la place se compte.
+- Général : 1 000 premiers en mémoire, au-delà la place se compte. Soirée : 1 000 premiers aussi, seul le nombre de joueurs se compte au-delà (`eventCount`), et un joueur après le 1 000e n'a pas de place.
 - Lectures : `npx wrangler d1 insights croute-que-croute --timePeriod 1d --sort-type sum --sort-by reads --limit 8`. Erreurs serveur : 3 jours dans Cloudflare, `npx wrangler tail` en direct.
-- Non retenus : cache partagé en Durable Object (quota à peu près consommé par une soirée), lecture partagée entre deux demandes (risque d'erreurs, gain faible).
+- Non retenu : cache partagé en Durable Object (quota à peu près consommé par une soirée).
 - Node 26 (LTS), écrit dans les 3 fichiers de `.github/workflows/` : Dependabot ne le monte pas.
 
 ### Design
@@ -569,15 +578,22 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 `test/unit/*.test.mjs`, `node --test`, sans dépendance. `env.mjs` remplace le navigateur, `d1.mjs` donne une base SQLite en mémoire avec toutes les migrations.
 
 - `achievements` : succès au bon moment, rien de perdu entre onglets, annonce unique.
+- `admin` : fin déjà passée ramenée à maintenant, soirée fermée intouchable.
 - `api` : limite d'attente, reprise par cookie refaite.
 - `attacks` : mur mis de côté, chaque garniture sur un couteau.
 - `banner` : bandeau des soirées, « Bravo », direct ouvert 1 min.
-- `cache` : cache des classements, lecture unique, périmée écartée, abandon à 5 s.
+- `board` : `GET /api/board` et `/api/ecran` sur une base en mémoire, soirée de plus de 1 000 joueurs, nombre de joueurs en mémoire, record frais pas encore dans la liste, lecture en vol, égalités, renvoi d'un score.
+- `cache` : cache des classements, lecture unique, périmée écartée, abandon à 5 s, ligne déjà à ce score.
+- `card` : classement d'une soirée fermée gardé 10 min.
 - `chemin` : chemin du robot, gardé hors du code des téléphones.
 - `deploy` : refus de `npm run deploy`.
-- `google` : empreinte sans e-mail, cookie, usage unique, 10 min, jeton refusé, délier.
+- `errors` : plafond de 60 erreurs par heure, limite par IP avant la limite commune.
+- `google` : empreinte sans e-mail, cookie, usage unique, 10 min, jeton refusé, délier, limite du lieu, « Déconnecter les autres ».
+- `http` : IPv6 groupée par /64, plafond de 64 Ko à la lecture.
 - `inapp` : navigateurs des applis (vrais user agents).
-- `link` : code de liaison, panne de base, réessai concurrent.
+- `join` : plafond de nouveaux comptes.
+- `link` : code de liaison, panne de base, réessai concurrent, plafond de la fusion, écran prévenu, seuls les échecs comptent.
+- `live` : page d'un autre site refusée au direct.
 - `move` : changement d'adresse, jamais la clé dans le lien, lien fabriqué ou illisible.
 - `offline` : record après coupure, pseudo gardé.
 - `palette` : `palette.js` et `tokens.css` identiques, feuilles sans valeur en dur.
@@ -586,7 +602,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `resume` : reprise ratée, pas de choix du pseudo.
 - `robustesse` : netteté 12 h, hauteur invalide, cache malgré un fichier raté.
 - `routes` : route admin sans `access` refusée.
-- `runs` : même score à la même milliseconde, une partie.
+- `runs` : même score à la même milliseconde, une partie. Limites du départ. Généraux gardés 60 s après une partie PC en soirée. Compte fusionné pendant l'envoi. Marge de fin de soirée. Score envoyé tard (`waited`).
 - `shell` : `SHELL` de `sw.js`, `modulepreload`, pas d'`Object.hasOwn`, éléments de `screens.js`.
 - `slots` : écran qui répond jamais chassé.
 - `sprites` : chaque objet et planète se dessine, nom inventé sans effet.

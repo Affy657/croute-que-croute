@@ -1,11 +1,18 @@
 import { json, fail, readJson, clientIp, outdated, updateRequired, tooFast, allowed, keyCookie, withKey } from "../http";
 import { randomToken, sha256 } from "../security";
 import { cleanPseudo, pseudoKey, cleanClientId } from "../validate";
-import { findProfile, renameCached } from "../db";
+import { cached, findProfile, renameCached } from "../db";
 import type { Ctx } from "../router";
 import { tell } from "../live";
 
 const BAD_PSEUDO = "Pseudo de 2 à 16 caractères : lettres, chiffres, espaces, tirets.";
+const NEW_PER_HOUR = 500, HOUR_MS = 3600 * 1000, NEW_CACHE_MS = 10000;
+
+const newAccounts = (env: Env) =>
+  cached("new-accounts", NEW_CACHE_MS, async () =>
+    (await env.DB.prepare("SELECT COUNT(*) AS n FROM (SELECT 1 FROM profiles INDEXED BY profiles_joined WHERE created_at > ? LIMIT ?)")
+      .bind(Date.now() - HOUR_MS, NEW_PER_HOUR)
+      .first<{ n: number }>())!.n);
 
 export async function resume({ req, env }: Ctx) {
   const token = keyCookie(req);
@@ -37,6 +44,7 @@ export async function join({ req, env, exec }: Ctx) {
     }
     return fail(409, "Ce pseudo est déjà pris.");
   }
+  if ((await newAccounts(env)) >= NEW_PER_HOUR) return tooFast();
   const id = crypto.randomUUID();
   try {
     await env.DB.batch([

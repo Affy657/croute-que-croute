@@ -213,7 +213,7 @@ export async function updateEvent({ req, env, exec }: Ctx) {
   const closesAt = time(body.closesAt) ?? event.closes_at;
   if (closesAt <= opensAt) return fail(400, "La fin doit être après le début.");
   await env.DB.prepare("UPDATE events SET name = ?, opens_at = ?, closes_at = ? WHERE id = ?")
-    .bind(name, opensAt, closesAt, event.id)
+    .bind(name, opensAt, Math.max(closesAt, Date.now()), event.id)
     .run();
   forgetCaches();
   tell(env, exec);
