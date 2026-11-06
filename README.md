@@ -287,9 +287,10 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 
 ## Succès
 
-- 34 succès en 7 familles : liste, conditions et objets dans `achievements.js`.
+- 35 succès en 7 familles : liste, conditions et objets dans `achievements.js`.
 - Insaisissable (5 frôlés enchaînés) est très dur : sur 300 parties du robot, x3 dans 10 %, x4 dans 2 %, x5 jamais.
 - En détente : 3 s sans bouger. Un joueur immobile survit 5 s dans 0 % des cas, 3 s dans 5 à 15 %.
+- Le jeu de la tartine : avoir la sauce du chef, rattrapé à la partie suivante pour ceux qui l'ont déjà.
 - Six Seven : finir de 67,00 à 67,99 s. Tartine de minuit : heure du téléphone, de minuit à 3 h.
 - Ciel : toucher grille-pain, citrouille, pirate, œuf, père Noël, soucoupe ou Tesla sur l'accueil (`touchSky`, `passerAt`).
 - Première soirée : seulement au doigt, comptée à la fin de la partie, car la soirée ne compte que les téléphones.
@@ -449,6 +450,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 | 0.48 | 02/11 | pluies espacées après une double pluie ou un hachoir | |
 | 0.49 | 03/11 | écran géant en direct, fin de soirée stricte, mur mis de côté | 8 |
 | 1.0 | 06/11 | sortie de bêta, adresse tartinesauvage.fr, comptes qui suivent seuls | 1 |
+| 1.1 | 06/11 | succès secret Le jeu de la tartine | |
 
 ## Erreurs des joueurs
 
