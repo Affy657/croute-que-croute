@@ -277,6 +277,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - `navigator.audioSession` en « ambient » : le bouton silencieux coupe le jeu, Spotify continue. « playback » ferait l'inverse. Bug iOS connu du mode (WebKit 281955), rattrapé par la surveillance.
 - Le son ne démarre qu'après un vrai toucher. Contexte bloqué, figé ou réveil refusé (retour d'arrière-plan, appli installée) : recréé au toucher suivant.
 - Mémoire : 60 Mo décodé, pic de 150 Mo. Morceau téléchargé en entier (pas de « Range »), seulement si la musique est allumée.
+- Jamais au chargement : 3,8 Mo sur un wifi saturé. Le morceau part au premier appui sur Jouer (`fetchSong` rattrape la partie en cours) ou quand on lâche le curseur de musique (aperçu joué dès qu'il arrive). Un échec retente à la partie suivante.
 
 ### Diagnostic
 
