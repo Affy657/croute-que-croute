@@ -16,15 +16,36 @@
       "Bash(npx wrangler deploy*)",
       "Bash(rtk npx wrangler deploy*)",
       "Bash(npm run db:remote*)",
-      "Bash(rtk npm run db:remote*)"
+      "Bash(rtk npm run db:remote*)",
+      "Bash(node scripts/migrer.mjs*)",
+      "Bash(npx wrangler d1 migrations apply*)",
+      "Bash(npx wrangler d1 execute*--remote*)",
+      "Bash(npx wrangler d1 time-travel*)",
+      "Bash(npx wrangler secret*)",
+      "Bash(npx wrangler rollback*)",
+      "PowerShell(npm run deploy*)",
+      "PowerShell(rtk npm run deploy*)",
+      "PowerShell(node scripts/deploy.mjs*)",
+      "PowerShell(npx wrangler deploy*)",
+      "PowerShell(rtk npx wrangler deploy*)",
+      "PowerShell(npm run db:remote*)",
+      "PowerShell(rtk npm run db:remote*)",
+      "PowerShell(node scripts/migrer.mjs*)",
+      "PowerShell(npx wrangler d1 migrations apply*)",
+      "PowerShell(npx wrangler d1 execute*--remote*)",
+      "PowerShell(npx wrangler d1 time-travel*)",
+      "PowerShell(npx wrangler secret*)",
+      "PowerShell(npx wrangler rollback*)"
     ],
     "deny": [
       "Read(./cle-admin.txt)",
       "Read(./.dev.vars)",
       "Read(./invitation-*.txt)",
+      "Read(./sauvegardes/**)",
       "Edit(./cle-admin.txt)",
       "Edit(./.dev.vars)",
-      "Edit(./invitation-*.txt)"
+      "Edit(./invitation-*.txt)",
+      "Edit(./sauvegardes/**)"
     ]
   }
 }
