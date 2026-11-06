@@ -596,7 +596,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 
 ### GitHub
 
-- `tests.yml` : à chaque envoi de code sur `master` et chaque pull request, types et trois niveaux de tests (2 min).
+- `tests.yml` : à chaque envoi de code sur `master` et chaque pull request, types et trois niveaux de tests (2 min). Sur le dépôt public, un envoi sur `master` ne l'a encore jamais lancé : avant une mise en ligne, `gh workflow run tests.yml --ref master`.
 - `safari.yml` : à la main avant chaque mise en ligne, `gh workflow run safari.yml --ref master`. `npm run deploy` exige qu'il soit vert.
 - `equite.yml` : robot et invariants en petit, quand `public/js/game/` ou le robot change (4 min).
 - Un envoi annule les tests en cours. Dépôt public : minutes gratuites.

@@ -37,7 +37,7 @@ Seulement sur accord explicite, à chaque fois.
 
 1. Monter la version dans `package.json` et `package-lock.json` (2 entrées), puis ajouter sa ligne dans la section Versions du README. 2e chiffre : nouveauté visible ou comportement d'attaque. 3e chiffre : le reste.
 2. Vérifier les fichiers absents de git : 5 fichiers dans `public/sfx` et `public/music/theme.m4a`. Sans eux, le jeu part en ligne sans son. Sauvegarde des bruitages dans `sauvegardes/sfx/`.
-3. Pousser, puis lancer `gh workflow run safari.yml --ref master` : le garde-fou veut Tests et Safari verts.
+3. Pousser, puis lancer `gh workflow run tests.yml --ref master` et `gh workflow run safari.yml --ref master` : le garde-fou veut Tests et Safari verts.
 4. `npm run db:remote`, puis `npm run deploy`.
 
 ## Fichiers à protéger
