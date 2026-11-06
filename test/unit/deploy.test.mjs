@@ -92,6 +92,13 @@ test("mise en ligne : le numéro doit monter, chiffre par chiffre et pas comme d
   assert.equal(newer("1.2.0", "1.2.0"), false);
 });
 
+test("npm run deploy sort en échec si la vérification en ligne échoue, sans toucher au tag ni au retour de version.js", () => {
+  const deploy = readFileSync("scripts/deploy.mjs", "utf8");
+  const after = deploy.slice(deploy.indexOf("node scripts/verif.mjs"));
+  assert.match(after, /catch \{\s+console\.error\([^\n]*\);\s+process\.exitCode = 1;\s+\}\s+\} finally \{\s+execSync\(`git checkout -- /);
+  assert.equal(deploy.match(/process\.exitCode/g).length, 1);
+});
+
 const CLEAN = { status: "\n", branch: "master\n", ahead: "0\n" };
 
 test("mise en ligne et migration exigent git propre, master et tout envoyé", () => {

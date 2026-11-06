@@ -87,6 +87,7 @@ try {
     execSync(`node scripts/verif.mjs ${version}`, { stdio: "inherit" });
   } catch {
     console.error(`La version ${version} est en ligne, mais la vérification a trouvé un problème (voir au-dessus).`);
+    process.exitCode = 1;
   }
 } finally {
   execSync(`git checkout -- ${file}`);
