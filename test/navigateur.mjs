@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { chromium, devices, webkit } from "playwright";
+import { SETTLE_MS } from "../public/js/shared/banner.js";
 
 const BASE = process.argv[2] || "";
 if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(BASE)) {
@@ -684,7 +685,7 @@ try {
     await admin.locator("#loginForm button").first().click();
     await admin.locator("#app").waitFor({ state: "visible", timeout: WAIT_MS });
   });
-  await step("admin : retirer un joueur demande confirmation, « Annuler » ne retire rien, puis réintégré", async () => {
+  await step("admin : retirer et réintégrer demandent confirmation avec le pseudo, « Annuler » ne change rien", async () => {
     const row = admin.locator("#players li", { hasText: pseudo });
     for (const scope of ["general", "pc"]) {
       await admin.locator(`.scope[data-scope="${scope}"]`).click();
@@ -700,7 +701,14 @@ try {
     await row.locator("button").click();
     await asked;
     await admin.waitForFunction((p) => [...document.querySelectorAll("#players li.out")].some((li) => li.textContent.includes(p)), pseudo, { timeout: WAIT_MS });
+    asked = dialog(admin, false);
     await row.locator("button", { hasText: "Réintégrer" }).click();
+    if (!(await asked).includes(pseudo)) throw new Error("mauvaise question");
+    await wait(500);
+    if (!(await out())) throw new Error("réintégré sans confirmation");
+    asked = dialog(admin, true);
+    await row.locator("button", { hasText: "Réintégrer" }).click();
+    await asked;
     await admin.waitForFunction((p) => [...document.querySelectorAll("#players li:not(.out)")].some((li) => li.textContent.includes(p)), pseudo, { timeout: WAIT_MS });
   });
   await step("admin : réunir deux comptes demande confirmation avec les deux pseudos, « Annuler » ne réunit rien, puis réunis", async () => {
@@ -899,6 +907,177 @@ try {
     } finally {
       await admin.context().setOffline(false);
       await admin.close();
+    }
+  });
+  const back = (p) => p.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  for (const direct of [true, false]) {
+    await step(`écran géant ${direct ? "en direct" : "sans WebSocket, réseau coupé à la fin"} : « Soirée finie ! » sans confettis à zéro, « Bravo » et confettis sur un classement relu après les derniers scores`, async () => {
+      const other = await browser.newPage({ viewport: { width: 1280, height: 720 }, serviceWorkers: "block" });
+      watch(other);
+      let sockets = 0;
+      other.on("websocket", () => sockets++);
+      if (!direct) await other.routeWebSocket(/\/api\/live$/, (ws) => ws.close());
+      const row = (rank, pseudo, best) => ({ rank, id: pseudo, pseudo, best, at: 1, me: false });
+      let closesAt = Date.now() + 3600000, sure = closesAt, down = false;
+      await other.route((url) => url.pathname === "/api/ecran", (route) => {
+        if (down) return route.abort();
+        const now = Date.now(), late = now >= sure, stamp = late ? "2" : "1";
+        const head = { now, version: "dev", stamp, next: null, event: { name: "Soirée finale", opensAt: closesAt - 3600000, closesAt, finalAt: sure - SETTLE_MS, status: now < closesAt ? "open" : "closed" } };
+        if (new URL(route.request().url()).searchParams.get("v") === stamp) return route.fulfill({ json: { ...head, same: true } });
+        return route.fulfill({ json: { ...head, last: 1, count: 2, feed: [], top: late ? [row(1, "Max", 900), row(2, "Lou", 800)] : [row(1, "Lou", 800), row(2, "Max", 700)] } });
+      });
+      const party = () => other.evaluate(() => [document.getElementById("party").hasAttribute("width"), !!document.querySelector("#list li.cheer"), document.getElementById("list").classList.contains("over")]);
+      const banner = (text) => other.locator("#countdown", { hasText: text });
+      try {
+        await other.goto(BASE + "/ecran");
+        await other.waitForFunction(() => document.getElementById("title").textContent === "Soirée finale", null, { timeout: WAIT_MS });
+        for (let i = 0; i < 50 && direct && !sockets; i++) await wait(100);
+        await wait(500);
+        closesAt = Date.now() + 1500;
+        sure = closesAt + 5000;
+        await back(other);
+        await banner("Soirée finie !").waitFor({ timeout: WAIT_MS });
+        if ((await party()).some(Boolean)) throw new Error("fête avant les derniers scores");
+        if (!direct) {
+          down = true;
+          await other.locator("#offline").waitFor({ state: "visible", timeout: WAIT_MS });
+          await wait(Math.max(0, sure - Date.now()) + 2500);
+          if (!(await banner("Soirée finie !").count())) throw new Error("gagnant annoncé sans classement relu");
+          down = false;
+        }
+        await banner("Bravo Max !").waitFor({ timeout: WAIT_MS });
+        const after = await party();
+        if (!after.every(Boolean)) throw new Error("fête incomplète : " + after);
+      } finally {
+        await other.close();
+      }
+    });
+  }
+  const playersRead = (url) => url.pathname === "/api/admin/players";
+  const signIn = async (p) => {
+    await p.goto(BASE + "/admin");
+    await p.fill("#loginName", "Navigateur");
+    await p.fill("#loginKey", KEY);
+    await p.locator("#loginForm button").first().click();
+    await p.locator("#app").waitFor({ state: "visible", timeout: WAIT_MS });
+    await p.waitForLoadState("networkidle");
+  };
+  await step("admin : relecture toutes les 30 s, tout de suite au retour sur l'onglet, nouvel essai 10 s après un démarrage raté", async () => {
+    const other = await browser.newPage({ serviceWorkers: "block" });
+    watch(other);
+    await other.clock.install();
+    let reads = 0;
+    other.on("request", (r) => {
+      if (playersRead(new URL(r.url()))) reads++;
+    });
+    try {
+      await signIn(other);
+      reads = 0;
+      for (let i = 0; i < 9; i++) {
+        await other.clock.runFor(10000);
+        await wait(200);
+      }
+      if (reads < 2 || reads > 4) throw new Error(reads + " relecture(s) en 90 s");
+      reads = 0;
+      await back(other);
+      await wait(500);
+      if (reads !== 1) throw new Error(reads + " relecture(s) au retour sur l'onglet");
+      const who = (url) => url.pathname === "/api/admin/me";
+      await other.route(who, (route) => route.abort());
+      await other.reload();
+      await other.locator("#playersMsg", { hasText: "réessaie" }).waitFor({ timeout: WAIT_MS });
+      await other.unroute(who);
+      await other.clock.runFor(11000);
+      await other.locator("#mergeCard").waitFor({ state: "visible", timeout: 3000 });
+    } finally {
+      await other.close();
+    }
+  });
+  await step("admin : relecture ratée, message au-dessus de la liste avec l'heure des données, effacé à la relecture suivante", async () => {
+    const other = await browser.newPage({ serviceWorkers: "block" });
+    watch(other);
+    await other.clock.install({ time: new Date(2026, 10, 7, 21, 4) });
+    try {
+      await signIn(other);
+      await other.route(playersRead, (route) => route.abort());
+      await other.clock.runFor(300000);
+      await other.locator("#playersMsg", { hasText: "Données de 21h04." }).waitFor({ timeout: WAIT_MS });
+      const above = await other.evaluate(() => document.getElementById("playersMsg").getBoundingClientRect().bottom <= document.getElementById("players").getBoundingClientRect().top);
+      if (!above) throw new Error("message sous la liste");
+      await other.unroute(playersRead);
+      await back(other);
+      await other.locator("#playersMsg").waitFor({ state: "hidden", timeout: WAIT_MS });
+    } finally {
+      await other.close();
+    }
+  });
+  await step("admin : premier chargement raté, pas de « Aucune soirée » inventé, le texte vient du serveur", async () => {
+    const other = await browser.newPage({ serviceWorkers: "block" });
+    watch(other);
+    let answer = (route) => route.abort();
+    await other.route(playersRead, (route) => answer(route));
+    try {
+      await signIn(other);
+      await other.locator("#playersMsg").waitFor({ state: "visible", timeout: WAIT_MS });
+      await wait(1200);
+      const name = await other.locator("#eventName").textContent(), end = await other.locator("#eventEnd").textContent(), count = await other.locator("#statPlayers").textContent();
+      if (name.includes("Aucune soirée") || end.includes("Crée une soirée") || count !== "-") throw new Error([name, end, count].join(" / "));
+      answer = (route) => route.fulfill({ json: { scope: "event", event: null, players: [], stats: { players: 0, runs: 0 } } });
+      await back(other);
+      await other.locator("#eventName", { hasText: "Aucune soirée" }).waitFor({ timeout: WAIT_MS });
+    } finally {
+      await other.close();
+    }
+  });
+  await step("admin : début déplacé dans le futur sur une soirée ouverte, confirmation demandée, « Annuler » la laisse ouverte", async () => {
+    const headers = { "content-type": "application/json", "x-app-version": "dev", "x-admin-key": KEY };
+    const made = await fetch(BASE + "/api/admin/events", { method: "POST", headers, body: JSON.stringify({ name: "Soirée à déplacer", opensAt: Date.now() - 3600000, closesAt: Date.now() + 3600000 }) });
+    if (!made.ok) throw new Error("soirée pas créée : " + made.status);
+    const other = await browser.newPage();
+    watch(other);
+    let patched = 0;
+    other.on("request", (r) => {
+      if (r.method() === "PATCH") patched++;
+    });
+    const later = new Date(Date.now() + 1800000);
+    later.setMinutes(later.getMinutes() - later.getTimezoneOffset());
+    const state = () => other.locator("#eventStatus").textContent();
+    const save = async () => {
+      await other.locator("#endForm button").click();
+      await other.locator("#endForm").waitFor({ state: "hidden", timeout: WAIT_MS });
+    };
+    try {
+      await signIn(other);
+      await other.locator("#editEndBtn").click();
+      await other.fill("#editName", "Soirée renommée");
+      await save();
+      patched = 0;
+      await other.locator("#editEndBtn").click();
+      await other.fill("#startAt", later.toISOString().slice(0, 16));
+      let asked = dialog(other, false);
+      await other.locator("#endForm button").click();
+      if (!(await asked).includes("futur")) throw new Error("mauvaise question");
+      await wait(500);
+      if (patched || (await state()) !== "Soirée en cours") throw new Error("soirée modifiée sans confirmation");
+      asked = dialog(other, true);
+      await other.locator("#endForm button").click();
+      await asked;
+      await other.waitForFunction(() => document.getElementById("eventStatus").textContent === "Prochaine soirée", null, { timeout: WAIT_MS });
+      await other.locator("#editEndBtn").click();
+      await save();
+    } finally {
+      await other.close();
+      await fetch(BASE + "/api/admin/events/current", { method: "PATCH", headers, body: JSON.stringify({ opensAt: Date.now() - 3600000, closesAt: Date.now() - 60000 }) });
+    }
+  });
+  await step("admin : Joueurs, Parties et Record sont sous les onglets du classement qu'ils comptent", async () => {
+    const other = await browser.newPage();
+    watch(other);
+    try {
+      await other.goto(BASE + "/admin");
+      if (!(await other.locator("section:has(.scope) #statPlayers").count())) throw new Error("chiffres hors de la carte des onglets");
+    } finally {
+      await other.close();
     }
   });
   for (const path of ["/ecran", "/admin"]) {

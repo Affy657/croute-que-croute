@@ -1,12 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { countdown, champion, closing, lateFor, liveScreen, screenBanner, openOf, SOON_MS } from "../../public/js/shared/banner.js";
+import { countdown, champion, closing, lateFor, liveScreen, screenBanner, settleDue, newFirst, openOf, SOON_MS } from "../../public/js/shared/banner.js";
 import { when } from "../../public/js/shared/format.js";
 
-const MIN = 60e3, HOUR = 60 * MIN, START = new Date(2026, 10, 7, 21, 0).getTime(), END = START + 4 * HOUR, FINAL = END + 15e3, SURE = FINAL + 10e3;
+const MIN = 60e3, HOUR = 60 * MIN, START = new Date(2026, 10, 7, 21, 0).getTime(), END = START + 4 * HOUR, FINAL = END + 15e3, SURE = FINAL + 12e3;
 const event = (opensAt = START, closesAt = END, status = "closed") => ({ name: "Space Tartinade #3", opensAt, closesAt, finalAt: closesAt + 15e3, status });
 const board = ({ ev = event(), next = null, top = [{ pseudo: "Lou" }], now = SURE } = {}) => ({ now, event: ev, next, eventTop: ev ? top : [], top: [{ pseudo: "Adrien" }] });
-const screen = ({ ev = event(), next = null, top = [{ pseudo: "Lou" }] } = {}) => ({ event: ev, next, top: ev ? top : [{ pseudo: "Adrien" }] });
+const screen = ({ ev = event(), next = null, top = [{ pseudo: "Lou" }], now = SURE } = {}) => ({ now, event: ev, next, top: ev ? top : [{ pseudo: "Adrien" }] });
 
 test("date d'une soirée en toutes lettres", () => {
   assert.equal(when(START), "samedi 07/11 à 21h00");
@@ -78,9 +78,23 @@ test("écran : les 15 dernières minutes, chrono en grand", () => {
   assert.equal(screenBanner(s, END - 1).final, true);
 });
 
-test("écran : plus de « Résultats dans », le gagnant dès que le chrono est fini", () => {
-  assert.deepEqual(screenBanner(screen(), END), { text: "Bravo Lou !", win: true });
-  assert.deepEqual(screenBanner(screen(), END + 10e3), { text: "Bravo Lou !", win: true });
+test("écran : « Soirée finie ! » dès zéro, « Bravo » seulement avec un classement relu après les derniers scores", () => {
+  const over = { text: "Soirée finie !", done: true };
+  const old = screen({ ev: event(START, END, "open"), now: END - 5e3 });
+  assert.equal(screenBanner(old, END - 1).label, "Fin dans ");
+  assert.deepEqual(screenBanner(old, END), over);
+  assert.deepEqual(screenBanner(old, SURE), over);
+  assert.deepEqual(screenBanner(screen({ now: SURE - 1 }), END + HOUR), over);
+  assert.deepEqual(screenBanner(screen({ now: SURE }), SURE), { text: "Bravo Lou !", win: true });
+});
+
+test("écran : relecture due au moment où les derniers scores sont sûrs, plus après", () => {
+  const old = screen({ ev: event(START, END, "open"), now: END - 5e3 });
+  assert.equal(settleDue(old, SURE - 1), false);
+  assert.equal(settleDue(old, SURE), true);
+  assert.equal(settleDue(screen({ now: SURE - 1 }), SURE + HOUR), true);
+  assert.equal(settleDue(screen({ now: SURE }), SURE), false);
+  assert.equal(settleDue(screen({ ev: null }), SURE), false);
 });
 
 test("écran : la soirée suivante sous le top de l'ancienne s'annonce « Prochaine soirée dans »", () => {
@@ -94,15 +108,26 @@ test("écran : soirée suivante dans plus de 24 h, sa date en toutes lettres", (
   assert.deepEqual(screenBanner(screen({ next }), END), { text: "Prochaine soirée " + when(next.opensAt) });
 });
 
-test("écran resté hors ligne pendant la fin : le gagnant à l'heure", () => {
-  const s = screen({ ev: event(START, END, "open") });
-  assert.equal(screenBanner(s, END - 1).label, "Fin dans ");
-  assert.deepEqual(screenBanner(s, END), { text: "Bravo Lou !", win: true });
-});
-
 test("écran : rien à annoncer", () => {
   assert.equal(screenBanner(screen({ ev: null }), END), null);
   assert.equal(screenBanner(screen({ top: [] }), END), null);
+  assert.deepEqual(screenBanner(screen({ top: [], now: END }), END), { text: "Soirée finie !", done: true });
+});
+
+test("écran : « Nouveau n°1 » seulement pour un record plus récent que le dernier connu", () => {
+  const lou = { pseudo: "Lou", best: 500, at: 100 };
+  const seen = { first: lou, last: 200 };
+  assert.equal(newFirst({ pseudo: "Max", best: 600, at: 201 }, seen), true);
+  assert.equal(newFirst({ pseudo: "Max", best: 600, at: 200 }, seen), false);
+  assert.equal(newFirst({ pseudo: "Max", best: 600, at: 50 }, seen), false);
+  assert.equal(newFirst({ pseudo: "Max", best: 400, at: 201 }, seen), false);
+  assert.equal(newFirst({ ...lou, best: 600, at: 201 }, seen), false);
+  assert.equal(newFirst(undefined, seen), false);
+  assert.equal(newFirst({ pseudo: "Max", best: 600, at: 201 }, { first: null, last: 0 }), false);
+});
+
+test("écran : classement sans `at`, « Nouveau n°1 » ne plante pas et reste fêté", () => {
+  assert.equal(newFirst({ pseudo: "Max", best: 600 }, { first: { pseudo: "Lou", best: 500 }, last: 200 }), true);
 });
 
 test("écran : direct pendant la soirée et jusqu'à 1 min après les derniers scores, ou dans les 24 h avant", () => {

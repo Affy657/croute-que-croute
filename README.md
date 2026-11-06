@@ -204,7 +204,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Écran Classement : les 30 premiers, puis ta place, ligne toujours visible. Onglet PC d'office depuis un PC.
 - Tartine d'or : 1er d'un classement d'au moins 10 joueurs (`WIN_MIN`), soirée, Mobile ou PC, à n'importe quel moment.
 - Fin stricte : seules comptent les parties finies avant la fin, plus 15 s de marge réseau (`LATE_MS` dans `src/db.ts`). Une partie encore en cours compte au général, et le téléphone le dit.
-- Gagnant : l'écran géant dès le zéro. Les téléphones attendent un classement relu au moins 10 s après les 15 s de marge (25 à 55 s après la fin) : le dernier reçu, parfois vieux de 40 s, annonçait le mauvais gagnant.
+- Gagnant : à zéro, « Soirée finie ! » partout. « Bravo » attend un classement relu au moins 12 s après les 15 s de marge (`SETTLE_MS`, plus que les 10 s en mémoire du serveur) : 27 s après la fin sur l'écran géant, 27 à 57 s sur les téléphones. Le dernier reçu, parfois vieux de 40 s, annonçait le mauvais gagnant, et un joueur peut encore passer 1er pendant la marge.
 - Relecture : toutes les 10 s, 30 s sur l'accueil, jamais écran éteint. Serveur : 10 s en mémoire, général 60 s pendant une soirée. Ta place après une partie est à jour tout de suite.
 - Place et rival se calculent sur une copie du classement où ton record frais est inséré, égalités comprises (`seated`). La liste en mémoire peut dater d'avant ton record, sur une autre copie du serveur ou pendant une relecture, et elle n'est pas modifiée.
 - Une lecture abandonnée par le serveur n'est plus attendue au-delà de 5 s (`LOAD_MS`) : sinon ce classement restait bloqué pour de bon sur cette copie du serveur.
@@ -245,14 +245,20 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Le propriétaire invite : lien à usage unique valable 48 h. Dans l'appli installée, le coller dans « Lien d'invitation reçu ».
 - Rôles : propriétaire (soirées, joueurs, équipe, erreurs) et admin (soirées, joueurs). Chaque téléphone peut être retiré, sauf le dernier propriétaire, avec ses invitations pas utilisées. Connexion inutilisée 30 jours : expirée.
 - Heure de fin déjà passée : confirmation, le classement se ferme tout de suite. Le serveur enregistre l'heure du clic, jamais une heure passée : le formulaire est à la minute, et 59 s d'écart annulaient la marge de 15 s. Une soirée fermée ne se modifie plus.
+- Début déplacé dans le futur sur une soirée ouverte : confirmation, elle quitte l'écran géant et ne compte plus de parties jusqu'à cette heure.
+- Retirer et Réintégrer demandent confirmation, avec le pseudo.
+- Joueurs, Parties et Record sont sous les onglets Soirée, Mobile, PC : ils comptent l'onglet choisi.
 - Réunir deux comptes (propriétaire, définitif) : pseudo à garder, pseudo à réunir, confirmation avec les deux comptes. Même fusion que côté joueur (`mergeInto`), sans plafond de parties. Refusé si l'un est retiré. `POST /api/admin/merge` sans `confirm: true` renvoie seulement l'aperçu.
 - Joueurs actifs : point jaune pour une partie finie ces 10 dernières minutes (`ACTIVE_MS`), rien d'écrit en plus.
 - Nouveaux pseudos des 15 dernières minutes listés même sans partie et sans score, pour retirer un pseudo déplacé affiché sur l'écran géant.
+- Relecture toutes les 30 s, jamais onglet caché : relire toute la soirée pèse sur le quota de lectures. Tout de suite après une action et au retour sur l'onglet. Démarrage raté : nouvel essai après 10 s.
+- Relecture ratée : message rouge au-dessus de la liste, avec l'heure des données affichées (« Données de 21h04 »), jusqu'à la prochaine réussie. « Aucune soirée » seulement si le serveur l'a dit.
 
 ## Écran géant
 
 - `/ecran`, en paysage : top 10 de la soirée (du général hors soirée), QR code, nombre de joueurs, fil des 6 derniers records et nouveaux pseudos des 15 dernières minutes.
-- Dernier quart d'heure : chiffres rouges qui tremblent. À zéro : « Bravo X ! » et confettis.
+- Dernier quart d'heure : chiffres rouges qui tremblent. À zéro : « Soirée finie ! », sans confettis.
+- 27 s après la fin : l'écran relit le classement de lui-même, WebSocket ou pas, puis « Bravo X ! », confettis et rebond de la 1re ligne. Sans réseau, il reste sur « Soirée finie ! » et réessaie toutes les 2 s : pas de gagnant sans classement relu.
 - « Nouveau n°1 » pendant 6 s, seulement pour un record plus récent que le dernier connu (`at`, `last`), pas pour un 1er retiré ou réintégré. Comparer à l'heure de lecture ratait un record enregistré pendant la lecture.
 - « Plein écran » empêche la veille. Après une mise en ligne, la page se recharge seule, sauf en plein écran : elle attend qu'on en sorte.
 - Direct : pendant une soirée, 1 min après ses derniers scores et dans les 24 h avant, WebSocket (`/api/live`) vers un Durable Object (`Live`, hibernation). À chaque record, joueur, pseudo, retrait, fusion ou soirée modifiée, il dit « change » et les écrans relisent `GET /api/ecran` (une fois par seconde au plus). Un record s'affiche en moins de 1,5 s.
@@ -581,7 +587,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `admin` : fin déjà passée ramenée à maintenant, soirée fermée intouchable.
 - `api` : limite d'attente, reprise par cookie refaite.
 - `attacks` : mur mis de côté, chaque garniture sur un couteau.
-- `banner` : bandeau des soirées, « Bravo », direct ouvert 1 min.
+- `banner` : bandeau des soirées, « Bravo », « Nouveau n°1 », direct ouvert 1 min.
 - `board` : `GET /api/board` et `/api/ecran` sur une base en mémoire, soirée de plus de 1 000 joueurs, nombre de joueurs en mémoire, record frais pas encore dans la liste, lecture en vol, égalités, renvoi d'un score.
 - `cache` : cache des classements, lecture unique, périmée écartée, abandon à 5 s, ligne déjà à ce score.
 - `card` : classement d'une soirée fermée gardé 10 min.
