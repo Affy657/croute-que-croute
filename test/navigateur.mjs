@@ -901,6 +901,50 @@ try {
       await admin.close();
     }
   });
+  for (const path of ["/", "/ecran", "/admin", "/confidentialite"]) {
+    await step(`police hébergée, rien demandé ailleurs : ${path}`, async () => {
+      const context = await browser.newContext(SAFARI ? devices["iPhone 13"] : {});
+      const other = await context.newPage();
+      watch(other);
+      const away = [];
+      other.on("request", (r) => {
+        if (/^http/.test(r.url()) && new URL(r.url()).origin !== BASE) away.push(r.url());
+      });
+      try {
+        await other.goto(BASE + path);
+        await other.evaluate(() => document.fonts.load('16px Bungee'));
+        const ready = await other.evaluate(() => [...document.fonts].some((f) => f.family.includes("Bungee") && f.status === "loaded"));
+        if (!ready) throw new Error("Bungee pas chargée");
+        if (away.length) throw new Error(away.join(", "));
+      } finally {
+        await context.close();
+      }
+    });
+  }
+  await step("texte dessiné sur le canvas : en Bungee, pas dans la police de secours, et seule la police latine est chargée", async () => {
+    const { context, p } = await freshPage(null);
+    try {
+      const fonts = [];
+      p.on("request", (r) => {
+        if (new URL(r.url()).pathname.startsWith("/fonts/")) fonts.push(new URL(r.url()).pathname);
+      });
+      await p.goto(BASE + "/");
+      await p.waitForFunction(() => document.documentElement.dataset.ready === "1", null, { timeout: WAIT_MS });
+      await p.evaluate(() => document.fonts.ready);
+      if (fonts.join() !== "/fonts/bungee-latin-400-normal.woff2") throw new Error("polices chargées : " + fonts.join());
+      const widths = await p.evaluate(async () => {
+        await document.fonts.load('13px Bungee');
+        const ctx = document.createElement("canvas").getContext("2d"), width = (font) => {
+          ctx.font = font;
+          return ctx.measureText("Frôlé x3").width;
+        };
+        return [width('13px Bungee, "Arial Black", sans-serif'), width('13px "Arial Black", sans-serif')];
+      });
+      if (widths[0] === widths[1]) throw new Error(JSON.stringify(widths));
+    } finally {
+      await context.close();
+    }
+  });
   await step("score sans réseau : la boucle s'arrête sans l'effacer, le dit, et il part au retour du réseau", async () => {
     const { context, p } = await testPage(await joinApi("Attente" + hex(4)));
     try {

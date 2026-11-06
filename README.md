@@ -373,6 +373,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 
 ### Cache et chargement
 
+- Bungee est hébergée dans le jeu (`public/fonts/`, `@font-face` en tête de `tokens.css`, `font-display: swap`) : la feuille de Google bloquait tout l'affichage, sans délai maximum. Rien n'est demandé à un autre site au chargement. Police latine dans `SHELL`, latine étendue chargée seulement si un pseudo en a besoin.
 - `sw.js` : renouvelé à chaque version, rempli fichier par fichier avec un 2e essai. Un seul fichier raté faisait tout perdre.
 - Fichier sans réponse en 3 s (`NET_MS`, wifi saturé) : pris dans le cache, remplacé dès que le réseau arrive.
 - Plantage au démarrage (fichiers de deux versions, par exemple l'ancienne page du cache avec du code neuf sur réseau lent) : `boot.js` recharge. Si ça replante dans la minute, il vide le cache, retire le service worker et redemande chaque fichier au serveur avant de recharger, en ligne seulement : sur iPhone, un simple rechargement garde le module déjà en mémoire. Troisième échec : il s'arrête. Une seule recharge laissait le joueur bloqué sur l'écran.
@@ -668,5 +669,5 @@ Code sous licence MIT (`LICENSE`). Ne sont pas couverts :
 
 - le nom, le logo, les affiches et l'univers du collectif Tartine Sauvage ;
 - les bruitages et la musique ;
-- la police Bungee (SIL OFL, chargée depuis Google Fonts) et le logo Google ;
+- la police Bungee (SIL OFL, licence dans `public/fonts/OFL.txt`) et le logo Google ;
 - les marques citées ou dessinées dans le jeu, qui restent à leurs propriétaires.
