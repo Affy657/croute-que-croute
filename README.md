@@ -197,7 +197,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 ## Soirées et classements
 
 - Pas de compte à créer : le téléphone garde un jeton pour toujours. Le même téléphone qui retape son pseudo retrouve son compte.
-- Pseudo unique, 2 à 16 caractères : lettres latines, chiffres, espaces, tirets. Majuscules et accents ne comptent pas pour l'unicité.
+- Pseudo unique, 2 à 16 caractères : lettres latines, chiffres, espaces, tirets et `_ . '`. Majuscules et accents ne comptent pas pour l'unicité.
 - Trois classements : la soirée (pour le lot), général Mobile, général PC. À égalité, le premier à avoir fait le temps passe devant.
 - Une seule soirée à la fois, créée à l'avance dans l'admin pour être annoncée.
 - Mobile ou PC : les joueurs sur PC faisaient bien mieux. L'appareil vient de ce qui a bougé la tartine (souris ou doigt), sinon de l'écran. Une partie sur PC ne compte qu'au général PC. Adrien pense tout remettre à zéro avant la soirée. Limite : un tricheur décidé peut faire passer son PC pour un téléphone.
@@ -298,7 +298,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Retirés, à ne pas refaire : Joyeux Noël et Fidèle du Space (personne ne les avait), Chiffre rond et Ça change du beurre (doublons).
 - Gardés dans `cv-succes`, sans effet sur le classement, copiés sur le serveur (`progress`). Le serveur réunit ceux des appareils (date la plus ancienne), et le téléphone ajoute le total sans fête.
 - Rattrapage de ce que le serveur sait : temps de cuisson d'après le meilleur record à chaque classement ; à l'ouverture, première soirée, top 10, Tartine d'or, Tartinée express et Six Seven (`feats`, `onHistory`). Le reste vit sur le téléphone.
-- Objet rattrapé : mis seulement si l'emplacement est vide. Succès de parties et Tartine d'or vus au classement ne sont pas mis : un appareil neuf mettait la brioche, datait sa tenue et effaçait celle du compte partout.
+- Objet rattrapé : jamais mis (`synced`), même sur un emplacement vide. Seul un objet gagné en jouant l'est : un appareil neuf mettait la brioche, datait sa tenue et effaçait celle du compte partout.
 
 ## Appli et réseau
 
@@ -388,7 +388,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 - Une erreur dans une image n'arrête pas l'animation : l'image suivante est demandée avant de dessiner.
 - L'écran géant installe lui-même le cache, pour un PC qui n'ouvre que `/ecran`. Une page autre que le jeu ne retombe jamais sur l'accueil du jeu.
 - L'admin passe toujours par le réseau : l'ancien script sur la nouvelle page la laissait vide.
-- Écran de chargement : attend le classement 2,5 s au plus, pour jouer hors ligne, et disparaît à 10 s quoi qu'il arrive.
+- Écran de chargement : attend le classement et la police 2,5 s au plus (`finishLoading`), pour jouer hors ligne, et disparaît à 10 s quoi qu'il arrive (`boot.js`). Le texte s'affiche tout de suite dans la police de secours, et rien ne l'attend : ni Google, ni la musique, ni la sonde de l'ancienne adresse, qui passent à côté.
 
 ### Performances
 
@@ -567,7 +567,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `npm run check` : types de l'API et du JavaScript de `public/js`. Attrape un import disparu (la page admin blanche) ou un nom mal tapé.
 - `npm test` ou `npm run test:unit` : le code du téléphone, sans serveur (4 s).
 - `npm run test:api` (`test/api.mjs`, avec `player.mjs` et `admin.mjs`, 1 min) : chaque route, cas normal et refus, sur une base neuve à part, port 8790 (`TEST_PORT` pour un autre).
-- `npm run test:navigateur` (`test/navigateur.mjs`, Playwright, Edge sous Windows, Chromium sur GitHub, 30 s) : parcours complet joueur, écran géant, admin, sans erreur de console ni fichier manquant (sauf la musique et les bruitages). Le test ajoute à `run.js` une poignée `window.__jeu`, dans son navigateur seulement.
+- `npm run test:navigateur` (`test/navigateur.mjs`, Playwright, Edge sous Windows, Chromium sur GitHub, 3 min) : parcours complet joueur, écran géant, admin, sans erreur de console ni fichier manquant (sauf la musique et les bruitages). Le test ajoute à `run.js` une poignée `window.__jeu`, dans son navigateur seulement.
 - `npm run equite` (`test/fairness.mjs`, 4 min) : le robot parfait. `npm run verif` : la prod (réessaie 30 s après une mise en ligne).
 
 ### Pièges WebKit
@@ -587,11 +587,15 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `banner` : bandeau des soirées, « Bravo », direct ouvert 1 min.
 - `cache` : cache des classements, lecture unique, périmée écartée, abandon à 5 s.
 - `chemin` : chemin du robot, gardé hors du code des téléphones.
+- `depart` : `/depart`, 2 essais pour le code, compte gardé par cookie, échec signalé, sous le `meta refresh`.
 - `deploy` : refus de `npm run deploy`.
+- `envoi` : départ relancé 12 s, score gardé 12 h, un seul envoi à la fois, corps illisible, `waited`.
 - `google` : empreinte sans e-mail, cookie, usage unique, 10 min, jeton refusé, délier.
 - `inapp` : navigateurs des applis (vrais user agents).
+- `input` : glissé bloqué, sauf là où la page défile.
+- `lien` : valeurs abîmées du stockage, le démarrage ne plante jamais.
 - `link` : code de liaison, panne de base, réessai concurrent.
-- `move` : changement d'adresse, jamais la clé dans le lien, lien fabriqué ou illisible.
+- `move` : changement d'adresse, sonde de l'ancienne adresse, 3 allers-retours, `KEPT` identique, référent, jamais la clé dans le lien, lien fabriqué ou illisible.
 - `offline` : record après coupure, pseudo gardé.
 - `palette` : `palette.js` et `tokens.css` identiques, feuilles sans valeur en dur.
 - `record` : classement tardif sans effet sur le record.
@@ -602,8 +606,10 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `runs` : même score à la même milliseconde, une partie.
 - `shell` : `SHELL` de `sw.js`, `modulepreload`, pas d'`Object.hasOwn`, éléments de `screens.js`.
 - `slots` : écran qui répond jamais chassé.
+- `son` : musique au premier appui sur Jouer, aperçu, nouvel essai.
 - `sprites` : chaque objet et planète se dessine, nom inventé sans effet.
 - `sync` : tenue entre appareils.
+- `textes` : le guide dit les vraies règles.
 - `validate` : pseudos, tenue, progression, fusion.
 - `variante` : la copie d'`equilibrage:variante` démarre.
 
