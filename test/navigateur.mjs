@@ -8,7 +8,8 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(BASE)) {
 }
 const RUN_MS = 90000, WAIT_MS = 15000, AUDIO = /\/(music|sfx)\//;
 const SAFARI = process.env.NAVIGATEUR === "webkit";
-const WEBKIT_SELECT = /^Refused to apply a stylesheet because/;
+const WEBKIT_NOISE = [/^Refused to apply a stylesheet because/, /\/api\/\w+ due to access control checks\.$/];
+const noise = (text) => SAFARI && WEBKIT_NOISE.some((known) => known.test(text));
 const KEY = readFileSync(".dev.vars", "utf8").match(/ADMIN_KEY=(\w+)/)[1];
 const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
 const hex = (n) => Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join("");
@@ -28,10 +29,12 @@ async function step(name, run) {
 }
 
 function watch(page) {
-  page.on("pageerror", (e) => problems.push(`[${current}] ${page.url()} : ${e.message}`));
+  page.on("pageerror", (e) => {
+    if (!noise(e.message)) problems.push(`[${current}] ${page.url()} : ${e.message}`);
+  });
   page.on("console", (m) => {
     const { url, lineNumber } = m.location();
-    if (m.type() === "error" && !m.text().startsWith("Failed to load resource") && !(SAFARI && WEBKIT_SELECT.test(m.text()))) problems.push(`[${current}] ${page.url()} : ${m.text()}${url ? ` (${url}:${lineNumber})` : ""}`);
+    if (m.type() === "error" && !m.text().startsWith("Failed to load resource") && !noise(m.text())) problems.push(`[${current}] ${page.url()} : ${m.text()}${url ? ` (${url}:${lineNumber})` : ""}`);
   });
   page.on("response", (r) => {
     if ((r.status() === 404 || r.status() >= 500) && !AUDIO.test(r.url())) problems.push(`${r.status()} ${r.url()}`);

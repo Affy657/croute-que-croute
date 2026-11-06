@@ -574,6 +574,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 
 - `NAVIGATEUR=webkit npm run test:navigateur` : même parcours en profil iPhone 13. Avant, `npx playwright install webkit` si Playwright a changé.
 - « Refused to apply a stylesheet » ignoré sous WebKit : celui de Linux dessine le menu « Rôle » avec un style que la CSP bloque. Jamais vu sur iPhone, Chromium attrape les vraies erreurs CSP.
+- « due to access control checks » sur `/api/` ignoré sous WebKit : c'est une demande coupée parce que la page part, par exemple après la sonde de l'ancienne adresse. Sans effet pour le joueur.
 - `serviceWorkers: "block"` sur une page qui intercepte des requêtes : hors Chromium, Playwright ne les intercepte plus sous un service worker.
 - Sur GitHub, image Docker de Playwright : installer WebKit dépassait 10 min.
 
