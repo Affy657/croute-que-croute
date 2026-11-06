@@ -9,3 +9,5 @@ invitation-*.txt
 ecoute-sons/
 sauvegardes/
 .equilibrage/
+.claude/settings.local.json
+.claude/worktrees/

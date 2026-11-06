@@ -6,7 +6,7 @@ permissions:
 on:
   push:
     branches: [master]
-    paths-ignore: ["README.md", "affiches/**", "maquettes/**", "qr/**", "public/music/**", "public/sfx/**", "public/icons/**"]
+    paths-ignore: ["README.md", "CLAUDE.md", ".claude/**", "affiches/**", "maquettes/**", "qr/**", "public/music/**", "public/sfx/**", "public/icons/**"]
   pull_request:
   workflow_dispatch:
 

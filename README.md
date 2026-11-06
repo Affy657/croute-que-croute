@@ -525,6 +525,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `public/js/admin/`, `ecran/`, `shared/` (stockage, `palette.js`, `banner.js`).
 - `src/` : `worker.ts` (routes), `db.ts` (base et cache), `live.ts` et `slots.ts` (direct), `validate.ts`, `security.ts`.
 - `src/routes/` : `board.ts` (classements, écran), `player.ts` (inscription, reprise, pseudo), `look.ts` (tenue, progression), `card.ts` (fiche), `runs.ts` (parties), `link.ts` (codes, fusion), `google.ts`, `admin.ts`, `diag.ts`, `errors.ts`.
+- `CLAUDE.md` et `.claude/` : consignes et réglages de Claude Code. `.worktreeinclude` : fichiers hors git copiés dans un worktree, sans lesquels le jeu n'a ni son ni clés de test.
 
 ### Types
 
