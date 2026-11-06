@@ -257,7 +257,7 @@ try {
     await context.route((u) => u.pathname === "/", async (route) => {
       const res = await route.fetch();
       const headers = res.headers();
-      if (headers["content-security-policy"]) headers["content-security-policy"] = headers["content-security-policy"].replace("connect-src 'self'", `connect-src 'self' ${moveTo}`);
+      if (headers["content-security-policy"]) headers["content-security-policy"] = headers["content-security-policy"].replace("connect-src 'self'", `connect-src 'self' ${moveTo} ${BASE}`);
       await route.fulfill({ response: res, headers });
     });
     await context.addInitScript(({ host, t }) => {
@@ -941,6 +941,76 @@ try {
         return [width('13px Bungee, "Arial Black", sans-serif'), width('13px "Arial Black", sans-serif')];
       });
       if (widths[0] === widths[1]) throw new Error(JSON.stringify(widths));
+    } finally {
+      await context.close();
+    }
+  });
+  await step("nouveau QR, ancienne adresse injoignable : le joueur reste, sans cv-sonde, et l'essai suivant passe", async () => {
+    const { context, p } = await movingPage(null);
+    try {
+      const manifest = (u) => u.origin === BASE && u.pathname === "/manifest.webmanifest";
+      await context.route(manifest, (route) => route.abort());
+      await p.goto(moveTo + "/");
+      await p.locator("#joinForm").waitFor({ state: "visible", timeout: WAIT_MS });
+      await wait(500);
+      const kept = await p.evaluate(() => [location.href, localStorage.getItem("cv-sonde")]);
+      if (kept[0] !== moveTo + "/" || kept[1] !== null) throw new Error(JSON.stringify(kept));
+      await context.unroute(manifest);
+      await p.reload();
+      await p.waitForFunction(() => localStorage.getItem("cv-sonde") === "1" && !location.hash, null, { timeout: WAIT_MS });
+    } finally {
+      await context.close();
+    }
+  });
+  await step("nouveau QR, ancienne adresse trop lente : pas de renvoi pendant que le joueur tape", async () => {
+    const { context, p } = await movingPage(await joinApi("Lente" + hex(4)));
+    try {
+      await context.route((u) => u.pathname === "/js/arrive.js", async (route) => {
+        const res = await route.fetch();
+        await route.fulfill({ response: res, body: (await res.text()).replace(/OLD = "[^"]+"/, `OLD = "${BASE}"`).replace(/HOST = "[^"]+"/, `HOST = "${new URL(moveTo).hostname}"`).replace(/\.then\(\(\) => \{(\s+if \(busy\(\)\))/, ".then(() => new Promise((ok) => { window.__sonde = ok; })).then(() => {$1") });
+      });
+      await p.goto(moveTo + "/");
+      await p.waitForFunction(() => window.__sonde && document.documentElement.dataset.ready === "1", null, { timeout: WAIT_MS });
+      await p.locator("#joinForm").waitFor({ state: "visible", timeout: WAIT_MS });
+      await p.fill("#pseudo", "Tape" + hex(4));
+      await p.evaluate(() => window.__sonde());
+      await wait(500);
+      const seen = await p.evaluate(() => [location.origin, localStorage.getItem("cv-sonde")]);
+      if (seen[0] !== moveTo || seen[1] !== null) throw new Error(JSON.stringify(seen));
+    } finally {
+      await context.unrouteAll({ behavior: "ignoreErrors" });
+      await context.close();
+    }
+  });
+  await step("ancien joueur dont le code n'arrive pas : nouvel essai au chargement suivant, 3 allers-retours au plus", async () => {
+    const { context, p } = await movingPage(await joinApi("Rate" + hex(4)));
+    try {
+      let trips = 0;
+      p.on("framenavigated", (f) => {
+        if (f === p.mainFrame() && new URL(f.url()).pathname === "/depart") trips++;
+      });
+      await context.route((u) => u.origin === BASE && u.pathname === "/api/me/link", (route) => route.abort());
+      for (let i = 1; i <= 3; i++) {
+        await p.goto(moveTo + "/");
+        await p.waitForFunction((n) => location.origin === new URL(document.baseURI).origin && localStorage.getItem("cv-sonde-essais") === String(n) && !localStorage.getItem("cv-sonde") && !location.hash && document.documentElement.dataset.ready === "1", i, { timeout: WAIT_MS });
+      }
+      await p.goto(moveTo + "/");
+      await p.locator("#joinForm").waitFor({ state: "visible", timeout: WAIT_MS });
+      await wait(1000);
+      if (trips !== 3 || p.url() !== moveTo + "/") throw new Error(trips + " allers-retours, " + p.url());
+    } finally {
+      await context.close();
+    }
+  });
+  await step("ancien joueur gardé par le cookie, sans clé locale : /depart retrouve son compte", async () => {
+    const name = "Biscuit" + hex(4), token = await joinApi(name);
+    const { context, p } = await movingPage(null);
+    try {
+      await context.route((u) => u.origin === BASE && u.pathname === "/api/resume", (route) => route.fulfill({ json: { token } }));
+      await p.goto(moveTo + "/");
+      await p.waitForFunction((home) => location.origin === home && localStorage.getItem("cv-token"), moveTo, { timeout: WAIT_MS });
+      const mine = await p.evaluate(async () => (await (await fetch("/api/board", { headers: { authorization: "Bearer " + localStorage.getItem("cv-token") } })).json()).me?.pseudo);
+      if (mine !== name) throw new Error(String(mine));
     } finally {
       await context.close();
     }
