@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import alignment from "qrcode/lib/core/alignment-pattern.js";
 import { Resvg } from "@resvg/resvg-js";
 
-const URL = process.argv[2] || "https://croute-que-croute.tartine-sauvage.workers.dev";
+const URL = process.argv[2] || "https://croute-que-croute.tartinesauvage.fr";
 const C = { void: "#0d0b24", jam: "#e0244a", ink: "#fff6e0" };
 const U = 10, M = 3, DOT = 0.45, PNG_WIDTH = 1200;
 

@@ -1,4 +1,4 @@
-const PROD = "https://croute-que-croute.tartine-sauvage.workers.dev";
+const PROD = "https://croute-que-croute.tartinesauvage.fr";
 const FULL = /^\d+\.\d+\.\d+\+[0-9a-f]+$/;
 const PAGES = ["/", "/ecran", "/admin", "/js/ecran/ecran.js", "/js/admin/admin.js", "/admin.css", "/ecran.css"];
 const TRIES = 10, GAP_MS = 3000;
