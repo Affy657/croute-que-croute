@@ -1,6 +1,6 @@
 export const URGENT = "--pendant-soiree";
 export const NO_GITHUB = "--sans-github";
-export const CHECKS = [["tests.yml", "Tests"], ["safari.yml", "Safari"]];
+export const CHECKS = [["tests.yml", "Tests"], ["safari.yml", "Safari"], ["equite.yml", "Équité"]];
 export const OFF_GIT = ["public/music/theme.m4a", ...["death", "first", "near", "record", "start"].map((name) => `public/sfx/${name}.mp3`)];
 
 const parts = (v) => v.split(".").map(Number);
@@ -32,12 +32,17 @@ export function blocked(board, args = [], command = "npm run deploy") {
   return null;
 }
 
-export function ignoredPaths(workflow) {
-  const line = workflow.match(/paths-ignore:\s*\[([^\]]*)\]/);
+const listed = (workflow, key) => {
+  const line = workflow.match(new RegExp(`\\b${key}:\\s*\\[([^\\]]*)\\]`));
   return line ? [...line[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]) : [];
-}
+};
+
+export const ignoredPaths = (workflow) => listed(workflow, "paths-ignore");
+export const watchedPaths = (workflow) => listed(workflow, "paths");
 
 export const ignored = (file, patterns) => patterns.some((p) => (p.endsWith("/**") ? file.startsWith(p.slice(0, -2)) : file === p));
+
+export const stillValid = (changed, watched, skip) => (watched.length ? !changed.some((f) => ignored(f, watched)) : changed.every((f) => ignored(f, skip)));
 
 export function checkFailed(name, file, runs, fits) {
   const last = runs.find((r) => fits(r.headSha));

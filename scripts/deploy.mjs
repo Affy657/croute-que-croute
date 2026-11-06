@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { blocked, CHECKS, checkFailed, drift, gitProblem, ignored, ignoredPaths, newer, NO_GITHUB, offGitProblem } from "./garde.mjs";
+import { blocked, CHECKS, checkFailed, drift, gitProblem, ignoredPaths, newer, NO_GITHUB, offGitProblem, stillValid, watchedPaths } from "./garde.mjs";
 
 const PROD = "https://croute-que-croute.tartine-sauvage.workers.dev";
 const DB = "croute-que-croute";
@@ -43,12 +43,15 @@ for (const [cmd, why] of [["npm run check", "la vérification des types échoue"
   }
 }
 if (process.argv.includes(NO_GITHUB)) {
-  console.error("Tests de GitHub et Safari pas vérifiés (" + NO_GITHUB + ").");
+  console.error("Tests de GitHub, Safari et Équité pas vérifiés (" + NO_GITHUB + ").");
 } else {
   const head = run("git rev-parse HEAD").trim();
-  const skip = ignoredPaths(readFileSync(".github/workflows/tests.yml", "utf8"));
-  const fits = (sha) => sha === head || (quiet(`git merge-base --is-ancestor ${sha} HEAD`) && run(`git diff --name-only ${sha} HEAD`).split(/\r?\n/).filter(Boolean).every((f) => ignored(f, skip)));
+  const workflow = (file) => readFileSync(`.github/workflows/${file}`, "utf8");
+  const skip = ignoredPaths(workflow("tests.yml"));
+  const since = (sha) => run(`git diff --name-only ${sha} HEAD`).split(/\r?\n/).filter(Boolean);
   for (const [file, name] of CHECKS) {
+    const watched = watchedPaths(workflow(file));
+    const fits = (sha) => sha === head || (quiet(`git merge-base --is-ancestor ${sha} HEAD`) && stillValid(since(sha), watched, skip));
     let runs;
     try {
       runs = JSON.parse(run(`gh run list --workflow ${file} --branch master --limit 30 --json headSha,status,conclusion`));

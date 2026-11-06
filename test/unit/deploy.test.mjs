@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { blocked, checkFailed, drift, gitProblem, ignored, ignoredPaths, newer, offGitProblem, OFF_GIT, URGENT } from "../../scripts/garde.mjs";
+import { readdirSync, readFileSync } from "node:fs";
+import { posix } from "node:path";
+import { blocked, CHECKS, checkFailed, drift, gitProblem, ignored, ignoredPaths, newer, offGitProblem, OFF_GIT, stillValid, URGENT, watchedPaths } from "../../scripts/garde.mjs";
 
 const MIN = 60000, END = Date.UTC(2026, 10, 7, 22, 30), FINAL = END + 15000;
 const board = (now, status) => ({ now, event: status ? { name: "Space Tartinade #3", status, closesAt: END, finalAt: FINAL } : null });
@@ -76,6 +77,48 @@ test("mise en ligne permise quand le dernier passage sur ce commit, ou avant un 
   assert.equal(checkFailed("Tests", "tests.yml", [done("autre", "failure"), done(DOCS, "success")], fits), null);
 });
 
+const WATCHED = watchedPaths(readFileSync(".github/workflows/equite.yml", "utf8"));
+
+test("le garde-fou lit les fichiers suivis par Équité, sans les confondre avec ceux ignorés par Tests", () => {
+  assert.ok(CHECKS.some(([file, name]) => file === "equite.yml" && name === "Équité"));
+  assert.ok(WATCHED.includes("public/js/game/**") && WATCHED.includes("test/fairness.mjs"));
+  assert.deepEqual(watchedPaths(readFileSync(".github/workflows/tests.yml", "utf8")), []);
+  assert.deepEqual(ignoredPaths(readFileSync(".github/workflows/equite.yml", "utf8")), []);
+  assert.deepEqual(watchedPaths(readFileSync(".github/workflows/safari.yml", "utf8")), []);
+});
+
+test("mise en ligne : un passage d'Équité reste valable tant qu'aucun de ses fichiers n'a changé", () => {
+  assert.equal(stillValid(["src/worker.ts", "public/style.css", "README.md"], WATCHED, SKIP), true);
+  assert.equal(stillValid([], WATCHED, SKIP), true);
+  assert.equal(stillValid(["src/worker.ts", "public/js/game/sim.js"], WATCHED, SKIP), false);
+  assert.equal(stillValid(["public/js/shared/palette.js"], WATCHED, SKIP), false);
+  assert.equal(stillValid(["test/fairness.mjs"], WATCHED, SKIP), false);
+});
+
+test("mise en ligne : Tests et Safari, sans fichiers suivis, gardent la règle des fichiers ignorés", () => {
+  assert.equal(stillValid(["README.md", "affiches/a.webp"], [], SKIP), true);
+  assert.equal(stillValid(["README.md", "src/worker.ts"], [], SKIP), false);
+});
+
+test("Équité jamais lancée sur ce code : refus avec la commande pour la lancer", () => {
+  assert.match(checkFailed("Équité", "equite.yml", [], () => false), /Équité n'a pas tourné sur ce commit.*gh workflow run equite\.yml --ref master/);
+  const keeps = (sha) => stillValid(sha === OLD ? ["src/worker.ts"] : ["public/js/game/sim.js"], WATCHED, SKIP);
+  assert.equal(checkFailed("Équité", "equite.yml", [done("autre", "failure"), done(OLD, "success")], keeps), null);
+  assert.match(checkFailed("Équité", "equite.yml", [done(OLD, "failure")], keeps), /pas vert/);
+});
+
+test("Équité suit tout ce que son robot et le jeu importent, palette.js comprise", () => {
+  const todo = ["test/fairness.mjs", "test/equilibrage/invariants.mjs", ...readdirSync("public/js/game", { recursive: true }).filter((f) => f.endsWith(".js")).map((f) => "public/js/game/" + f.replaceAll("\\", "/"))];
+  for (const file of todo) {
+    for (const [, path] of readFileSync(file, "utf8").matchAll(/from "(\.[^"]+)"/g)) {
+      const dep = posix.join(posix.dirname(file), path);
+      if (!todo.includes(dep)) todo.push(dep);
+    }
+  }
+  assert.ok(todo.includes("public/js/shared/palette.js") && todo.includes("test/chemin.mjs"));
+  assert.deepEqual(todo.filter((f) => !ignored(f, WATCHED)), []);
+});
+
 test("mise en ligne refusée si node_modules ne suit pas package-lock.json (le PC met en ligne avec ses propres outils)", () => {
   const lock = { packages: { "": { dependencies: { qrcode: "^1" }, devDependencies: { wrangler: "^4" } }, "node_modules/qrcode": { version: "1.5.4" }, "node_modules/wrangler": { version: "4.156.0" } } };
   assert.deepEqual(drift(lock, (n) => ({ qrcode: "1.5.4", wrangler: "4.154.0" })[n]), ["wrangler 4.154.0 au lieu de 4.156.0"]);
@@ -146,5 +189,6 @@ test("npm run deploy vérifie node_modules, Tests et Safari avant de mettre en l
   const at = (s) => deploy.indexOf(s);
   for (const step of ["if (offGit) stop(offGit)", "if (stale.length) stop(", "const why = checkFailed(", "if (why) stop(why)", "of CHECKS"]) assert.ok(at(step) > 0 && at(step) < at("wrangler deploy"), step);
   assert.match(deploy, /const stale = drift\(/);
+  assert.match(deploy, /const watched = watchedPaths\(workflow\(file\)\);\s+const fits = [^\n]*stillValid\(since\(sha\), watched, skip\)/);
   assert.doesNotMatch(readFileSync(".github/workflows/safari.yml", "utf8"), /tags:/);
 });

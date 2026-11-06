@@ -542,8 +542,8 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 | `npm run seed` | Remplir la base locale, jamais en ligne. Donne un lien `?jeton=`. `--soiree` : une soirée en cours. `--persist-to <dossier>` : une autre base |
 | `npm run dev` | Jeu sur http://localhost:8787. Dans l'app Claude, `.claude/launch.json` l'ouvre au wifi |
 | `npm run db:remote` | Migrations en ligne, avant `npm run deploy` (`scripts/migrer.mjs`). Refuse si : git pas à jour, hors de `master`, pas envoyé, prod sans réponse, soirée ouverte, 15 s de marge, ou soirée qui ouvre dans moins de 2 h. `-- --pendant-soiree` en urgence |
-| `npm run deploy` | Mettre en ligne, puis `npm run verif`. Si la vérification échoue, la version reste en ligne et la commande sort en échec. Refuse si : git pas à jour, hors de `master`, pas envoyé, fichiers hors git de `public/` absents ou en trop (`wrangler` envoie tout `public/`, attendus : `theme.m4a` et les 5 bruitages), `node_modules` en retard (arrêter le serveur, `npm ci`), types ou tests en échec, Tests ou Safari pas verts, migration manquante, prod anormale, version pas montée, soirée ouverte, 15 s de marge, ou soirée qui ouvre dans moins de 2 h (`scripts/garde.mjs`) |
-| Options de `deploy` | `-- --pendant-soiree` en urgence, `-- --sans-github` si GitHub ne répond pas. Un commit README ou images garde le résultat d'avant |
+| `npm run deploy` | Mettre en ligne, puis `npm run verif`. Si la vérification échoue, la version reste en ligne et la commande sort en échec. Refuse si : git pas à jour, hors de `master`, pas envoyé, fichiers hors git de `public/` absents ou en trop (`wrangler` envoie tout `public/`, attendus : `theme.m4a` et les 5 bruitages), `node_modules` en retard (arrêter le serveur, `npm ci`), types ou tests en échec, Tests, Safari ou Équité pas verts, migration manquante, prod anormale, version pas montée, soirée ouverte, 15 s de marge, ou soirée qui ouvre dans moins de 2 h (`scripts/garde.mjs`) |
+| Options de `deploy` | `-- --pendant-soiree` en urgence, `-- --sans-github` si GitHub ne répond pas. Un commit README ou images garde le résultat d'avant. Un passage d'Équité reste valable tant qu'aucun fichier de ses `paths` n'a changé |
 | `npm run verif` | Prod en lecture seule. `npm run verif -- 0.46.1+373facb` exige cette version |
 | `npm run icons`, `npm run qr` | Regénérer icônes et QR codes |
 
@@ -599,7 +599,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 
 - `tests.yml` : à chaque envoi de code sur `master` et chaque pull request, types et trois niveaux de tests (2 min). Sur le dépôt public, un envoi sur `master` ne l'a encore jamais lancé : avant une mise en ligne, `gh workflow run tests.yml --ref master`.
 - `safari.yml` : à la main avant chaque mise en ligne, `gh workflow run safari.yml --ref master`. `npm run deploy` exige qu'il soit vert.
-- `equite.yml` : robot et invariants en petit, quand `public/js/game/` ou le robot change (4 min).
+- `equite.yml` : robot et invariants en petit, quand `public/js/game/`, `palette.js` ou le robot change (4 min). `npm run deploy` exige qu'il soit vert : sans passage valable, `gh workflow run equite.yml --ref master`.
 - Un envoi annule les tests en cours. Dépôt public : minutes gratuites.
 - Dependabot : une pull request npm et une d'actions par mois. Fusionner si c'est vert, puis `git pull` (sinon le prochain envoi est refusé).
 
