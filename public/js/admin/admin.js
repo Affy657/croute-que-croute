@@ -25,6 +25,7 @@ let timer = null;
 let retry = null;
 let scope = "event";
 let loads = 0;
+let loadedAt = 0;
 let invited = new URLSearchParams(location.hash.slice(1)).get("invite");
 /** @type {Set<string>} */
 const opened = new Set();
@@ -73,6 +74,12 @@ function say(el, text, error) {
   el.textContent = text || "";
   el.hidden = !text;
   el.classList.toggle("error", !!error);
+}
+
+/** @param {string} message */
+function unread(message) {
+  say($("playersMsg"), message + (loadedAt ? " Données de " + hour(loadedAt) + "." : ""), true);
+  if (!data) $("eventName").textContent = "Soirée pas chargée";
 }
 
 /** @param {string} method @param {string} path @param {unknown} [body] */
@@ -156,7 +163,7 @@ function renderEvent() {
 function tick() {
   const ev = data && data.event;
   if (!ev) {
-    $("eventEnd").textContent = "Crée une soirée pour ouvrir son classement. En dehors, le classement général tourne tout le temps.";
+    $("eventEnd").textContent = data ? "Crée une soirée pour ouvrir son classement. En dehors, le classement général tourne tout le temps." : "";
     return;
   }
   const now = Date.now();
@@ -216,12 +223,13 @@ async function load() {
     const next = await call("GET", "/api/admin/players" + (asked === "event" ? "" : "?scope=" + asked));
     if (asked !== scope || mine !== loads) return;
     data = next;
+    loadedAt = Date.now();
     for (const b of document.querySelectorAll(".scope")) b.setAttribute("aria-selected", String(b.dataset.scope === scope));
     say($("playersMsg"), "");
     renderEvent();
     renderPlayers();
   } catch (e) {
-    if (asked === scope && mine === loads) say($("playersMsg"), /** @type {Error} */ (e).message, true);
+    if (asked === scope && mine === loads) unread(/** @type {Error} */ (e).message);
   }
 }
 
@@ -423,7 +431,7 @@ async function boot() {
   } catch (e) {
     if (!token) return;
     show("app");
-    say($("playersMsg"), /** @type {Error} */ (e).message, true);
+    unread(/** @type {Error} */ (e).message);
     clearTimeout(retry);
     retry = setTimeout(boot, RETRY_MS);
     return;

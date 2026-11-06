@@ -986,6 +986,42 @@ try {
       await other.close();
     }
   });
+  await step("admin : relecture ratée, message au-dessus de la liste avec l'heure des données, effacé à la relecture suivante", async () => {
+    const other = await browser.newPage();
+    watch(other);
+    await other.clock.install({ time: new Date(2026, 10, 7, 21, 4) });
+    try {
+      await signIn(other);
+      await other.route(playersRead, (route) => route.abort());
+      await other.clock.runFor(300000);
+      await other.locator("#playersMsg", { hasText: "Données de 21h04." }).waitFor({ timeout: WAIT_MS });
+      const above = await other.evaluate(() => document.getElementById("playersMsg").getBoundingClientRect().bottom <= document.getElementById("players").getBoundingClientRect().top);
+      if (!above) throw new Error("message sous la liste");
+      await other.unroute(playersRead);
+      await back(other);
+      await other.locator("#playersMsg").waitFor({ state: "hidden", timeout: WAIT_MS });
+    } finally {
+      await other.close();
+    }
+  });
+  await step("admin : premier chargement raté, pas de « Aucune soirée » inventé, le texte vient du serveur", async () => {
+    const other = await browser.newPage();
+    watch(other);
+    let answer = (route) => route.abort();
+    await other.route(playersRead, (route) => answer(route));
+    try {
+      await signIn(other);
+      await other.locator("#playersMsg").waitFor({ state: "visible", timeout: WAIT_MS });
+      await wait(1200);
+      const name = await other.locator("#eventName").textContent(), end = await other.locator("#eventEnd").textContent(), count = await other.locator("#statPlayers").textContent();
+      if (name.includes("Aucune soirée") || end.includes("Crée une soirée") || count !== "-") throw new Error([name, end, count].join(" / "));
+      answer = (route) => route.fulfill({ json: { scope: "event", event: null, players: [], stats: { players: 0, runs: 0 } } });
+      await back(other);
+      await other.locator("#eventName", { hasText: "Aucune soirée" }).waitFor({ timeout: WAIT_MS });
+    } finally {
+      await other.close();
+    }
+  });
   for (const path of ["/ecran", "/admin"]) {
     await step(`la page ${path} s'ouvre`, async () => {
       const other = await browser.newPage();
