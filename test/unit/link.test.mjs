@@ -94,6 +94,34 @@ test("code de liaison : un réessai qui croise une première demande lente garde
   }
 });
 
+function limiter(ok) {
+  const keys = [];
+  return { keys, limit: async ({ key }) => (keys.push(key), { success: ok }) };
+}
+
+test("code de liaison : limite atteinte par de faux codes, un bon code passe et ne compte pas", async () => {
+  const env = await setup();
+  env.JOIN_IP_LIMIT = limiter(false);
+  assert.equal((await useLink({ req: ask(CODE, PHONE), env })).status, 200);
+  assert.deepEqual(env.JOIN_IP_LIMIT.keys, []);
+});
+
+test("code de liaison : un faux code compte par IP, et reçoit 429 une fois la limite atteinte", async () => {
+  const env = await setup();
+  env.JOIN_IP_LIMIT = limiter(true);
+  assert.equal((await useLink({ req: ask("HHHHHHHH", PHONE), env })).status, 404);
+  assert.deepEqual(env.JOIN_IP_LIMIT.keys, ["link:local"]);
+  env.JOIN_IP_LIMIT = limiter(false);
+  assert.equal((await useLink({ req: ask("HHHHHHHH", PHONE), env })).status, 429);
+});
+
+test("code de liaison : le réessai d'un code déjà utilisé par ce téléphone passe malgré la limite", async () => {
+  const env = await setup();
+  await useLink({ req: ask(CODE, PHONE), env });
+  env.JOIN_IP_LIMIT = limiter(false);
+  assert.equal((await useLink({ req: ask(CODE, PHONE), env })).status, 200);
+});
+
 test("fusion côté joueur : au-delà de 2 000 parties, refusée vers un admin, code gardé, rien de déplacé", async () => {
   const env = await setup();
   await withMax(env, 2001);

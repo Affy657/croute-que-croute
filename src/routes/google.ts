@@ -38,7 +38,7 @@ function home(result: string, token?: string) {
 export async function start({ req, env }: Ctx) {
   if (outdated(req, env)) return updateRequired();
   if (!ready(env)) return closed();
-  if (!(await allowed(env.JOIN_LIMIT, "google:" + clientIp(req)))) return tooFast();
+  if (!(await allowed(env.JOIN_IP_LIMIT, "google:" + clientIp(req)))) return tooFast();
   const body = await readJson(req);
   const linking = body.link === true;
   const me = linking ? await findProfile(req, env) : null;

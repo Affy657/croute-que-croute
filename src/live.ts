@@ -45,8 +45,19 @@ export class Live extends DurableObject<Env> {
 
 const screens = (env: Env) => env.LIVE.get(env.LIVE.idFromName("ecran"));
 
+function foreignPage(req: Request) {
+  const origin = req.headers.get("origin");
+  if (!origin) return false;
+  try {
+    return new URL(origin).host !== new URL(req.url).host;
+  } catch {
+    return true;
+  }
+}
+
 export async function connect({ req, env }: Ctx) {
   if (req.headers.get("upgrade") !== "websocket") return fail(426, "Connexion en direct seulement.");
+  if (foreignPage(req)) return fail(403, "Page d'un autre site refusée.");
   if (!(await allowed(env.LIVE_LIMIT, "live:" + clientIp(req)))) return tooFast();
   return screens(env).fetch(req);
 }

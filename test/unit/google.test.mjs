@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { database } from "./d1.mjs";
 
 const { start, back, unlink } = await import(new URL("../../src/routes/google.ts", import.meta.url).href);
-const { mergeInto } = await import(new URL("../../src/routes/link.ts", import.meta.url).href);
+const { mergeInto, logoutOthers } = await import(new URL("../../src/routes/link.ts", import.meta.url).href);
 const { sha256 } = await import(new URL("../../src/security.ts", import.meta.url).href);
 
 const NOW = 1_800_000_000_000, TOKEN = "d".repeat(48), PHONE = "a".repeat(32), CLIENT = "client.apps";
@@ -156,6 +156,53 @@ test("Google : sans clés configurées, les trois routes répondent 404", async 
   assert.equal((await start({ req: post({}), env })).status, 404);
   assert.equal((await back({ req: new Request("http://jeu.test/api/google/retour?state=x&code=y"), env })).status, 404);
   assert.equal((await unlink({ req: leave, env })).status, 404);
+});
+
+function limiter(ok) {
+  const keys = [];
+  return { keys, limit: async ({ key }) => (keys.push(key), { success: ok }) };
+}
+
+test("Google : la limite est calée sur un lieu qui partage une IP, pas sur la limite d'un téléphone", async (t) => {
+  const env = { ...(await setup(t)), JOIN_LIMIT: limiter(false), JOIN_IP_LIMIT: limiter(true) };
+  assert.equal((await start({ req: post({ clientId: PHONE }), env })).status, 200);
+  assert.deepEqual(env.JOIN_LIMIT.keys, []);
+  assert.deepEqual(env.JOIN_IP_LIMIT.keys, ["google:local"]);
+});
+
+test("Google : limite du lieu atteinte, freiné", async (t) => {
+  const env = { ...(await setup(t)), JOIN_IP_LIMIT: limiter(false) };
+  assert.equal((await start({ req: post({}), env })).status, 429);
+});
+
+const others = (env) => logoutOthers({ req: new Request("http://jeu.test/api/me/devices", { method: "DELETE", headers: { authorization: "Bearer " + TOKEN, "x-app-version": "dev" } }), env });
+
+test("Google : « Déconnecter les autres » retire le lien, l'intrus ne revient pas par Google", async (t) => {
+  const env = await setup(t);
+  google(t);
+  await land(env, await begin(env, true));
+  assert.deepEqual(linkedTo(env), ["lou"]);
+  assert.equal((await others(env)).status, 200);
+  assert.deepEqual(linkedTo(env), []);
+  assert.equal(result(await land(env, await begin(env))), "inconnu");
+});
+
+test("Google : « Déconnecter les autres » annule une liaison en cours", async (t) => {
+  const env = await setup(t);
+  google(t);
+  const started = await begin(env, true);
+  assert.equal((await others(env)).status, 200);
+  assert.equal(result(await land(env, started)), "erreur");
+  assert.deepEqual(linkedTo(env), []);
+});
+
+test("Google : « Déconnecter les autres » ne touche pas aux demandes des autres joueurs", async (t) => {
+  const env = await setup(t);
+  env.DB.db.prepare("INSERT INTO google_states (state_hash, player_id, client_hash, expires_at) VALUES ('autre', 'max', NULL, ?)").run(NOW + 60000);
+  env.DB.db.prepare("UPDATE profiles SET google_hash = 'empreinte' WHERE id = 'max'").run();
+  assert.equal((await others(env)).status, 200);
+  assert.deepEqual(linkedTo(env), ["max"]);
+  assert.equal(env.DB.db.prepare("SELECT COUNT(*) AS n FROM google_states").get().n, 1);
 });
 
 test("Google : réunir deux comptes garde le lien du compte retiré", async (t) => {

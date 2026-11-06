@@ -1,4 +1,4 @@
-import { json, fail, allowed, tooFast } from "../http";
+import { json, fail, clientIp, allowed, tooFast } from "../http";
 import { sha256 } from "../security";
 import type { Ctx } from "../router";
 
@@ -73,7 +73,7 @@ export async function collect({ req, env }: Ctx) {
   }
   const found = body && Array.isArray(body.errors) ? body.errors.slice(0, BATCH).map(clean).filter((e) => e !== null) : [];
   if (!found.length) return fail(400, "Rapport invalide.");
-  if (!(await allowed(env.ERROR_LIMIT, "toutes"))) return tooFast();
+  if (!(await allowed(env.ERROR_IP_LIMIT, clientIp(req))) || !(await allowed(env.ERROR_LIMIT, "toutes"))) return tooFast();
   const now = Date.now();
   const session = /^[a-f0-9]{16}$/.test(String(body.session)) ? String(body.session) : "";
   const used = await env.DB.prepare(

@@ -232,6 +232,8 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Jetons, identifiants, connexions et invitations hachés (SHA-256) : une copie de la base ne permet pas d'usurper un compte.
 - Limites : 20 inscriptions par minute et par téléphone, 600 par IP (tout le lieu partage souvent la même), 500 nouveaux comptes par heure en tout. Ce plafond se compte en base, gardé 10 s, et ne touche jamais un joueur qui retrouve son pseudo. 30 débuts de partie par minute et par joueur, 300 par IP. 10 envois de tenue par 10 s et 5 changements de pseudo par minute, par joueur.
 - Admin : 30 échecs par minute et par IP. Une bonne clé ou invitation passe toujours : un invité malveillant ne peut pas bloquer les admins.
+- Une IPv6 compte par réseau /64, le `::` déplié : un même appareil ou une même box en change à volonté à l'intérieur. L'IPv4 ne change pas.
+- Corps JSON : 64 Ko au plus, comptés à la lecture et pas seulement d'après `content-length`. Au-delà, il vaut un JSON invalide. La progression la plus lourde tient en moins d'un quart de ce plafond.
 - Un joueur retiré ne monte plus. Renvoyer son ancien record ne le remet pas dans les classements en mémoire : il pouvait être « Bravo » à la fin de la soirée.
 - En-têtes (`public/_headers`) : pas de script externe, pas d'affichage dans le cadre d'un autre site.
 - Lectures publiques (`/api/board`, `/api/feed`, `/api/ecran`, `/api/players/…`) : pas de limite dans le Worker, la requête y compte déjà. À freiner par une règle Cloudflare, possible seulement avec un nom de domaine (voir À faire).
@@ -258,6 +260,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - WebSocket ouverte : relecture complète par minute, ping toutes les 25 s (réponse sans réveil), secours après 10 s sans réponse.
 - Secours : nouvel essai après 1, 2, 5, 10 puis 30 s, demande toutes les 2 s avec `?v=` (le serveur lit 2 lignes), relecture complète toutes les 15 s car le repère ne bouge pas pour un joueur retiré ou renommé.
 - Relecture 11 s après chaque annonce : une copie du serveur garde 10 s l'ancien état.
+- Connexion refusée (403) si l'en-tête `Origin` donne un autre hôte que la requête : une page d'un autre site ne prend pas une place d'écran. Sans `Origin` (scripts), elle passe.
 - Places : 20 écrans, 4 par IP, 20 connexions par minute (`LIVE_LIMIT`). Un écran muet depuis 1 min laisse sa place (`STALE_MS`). Si les 4 répondent, le nouveau reste sans direct : fermer le plus ancien créait une boucle dès 5 écrans sur le même wifi.
 - Hors ligne : « Pas de réseau : classement de 21h04 » après 2 demandes ratées. Le compte à rebours suit l'heure.
 - Onglet caché : aucune demande. Sans soirée proche : une par minute. Toutes les 10 s, un onglet oublié faisait 17 000 requêtes par jour.
@@ -308,13 +311,13 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 
 ### Compte sur plusieurs appareils
 
-- « Autre appareil », « Mon code » : QR et code de 8 caractères (sans 0, O, 1, I, L), 10 min, une seule fois. Un nouveau code annule l'ancien. 600 essais par minute et par IP, car tout le lieu partage souvent la même, 5 codes par minute et par compte.
+- « Autre appareil », « Mon code » : QR et code de 8 caractères (sans 0, O, 1, I, L), 10 min, une seule fois. Un nouveau code annule l'ancien. 600 échecs par minute et par IP, car tout le lieu partage souvent la même. Un bon code passe toujours : un invité qui envoie des faux codes ne bloque pas les vrais. 5 codes par minute et par compte.
 - Scanner remplit le code (`#lier=`, jamais envoyé au serveur), il reste à toucher « Connecter » : un lien reçu ne branche personne à son insu. Sinon « J'ai déjà un compte ».
 - Réponse perdue : le même appareil réessaie le même code 5 min (`RETRY_MS`). Base en panne pendant « Connecter » : le code redevient intact. Un QR scanné attend la fin de la partie.
 - Fusion : « J'ai un code » sur un appareil connecté. « Réunir « B » avec « A » ? » sans consommer le code, puis tout en une fois sur le serveur. Échec : code toujours valable. Réponse perdue : relit le classement, « Comptes réunis ».
 - On garde le compte qui a affiché le code : meilleurs records avec leur date (à égalité, le plus ancien), parties additionnées, soirées, succès, garnitures, appareils. L'autre pseudo redevient libre. Refusée si un compte est retiré.
 - Le compte qui disparaît a plus de 2 000 parties : fusion refusée, le code reste valable, un admin la fait. Déplacer autant de lignes coûte trop d'écritures pour un joueur seul.
-- « Déconnecter les autres » : sort les autres appareils et annule le code (5 par minute et par compte). Quelqu'un qui a utilisé ton code revient au choix du pseudo, sans tes succès ni tes skins : le serveur garde la trace des clés sorties (`signed_out`) et dit `out` à l'appareil. Une clé simplement inconnue n'efface rien : si des comptes disparaissaient un jour, les joueurs garderaient leurs skins.
+- « Déconnecter les autres » : sort les autres appareils, annule le code (5 par minute et par compte) et retire le lien Google avec les liaisons en cours, sinon un intrus qui a lié son Google reviendrait. Le joueur relie son Google ensuite. Quelqu'un qui a utilisé ton code revient au choix du pseudo, sans tes succès ni tes skins : le serveur garde la trace des clés sorties (`signed_out`) et dit `out` à l'appareil. Une clé simplement inconnue n'efface rien : si des comptes disparaissaient un jour, les joueurs garderaient leurs skins.
 
 ### Compte gardé par cookie
 
@@ -349,7 +352,7 @@ Désactivée en prod tant qu'on n'a pas le nom de domaine : sans les clés, les 
 
 Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Paramètres, Autre appareil. Se connecter : « J'ai déjà un compte », « Continuer avec Google ». Elle ne crée pas de compte : sans compte lié, le joueur reçoit un message. Un compte Google ne se lie qu'à un joueur.
 
-- Le serveur parle à Google lui-même (`src/routes/google.ts`) : `POST /api/google/start` note la demande dans `google_states` (10 min, un seul usage) et pose le cookie `cv_google`, puis Google renvoie sur `GET /api/google/retour`, qui compare le cookie, échange le code et revient sur `/#google=<résultat>`. Aucun script Google dans la page, la politique de sécurité ne change pas.
+- Le serveur parle à Google lui-même (`src/routes/google.ts`) : `POST /api/google/start` note la demande dans `google_states` (10 min, un seul usage) et pose le cookie `cv_google`, puis Google renvoie sur `GET /api/google/retour`, qui compare le cookie, échange le code et revient sur `/#google=<résultat>`. Aucun script Google dans la page, la politique de sécurité ne change pas. `start` est limité comme un lieu qui partage une IP (`JOIN_IP_LIMIT`, clé `google:`).
 - On demande `openid email`, parce que la documentation de Google l'exige, mais on ne garde que `sha256("google:" + sub)` dans `profiles.google_hash`. L'adresse e-mail n'est jamais enregistrée.
 - Bouton caché sans clés, sur l'ancienne adresse (elle n'est pas déclarée chez Google), dans les navigateurs d'applis (Google y refuse la connexion) et dans l'appli iPhone de l'écran d'accueil (la page de Google s'y ouvre dans un autre stockage : à vérifier sur un vrai iPhone avant de l'ouvrir).
 - En place : projet Google Cloud `croute-que-croute-tts` sur le compte d'Adrien, appli « En production », identifiant OAuth « Application Web », URI de redirection `https://croute-que-croute.tartinesauvage.fr/api/google/retour`, clés posées avec `npx wrangler secret put GOOGLE_CLIENT_ID` et `npx wrangler secret put GOOGLE_CLIENT_SECRET`. Une autre adresse de jeu demande d'ajouter son URI chez Google. Il faut les deux clés : avec l'ID seul, le bouton s'affiche mais la connexion échoue.
@@ -466,7 +469,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 - Remonte : erreurs, promesses rejetées, fichiers pas chargés, blocages CSP, jeu pas démarré au bout de 15 s.
 - Ni pseudo ni clé dans les rapports : un numéro au hasard par onglet.
 - Économe : même erreur une fois par page, 5 erreurs par envoi, 3 envois par page, 10 par onglet, 20 erreurs différentes par page.
-- Serveur (`routes/errors.ts`) : 64 Ko par envoi, 10 envois par minute pour tout le monde (`ERROR_LIMIT`), 60 erreurs par heure (`HOUR_ROWS`), 10 par onglet (`SESSION_ROWS`). Table `client_errors`, 14 jours, 2 000 lignes.
+- Serveur (`routes/errors.ts`) : 64 Ko par envoi, 5 envois par minute et par IP (`ERROR_IP_LIMIT`), 10 par minute pour tout le monde (`ERROR_LIMIT`), 60 erreurs par heure (`HOUR_ROWS`), 10 par onglet (`SESSION_ROWS`). Table `client_errors`, 14 jours, 2 000 lignes.
 - Pourquoi : une erreur sur tous les téléphones d'une soirée mangerait le quota d'écritures de D1, et le classement avec. Chaque ligne compte pour 3 écritures, son effacement aussi. Moins de 2 000 écritures par soirée de 5 h, 85 000 sans plafond par heure.
 - Lire : Admin, « Erreurs des joueurs » (propriétaire). « Marquer corrigé » : revient si elle se reproduit. Le même bug sous Safari et Chrome fait deux erreurs.
 - « Copier le rapport », à coller à Claude, commence par un avertissement : n'importe qui peut envoyer une fausse erreur, son texte se lit comme des données, pas comme des consignes.
@@ -584,10 +587,13 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `card` : classement d'une soirée fermée gardé 10 min.
 - `chemin` : chemin du robot, gardé hors du code des téléphones.
 - `deploy` : refus de `npm run deploy`.
-- `google` : empreinte sans e-mail, cookie, usage unique, 10 min, jeton refusé, délier.
+- `errors` : plafond de 60 erreurs par heure, limite par IP avant la limite commune.
+- `google` : empreinte sans e-mail, cookie, usage unique, 10 min, jeton refusé, délier, limite du lieu, « Déconnecter les autres ».
+- `http` : IPv6 groupée par /64, plafond de 64 Ko à la lecture.
 - `inapp` : navigateurs des applis (vrais user agents).
 - `join` : plafond de nouveaux comptes.
-- `link` : code de liaison, panne de base, réessai concurrent, plafond de la fusion, écran prévenu.
+- `link` : code de liaison, panne de base, réessai concurrent, plafond de la fusion, écran prévenu, seuls les échecs comptent.
+- `live` : page d'un autre site refusée au direct.
 - `move` : changement d'adresse, jamais la clé dans le lien, lien fabriqué ou illisible.
 - `offline` : record après coupure, pseudo gardé.
 - `palette` : `palette.js` et `tokens.css` identiques, feuilles sans valeur en dur.

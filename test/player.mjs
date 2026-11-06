@@ -449,6 +449,14 @@ check("rapport d'erreurs trop gros refusé", r.status === 413, r);
     check("direct : une même adresse garde 4 écrans au plus, un 5e est refusé tant qu'ils répondent, sans en chasser un", four.every((s) => s && s.readyState === 1) && !fifth && !!other, { four: four.map((s) => s && s.readyState), fifth: !!fifth, other: !!other });
     for (const s of [...four, fifth, other]) if (s) s.close();
   }
+  {
+    const foreign = await new Promise((ok) => {
+      const s = new WebSocket(BASE.replace("http", "ws") + "/api/live", { headers: { origin: "https://pirate.test" } });
+      s.onopen = () => (s.close(), ok(false));
+      s.onerror = () => ok(true);
+    });
+    check("direct : une page d'un autre site est refusée", foreign);
+  }
 
   r = await call("GET", "/api/ecran");
   const before = r.data;
