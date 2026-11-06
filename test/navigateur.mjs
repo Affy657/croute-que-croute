@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { chromium, devices, webkit } from "playwright";
+import { SETTLE_MS } from "../public/js/shared/banner.js";
 
 const BASE = process.argv[2] || "";
 if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(BASE)) {
@@ -901,6 +902,50 @@ try {
       await admin.close();
     }
   });
+  const back = (p) => p.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  for (const direct of [true, false]) {
+    await step(`écran géant ${direct ? "en direct" : "sans WebSocket, réseau coupé à la fin"} : « Soirée finie ! » sans confettis à zéro, « Bravo » et confettis sur un classement relu après les derniers scores`, async () => {
+      const other = await browser.newPage({ viewport: { width: 1280, height: 720 }, serviceWorkers: "block" });
+      watch(other);
+      let sockets = 0;
+      other.on("websocket", () => sockets++);
+      if (!direct) await other.routeWebSocket(/\/api\/live$/, (ws) => ws.close());
+      const row = (rank, pseudo, best) => ({ rank, id: pseudo, pseudo, best, at: 1, me: false });
+      let closesAt = Date.now() + 3600000, sure = closesAt, down = false;
+      await other.route((url) => url.pathname === "/api/ecran", (route) => {
+        if (down) return route.abort();
+        const now = Date.now(), late = now >= sure, stamp = late ? "2" : "1";
+        const head = { now, version: "dev", stamp, next: null, event: { name: "Soirée finale", opensAt: closesAt - 3600000, closesAt, finalAt: sure - SETTLE_MS, status: now < closesAt ? "open" : "closed" } };
+        if (new URL(route.request().url()).searchParams.get("v") === stamp) return route.fulfill({ json: { ...head, same: true } });
+        return route.fulfill({ json: { ...head, last: 1, count: 2, feed: [], top: late ? [row(1, "Max", 900), row(2, "Lou", 800)] : [row(1, "Lou", 800), row(2, "Max", 700)] } });
+      });
+      const party = () => other.evaluate(() => [document.getElementById("party").hasAttribute("width"), !!document.querySelector("#list li.cheer"), document.getElementById("list").classList.contains("over")]);
+      const banner = (text) => other.locator("#countdown", { hasText: text });
+      try {
+        await other.goto(BASE + "/ecran");
+        await other.waitForFunction(() => document.getElementById("title").textContent === "Soirée finale", null, { timeout: WAIT_MS });
+        for (let i = 0; i < 50 && direct && !sockets; i++) await wait(100);
+        await wait(500);
+        closesAt = Date.now() + 1500;
+        sure = closesAt + 5000;
+        await back(other);
+        await banner("Soirée finie !").waitFor({ timeout: WAIT_MS });
+        if ((await party()).some(Boolean)) throw new Error("fête avant les derniers scores");
+        if (!direct) {
+          down = true;
+          await other.locator("#offline").waitFor({ state: "visible", timeout: WAIT_MS });
+          await wait(Math.max(0, sure - Date.now()) + 2500);
+          if (!(await banner("Soirée finie !").count())) throw new Error("gagnant annoncé sans classement relu");
+          down = false;
+        }
+        await banner("Bravo Max !").waitFor({ timeout: WAIT_MS });
+        const after = await party();
+        if (!after.every(Boolean)) throw new Error("fête incomplète : " + after);
+      } finally {
+        await other.close();
+      }
+    });
+  }
   for (const path of ["/ecran", "/admin"]) {
     await step(`la page ${path} s'ouvre`, async () => {
       const other = await browser.newPage();
