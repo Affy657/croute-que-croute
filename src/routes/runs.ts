@@ -1,7 +1,7 @@
 import { json, fail, readJson, clientIp, outdated, updateRequired, tooFast, allowed } from "../http";
 import { cleanLook } from "../validate";
 import {
-  openEventNow, eventById, findProfile, entryBest, entryMark, generalRanking, generalCount, generalRank, eventRanking, eventCount, rankIn, rivalIn,
+  events, openEventNow, eventById, findProfile, entryBest, entryMark, generalRanking, generalCount, generalRank, eventRanking, eventCount, rankIn, rivalIn,
   promoteGeneral, promoteEvent, LATE_MS,
   type Profile,
 } from "../db";
@@ -51,9 +51,10 @@ async function standing(env: Env, me: Profile, eventId: number | null, mobile: M
   if (!me.banned && mobile.improved) promoteGeneral({ id: me.id, pseudo: me.pseudo, best: mobile.best });
   if (!me.banned && pc.improved) promoteGeneral({ id: me.id, pseudo: me.pseudo, best: pc.best }, "pc");
   if (!me.banned && eventId && eventImproved) promoteEvent(eventId, { id: me.id, pseudo: me.pseudo, best: eventBest });
+  const during = !!(await events(env)).open;
   const [general, pcList, eventList] = await Promise.all([
-    generalRanking(env, !!eventId),
-    generalRanking(env, !!eventId, "pc"),
+    generalRanking(env, during),
+    generalRanking(env, during, "pc"),
     eventId ? eventRanking(env, eventId) : Promise.resolve(null),
   ]);
   const [rank, count, pcRank, pcCount, players] = await Promise.all([

@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { database } from "./d1.mjs";
 
-const { board } = await import(new URL("../../src/routes/board.ts", import.meta.url).href);
+const { board, screen } = await import(new URL("../../src/routes/board.ts", import.meta.url).href);
 const { finishRun } = await import(new URL("../../src/routes/runs.ts", import.meta.url).href);
 const { eventRanking, forgetCaches } = await import(new URL("../../src/db.ts", import.meta.url).href);
 const { sha256 } = await import(new URL("../../src/security.ts", import.meta.url).href);
@@ -50,4 +50,42 @@ test("soirée de plus de 1 000 joueurs : liste coupée à 1 000, nombre de joueu
   const body = await done.json();
   assert.equal(body.eventRank, 1);
   assert.equal(body.eventCount >= 1001, true);
+});
+
+const showing = async (env, query = "") => (await screen({ req: new Request("http://local/api/ecran" + query), env })).json();
+
+function counting(env) {
+  const real = env.DB.prepare;
+  const seen = { counts: 0, tops: 0 };
+  env.DB.prepare = (sql) => {
+    if (sql.includes("COUNT(*)")) seen.counts++;
+    if (sql.includes("e.best DESC") && sql.includes("LIMIT ?2")) seen.tops++;
+    return real(sql);
+  };
+  return seen;
+}
+
+test("écran géant : le nombre de joueurs vient de la liste en mémoire, le top 10 est relu à chaque fois", async (t) => {
+  const env = setup(t);
+  for (const id of ["lou", "max"]) {
+    add(env, id);
+    enter(env, id, 500, NOW - 1000);
+  }
+  const seen = counting(env);
+  assert.equal((await showing(env)).count, 2);
+  assert.equal((await showing(env)).count, 2);
+  assert.equal(seen.counts, 0);
+  assert.equal(seen.tops, 2);
+});
+
+test("écran géant : nombre de joueurs relu après 10 s", async (t) => {
+  const env = setup(t);
+  add(env, "lou");
+  enter(env, "lou", 500, NOW - 1000);
+  assert.equal((await showing(env)).count, 1);
+  add(env, "max");
+  enter(env, "max", 400, NOW - 500);
+  assert.equal((await showing(env)).count, 1);
+  env.clock.now += 10001;
+  assert.equal((await showing(env)).count, 2);
 });

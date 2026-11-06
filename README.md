@@ -211,6 +211,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 ### Fiche joueur
 
 - Toucher une ligne ouvre la fiche (`profile.js`, `routes/card.ts`, 10 s en mémoire). Un joueur retiré n'en a pas.
+- Classement d'une soirée fermée depuis plus de 1 min : gardé 10 min en mémoire pour les fiches, il ne bouge plus. Un changement admin le vide comme le reste (`forgetCaches`).
 - Tenue, nombre de succès et objets sont sur le téléphone, envoyés dans `look` au début de chaque partie et 1,5 s après un changement.
 - Tenue non vérifiée, sans effet sur les classements. Le serveur n'accepte que des objets qui existent (`cleanLook`), et le dessin ignore tout nom inconnu (`own` dans `art/kit.js`) : une aura `constructor` figeait le jeu de ceux qui ouvraient la fiche.
 - La tenue suit le compte : chaque changement est daté à l'heure du serveur, le plus récent gagne (`lookUpdate`, en une requête SQL). Un appareil neuf prend la tenue du compte (`adoptLook`).
@@ -252,6 +253,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - « Nouveau n°1 » pendant 6 s, seulement pour un record plus récent que le dernier connu (`at`, `last`), pas pour un 1er retiré ou réintégré. Comparer à l'heure de lecture ratait un record enregistré pendant la lecture.
 - « Plein écran » empêche la veille. Après une mise en ligne, la page se recharge seule, sauf en plein écran : elle attend qu'on en sorte.
 - Direct : pendant une soirée, 1 min après ses derniers scores et dans les 24 h avant, WebSocket (`/api/live`) vers un Durable Object (`Live`, hibernation). À chaque record, joueur, pseudo, retrait ou soirée modifiée, il dit « change » et les écrans relisent `GET /api/ecran` (une fois par seconde au plus). Un record s'affiche en moins de 1,5 s.
+- Relecture complète : top 10 relu en base à chaque fois, nombre de joueurs pris dans le classement en mémoire, à 10 s près.
 - WebSocket ouverte : relecture complète par minute, ping toutes les 25 s (réponse sans réveil), secours après 10 s sans réponse.
 - Secours : nouvel essai après 1, 2, 5, 10 puis 30 s, demande toutes les 2 s avec `?v=` (le serveur lit 2 lignes), relecture complète toutes les 15 s car le repère ne bouge pas pour un joueur retiré ou renommé.
 - Relecture 11 s après chaque annonce : une copie du serveur garde 10 s l'ancien état.
@@ -573,8 +575,9 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `api` : limite d'attente, reprise par cookie refaite.
 - `attacks` : mur mis de côté, chaque garniture sur un couteau.
 - `banner` : bandeau des soirées, « Bravo », direct ouvert 1 min.
-- `board` : `GET /api/board` sur une base en mémoire, soirée de plus de 1 000 joueurs.
+- `board` : `GET /api/board` et `/api/ecran` sur une base en mémoire, soirée de plus de 1 000 joueurs, nombre de joueurs en mémoire.
 - `cache` : cache des classements, lecture unique, périmée écartée, abandon à 5 s.
+- `card` : classement d'une soirée fermée gardé 10 min.
 - `chemin` : chemin du robot, gardé hors du code des téléphones.
 - `deploy` : refus de `npm run deploy`.
 - `google` : empreinte sans e-mail, cookie, usage unique, 10 min, jeton refusé, délier.
@@ -589,7 +592,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `resume` : reprise ratée, pas de choix du pseudo.
 - `robustesse` : netteté 12 h, hauteur invalide, cache malgré un fichier raté.
 - `routes` : route admin sans `access` refusée.
-- `runs` : même score à la même milliseconde, une partie. Limites du départ.
+- `runs` : même score à la même milliseconde, une partie. Limites du départ. Généraux gardés 60 s après une partie PC en soirée.
 - `shell` : `SHELL` de `sw.js`, `modulepreload`, pas d'`Object.hasOwn`, éléments de `screens.js`.
 - `slots` : écran qui répond jamais chassé.
 - `sprites` : chaque objet et planète se dessine, nom inventé sans effet.

@@ -104,12 +104,16 @@ async function screenTop(env: Env, shown: EventRow | null, during: boolean) {
     const general = await generalRanking(env, during);
     return { list: general.slice(0, SCREEN_TOP), count: await generalCount(env, general) };
   }
-  const from = "FROM entries e JOIN profiles p ON p.id = e.player_id WHERE e.event_id = ?1 AND e.best > 0 AND p.banned = 0";
-  const [rows, n] = await env.DB.batch([
-    env.DB.prepare(`SELECT p.id, p.pseudo, e.best, e.best_at AS at ${from} ORDER BY e.best DESC, e.best_at ASC LIMIT ?2`).bind(shown.id, SCREEN_TOP),
-    env.DB.prepare(`SELECT COUNT(*) AS n ${from}`).bind(shown.id),
+  const [rows, ranking] = await Promise.all([
+    env.DB.prepare(
+      `SELECT p.id, p.pseudo, e.best, e.best_at AS at FROM entries e JOIN profiles p ON p.id = e.player_id
+       WHERE e.event_id = ?1 AND e.best > 0 AND p.banned = 0 ORDER BY e.best DESC, e.best_at ASC LIMIT ?2`,
+    )
+      .bind(shown.id, SCREEN_TOP)
+      .all<Ranked>(),
+    eventRanking(env, shown.id),
   ]);
-  return { list: rows.results as Ranked[], count: (n.results[0] as { n: number }).n };
+  return { list: rows.results, count: await eventCount(env, shown.id, ranking) };
 }
 
 export async function screen({ req, env }: Ctx) {

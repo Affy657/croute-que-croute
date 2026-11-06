@@ -7,10 +7,12 @@ const { sha256 } = await import(new URL("../../src/security.ts", import.meta.url
 const { forgetCaches } = await import(new URL("../../src/db.ts", import.meta.url).href);
 
 const NOW = 1_800_000_000_000, TOKEN = "c".repeat(48), RUN = "partie", IP = "203.0.113.7";
+const clock = { now: NOW };
 
 async function setup(t) {
   forgetCaches();
-  t.mock.method(Date, "now", () => NOW);
+  clock.now = NOW;
+  t.mock.method(Date, "now", () => clock.now);
   const DB = database();
   DB.db.prepare("INSERT INTO profiles (id, pseudo, pseudo_key, token, created_at) VALUES ('lou', 'Lou', 'lou', 'jeton', 0)").run();
   DB.db.prepare("INSERT INTO sessions (token_hash, player_id, created_at) VALUES (?, 'lou', 0)").run(await sha256(TOKEN));
@@ -19,10 +21,10 @@ async function setup(t) {
   return { DB, APP_VERSION: "dev", APP_PREVIOUS: "", LIVE: { idFromName: () => "ecrans", get: () => ({ tell: async () => {} }) } };
 }
 
-const send = (env, score) => finishRun({
-  req: new Request("http://local/api/runs/" + RUN, { method: "POST", headers: { authorization: "Bearer " + TOKEN, "content-type": "application/json" }, body: JSON.stringify({ score }) }),
+const send = (env, score, extra = {}, run = RUN) => finishRun({
+  req: new Request("http://local/api/runs/" + run, { method: "POST", headers: { authorization: "Bearer " + TOKEN, "content-type": "application/json" }, body: JSON.stringify({ score, ...extra }) }),
   env,
-  params: [RUN],
+  params: [run],
 });
 
 const count = (env) => env.DB.db.prepare("SELECT p.run_count AS runs, p.played, e.run_count AS entered FROM profiles p JOIN entries e ON e.player_id = p.id").get();
@@ -85,4 +87,20 @@ test("score : un envoi normal compte la partie, le renvoi ne change rien", async
   assert.equal((await send(env, 110)).status, 200);
   assert.deepEqual({ ...count(env) }, { runs: 1, played: 110, entered: 1 });
   assert.equal(env.DB.db.prepare("SELECT finished_at FROM runs").get().finished_at, NOW);
+});
+
+test("partie PC pendant une soirée : les généraux gardent leurs 60 s en mémoire", async (t) => {
+  const env = await setup(t);
+  env.DB.db.prepare("INSERT INTO runs (id, player_id, event_id, started_at) VALUES ('deux', 'lou', 1, ?)").run(NOW - 60000);
+  const real = env.DB.prepare;
+  let reads = 0;
+  env.DB.prepare = (sql) => {
+    if (sql.includes("best > 0 ORDER BY")) reads++;
+    return real(sql);
+  };
+  assert.equal((await send(env, 100, { device: "pc" })).status, 200);
+  const first = reads;
+  clock.now += 30000;
+  assert.equal((await send(env, 90, { device: "pc" }, "deux")).status, 200);
+  assert.equal(reads, first);
 });

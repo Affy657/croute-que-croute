@@ -4,6 +4,7 @@ import type { Ctx } from "../router";
 
 export const SIX_SEVEN_CS = 6700;
 const CARD_MS = 10000, CARD_RECORDS = 10, EXPRESS_CS = 200, EVENT_TOP = 10, WIN_MIN = 10;
+const SETTLED_MS = 60 * 1000, SETTLED_KEEP_MS = 10 * 60 * 1000;
 
 interface Totals {
   played: number;
@@ -34,6 +35,7 @@ interface EntryRow {
   name: string;
   best: number;
   runs: number;
+  closes_at: number;
 }
 
 async function fromRuns(env: Env, p: CardRow): Promise<CardRow> {
@@ -86,7 +88,7 @@ async function loadCard(env: Env, id: string) {
     p.pc_best > 0 ? generalRank(env, pc, p.id, p.pc_best, p.pc_best_at, "pc") : null,
     generalCount(env, pc, false, "pc"),
     env.DB.prepare(
-      "SELECT e.event_id AS id, ev.name, e.best, e.run_count AS runs FROM entries e JOIN events ev ON ev.id = e.event_id WHERE e.player_id = ? ORDER BY ev.opens_at DESC",
+      "SELECT e.event_id AS id, ev.name, e.best, e.run_count AS runs, ev.closes_at FROM entries e JOIN events ev ON ev.id = e.event_id WHERE e.player_id = ? ORDER BY ev.opens_at DESC",
     )
       .bind(p.id)
       .all<EntryRow>(),
@@ -96,7 +98,7 @@ async function loadCard(env: Env, id: string) {
       entries.results
         .filter((e) => e.best > 0)
         .map(async (e) => {
-          const list = await eventRanking(env, e.id);
+          const list = await eventRanking(env, e.id, Date.now() - e.closes_at > SETTLED_MS ? SETTLED_KEEP_MS : undefined);
           const place = rankIn(list, p.id);
           return { name: e.name, place: place ?? list.filter((r) => r.best >= e.best).length + 1, players: list.length + (place ? 0 : 1) };
         }),

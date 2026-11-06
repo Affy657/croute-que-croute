@@ -152,8 +152,8 @@ export async function generalRank(env: Env, list: Ranked[], playerId: string, be
   return n!.n + 1;
 }
 
-export const eventRanking = (env: Env, eventId: number) =>
-  cached("event:" + eventId, CACHE_MS, async () =>
+export const eventRanking = (env: Env, eventId: number, maxAge = CACHE_MS) =>
+  cached("event:" + eventId, maxAge, async () =>
     (await env.DB.prepare(
       `SELECT e.player_id AS id, p.pseudo, e.best ${EVENT_ROWS}
        ORDER BY e.best DESC, e.best_at ASC LIMIT ?`,
