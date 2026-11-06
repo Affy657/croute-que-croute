@@ -337,7 +337,7 @@ Le stockage d'un navigateur et le cookie `cv_cle` sont liés à l'adresse. Pour 
 - Une appli installée reste sur l'ancienne adresse et continue de marcher : elle ne peut pas changer d'adresse. L'accueil propose « Copier le lien » vers la nouvelle, avec un code renouvelé toutes les 9 min, puis il faut réinstaller.
 - `/ecran` et `/admin` ne suivent pas : les ouvrir sur la nouvelle adresse. Admin : `cle-admin.txt` la première fois.
 - Avant de partir, l'ancienne adresse teste la nouvelle (`reachable`, 4 s). Injoignable : le joueur reste et joue, nouvel essai au classement suivant. Un DNS en retard, comme une box ou un fournisseur, peut ignorer un sous-domaine jusqu'à 24 h après un changement de serveurs de noms.
-- `npm run deploy` et `npm run verif` passent par l'ancienne adresse : même Worker, et pas de dépendance à ce retard.
+- `npm run deploy` et `npm run verif` passent par l'ancienne adresse : même Worker, et pas de dépendance à ce retard. `npm run verif` regarde aussi `/api/board` sur la nouvelle, en simple avertissement.
 
 ### Connexion avec Google
 
@@ -544,7 +544,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 | `npm run db:remote` | Migrations en ligne, avant `npm run deploy` (`scripts/migrer.mjs`). Refuse si : git pas à jour, hors de `master`, pas envoyé, prod sans réponse, soirée ouverte, 15 s de marge, ou soirée qui ouvre dans moins de 2 h. `-- --pendant-soiree` en urgence |
 | `npm run deploy` | Mettre en ligne, puis `npm run verif`. Si la vérification échoue, la version reste en ligne et la commande sort en échec. Refuse si : git pas à jour, hors de `master`, pas envoyé, fichiers hors git de `public/` absents ou en trop (`wrangler` envoie tout `public/`, attendus : `theme.m4a` et les 5 bruitages), `node_modules` en retard (arrêter le serveur, `npm ci`), types ou tests en échec, Tests, Safari ou Équité pas verts, migration manquante, prod anormale, version pas montée, soirée ouverte, 15 s de marge, ou soirée qui ouvre dans moins de 2 h (`scripts/garde.mjs`) |
 | Options de `deploy` | `-- --pendant-soiree` en urgence, `-- --sans-github` si GitHub ne répond pas. Un commit README ou images garde le résultat d'avant. Un passage d'Équité reste valable tant qu'aucun fichier de ses `paths` n'a changé |
-| `npm run verif` | Prod en lecture seule. `npm run verif -- 0.46.1+373facb` exige cette version |
+| `npm run verif` | Prod en lecture seule : versions, pages, 6 sons, connexion en direct (ping et pong), faux envoi de partie qui doit répondre 401. L'adresse `.fr` ne donne qu'un avertissement, qui ne compte pas comme échec. `npm run verif -- 0.46.1+373facb` exige cette version |
 | `npm run icons`, `npm run qr` | Regénérer icônes et QR codes |
 
 ## Tests
@@ -594,6 +594,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `sync` : tenue entre appareils.
 - `validate` : pseudos, tenue, progression, fusion.
 - `variante` : la copie d'`equilibrage:variante` démarre.
+- `verif` : sondes de `npm run verif` (`scripts/sondes.mjs`), pong et délai du direct, faux envoi, avertissement `.fr`, rien d'écrit en ligne.
 
 ### GitHub
 
