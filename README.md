@@ -370,7 +370,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 
 - `sw.js` : renouvelé à chaque version, rempli fichier par fichier avec un 2e essai. Un seul fichier raté faisait tout perdre.
 - Fichier sans réponse en 3 s (`NET_MS`, wifi saturé) : pris dans le cache, remplacé dès que le réseau arrive.
-- Plantage au démarrage (fichiers de deux versions) : `boot.js` recharge une fois, toutes les 15 s au plus.
+- Plantage au démarrage (fichiers de deux versions, par exemple l'ancienne page du cache avec du code neuf sur réseau lent) : `boot.js` recharge. Si ça replante dans la minute, il vide le cache, retire le service worker et redemande chaque fichier au serveur avant de recharger, en ligne seulement : sur iPhone, un simple rechargement garde le module déjà en mémoire. Troisième échec : il s'arrête. Une seule recharge laissait le joueur bloqué sur l'écran.
 - Une erreur dans une image n'arrête pas l'animation : l'image suivante est demandée avant de dessiner.
 - L'écran géant installe lui-même le cache, pour un PC qui n'ouvre que `/ecran`. Une page autre que le jeu ne retombe jamais sur l'accueil du jeu.
 - L'admin passe toujours par le réseau : l'ancien script sur la nouvelle page la laissait vide.
@@ -450,7 +450,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 | 0.48 | 02/11 | pluies espacées après une double pluie ou un hachoir | |
 | 0.49 | 03/11 | écran géant en direct, fin de soirée stricte, mur mis de côté | 8 |
 | 1.0 | 06/11 | sortie de bêta, adresse tartinesauvage.fr, comptes qui suivent seuls | 1 |
-| 1.1 | 06/11 | succès secret Le jeu de la tartine | |
+| 1.1 | 06/11 | succès secret Le jeu de la tartine | 1 |
 
 ## Erreurs des joueurs
 
@@ -639,10 +639,6 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 ### Recherche de bugs du 03/11/2026 : pas corrigé
 
 - Un appareil sorti du compte (« Déconnecter les autres ») garde les succès, garnitures et la tenue, et les donne au pseudo qu'il crée ensuite. Pour corriger sans risque, le serveur doit dire à l'appareil qu'il a été déconnecté (une petite migration) : vider la progression dès qu'une clé est refusée ferait perdre leurs skins à tous si les comptes étaient effacés un jour.
-
-### Vu à la mise en ligne de la 0.49.8 : pas corrigé
-
-- Juste après un déploiement, une page chargée peut recevoir un mélange d'anciens et de nouveaux fichiers (1 à 2 min au plus, cause probable : Cloudflare qui propage les fichiers). Vu une fois sur ce PC : `over.js` en 404, `api.js` encore ancien, page bloquée sur l'écran de chargement malgré le rechargement automatique de `boot.js`, puis tout est rentré dans l'ordre au rechargement suivant. `npm run verif` ne le voit pas. Piste : un second rechargement automatique au bout de quelques secondes quand le jeu n'a pas démarré.
 
 ### Analyse du solveur du 04/11/2026 : pas fait
 
