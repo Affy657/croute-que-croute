@@ -146,3 +146,14 @@ test("double envoi de la même partie : le perdant retrouve la partie finie, san
   assert.equal(r.status, 200);
   assert.deepEqual({ ...count(env) }, { runs: 1, played: 110, entered: 1 });
 });
+
+for (const [ago, counted, name] of [[60000, false, "1 min après la fin : hors soirée"], [16000, false, "16 s après la fin : hors soirée"], [5000, true, "5 s après la fin : compte, c'est la marge réseau"]]) {
+  test(`score reçu ${name}`, async (t) => {
+    const env = await setup(t);
+    env.DB.db.prepare("UPDATE events SET closes_at = ?").run(NOW - ago);
+    const body = await (await send(env, 110)).json();
+    assert.equal(body.eventBest, counted ? 110 : null);
+    assert.equal(body.eventImproved, counted);
+    assert.equal(body.best, 110);
+  });
+}

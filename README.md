@@ -242,7 +242,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Premier accès avec `cle-admin.txt` : crée un compte propriétaire et reste la clé de secours.
 - Le propriétaire invite : lien à usage unique valable 48 h. Dans l'appli installée, le coller dans « Lien d'invitation reçu ».
 - Rôles : propriétaire (soirées, joueurs, équipe, erreurs) et admin (soirées, joueurs). Chaque téléphone peut être retiré, sauf le dernier propriétaire, avec ses invitations pas utilisées. Connexion inutilisée 30 jours : expirée.
-- Heure de fin déjà passée : confirmation, le classement se ferme tout de suite. Une soirée fermée ne se modifie plus.
+- Heure de fin déjà passée : confirmation, le classement se ferme tout de suite. Le serveur enregistre l'heure du clic, jamais une heure passée : le formulaire est à la minute, et 59 s d'écart annulaient la marge de 15 s. Une soirée fermée ne se modifie plus.
 - Réunir deux comptes (propriétaire, définitif) : pseudo à garder, pseudo à réunir, confirmation avec les deux comptes. Même fusion que côté joueur (`mergeInto`), sans plafond de parties. Refusé si l'un est retiré. `POST /api/admin/merge` sans `confirm: true` renvoie seulement l'aperçu.
 - Joueurs actifs : point jaune pour une partie finie ces 10 dernières minutes (`ACTIVE_MS`), rien d'écrit en plus.
 - Nouveaux pseudos des 15 dernières minutes listés même sans partie et sans score, pour retirer un pseudo déplacé affiché sur l'écran géant.
@@ -574,6 +574,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 `test/unit/*.test.mjs`, `node --test`, sans dépendance. `env.mjs` remplace le navigateur, `d1.mjs` donne une base SQLite en mémoire avec toutes les migrations.
 
 - `achievements` : succès au bon moment, rien de perdu entre onglets, annonce unique.
+- `admin` : fin déjà passée ramenée à maintenant, soirée fermée intouchable.
 - `api` : limite d'attente, reprise par cookie refaite.
 - `attacks` : mur mis de côté, chaque garniture sur un couteau.
 - `banner` : bandeau des soirées, « Bravo », direct ouvert 1 min.

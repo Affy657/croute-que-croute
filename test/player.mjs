@@ -479,24 +479,21 @@ check("rapport d'erreurs trop gros refusé", r.status === 413, r);
 
 {
   const finName = "Fin" + hex(5), tokF = await joinAs(finName), late = await startRun(tokF);
-  await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: Date.now() - 3 * 3600 * 1000, closesAt: Date.now() - 6 * 60 * 1000 } });
+  const tokM = await joinAs("Marge" + hex(5)), inTime = await startRun(tokM), closing = Date.now();
+  await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: closing - 3 * 3600 * 1000, closesAt: closing - 40 * 1000 } });
+  r = await call("GET", "/api/admin/players", { key: KEY });
+  check("fin déjà passée (formulaire à la minute) : ramenée à maintenant", r.data.event.status === "closed" && r.data.event.closesAt >= closing, r.data.event);
+  r = await call("POST", `/api/runs/${inTime}`, { token: tokM, body: { score: 20 } });
+  check("score arrivé juste après la fin (réseau) : compte pour la soirée", r.status === 200 && r.data.eventBest === 20 && r.data.eventImproved, r.data);
+  r = await call("PATCH", "/api/admin/events/current", { key: KEY, body: { name: "Trop tard" } });
+  check("modifier une soirée fermée = 404", r.status === 404, r);
+  await wait(16000);
   r = await call("POST", `/api/runs/${late}`, { token: tokF, body: { score: 40 } });
-  check("partie finie 6 min après la fin de la soirée : hors soirée", r.status === 200 && r.data.best === 40 && r.data.eventBest === null && !r.data.eventImproved, r.data);
+  check("partie finie après les 15 s de marge : hors soirée", r.status === 200 && r.data.best === 40 && r.data.eventBest === null && !r.data.eventImproved, r.data);
   r = await call("GET", "/api/admin/players", { key: KEY });
   check("admin, onglet Soirée : nouveau pseudo avec un record hors soirée listé sans score (ni rang, ni meilleur score de la soirée)", r.status === 200 && r.data.players.some((p) => p.pseudo === finName && p.best === 0), r.data.players.filter((p) => p.pseudo === finName));
-  r = await call("POST", "/api/admin/events", { key: KEY, body: { name: "Soirée rattrapage", opensAt: Date.now() - 1000, closesAt: Date.now() + 3600 * 1000 } });
-  const tooLate = await startRun(tokF);
-  await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: Date.now() - 3600 * 1000, closesAt: Date.now() - 60 * 1000 } });
-  r = await call("POST", `/api/runs/${tooLate}`, { token: tokF, body: { score: 30 } });
-  check("partie finie 1 min après la fin : hors soirée, la fin est la fin", r.status === 200 && r.data.eventBest === null && !r.data.eventImproved, r.data);
-  r = await call("POST", "/api/admin/events", { key: KEY, body: { name: "Soirée marge", opensAt: Date.now() - 1000, closesAt: Date.now() + 3600 * 1000 } });
-  const inTime = await startRun(tokF);
-  await call("PATCH", "/api/admin/events/current", { key: KEY, body: { opensAt: Date.now() - 3600 * 1000, closesAt: Date.now() - 5000 } });
-  r = await call("POST", `/api/runs/${inTime}`, { token: tokF, body: { score: 20 } });
-  check("score arrivé 5 s après la fin (réseau) : compte pour la soirée", r.status === 200 && r.data.eventBest === 20 && r.data.eventImproved, r.data);
-  await wait(11000);
-  r = await call("POST", `/api/runs/${inTime}`, { token: tokF, body: { score: 20 } });
-  check("même score renvoyé 16 s après la fin (réponse perdue) : toujours compté pour la soirée", r.status === 200 && r.data.eventBest === 20 && r.data.eventImproved, r.data);
+  r = await call("POST", `/api/runs/${inTime}`, { token: tokM, body: { score: 20 } });
+  check("même score renvoyé après la marge (réponse perdue) : toujours compté pour la soirée", r.status === 200 && r.data.eventBest === 20 && r.data.eventImproved, r.data);
 }
 
 {
