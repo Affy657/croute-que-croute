@@ -36,9 +36,9 @@ Prod : https://croute-que-croute.tartinesauvage.fr
 Seulement sur accord explicite, à chaque fois.
 
 1. Monter la version dans `package.json` et `package-lock.json` (2 entrées), puis ajouter sa ligne dans la section Versions du README. 2e chiffre : nouveauté visible ou comportement d'attaque. 3e chiffre : le reste.
-2. Vérifier les fichiers absents de git : 5 fichiers dans `public/sfx` et `public/music/theme.m4a`. Sans eux, le jeu part en ligne sans son. Sauvegarde des bruitages dans `sauvegardes/sfx/`.
+2. Vérifier les fichiers absents de git : 5 fichiers dans `public/sfx` et `public/music/theme.m4a`. Sans eux, le jeu part en ligne sans son. Sauvegarde des bruitages dans `sauvegardes/sfx/`. `npm run deploy` refuse s'il en manque ou s'il y en a d'autres.
 3. Pousser, puis lancer `gh workflow run tests.yml --ref master`, `gh workflow run safari.yml --ref master` et `gh workflow run equite.yml --ref master` : le garde-fou veut Tests, Safari et Équité verts.
-4. `npm run db:remote`, puis `npm run deploy`.
+4. `npm run db:remote`, puis `npm run deploy`. Les deux refusent moins de 2 h avant l'ouverture d'une soirée et pendant celle-ci : `-- --pendant-soiree` en urgence seulement.
 
 ## Fichiers à protéger
 
