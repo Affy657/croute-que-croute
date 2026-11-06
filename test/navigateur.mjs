@@ -946,6 +946,46 @@ try {
       }
     });
   }
+  const playersRead = (url) => url.pathname === "/api/admin/players";
+  const signIn = async (p) => {
+    await p.goto(BASE + "/admin");
+    await p.fill("#loginName", "Navigateur");
+    await p.fill("#loginKey", KEY);
+    await p.locator("#loginForm button").first().click();
+    await p.locator("#app").waitFor({ state: "visible", timeout: WAIT_MS });
+    await p.waitForLoadState("networkidle");
+  };
+  await step("admin : relecture toutes les 30 s, tout de suite au retour sur l'onglet, nouvel essai 10 s après un démarrage raté", async () => {
+    const other = await browser.newPage();
+    watch(other);
+    await other.clock.install();
+    let reads = 0;
+    other.on("request", (r) => {
+      if (playersRead(new URL(r.url()))) reads++;
+    });
+    try {
+      await signIn(other);
+      reads = 0;
+      for (let i = 0; i < 9; i++) {
+        await other.clock.runFor(10000);
+        await wait(200);
+      }
+      if (reads < 2 || reads > 4) throw new Error(reads + " relecture(s) en 90 s");
+      reads = 0;
+      await back(other);
+      await wait(500);
+      if (reads !== 1) throw new Error(reads + " relecture(s) au retour sur l'onglet");
+      const who = (url) => url.pathname === "/api/admin/me";
+      await other.route(who, (route) => route.abort());
+      await other.reload();
+      await other.locator("#playersMsg", { hasText: "réessaie" }).waitFor({ timeout: WAIT_MS });
+      await other.unroute(who);
+      await other.clock.runFor(11000);
+      await other.locator("#mergeCard").waitFor({ state: "visible", timeout: 3000 });
+    } finally {
+      await other.close();
+    }
+  });
   for (const path of ["/ecran", "/admin"]) {
     await step(`la page ${path} s'ouvre`, async () => {
       const other = await browser.newPage();

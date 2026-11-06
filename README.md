@@ -244,6 +244,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Réunir deux comptes (propriétaire, définitif) : pseudo à garder, pseudo à réunir, confirmation avec les deux comptes. Même fusion que côté joueur (`mergeInto`). Refusé si l'un est retiré. `POST /api/admin/merge` sans `confirm: true` renvoie seulement l'aperçu.
 - Joueurs actifs : point jaune pour une partie finie ces 10 dernières minutes (`ACTIVE_MS`), rien d'écrit en plus.
 - Nouveaux pseudos des 15 dernières minutes listés même sans partie et sans score, pour retirer un pseudo déplacé affiché sur l'écran géant.
+- Relecture toutes les 30 s, jamais onglet caché : relire toute la soirée pèse sur le quota de lectures. Tout de suite après une action et au retour sur l'onglet. Démarrage raté : nouvel essai après 10 s.
 
 ## Écran géant
 

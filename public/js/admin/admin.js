@@ -5,7 +5,7 @@ import { timeout } from "../shared/timeout.js";
 
 /** @param {string} id */
 const $ = (id) => document.getElementById(id);
-const CALL_MS = 10000, REFRESH_MS = 10000, ERRORS_MS = 60000, FRESH_MS = 3600 * 1000, COPIED_MS = 2000;
+const CALL_MS = 10000, REFRESH_MS = 30000, RETRY_MS = 10000, ERRORS_MS = 60000, FRESH_MS = 3600 * 1000, COPIED_MS = 2000;
 const store = {
   get: () => storage.get(KEYS.adminToken),
   set: /** @param {string | null} v */ (v) => storage.set(KEYS.adminToken, v || null)
@@ -425,7 +425,7 @@ async function boot() {
     show("app");
     say($("playersMsg"), /** @type {Error} */ (e).message, true);
     clearTimeout(retry);
-    retry = setTimeout(boot, REFRESH_MS);
+    retry = setTimeout(boot, RETRY_MS);
     return;
   }
   if (invited) {
