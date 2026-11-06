@@ -651,7 +651,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 
 ## Bon à savoir
 
-- Hors git, à garder de côté : `cle-admin.txt`, `.dev.vars`, `invitation-*.txt`, `sauvegardes/`, la musique, les bruitages, `ecoute-sons/` (`node ecoute-sons/serve.mjs`).
+- Hors git, à garder de côté : `cle-admin.txt`, `.dev.vars`, `invitation-*.txt`, `sauvegardes/`, la musique, les bruitages, `ecoute-sons/` (`node ecoute-sons/serve.mjs`). `.gitignore` écarte aussi `.env*`, `.dev.vars*`, tout `*.sql` hors de `migrations/` et tout `public/sfx/` et `public/music/` sauf `.gitkeep`.
 - Sauvegarde : `npx wrangler d1 export croute-que-croute --remote --output sauvegardes/<nom>.sql`. Celles d'avant le 29/10/2026 contiennent des jetons en clair : à garder pour soi.
 - Time Travel, 7 jours, gratuit : `npx wrangler d1 time-travel restore croute-que-croute --timestamp=<heure unix>`. Écrase la base en ligne : sauvegarder d'abord.
 - Revenir à la version d'avant : `npx wrangler versions list`, puis `npx wrangler rollback <id> -m "<raison>"`. Pas encore essayé : le faire une fois hors soirée.

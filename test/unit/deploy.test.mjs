@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { execSync, spawnSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { posix } from "node:path";
 import { blocked, CHECKS, checkFailed, drift, gitProblem, ignored, ignoredPaths, newer, offGitProblem, OFF_GIT, stillValid, URGENT, watchedPaths } from "../../scripts/garde.mjs";
@@ -187,6 +188,17 @@ test("mise en ligne refusée si un fichier ignoré par git serait servi, par exe
   const why = offGitProblem([...SOUNDS, "public/cle-admin.txt"].join("\n"));
   assert.match(why, /public\/cle-admin\.txt/);
   assert.doesNotMatch(why, /theme\.m4a/);
+});
+
+const hidden = (name) => spawnSync("git", ["check-ignore", "-q", "--no-index", name]).status === 0;
+
+test("git ignore les clés, les exports de base et tout public/sfx et public/music", () => {
+  for (const name of [".env", ".env.local", ".dev.vars", ".dev.vars.production", "copie.sql", "scripts/copie.sql", "public/sfx/nouveau.wav", "public/music/morceau.flac"]) assert.ok(hidden(name), name);
+});
+
+test("git garde les migrations et les .gitkeep, et aucun fichier suivi n'est ignoré", () => {
+  for (const name of ["migrations/0016_suite.sql", "public/music/.gitkeep", "public/sfx/.gitkeep"]) assert.ok(!hidden(name), name);
+  assert.equal(execSync("git ls-files -ci --exclude-standard").toString(), "");
 });
 
 test("npm run deploy vérifie node_modules, Tests et Safari avant de mettre en ligne, et Safari ne tourne plus après", () => {
