@@ -4,7 +4,6 @@ permissions:
   contents: read
 
 on:
-  workflow_dispatch:
   push:
     branches: [master]
     paths-ignore: ["README.md", "affiches/**", "maquettes/**", "qr/**", "public/music/**", "public/sfx/**", "public/icons/**"]
