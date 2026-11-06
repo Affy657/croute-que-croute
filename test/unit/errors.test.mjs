@@ -65,3 +65,17 @@ test("erreurs : une IP trop bavarde est freinée sans entamer la limite de tout 
   assert.deepEqual(env.ERROR_LIMIT.keys, []);
   assert.equal(rows(env), 0);
 });
+
+test("rapport trop gros sans content-length : refusé pendant la lecture, rien de gardé", async (t) => {
+  const env = setup(t);
+  const size = 70 * 1024, body = new ReadableStream({
+    start(c) {
+      c.enqueue(new TextEncoder().encode("x".repeat(size)));
+      c.close();
+    },
+  });
+  const req = new Request("http://local/api/errors", { method: "POST", headers: { "cf-connecting-ip": IP }, body, duplex: "half" });
+  const res = await collect({ req, env, params: [] });
+  assert.equal(res.status, 413);
+  assert.equal(rows(env), 0);
+});

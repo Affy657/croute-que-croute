@@ -70,4 +70,4 @@ export function screenBanner(b, now) {
 }
 
 /** @param {Ranked | undefined} first @param {Shown} seen */
-export const newFirst = (first, seen) => !!first && !!seen.first && first.pseudo !== seen.first.pseudo && first.best > seen.first.best && !(first.at <= seen.last);
+export const newFirst = (first, seen) => !!first && !!seen.first && first.pseudo !== seen.first.pseudo && first.best > seen.first.best && !(first.at > 0 && first.at <= seen.last);

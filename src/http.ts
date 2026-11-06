@@ -8,7 +8,7 @@ export const fail = (status: number, error: string) => json({ error }, status);
 
 const BODY_MAX = 64 * 1024;
 
-async function cappedText(req: Request) {
+export async function cappedText(req: Request) {
   if (Number(req.headers.get("content-length")) > BODY_MAX) throw new Error("Corps trop gros.");
   const reader = req.body?.getReader();
   const decoder = new TextDecoder();

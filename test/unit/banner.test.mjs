@@ -128,6 +128,7 @@ test("écran : « Nouveau n°1 » seulement pour un record plus récent que le d
 
 test("écran : classement sans `at`, « Nouveau n°1 » ne plante pas et reste fêté", () => {
   assert.equal(newFirst({ pseudo: "Max", best: 600 }, { first: { pseudo: "Lou", best: 500 }, last: 200 }), true);
+  assert.equal(newFirst({ pseudo: "Max", best: 600, at: null }, { first: { pseudo: "Lou", best: 500 }, last: 200 }), true);
 });
 
 test("écran : direct pendant la soirée et jusqu'à 1 min après les derniers scores, ou dans les 24 h avant", () => {
