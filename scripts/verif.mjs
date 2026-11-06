@@ -1,4 +1,7 @@
+import { brokenOf, domainProblem, fakeRun, pingLive, socketUrl, SOUNDS, verdict } from "./sondes.mjs";
+
 const PROD = "https://croute-que-croute.tartine-sauvage.workers.dev";
+const DOMAIN = "https://croute-que-croute.tartinesauvage.fr";
 const FULL = /^\d+\.\d+\.\d+\+[0-9a-f]+$/;
 const PAGES = ["/", "/ecran", "/admin", "/js/ecran/ecran.js", "/js/admin/admin.js", "/admin.css", "/ecran.css"];
 const TRIES = 10, GAP_MS = 3000;
@@ -11,8 +14,9 @@ if (wanted && !FULL.test(wanted)) {
 
 const results = [];
 const check = (name, ok, detail = "") => results.push(`${ok ? "OK  " : "FAIL"} ${name}${ok || !detail ? "" : " -> " + detail}`);
+const warn = (name, why) => results.push(why ? `AVERT ${name} -> ${why}` : `OK   ${name}`);
 const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
-const get = (path) => fetch(`${PROD}${path}${path.includes("?") ? "&" : "?"}verif=${Date.now()}`, { cache: "no-store", redirect: "manual" });
+const get = (path, method = "GET") => fetch(`${PROD}${path}${path.includes("?") ? "&" : "?"}verif=${Date.now()}`, { method, cache: "no-store", redirect: "manual" });
 
 async function versions() {
   const [file, board] = await Promise.all([
@@ -41,10 +45,22 @@ check("cache hors ligne (sw.js) lisible", shell.length > 30, `${shell.length} fi
 
 const pages = [...new Set([...shell, ...PAGES, "/api/feed", "/api/ecran"])];
 const answers = await Promise.all(pages.map((p) => get(p).then((r) => r.status, () => 0)));
-const broken = pages.flatMap((p, i) => (answers[i] === 200 ? [] : [`${p} (${answers[i]})`]));
+const broken = brokenOf(pages, answers);
 check(`les ${pages.length} pages et fichiers répondent`, !broken.length, broken.join(", "));
 
+const sounds = await Promise.all(SOUNDS.map((p) => get(p, "HEAD").then((r) => r.status, () => 0)));
+const mute = brokenOf(SOUNDS, sounds);
+check(`les ${SOUNDS.length} sons répondent`, !mute.length, mute.join(", "));
+
+const live = await pingLive(socketUrl(PROD));
+check("direct (/api/live) : ping et pong", !live, live || "");
+
+const refused = await fakeRun(PROD, v.board?.version ?? "");
+check("envoi de partie avec un faux jeton refusé (401)", refused === 401, String(refused));
+
+warn(`adresse ${DOMAIN}`, await domainProblem(DOMAIN));
+
 console.log(results.join("\n"));
-const failed = results.filter((l) => l.startsWith("FAIL")).length;
-console.log(`${failed} échec(s) sur ${results.length}`);
+const { failed, total } = verdict(results);
+console.log(`${failed} échec(s) sur ${total}`);
 process.exit(failed ? 1 : 0);

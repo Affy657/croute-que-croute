@@ -236,7 +236,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Corps JSON : 64 Ko au plus, comptés à la lecture et pas seulement d'après `content-length`. Au-delà, il vaut un JSON invalide. La progression la plus lourde tient en moins d'un quart de ce plafond.
 - Un joueur retiré ne monte plus. Renvoyer son ancien record ne le remet pas dans les classements en mémoire : il pouvait être « Bravo » à la fin de la soirée.
 - En-têtes (`public/_headers`) : pas de script externe, pas d'affichage dans le cadre d'un autre site.
-- Lectures publiques (`/api/board`, `/api/feed`, `/api/ecran`, `/api/players/…`) : pas de limite dans le Worker, la requête y compte déjà. À freiner par une règle Cloudflare, possible seulement avec un nom de domaine (voir À faire).
+- Lectures publiques (`/api/board`, `/api/feed`, `/api/ecran`, `/api/players/…`) : pas de limite dans le Worker, la requête y compte déjà. À freiner par une règle Cloudflare sur tartinesauvage.fr : le domaine existe, la règle reste à poser (voir À faire).
 
 ## Admin
 
@@ -358,11 +358,11 @@ Le stockage d'un navigateur et le cookie `cv_cle` sont liés à l'adresse. Pour 
 - Une appli installée reste sur l'ancienne adresse et continue de marcher : elle ne peut pas changer d'adresse. L'accueil propose « Copier le lien » vers la nouvelle, avec un code renouvelé toutes les 9 min, puis il faut réinstaller.
 - `/ecran` et `/admin` ne suivent pas : les ouvrir sur la nouvelle adresse. Admin : `cle-admin.txt` la première fois.
 - Avant de partir, l'ancienne adresse teste la nouvelle (`reachable`, 4 s). Injoignable : le joueur reste et joue, nouvel essai au classement suivant. Un DNS en retard, comme une box ou un fournisseur, peut ignorer un sous-domaine jusqu'à 24 h après un changement de serveurs de noms.
-- `npm run deploy` et `npm run verif` passent par l'ancienne adresse : même Worker, et pas de dépendance à ce retard.
+- `npm run deploy` et `npm run verif` passent par l'ancienne adresse : même Worker, et pas de dépendance à ce retard. `npm run verif` regarde aussi `/api/board` sur la nouvelle, en simple avertissement.
 
 ### Connexion avec Google
 
-Désactivée en prod tant qu'on n'a pas le nom de domaine : sans les clés, les 3 routes répondent 404, les boutons restent cachés et un `#google=` tapé à la main est ignoré. La migration 0014 est appliquée, sa colonne et sa table restent vides.
+Active en prod, clés posées. Sans les clés, les 3 routes répondent 404, les boutons restent cachés et un `#google=` tapé à la main est ignoré.
 
 Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Paramètres, Autre appareil. Se connecter : « J'ai déjà un compte », « Continuer avec Google ». Elle ne crée pas de compte : sans compte lié, le joueur reçoit un message. Un compte Google ne se lie qu'à un joueur.
 
@@ -508,7 +508,7 @@ Pendant :
 - Surveiller le bandeau rouge « à vérifier » et retirer le joueur si besoin.
 - Surveiller aussi le bandeau rouge des erreurs des joueurs : copier le rapport, à corriger après la soirée.
 - Repousser la fin si la soirée glisse.
-- Ne rien mettre en ligne : le script refuse tant que la soirée est ouverte, et pendant les 15 s où ses derniers scores arrivent encore.
+- Ne rien mettre en ligne : le script refuse dès 2 h avant l'ouverture, tant que la soirée est ouverte, et pendant les 15 s où ses derniers scores arrivent encore.
 - Regarder la consommation de temps en temps : `npx wrangler d1 info croute-que-croute` (lignes lues et écrites sur 24 h, limites 5 millions et 100 000, voir Technique).
 
 Après :
@@ -569,10 +569,10 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 | `npm run db:local` | Créer la base locale (à refaire après une migration) |
 | `npm run seed` | Remplir la base locale, jamais en ligne. Donne un lien `?jeton=`. `--soiree` : une soirée en cours. `--persist-to <dossier>` : une autre base |
 | `npm run dev` | Jeu sur http://localhost:8787. Dans l'app Claude, `.claude/launch.json` l'ouvre au wifi |
-| `npm run db:remote` | Migrations en ligne, avant `npm run deploy` |
-| `npm run deploy` | Mettre en ligne, puis `npm run verif`. Refuse si : git pas à jour, hors de `master`, pas envoyé, `node_modules` en retard (arrêter le serveur, `npm ci`), types ou tests en échec, Tests ou Safari pas verts, migration manquante, prod anormale, version pas montée, soirée ouverte ou 15 s de marge (`scripts/garde.mjs`) |
-| Options de `deploy` | `-- --pendant-soiree` en urgence, `-- --sans-github` si GitHub ne répond pas. Un commit README ou images garde le résultat d'avant |
-| `npm run verif` | Prod en lecture seule. `npm run verif -- 0.46.1+373facb` exige cette version |
+| `npm run db:remote` | Migrations en ligne, avant `npm run deploy` (`scripts/migrer.mjs`). Refuse si : git pas à jour, hors de `master`, pas envoyé, prod sans réponse, soirée ouverte, 15 s de marge, ou soirée qui ouvre dans moins de 2 h. `-- --pendant-soiree` en urgence |
+| `npm run deploy` | Mettre en ligne, puis `npm run verif`. Si la vérification échoue, la version reste en ligne et la commande sort en échec. Refuse si : git pas à jour, hors de `master`, pas envoyé, fichiers hors git de `public/` absents ou en trop (`wrangler` envoie tout `public/`, attendus : `theme.m4a` et les 5 bruitages), `node_modules` en retard (arrêter le serveur, `npm ci`), types ou tests en échec, Tests, Safari ou Équité pas verts, migration manquante, prod anormale, version pas montée, soirée ouverte, 15 s de marge, ou soirée qui ouvre dans moins de 2 h (`scripts/garde.mjs`) |
+| Options de `deploy` | `-- --pendant-soiree` en urgence, `-- --sans-github` si GitHub ne répond pas. Un commit README ou images garde le résultat d'avant. Un passage d'Équité reste valable tant qu'aucun fichier de ses `paths` n'a changé |
+| `npm run verif` | Prod en lecture seule : versions, pages, 6 sons, connexion en direct (ping et pong), faux envoi de partie qui doit répondre 401. L'adresse `.fr` ne donne qu'un avertissement, qui ne compte pas comme échec. `npm run verif -- 0.46.1+373facb` exige cette version |
 | `npm run icons`, `npm run qr` | Regénérer icônes et QR codes |
 
 ## Tests
@@ -618,6 +618,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `lien` : valeurs abîmées du stockage, le démarrage ne plante jamais.
 - `link` : code de liaison, panne de base, réessai concurrent, plafond de la fusion, écran prévenu, seuls les échecs comptent.
 - `live` : page d'un autre site refusée au direct.
+- `migrations` : au-dessus de la 0015, ni `DROP TABLE`, ni `DROP COLUMN`, ni `RENAME`, sauf fichier écrit dans `ALLOWED`.
 - `move` : changement d'adresse, sonde de l'ancienne adresse, 3 allers-retours, `KEPT` identique, référent, jamais la clé dans le lien, lien fabriqué ou illisible.
 - `offline` : record après coupure, pseudo gardé.
 - `palette` : `palette.js` et `tokens.css` identiques, feuilles sans valeur en dur.
@@ -635,14 +636,15 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `textes` : le guide dit les vraies règles.
 - `validate` : pseudos, tenue, progression, fusion.
 - `variante` : la copie d'`equilibrage:variante` démarre.
+- `verif` : sondes de `npm run verif` (`scripts/sondes.mjs`), pong et délai du direct, faux envoi, avertissement `.fr`, rien d'écrit en ligne.
 
 ### GitHub
 
-- `tests.yml` : à chaque envoi de code sur `master` et chaque pull request, types et trois niveaux de tests (2 min). Sur le dépôt public, un envoi sur `master` ne l'a encore jamais lancé : avant une mise en ligne, `gh workflow run tests.yml --ref master`.
+- `tests.yml` : types et trois niveaux de tests (3 min). Le fichier le demande à chaque envoi de code sur `master` et à chaque pull request, mais sur le dépôt public un envoi sur `master` ne l'a encore jamais lancé, et la cause n'est pas dans le fichier. Avant une mise en ligne : `gh workflow run tests.yml --ref master`.
 - `safari.yml` : à la main avant chaque mise en ligne, `gh workflow run safari.yml --ref master`. `npm run deploy` exige qu'il soit vert.
-- `equite.yml` : robot et invariants en petit, quand `public/js/game/` ou le robot change (4 min).
+- `equite.yml` : robot et invariants en petit, quand `public/js/game/`, `palette.js` ou le robot change (4 min). `npm run deploy` exige qu'il soit vert : sans passage valable, `gh workflow run equite.yml --ref master`.
 - Un envoi annule les tests en cours. Dépôt public : minutes gratuites.
-- Dependabot : une pull request npm et une d'actions par mois. Fusionner si c'est vert, puis `git pull` (sinon le prochain envoi est refusé).
+- Dependabot : `.github/dependabot.yml` demande une pull request npm et une d'actions par mois, mais aucune n'a encore été vue sur le dépôt public. Si une arrive : fusionner si c'est vert, puis `git pull` (sinon le prochain envoi est refusé).
 
 ## Ajouter du contenu
 
@@ -692,14 +694,14 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 
 ## Bon à savoir
 
-- Hors git, à garder de côté : `cle-admin.txt`, `.dev.vars`, `invitation-*.txt`, `sauvegardes/`, la musique, les bruitages, `ecoute-sons/` (`node ecoute-sons/serve.mjs`).
+- Hors git, à garder de côté : `cle-admin.txt`, `.dev.vars`, `invitation-*.txt`, `sauvegardes/`, la musique, les bruitages, `ecoute-sons/` (`node ecoute-sons/serve.mjs`). `.gitignore` écarte aussi `.env*`, `.dev.vars*`, tout `*.sql` hors de `migrations/` et tout `public/sfx/` et `public/music/` sauf `.gitkeep`.
 - Sauvegarde : `npx wrangler d1 export croute-que-croute --remote --output sauvegardes/<nom>.sql`. Celles d'avant le 29/10/2026 contiennent des jetons en clair : à garder pour soi.
 - Time Travel, 7 jours, gratuit : `npx wrangler d1 time-travel restore croute-que-croute --timestamp=<heure unix>`. Écrase la base en ligne : sauvegarder d'abord.
 - Revenir à la version d'avant : `npx wrangler versions list`, puis `npx wrangler rollback <id> -m "<raison>"`. Pas encore essayé : le faire une fois hors soirée.
 - Impossible de revenir de la 0.49.0 ou plus à la 0.48.0 ou avant : Cloudflare refuse quand une classe Durable Object (`Live`) a été ajoutée entre les deux. Plan B : corriger, puis `npm run deploy -- --pendant-soiree`. Entre deux versions avec `Live`, le retour reste possible.
-- La base ne revient pas en arrière : une migration doit laisser marcher la version d'avant (ajouter des colonnes, jamais en retirer ni en renommer dans la même mise en ligne). Après un retour avant le 02/11/2026 puis une remise en ligne : `UPDATE profiles SET steps = NULL`.
+- La base ne revient pas en arrière : une migration doit laisser marcher la version d'avant (ajouter des colonnes, jamais en retirer ni en renommer dans la même mise en ligne). `migrations.test.mjs` le vérifie ; le retrait de `client_id` devra s'y déclarer dans `ALLOWED`. Après un retour avant le 02/11/2026 puis une remise en ligne : `UPDATE profiles SET steps = NULL`.
 - wrangler est connecté au compte Cloudflare sur le PC d'Adrien (`npx wrangler whoami`).
-
+- Branche `essais` : elle servait à tester des nouveautés avant `master`, une fusion par idée. Son rôle actuel n'est écrit nulle part : elle suit `master` en avance rapide, aucun script ni workflow ne s'en sert, et `npm run deploy` ne part que de `master`.
 ## Licence
 
 Code sous licence MIT (`LICENSE`). Ne sont pas couverts :

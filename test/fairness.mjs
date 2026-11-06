@@ -97,4 +97,4 @@ console.log(`SANS le solveur : ${unfair.deaths} mort(s) du robot sur ${GAMES}, $
 if (unfair.deathTimes.length) console.log(`  premières morts à ${unfair.deathTimes.slice(0, 5).map((t) => t.toFixed(1) + " s").join(", ")}`);
 console.log(`Joueur immobile : meurt en ${still[15].toFixed(2)} s (médiane)`);
 console.log(`Durée du test : ${((performance.now() - started) / 1000).toFixed(1)} s`);
-process.exit(sane && !fair.deaths && !fair.stuck ? 0 : 1);
+process.exit(sane && !fair.deaths && !fair.stuck && !Object.keys(fair.own).length ? 0 : 1);

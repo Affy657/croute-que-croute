@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { blocked, CHECKS, checkFailed, drift, ignored, ignoredPaths, NO_GITHUB } from "./garde.mjs";
+import { blocked, CHECKS, checkFailed, drift, gitProblem, ignoredPaths, newer, NO_GITHUB, offGitProblem, stillValid, watchedPaths } from "./garde.mjs";
 
 const PROD = "https://croute-que-croute.tartine-sauvage.workers.dev";
 const DB = "croute-que-croute";
@@ -20,19 +20,14 @@ const quiet = (cmd) => {
     return false;
   }
 };
-const parts = (v) => v.split(".").map(Number);
-const newer = (a, b) => {
-  const [x, y] = [parts(a), parts(b)];
-  const i = x.findIndex((n, k) => n !== y[k]);
-  return i >= 0 && x[i] > y[i];
-};
 
 const { version: number } = JSON.parse(readFileSync("package.json", "utf8"));
 if (!NUMBER.test(number || "")) stop(`numéro de version illisible dans package.json : ${number}.`);
 
-if (run("git status --porcelain").trim()) stop("des changements ne sont pas enregistrés dans git.");
-if (run("git rev-parse --abbrev-ref HEAD").trim() !== "master") stop("on ne met en ligne que depuis master.");
-if (run("git rev-list --count origin/master..HEAD").trim() !== "0") stop("master n'est pas envoyé sur GitHub : git push origin master.");
+const dirty = gitProblem({ status: run("git status --porcelain"), branch: run("git rev-parse --abbrev-ref HEAD"), ahead: run("git rev-list --count origin/master..HEAD") });
+if (dirty) stop(dirty);
+const offGit = offGitProblem(run("git ls-files --others --ignored --exclude-standard public"));
+if (offGit) stop(offGit);
 const installed = (name) => {
   const file = `node_modules/${name}/package.json`;
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")).version : null;
@@ -48,12 +43,15 @@ for (const [cmd, why] of [["npm run check", "la vérification des types échoue"
   }
 }
 if (process.argv.includes(NO_GITHUB)) {
-  console.error("Tests de GitHub et Safari pas vérifiés (" + NO_GITHUB + ").");
+  console.error("Tests de GitHub, Safari et Équité pas vérifiés (" + NO_GITHUB + ").");
 } else {
   const head = run("git rev-parse HEAD").trim();
-  const skip = ignoredPaths(readFileSync(".github/workflows/tests.yml", "utf8"));
-  const fits = (sha) => sha === head || (quiet(`git merge-base --is-ancestor ${sha} HEAD`) && run(`git diff --name-only ${sha} HEAD`).split(/\r?\n/).filter(Boolean).every((f) => ignored(f, skip)));
+  const workflow = (file) => readFileSync(`.github/workflows/${file}`, "utf8");
+  const skip = ignoredPaths(workflow("tests.yml"));
+  const since = (sha) => run(`git diff --name-only ${sha} HEAD`).split(/\r?\n/).filter(Boolean);
   for (const [file, name] of CHECKS) {
+    const watched = watchedPaths(workflow(file));
+    const fits = (sha) => sha === head || (quiet(`git merge-base --is-ancestor ${sha} HEAD`) && stillValid(since(sha), watched, skip));
     let runs;
     try {
       runs = JSON.parse(run(`gh run list --workflow ${file} --branch master --limit 30 --json headSha,status,conclusion`));
@@ -92,6 +90,7 @@ try {
     execSync(`node scripts/verif.mjs ${version}`, { stdio: "inherit" });
   } catch {
     console.error(`La version ${version} est en ligne, mais la vérification a trouvé un problème (voir au-dessus).`);
+    process.exitCode = 1;
   }
 } finally {
   execSync(`git checkout -- ${file}`);

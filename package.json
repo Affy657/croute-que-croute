@@ -8,7 +8,7 @@
     "dev": "wrangler dev",
     "db:local": "wrangler d1 migrations apply croute-que-croute --local",
     "seed": "node scripts/seed.mjs",
-    "db:remote": "wrangler d1 migrations apply croute-que-croute --remote",
+    "db:remote": "node scripts/migrer.mjs",
     "deploy": "node scripts/deploy.mjs",
     "icons": "node scripts/icons.mjs",
     "qr": "node scripts/qr.mjs",

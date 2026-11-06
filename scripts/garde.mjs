@@ -1,20 +1,48 @@
 export const URGENT = "--pendant-soiree";
 export const NO_GITHUB = "--sans-github";
-export const CHECKS = [["tests.yml", "Tests"], ["safari.yml", "Safari"]];
+export const CHECKS = [["tests.yml", "Tests"], ["safari.yml", "Safari"], ["equite.yml", "Équité"]];
+export const OFF_GIT = ["public/music/theme.m4a", ...["death", "first", "near", "record", "start"].map((name) => `public/sfx/${name}.mp3`)];
 
-export function blocked(board, args = []) {
-  const ev = board.event;
-  if (!ev || board.now >= ev.finalAt || args.includes(URGENT)) return null;
-  const why = ev.status === "open" ? "est ouverte" : "compte encore ses dernières parties (15 s après la fin)";
-  return `la soirée « ${ev.name} » ${why}. En cas d'urgence seulement : npm run deploy -- ${URGENT}`;
+const parts = (v) => v.split(".").map(Number);
+
+export function newer(a, b) {
+  const [x, y] = [parts(a), parts(b)];
+  const i = x.findIndex((n, k) => n !== y[k]);
+  return i >= 0 && x[i] > y[i];
 }
 
-export function ignoredPaths(workflow) {
-  const line = workflow.match(/paths-ignore:\s*\[([^\]]*)\]/);
+export function gitProblem({ status, branch, ahead }) {
+  if (status.trim()) return "des changements ne sont pas enregistrés dans git.";
+  if (branch.trim() !== "master") return "on ne part que de master.";
+  if (ahead.trim() !== "0") return "master n'est pas envoyé sur GitHub : git push origin master.";
+  return null;
+}
+
+const SOON_MS = 2 * 3600 * 1000;
+
+export function blocked(board, args = [], command = "npm run deploy") {
+  if (args.includes(URGENT)) return null;
+  const urgent = `En cas d'urgence seulement : ${command} -- ${URGENT}`;
+  const { event: ev, next, now } = board;
+  if (ev && now < ev.finalAt) {
+    const why = ev.status === "open" ? "est ouverte" : "compte encore ses dernières parties (15 s après la fin)";
+    return `la soirée « ${ev.name} » ${why}. ${urgent}`;
+  }
+  if (next && next.opensAt - now < SOON_MS) return `la soirée « ${next.name} » ouvre dans ${Math.ceil((next.opensAt - now) / 60000)} min. ${urgent}`;
+  return null;
+}
+
+const listed = (workflow, key) => {
+  const line = workflow.match(new RegExp(`\\b${key}:\\s*\\[([^\\]]*)\\]`));
   return line ? [...line[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]) : [];
-}
+};
+
+export const ignoredPaths = (workflow) => listed(workflow, "paths-ignore");
+export const watchedPaths = (workflow) => listed(workflow, "paths");
 
 export const ignored = (file, patterns) => patterns.some((p) => (p.endsWith("/**") ? file.startsWith(p.slice(0, -2)) : file === p));
+
+export const stillValid = (changed, watched, skip) => (watched.length ? !changed.some((f) => ignored(f, watched)) : changed.every((f) => ignored(f, skip)));
 
 export function checkFailed(name, file, runs, fits) {
   const last = runs.find((r) => fits(r.headSha));
@@ -31,4 +59,14 @@ export function drift(lock, installed) {
     .map((name) => [name, lock.packages["node_modules/" + name]?.version, installed(name)])
     .filter(([, want, have]) => want !== have)
     .map(([name, want, have]) => `${name} ${have || "absent"} au lieu de ${want}`);
+}
+
+export function offGitProblem(listing) {
+  const found = listing.split(/\r?\n/).filter(Boolean);
+  const missing = OFF_GIT.filter((f) => !found.includes(f));
+  const extra = found.filter((f) => !OFF_GIT.includes(f));
+  const why = [];
+  if (missing.length) why.push(`fichiers hors git absents, le jeu partirait sans son : ${missing.join(", ")}`);
+  if (extra.length) why.push(`fichiers ignorés par git qui seraient servis en ligne : ${extra.join(", ")}`);
+  return why.length ? why.join(". ") + "." : null;
 }
