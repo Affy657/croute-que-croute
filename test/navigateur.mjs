@@ -42,7 +42,7 @@ for (let i = 0; i < 60; i++) {
   try { await fetch(BASE + "/api/board"); break; } catch { await wait(500); }
 }
 
-const browser = SAFARI ? await webkit.launch() : await chromium.launch(process.platform === "win32" ? { channel: "msedge" } : {});
+const browser = SAFARI ? await webkit.launch() : await chromium.launch({ ...(process.platform === "win32" ? { channel: "msedge" } : {}), args: ["--disable-features=LocalNetworkAccessChecks"] });
 const page = await browser.newPage(SAFARI ? devices["iPhone 13"] : { viewport: { width: 390, height: 844 } });
 watch(page);
 const $ = (css) => page.locator(css).first();
@@ -249,6 +249,12 @@ try {
       const text = (await res.text()).replace(/OLD_HOST = "[^"]+"/, `OLD_HOST = "${new URL(BASE).hostname}"`).replace(/HOME = "[^"]+"/, `HOME = "${moveTo}"`);
       await route.fulfill({ response: res, body: text });
     });
+    await context.route((u) => u.pathname === "/", async (route) => {
+      const res = await route.fetch();
+      const headers = res.headers();
+      if (headers["content-security-policy"]) headers["content-security-policy"] = headers["content-security-policy"].replace("connect-src 'self'", `connect-src 'self' ${moveTo}`);
+      await route.fulfill({ response: res, headers });
+    });
     await context.addInitScript(({ host, t }) => {
       if (location.hostname !== host || localStorage.getItem("cv-sensibilite")) return;
       localStorage.setItem("cv-install-asked", "1");
@@ -269,6 +275,19 @@ try {
       const after = await p.evaluate(() => ({ token: localStorage.getItem("cv-token"), speed: localStorage.getItem("cv-sensibilite"), hash: location.hash }));
       const pseudoOf = async (t) => (await (await fetch(BASE + "/api/board", { headers: { ...apiHeaders, authorization: "Bearer " + t } })).json()).me?.pseudo;
       if (after.token === token || after.speed !== "2.2" || after.hash || await pseudoOf(after.token) !== name || await pseudoOf(token) !== name) throw new Error(JSON.stringify(after));
+    } finally {
+      await context.close();
+    }
+  });
+  await step("nouvelle adresse injoignable : le joueur reste sur l'ancienne et peut jouer", async () => {
+    const { context, p } = await movingPage(await joinApi("Reste" + hex(4)));
+    try {
+      await context.route((u) => u.origin === moveTo, (route) => route.abort());
+      await p.goto(BASE + "/");
+      await p.locator("#play").waitFor({ state: "visible", timeout: WAIT_MS });
+      await wait(3000);
+      if (new URL(p.url()).origin !== BASE) throw new Error(p.url());
+      await p.locator("#play").waitFor({ state: "visible", timeout: WAIT_MS });
     } finally {
       await context.close();
     }

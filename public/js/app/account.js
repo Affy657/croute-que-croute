@@ -6,7 +6,7 @@ import { renderSettings, copy } from "./settings.js";
 import { resync } from "./profile.js";
 import { inAppNote } from "./inapp.js";
 import { googleBlocked, installMode } from "./install.js";
-import { moved, moveUrl } from "./move.js";
+import { moved, moveUrl, reachable } from "./move.js";
 
 const TICK_MS = 1000, RETRY_MS = 20000, QUIET = 4;
 /** @type {Record<string, string>} */
@@ -328,8 +328,9 @@ async function leave() {
   if (leaving || !moved() || installMode() === "installed" || !net.board || !idle() || hasPending()) return;
   if (!net.token && !joinReady()) return;
   leaving = true;
-  const code = net.token ? await newLinkCode().then((r) => r.code, () => null) : null;
-  if (net.token && !code) {
+  const open = await reachable();
+  const code = open && net.token ? await newLinkCode().then((r) => r.code, () => null) : null;
+  if (!open || (net.token && !code)) {
     leaving = false;
     return;
   }

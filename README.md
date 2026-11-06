@@ -333,6 +333,8 @@ Le stockage d'un navigateur et le cookie `cv_cle` sont liés à l'adresse. Pour 
 - `arrive.js`, chargé avant le jeu, pose ces valeurs et efface l'adresse. Le téléphone se connecte seul avec le code, sans toucher « Connecter », et garde aussi sa session sur l'ancienne adresse. Un appareil déjà connecté ignore tout.
 - Une appli installée reste sur l'ancienne adresse et continue de marcher : elle ne peut pas changer d'adresse. L'accueil propose « Copier le lien » vers la nouvelle, avec un code renouvelé toutes les 9 min, puis il faut réinstaller.
 - `/ecran` et `/admin` ne suivent pas : les ouvrir sur la nouvelle adresse. Admin : `cle-admin.txt` la première fois.
+- Avant de partir, l'ancienne adresse teste la nouvelle (`reachable`, 4 s). Injoignable : le joueur reste et joue, nouvel essai au classement suivant. Un DNS en retard, comme une box ou un fournisseur, peut ignorer un sous-domaine jusqu'à 24 h après un changement de serveurs de noms.
+- `npm run deploy` et `npm run verif` passent par l'ancienne adresse : même Worker, et pas de dépendance à ce retard.
 
 ### Connexion avec Google
 
@@ -446,7 +448,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 | 0.47 | 01/11 | tenue qui suit le compte, rechargement si versions mélangées | 4 |
 | 0.48 | 02/11 | pluies espacées après une double pluie ou un hachoir | |
 | 0.49 | 03/11 | écran géant en direct, fin de soirée stricte, mur mis de côté | 8 |
-| 1.0 | 06/11 | sortie de bêta, adresse tartinesauvage.fr, comptes qui suivent seuls | |
+| 1.0 | 06/11 | sortie de bêta, adresse tartinesauvage.fr, comptes qui suivent seuls | 1 |
 
 ## Erreurs des joueurs
 
