@@ -201,7 +201,7 @@ function renderPlayers() {
     const btn = cell("button", "btn ghost small", p.banned ? "Réintégrer" : "Retirer");
     btn.type = "button";
     btn.addEventListener("click", async () => {
-      if (!p.banned && !confirm("Retirer " + p.pseudo + " du classement ?")) return;
+      if (!confirm(p.banned ? "Réintégrer " + p.pseudo + " au classement ?" : "Retirer " + p.pseudo + " du classement ?")) return;
       btn.disabled = true;
       try {
         await call("POST", "/api/admin/players/" + p.id + "/ban", { banned: !p.banned });
@@ -547,12 +547,13 @@ for (const b of document.querySelectorAll(".scope")) {
 }
 
 onSubmit("endForm", async () => {
-  const closesAt = fromInput($("endAt").value);
-  if (closesAt <= Date.now() && !confirm("Cette fin est déjà passée : le classement de la soirée se ferme tout de suite et ne pourra plus être rouvert. Continuer ?")) return;
+  const opensAt = fromInput($("startAt").value), closesAt = fromInput($("endAt").value), now = Date.now(), ev = data && data.event;
+  if (closesAt <= now && !confirm("Cette fin est déjà passée : le classement de la soirée se ferme tout de suite et ne pourra plus être rouvert. Continuer ?")) return;
+  if (ev && ev.opensAt <= now && now < ev.closesAt && opensAt > now && !confirm("Ce début est dans le futur : la soirée quitte l'écran géant et ne compte plus de parties jusqu'à cette heure. Continuer ?")) return;
   try {
     await call("PATCH", "/api/admin/events/current", {
       name: $("editName").value,
-      opensAt: fromInput($("startAt").value),
+      opensAt,
       closesAt
     });
     $("endForm").hidden = true;

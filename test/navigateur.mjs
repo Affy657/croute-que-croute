@@ -685,7 +685,7 @@ try {
     await admin.locator("#loginForm button").first().click();
     await admin.locator("#app").waitFor({ state: "visible", timeout: WAIT_MS });
   });
-  await step("admin : retirer un joueur demande confirmation, « Annuler » ne retire rien, puis réintégré", async () => {
+  await step("admin : retirer et réintégrer demandent confirmation avec le pseudo, « Annuler » ne change rien", async () => {
     const row = admin.locator("#players li", { hasText: pseudo });
     for (const scope of ["general", "pc"]) {
       await admin.locator(`.scope[data-scope="${scope}"]`).click();
@@ -701,7 +701,14 @@ try {
     await row.locator("button").click();
     await asked;
     await admin.waitForFunction((p) => [...document.querySelectorAll("#players li.out")].some((li) => li.textContent.includes(p)), pseudo, { timeout: WAIT_MS });
+    asked = dialog(admin, false);
     await row.locator("button", { hasText: "Réintégrer" }).click();
+    if (!(await asked).includes(pseudo)) throw new Error("mauvaise question");
+    await wait(500);
+    if (!(await out())) throw new Error("réintégré sans confirmation");
+    asked = dialog(admin, true);
+    await row.locator("button", { hasText: "Réintégrer" }).click();
+    await asked;
     await admin.waitForFunction((p) => [...document.querySelectorAll("#players li:not(.out)")].some((li) => li.textContent.includes(p)), pseudo, { timeout: WAIT_MS });
   });
   await step("admin : réunir deux comptes demande confirmation avec les deux pseudos, « Annuler » ne réunit rien, puis réunis", async () => {
@@ -1020,6 +1027,47 @@ try {
       await other.locator("#eventName", { hasText: "Aucune soirée" }).waitFor({ timeout: WAIT_MS });
     } finally {
       await other.close();
+    }
+  });
+  await step("admin : début déplacé dans le futur sur une soirée ouverte, confirmation demandée, « Annuler » la laisse ouverte", async () => {
+    const headers = { "content-type": "application/json", "x-app-version": "dev", "x-admin-key": KEY };
+    const made = await fetch(BASE + "/api/admin/events", { method: "POST", headers, body: JSON.stringify({ name: "Soirée à déplacer", opensAt: Date.now() - 3600000, closesAt: Date.now() + 3600000 }) });
+    if (!made.ok) throw new Error("soirée pas créée : " + made.status);
+    const other = await browser.newPage();
+    watch(other);
+    let patched = 0;
+    other.on("request", (r) => {
+      if (r.method() === "PATCH") patched++;
+    });
+    const later = new Date(Date.now() + 1800000);
+    later.setMinutes(later.getMinutes() - later.getTimezoneOffset());
+    const state = () => other.locator("#eventStatus").textContent();
+    const save = async () => {
+      await other.locator("#endForm button").click();
+      await other.locator("#endForm").waitFor({ state: "hidden", timeout: WAIT_MS });
+    };
+    try {
+      await signIn(other);
+      await other.locator("#editEndBtn").click();
+      await other.fill("#editName", "Soirée renommée");
+      await save();
+      patched = 0;
+      await other.locator("#editEndBtn").click();
+      await other.fill("#startAt", later.toISOString().slice(0, 16));
+      let asked = dialog(other, false);
+      await other.locator("#endForm button").click();
+      if (!(await asked).includes("futur")) throw new Error("mauvaise question");
+      await wait(500);
+      if (patched || (await state()) !== "Soirée en cours") throw new Error("soirée modifiée sans confirmation");
+      asked = dialog(other, true);
+      await other.locator("#endForm button").click();
+      await asked;
+      await other.waitForFunction(() => document.getElementById("eventStatus").textContent === "Prochaine soirée", null, { timeout: WAIT_MS });
+      await other.locator("#editEndBtn").click();
+      await save();
+    } finally {
+      await other.close();
+      await fetch(BASE + "/api/admin/events/current", { method: "PATCH", headers, body: JSON.stringify({ opensAt: Date.now() - 3600000, closesAt: Date.now() - 60000 }) });
     }
   });
   for (const path of ["/ecran", "/admin"]) {

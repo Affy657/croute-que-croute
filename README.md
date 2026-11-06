@@ -241,6 +241,8 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Le propriétaire invite : lien à usage unique valable 48 h. Dans l'appli installée, le coller dans « Lien d'invitation reçu ».
 - Rôles : propriétaire (soirées, joueurs, équipe, erreurs) et admin (soirées, joueurs). Chaque téléphone peut être retiré, sauf le dernier propriétaire, avec ses invitations pas utilisées. Connexion inutilisée 30 jours : expirée.
 - Heure de fin déjà passée : confirmation, le classement se ferme tout de suite. Une soirée fermée ne se modifie plus.
+- Début déplacé dans le futur sur une soirée ouverte : confirmation, elle quitte l'écran géant et ne compte plus de parties jusqu'à cette heure.
+- Retirer et Réintégrer demandent confirmation, avec le pseudo.
 - Réunir deux comptes (propriétaire, définitif) : pseudo à garder, pseudo à réunir, confirmation avec les deux comptes. Même fusion que côté joueur (`mergeInto`). Refusé si l'un est retiré. `POST /api/admin/merge` sans `confirm: true` renvoie seulement l'aperçu.
 - Joueurs actifs : point jaune pour une partie finie ces 10 dernières minutes (`ACTIVE_MS`), rien d'écrit en plus.
 - Nouveaux pseudos des 15 dernières minutes listés même sans partie et sans score, pour retirer un pseudo déplacé affiché sur l'écran géant.
