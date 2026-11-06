@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { blocked, CHECKS, checkFailed, drift, ignored, ignoredPaths, NO_GITHUB } from "./garde.mjs";
 
-const PROD = "https://croute-que-croute.tartine-sauvage.workers.dev";
+const PROD = "https://croute-que-croute.tartinesauvage.fr";
 const DB = "croute-que-croute";
 const NUMBER = /^\d+\.\d+\.\d+$/;
 const FULL = /^\d+\.\d+\.\d+\+[0-9a-f]+$/;
