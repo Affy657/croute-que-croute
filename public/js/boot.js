@@ -1,13 +1,31 @@
+let restarting = false;
+
+async function freshStart() {
+  const files = [...document.querySelectorAll('link[rel="modulepreload"]')].map((link) => link.href);
+  const clean = Promise.all([
+    self.caches ? caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key)))) : null,
+    navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then((list) => Promise.all(list.map((sw) => sw.unregister()))) : null
+  ]).catch(() => {}).then(() => Promise.all(files.map((file) => fetch(file, { cache: "reload" }).catch(() => null))));
+  await Promise.race([clean, new Promise((done) => setTimeout(done, 6000))]);
+  location.reload();
+}
+
 addEventListener("error", (e) => {
-  if (document.documentElement.dataset.ready) return;
+  if (restarting || document.documentElement.dataset.ready) return;
   if (!(e.target instanceof HTMLScriptElement) && !(e instanceof ErrorEvent)) return;
+  let tries = 0;
   try {
-    if (Date.now() - (Number(sessionStorage.getItem("cv-boot-reload")) || 0) < 15000) return;
-    sessionStorage.setItem("cv-boot-reload", String(Date.now()));
+    const now = Date.now();
+    if (now - (Number(sessionStorage.getItem("cv-boot-reload")) || 0) < 60000) tries = Number(sessionStorage.getItem("cv-boot-tries")) || 0;
+    if (tries >= 2 || (tries === 1 && !navigator.onLine)) return;
+    sessionStorage.setItem("cv-boot-reload", String(now));
+    sessionStorage.setItem("cv-boot-tries", String(tries + 1));
   } catch (err) {
     return;
   }
-  location.reload();
+  restarting = true;
+  if (tries) freshStart();
+  else location.reload();
 }, true);
 
 {

@@ -265,6 +265,23 @@ try {
     watch(p);
     return { context, p };
   };
+  await step("démarrage qui plante deux fois de suite (fichiers de deux versions) : le jeu repart seul", async () => {
+    const context = await browser.newContext({ ...(SAFARI ? devices["iPhone 13"] : { viewport: { width: 390, height: 844 } }), serviceWorkers: "block" });
+    let renewed = false;
+    await context.route("**/js/app/state.js", (route) => {
+      renewed ||= route.request().resourceType() === "fetch";
+      if (renewed) return route.continue();
+      return route.fulfill({ status: 200, contentType: "text/javascript", headers: { "cache-control": "no-store" }, body: "import { absent } from '/js/shared/format.js';\n" });
+    });
+    const p = await context.newPage();
+    try {
+      await p.goto(BASE + "/");
+      await p.waitForFunction(() => document.documentElement.dataset.ready === "1", null, { timeout: WAIT_MS });
+      if (!renewed) throw new Error("fichiers pas renouvelés");
+    } finally {
+      await context.close();
+    }
+  });
   await step("nouvelle adresse : le compte et les réglages suivent, l'ancienne clé reste valable", async () => {
     const name = "Part" + hex(4), token = await joinApi(name);
     const { context, p } = await movingPage(token);
