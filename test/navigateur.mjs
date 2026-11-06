@@ -1244,10 +1244,10 @@ try {
         });
         if (!before.scrolls || before.bottom <= before.height) throw new Error("rien à faire défiler : " + JSON.stringify(before));
         for (const button of ["#linkForm button[type=submit]", "#newAccount"]) {
-          await p.locator(button).scrollIntoViewIfNeeded();
           const box = await p.evaluate((css) => {
+            document.querySelector(css).scrollIntoView({ block: "center", behavior: "instant" });
             const b = document.querySelector(css).getBoundingClientRect(), top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
-            return { fits: b.top >= 0 && b.bottom <= innerHeight, mine: top === document.querySelector(css) };
+            return { fits: b.top >= 0 && b.bottom <= innerHeight, mine: top === document.querySelector(css), top: b.top, bottom: b.bottom, height: innerHeight };
           }, button);
           if (!box.fits || !box.mine) throw new Error(button + " : " + JSON.stringify(box));
         }
