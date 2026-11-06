@@ -1,6 +1,7 @@
 export const URGENT = "--pendant-soiree";
 export const NO_GITHUB = "--sans-github";
 export const CHECKS = [["tests.yml", "Tests"], ["safari.yml", "Safari"]];
+export const OFF_GIT = ["public/music/theme.m4a", ...["death", "first", "near", "record", "start"].map((name) => `public/sfx/${name}.mp3`)];
 
 export function blocked(board, args = []) {
   const ev = board.event;
@@ -31,4 +32,14 @@ export function drift(lock, installed) {
     .map((name) => [name, lock.packages["node_modules/" + name]?.version, installed(name)])
     .filter(([, want, have]) => want !== have)
     .map(([name, want, have]) => `${name} ${have || "absent"} au lieu de ${want}`);
+}
+
+export function offGitProblem(listing) {
+  const found = listing.split(/\r?\n/).filter(Boolean);
+  const missing = OFF_GIT.filter((f) => !found.includes(f));
+  const extra = found.filter((f) => !OFF_GIT.includes(f));
+  const why = [];
+  if (missing.length) why.push(`fichiers hors git absents, le jeu partirait sans son : ${missing.join(", ")}`);
+  if (extra.length) why.push(`fichiers ignorés par git qui seraient servis en ligne : ${extra.join(", ")}`);
+  return why.length ? why.join(". ") + "." : null;
 }

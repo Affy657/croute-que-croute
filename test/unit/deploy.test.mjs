@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { blocked, checkFailed, drift, ignored, ignoredPaths, URGENT } from "../../scripts/garde.mjs";
+import { blocked, checkFailed, drift, ignored, ignoredPaths, offGitProblem, OFF_GIT, URGENT } from "../../scripts/garde.mjs";
 
 const MIN = 60000, END = Date.UTC(2026, 10, 7, 22, 30), FINAL = END + 15000;
 const board = (now, status) => ({ now, event: status ? { name: "Space Tartinade #3", status, closesAt: END, finalAt: FINAL } : null });
@@ -58,10 +58,32 @@ test("mise en ligne refusée si node_modules ne suit pas package-lock.json (le P
   assert.deepEqual(drift(lock, (n) => ({ qrcode: "1.5.4", wrangler: "4.156.0" })[n]), []);
 });
 
+const SOUNDS = ["public/music/theme.m4a", "public/sfx/death.mp3", "public/sfx/first.mp3", "public/sfx/near.mp3", "public/sfx/record.mp3", "public/sfx/start.mp3"];
+
+test("mise en ligne permise avec les 6 fichiers hors git attendus, ni plus ni moins", () => {
+  assert.deepEqual(OFF_GIT, SOUNDS);
+  assert.equal(offGitProblem(SOUNDS.join("\n") + "\n"), null);
+  assert.equal(offGitProblem(SOUNDS.join("\r\n") + "\r\n"), null);
+});
+
+test("mise en ligne refusée depuis un clone neuf : le jeu partirait muet, avec le nom des fichiers absents", () => {
+  const why = offGitProblem("");
+  for (const file of SOUNDS) assert.ok(why.includes(file), file);
+  const one = offGitProblem(SOUNDS.filter((f) => f !== "public/sfx/near.mp3").join("\n"));
+  assert.match(one, /public\/sfx\/near\.mp3/);
+  assert.doesNotMatch(one, /public\/sfx\/death\.mp3/);
+});
+
+test("mise en ligne refusée si un fichier ignoré par git serait servi, par exemple une clé posée dans public/", () => {
+  const why = offGitProblem([...SOUNDS, "public/cle-admin.txt"].join("\n"));
+  assert.match(why, /public\/cle-admin\.txt/);
+  assert.doesNotMatch(why, /theme\.m4a/);
+});
+
 test("npm run deploy vérifie node_modules, Tests et Safari avant de mettre en ligne, et Safari ne tourne plus après", () => {
   const deploy = readFileSync("scripts/deploy.mjs", "utf8");
   const at = (s) => deploy.indexOf(s);
-  for (const step of ["if (stale.length) stop(", "const why = checkFailed(", "if (why) stop(why)", "of CHECKS"]) assert.ok(at(step) > 0 && at(step) < at("wrangler deploy"), step);
+  for (const step of ["if (offGit) stop(offGit)", "if (stale.length) stop(", "const why = checkFailed(", "if (why) stop(why)", "of CHECKS"]) assert.ok(at(step) > 0 && at(step) < at("wrangler deploy"), step);
   assert.match(deploy, /const stale = drift\(/);
   assert.doesNotMatch(readFileSync(".github/workflows/safari.yml", "utf8"), /tags:/);
 });

@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { blocked, CHECKS, checkFailed, drift, ignored, ignoredPaths, NO_GITHUB } from "./garde.mjs";
+import { blocked, CHECKS, checkFailed, drift, ignored, ignoredPaths, NO_GITHUB, offGitProblem } from "./garde.mjs";
 
 const PROD = "https://croute-que-croute.tartine-sauvage.workers.dev";
 const DB = "croute-que-croute";
@@ -33,6 +33,8 @@ if (!NUMBER.test(number || "")) stop(`numéro de version illisible dans package.
 if (run("git status --porcelain").trim()) stop("des changements ne sont pas enregistrés dans git.");
 if (run("git rev-parse --abbrev-ref HEAD").trim() !== "master") stop("on ne met en ligne que depuis master.");
 if (run("git rev-list --count origin/master..HEAD").trim() !== "0") stop("master n'est pas envoyé sur GitHub : git push origin master.");
+const offGit = offGitProblem(run("git ls-files --others --ignored --exclude-standard public"));
+if (offGit) stop(offGit);
 const installed = (name) => {
   const file = `node_modules/${name}/package.json`;
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")).version : null;
