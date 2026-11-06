@@ -3,6 +3,14 @@ export const NO_GITHUB = "--sans-github";
 export const CHECKS = [["tests.yml", "Tests"], ["safari.yml", "Safari"]];
 export const OFF_GIT = ["public/music/theme.m4a", ...["death", "first", "near", "record", "start"].map((name) => `public/sfx/${name}.mp3`)];
 
+const parts = (v) => v.split(".").map(Number);
+
+export function newer(a, b) {
+  const [x, y] = [parts(a), parts(b)];
+  const i = x.findIndex((n, k) => n !== y[k]);
+  return i >= 0 && x[i] > y[i];
+}
+
 export function gitProblem({ status, branch, ahead }) {
   if (status.trim()) return "des changements ne sont pas enregistrés dans git.";
   if (branch.trim() !== "master") return "on ne part que de master.";

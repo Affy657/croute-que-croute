@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { blocked, CHECKS, checkFailed, drift, gitProblem, ignored, ignoredPaths, NO_GITHUB, offGitProblem } from "./garde.mjs";
+import { blocked, CHECKS, checkFailed, drift, gitProblem, ignored, ignoredPaths, newer, NO_GITHUB, offGitProblem } from "./garde.mjs";
 
 const PROD = "https://croute-que-croute.tartine-sauvage.workers.dev";
 const DB = "croute-que-croute";
@@ -19,12 +19,6 @@ const quiet = (cmd) => {
   } catch {
     return false;
   }
-};
-const parts = (v) => v.split(".").map(Number);
-const newer = (a, b) => {
-  const [x, y] = [parts(a), parts(b)];
-  const i = x.findIndex((n, k) => n !== y[k]);
-  return i >= 0 && x[i] > y[i];
 };
 
 const { version: number } = JSON.parse(readFileSync("package.json", "utf8"));

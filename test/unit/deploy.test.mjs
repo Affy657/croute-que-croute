@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { blocked, checkFailed, drift, gitProblem, ignored, ignoredPaths, offGitProblem, OFF_GIT, URGENT } from "../../scripts/garde.mjs";
+import { blocked, checkFailed, drift, gitProblem, ignored, ignoredPaths, newer, offGitProblem, OFF_GIT, URGENT } from "../../scripts/garde.mjs";
 
 const MIN = 60000, END = Date.UTC(2026, 10, 7, 22, 30), FINAL = END + 15000;
 const board = (now, status) => ({ now, event: status ? { name: "Space Tartinade #3", status, closesAt: END, finalAt: FINAL } : null });
@@ -81,6 +81,15 @@ test("mise en ligne refusée si node_modules ne suit pas package-lock.json (le P
   assert.deepEqual(drift(lock, (n) => ({ qrcode: "1.5.4", wrangler: "4.154.0" })[n]), ["wrangler 4.154.0 au lieu de 4.156.0"]);
   assert.deepEqual(drift(lock, (n) => ({ wrangler: "4.156.0" })[n]), ["qrcode absent au lieu de 1.5.4"]);
   assert.deepEqual(drift(lock, (n) => ({ qrcode: "1.5.4", wrangler: "4.156.0" })[n]), []);
+});
+
+test("mise en ligne : le numéro doit monter, chiffre par chiffre et pas comme du texte", () => {
+  assert.equal(newer("1.10.0", "1.9.0"), true);
+  assert.equal(newer("1.9.0", "1.10.0"), false);
+  assert.equal(newer("2.0.0", "1.99.99"), true);
+  assert.equal(newer("1.2.1", "1.2.0"), true);
+  assert.equal(newer("1.2.0", "1.2.1"), false);
+  assert.equal(newer("1.2.0", "1.2.0"), false);
 });
 
 const CLEAN = { status: "\n", branch: "master\n", ahead: "0\n" };
