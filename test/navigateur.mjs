@@ -1070,6 +1070,16 @@ try {
       await fetch(BASE + "/api/admin/events/current", { method: "PATCH", headers, body: JSON.stringify({ opensAt: Date.now() - 3600000, closesAt: Date.now() - 60000 }) });
     }
   });
+  await step("admin : Joueurs, Parties et Record sont sous les onglets du classement qu'ils comptent", async () => {
+    const other = await browser.newPage();
+    watch(other);
+    try {
+      await other.goto(BASE + "/admin");
+      if (!(await other.locator("section:has(.scope) #statPlayers").count())) throw new Error("chiffres hors de la carte des onglets");
+    } finally {
+      await other.close();
+    }
+  });
   for (const path of ["/ecran", "/admin"]) {
     await step(`la page ${path} s'ouvre`, async () => {
       const other = await browser.newPage();
