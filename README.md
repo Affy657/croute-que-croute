@@ -220,9 +220,9 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 
 ### Base
 
-- Tables : `profiles` (joueurs), `sessions` (une clé par appareil), `runs` (parties), `events` et `entries` (soirées), `links` (codes de liaison), `google_states` (demandes Google en cours), `admins` et `admin_invites`, `client_errors`, `sound_reports`. Colonnes dans `migrations/`.
+- Tables : `profiles` (joueurs), `sessions` (une clé par appareil), `runs` (parties), `events` et `entries` (soirées), `links` (codes de liaison), `signed_out` (clés sorties par « Déconnecter les autres »), `google_states` (demandes Google en cours), `admins` et `admin_invites`, `client_errors`, `sound_reports`. Colonnes dans `migrations/`.
 - `invalid` à 1 dans `runs` : partie retirée des records, gardée, ignorée par la Progression.
-- Le serveur refuse une partie d'une ancienne version : l'heure de début suffit à savoir sur quel réglage elle a été jouée, pour nettoyer des records.
+- Le serveur refuse le départ d'une partie d'une ancienne version, sauf celle de la version juste d'avant (`APP_PREVIOUS`), pour une partie lancée pendant une mise en ligne. Pour nettoyer des records, l'heure de début dit donc sur quel réglage une partie a été jouée, à cette version près.
 
 ## Triche et sécurité
 
@@ -512,7 +512,7 @@ Après :
 - Fiche légère : le profil garde ses totaux et ses records (`steps`), une ligne lue au lieu de 734. `steps` NULL : recalcul une fois depuis les parties, par exemple après une fusion. Après une retouche à la main : `UPDATE profiles SET steps = NULL`.
 - Général : 1 000 premiers en mémoire, au-delà la place se compte. Soirée : 1 000 premiers aussi, seul le nombre de joueurs se compte au-delà (`eventCount`), et un joueur après le 1 000e n'a pas de place.
 - Lectures : `npx wrangler d1 insights croute-que-croute --timePeriod 1d --sort-type sum --sort-by reads --limit 8`. Erreurs serveur : 3 jours dans Cloudflare, `npx wrangler tail` en direct.
-- Non retenus : cache partagé en Durable Object (quota à peu près consommé par une soirée), lecture partagée entre deux demandes (risque d'erreurs, gain faible).
+- Non retenu : cache partagé en Durable Object (quota à peu près consommé par une soirée).
 - Node 26 (LTS), écrit dans les 3 fichiers de `.github/workflows/` : Dependabot ne le monte pas.
 
 ### Design
