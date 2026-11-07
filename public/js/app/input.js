@@ -8,8 +8,9 @@ function savedSens() {
   return v ? clamp(v / 10, SENS_MIN, SENS_MAX) : SENS_DEFAULT;
 }
 
-export const controls = { sens: savedSens(), aim: store.get(KEYS.mouseAim) === "1" };
+export const controls = { sens: savedSens(), aim: store.get(KEYS.mouseAim) === "1", hold: store.get(KEYS.touchHold) === "1" };
 export const hasMouse = () => window.matchMedia("(any-pointer: fine)").matches;
+export const hasTouch = () => window.matchMedia("(any-pointer: coarse)").matches;
 
 /** @param {number} v */
 export function setSens(v) {
@@ -23,6 +24,12 @@ export function setAim(on) {
   store.set(KEYS.mouseAim, on ? "1" : null);
 }
 
+/** @param {boolean} on */
+export function setHold(on) {
+  controls.hold = on;
+  store.set(KEYS.touchHold, on ? "1" : null);
+}
+
 export const guessDevice = () => (window.matchMedia("(pointer: coarse)").matches ? "mobile" : "pc");
 
 /** @param {Element | null} el */
@@ -33,16 +40,25 @@ export function createInput(canvas, { active, scale, view, toast }) {
   const pend = { x: 0, y: 0 };
   /** @type {Pt | null} */
   let aim = null;
-  const finger = { held: false, touch: false, x: 0, y: 0, at: 0 };
+  const finger = { held: false, touch: false, aim: false, x: 0, y: 0, at: 0 };
   /** @type {Map<number, Pt>} */
   const spare = new Map();
   /** @type {{ id: number, lx: number, ly: number } | null} */
   let drag = null, /** @type {Pt | null} */ mouse = null, poked = false, /** @type {string | null} */ used = null;
 
+  /** @param {number} x @param {number} y */
+  const toField = (x, y) => {
+    const { ox, oy } = view(), s = scale();
+    return { x: clamp((x - ox) / s, X_MIN, X_MAX), y: clamp((y - oy) / s, Y_MIN, Y_MAX) };
+  };
+
   /** @param {PointerEvent} e */
   const begin = (e) => {
     drag = { id: e.pointerId, lx: e.clientX, ly: e.clientY };
-    if (e.pointerType !== "mouse") Object.assign(finger, { held: true, touch: true, x: e.clientX, y: e.clientY, at: performance.now() });
+    finger.aim = e.pointerType !== "mouse" && controls.hold;
+    if (e.pointerType === "mouse") return;
+    Object.assign(finger, { held: true, touch: true, x: e.clientX, y: e.clientY, at: performance.now() });
+    if (finger.aim) aim = toField(e.clientX, e.clientY);
   };
 
   /** @param {PointerEvent} e */
@@ -55,6 +71,7 @@ export function createInput(canvas, { active, scale, view, toast }) {
       spare.delete(id);
       drag = { id, lx: p.x, ly: p.y };
       Object.assign(finger, { x: p.x, y: p.y });
+      if (finger.aim) aim = toField(p.x, p.y);
     } else {
       drag = null;
       finger.held = false;
@@ -83,8 +100,7 @@ export function createInput(canvas, { active, scale, view, toast }) {
       mouse = { x: e.clientX, y: e.clientY };
       if (!active()) return;
       used = "pc";
-      const { ox, oy } = view(), s = scale();
-      aim = { x: clamp((e.clientX - ox) / s, X_MIN, X_MAX), y: clamp((e.clientY - oy) / s, Y_MIN, Y_MAX) };
+      aim = toField(e.clientX, e.clientY);
       return;
     }
     if (e.pointerType === "mouse" && !drag) {
@@ -98,8 +114,11 @@ export function createInput(canvas, { active, scale, view, toast }) {
     }
     if (!drag || e.pointerId !== drag.id || !active()) return;
     if (used !== "pc") used = e.pointerType === "mouse" ? "pc" : "mobile";
-    pend.x += (e.clientX - drag.lx) * k;
-    pend.y += (e.clientY - drag.ly) * k;
+    if (finger.aim) aim = toField(e.clientX, e.clientY);
+    else {
+      pend.x += (e.clientX - drag.lx) * k;
+      pend.y += (e.clientY - drag.ly) * k;
+    }
     drag.lx = finger.x = e.clientX;
     drag.ly = finger.y = e.clientY;
     if (e.pointerType === "mouse") mouse = { x: e.clientX, y: e.clientY };

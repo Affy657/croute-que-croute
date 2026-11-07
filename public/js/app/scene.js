@@ -333,7 +333,7 @@ export function createScene(canvas, overlay) {
     const { W, H, dpr } = view;
     fx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (finger.held) {
-      drawPuck(finger.x, finger.y, 0, 0.4);
+      if (!finger.aim) drawPuck(finger.x, finger.y, 0, 0.4);
       const age = (performance.now() - finger.at) / 1000;
       if (!reduceMotion && age < GRAB_S) {
         const k = age / GRAB_S;

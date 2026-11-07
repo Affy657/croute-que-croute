@@ -369,6 +369,7 @@ interface HudBox {
 interface Finger extends Pt {
   held: boolean;
   touch: boolean;
+  aim: boolean;
   at: number;
 }
 

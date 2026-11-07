@@ -5,7 +5,7 @@ export const OLD_HOST = "croute-que-croute.tartine-sauvage.workers.dev";
 export const HOME = "https://croute-que-croute.tartinesauvage.fr";
 
 /** @type {(keyof typeof KEYS)[]} */
-export const KEPT = ["localBest", "myBests", "musicOff", "sfxOff", "musicVolume", "sfxVolume", "installAsked", "achievements", "toppings", "topping", "outfitSeen", "outfitAt", "gear", "side", "bread", "aura", "quality", "sensitivity", "mouseAim"];
+export const KEPT = ["localBest", "myBests", "musicOff", "sfxOff", "musicVolume", "sfxVolume", "installAsked", "achievements", "toppings", "topping", "outfitSeen", "outfitAt", "gear", "side", "bread", "aura", "quality", "sensitivity", "mouseAim", "touchHold"];
 
 const REACH_MS = 4000;
 

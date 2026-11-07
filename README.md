@@ -44,7 +44,8 @@ La musique et les bruitages ne sont pas dans le dépôt, le jeu marche sans.
 
 ### Commandes
 
-- Doigt : partout, la tartine suit à 1,8 fois le mouvement pour ne pas être cachée. « Sensibilité » de 0,8 à 2,8.
+- Doigt, « Joystick » (par défaut) : partout, la tartine suit à 1,8 fois le mouvement pour ne pas être cachée. « Sensibilité » de 0,8 à 2,8.
+- Doigt, « Tenir » : la tartine va sous le doigt, dès qu'il se pose, à la vitesse maximale du jeu (`MOVE_MAX`), donc sans avantage. Le doigt la cache. Réglage montré sur les écrans tactiles (`any-pointer: coarse`), gardé dans `cv-doigt`, suivi au changement d'adresse. Une partie au doigt reste au classement Mobile.
 - Souris : « Glisser » (comme le doigt) ou « Viser » (la tartine va où pointe la souris, curseur caché). Sortir de la fenêtre ne fait pas sauter la tartine.
 - Espace ou Entrée lance une partie depuis l'accueil et l'écran de fin, même après un clic sur un bouton (il rend le focus). Sur Infos, Espace ne relance pas l'entraînement.
 - Échap : « Retour » partout, ferme les skins et la proposition d'installer. Rien dans un champ, et le garder appuyé ne remonte qu'une page. Marche après un curseur et dans l'onglet Admin (`relayEscape`).
@@ -484,6 +485,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 | 1.1 | 06/11 | succès secret Le jeu de la tartine | 1 |
 | 1.2 | 06/11 | ancien joueur reconnu avec le nouveau QR, appareil sorti qui oublie ses skins, connexion Google prête | |
 | 1.3 | 07/11 | « Soirée finie ! » sur l'écran géant, départ et score qui tiennent sans réseau, police hébergée par le jeu, Paramètres plus clairs, admin qui retire de la soirée seulement, consos du bar sur l'écran géant | |
+| 1.4 | 07/11 | doigt : « Joystick » ou « Tenir » la tartine | |
 
 ## Erreurs des joueurs
 

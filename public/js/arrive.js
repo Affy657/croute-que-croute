@@ -1,6 +1,6 @@
 (() => {
   const OLD = "https://croute-que-croute.tartine-sauvage.workers.dev", HOST = "croute-que-croute.tartinesauvage.fr";
-  const KEPT = ["cv-best-cs", "cv-records", "cv-muted", "cv-sfx-off", "cv-music-vol", "cv-sfx-vol", "cv-install-asked", "cv-succes", "cv-garnitures", "cv-garniture", "cv-tenue-vue", "cv-tenue-at", "cv-accessoire", "cv-cotes", "cv-pain", "cv-aura", "cv-qualite", "cv-sensibilite", "cv-souris"];
+  const KEPT = ["cv-best-cs", "cv-records", "cv-muted", "cv-sfx-off", "cv-music-vol", "cv-sfx-vol", "cv-install-asked", "cv-succes", "cv-garnitures", "cv-garniture", "cv-tenue-vue", "cv-tenue-at", "cv-accessoire", "cv-cotes", "cv-pain", "cv-aura", "cv-qualite", "cv-sensibilite", "cv-souris", "cv-doigt"];
   const REACH_MS = 2500, TRIPS = 3, TRIPS_KEY = "cv-sonde-essais";
   const found = location.hash.match(/^#demenage=(.+)$/);
   /** @param {string} id */

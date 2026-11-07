@@ -5,7 +5,7 @@ import { installMode, promptInstall, shouldSuggest, markSuggested, onInstallChan
 import { prefs, setLevel, previewMusic, previewSfx } from "./audio.js";
 import { ui, setText, markInvalid } from "./screens.js";
 import { net, rename, reason, badInput } from "./api.js";
-import { controls, setSens, setAim, hasMouse } from "./input.js";
+import { controls, setSens, setAim, setHold, hasMouse, hasTouch } from "./input.js";
 
 const FLASH_MS = 2000;
 /** @type {Record<string, string>} */
@@ -61,6 +61,7 @@ function renderTestCard() {
 }
 
 const MOUSE_HINTS = ["La tartine bouge comme avec le doigt.", "La tartine va là où tu pointes."];
+const TOUCH_HINTS = ["Glisse n'importe où : la tartine suit ton mouvement.", "La tartine va sous ton doigt."];
 
 function renderControlsCard() {
   ui.sensVol.value = Math.round(controls.sens * 10);
@@ -69,6 +70,11 @@ function renderControlsCard() {
   ui.mouseHint.hidden = !mouse;
   ui.mouseHint.textContent = MOUSE_HINTS[controls.aim ? 1 : 0];
   for (const b of ui.mouseTabs.children) b.setAttribute("aria-selected", String((b.dataset.aim === "1") === controls.aim));
+  const touch = hasTouch();
+  ui.touchRow.hidden = !touch;
+  ui.touchHint.hidden = !touch;
+  ui.touchHint.textContent = TOUCH_HINTS[controls.hold ? 1 : 0];
+  for (const b of ui.touchTabs.children) b.setAttribute("aria-selected", String((b.dataset.hold === "1") === controls.hold));
 }
 
 function mountAdmin() {
@@ -210,6 +216,12 @@ ui.sensVol.addEventListener("input", () => setSens(ui.sensVol.value / 10));
 for (const b of ui.mouseTabs.children) {
   b.addEventListener("click", () => {
     setAim(b.dataset.aim === "1");
+    renderControlsCard();
+  });
+}
+for (const b of ui.touchTabs.children) {
+  b.addEventListener("click", () => {
+    setHold(b.dataset.hold === "1");
     renderControlsCard();
   });
 }

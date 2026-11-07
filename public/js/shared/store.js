@@ -23,6 +23,7 @@ export const KEYS = {
   quality: "cv-qualite",
   sensitivity: "cv-sensibilite",
   mouseAim: "cv-souris",
+  touchHold: "cv-doigt",
   invincible: "cv-invincible",
   diag: "cv-diag",
   arrival: "cv-arrivee"
