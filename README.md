@@ -481,6 +481,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 | 1.0 | 06/11 | sortie de bêta, adresse tartinesauvage.fr, comptes qui suivent seuls | 1 |
 | 1.1 | 06/11 | succès secret Le jeu de la tartine | 1 |
 | 1.2 | 06/11 | ancien joueur reconnu avec le nouveau QR, appareil sorti qui oublie ses skins, connexion Google prête | |
+| 1.3 | 07/11 | « Soirée finie ! » sur l'écran géant, départ et score qui tiennent sans réseau, police hébergée par le jeu, Paramètres plus clairs | |
 
 ## Erreurs des joueurs
 
