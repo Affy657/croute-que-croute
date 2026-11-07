@@ -19,6 +19,7 @@ const GOOGLE_NOTES = {
 const MOVE_NOTE = "Le jeu change d'adresse. Copie le lien, ouvre-le dans ton navigateur, puis réinstalle le jeu : ton compte te suit.";
 const MOVE_CODE_MS = 9 * 60 * 1000;
 const OUT_ASK = "Tes autres appareils sortent du compte. Pour revenir, il leur faudra un nouveau code.";
+const OUT_GOOGLE = " Ton compte Google sera aussi délié.";
 let leaving = false, arriving = false;
 /** @type {Timer} */
 let timer = null, until = Infinity, live = false, asked = 0, shown = "", /** @type {string | null} */ merging = null, /** @type {string | null} */ mergeInto = null, flow = 0, /** @type {string | null} */ waiting = null, /** @type {string | null} */ googleResult = null, opener = () => {}, idle = () => true;
@@ -132,6 +133,7 @@ function say(node, text, error = false) {
 /** @param {boolean} on */
 function showMerge(on) {
   ui.mergeForm.hidden = ui.mergeHelp.hidden = !on;
+  ui.mergeBtn.setAttribute("aria-expanded", String(on));
 }
 
 function resetMerge(note = "", error = false) {
@@ -266,7 +268,8 @@ function googleFromUrl() {
 function askOut(on, note = "") {
   ui.outRow.hidden = on;
   ui.outAsk.hidden = !on;
-  say(ui.outNote, on ? OUT_ASK : note);
+  const me = net.board && net.board.me;
+  say(ui.outNote, on ? OUT_ASK + (me && me.google ? OUT_GOOGLE : "") : note);
 }
 
 async function confirmOut() {

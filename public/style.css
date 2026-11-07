@@ -549,6 +549,13 @@ h2.page-title {
   background: var(--jam);
 }
 
+.ghost[aria-expanded="true"],
+.ghost[aria-expanded="true"]:active:not(:disabled) {
+  border-color: var(--mustard);
+  background: var(--mustard);
+  color: var(--void);
+}
+
 .cta:focus-visible,
 .ghost:focus-visible {
   outline: var(--focus);

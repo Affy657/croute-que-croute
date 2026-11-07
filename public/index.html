@@ -292,9 +292,9 @@
       <p class="sub">Joue avec ton compte sur un autre téléphone ou un PC. Un compte sur chaque appareil ? «&nbsp;J'ai&nbsp;un&nbsp;code&nbsp;» les réunit.</p>
       <div class="card-actions pair">
         <button id="linkBtn" class="ghost" type="button">Mon code</button>
-        <button id="mergeBtn" class="ghost" type="button">J'ai un code</button>
+        <button id="mergeBtn" class="ghost" type="button" aria-expanded="false" aria-controls="mergeForm">J'ai un code</button>
       </div>
-      <p id="mergeHelp" class="sub" hidden>Tape le code affiché sur ton autre appareil. Tu gardes son pseudo, le meilleur record des deux, toutes tes parties et tous tes succès. Pour garder plutôt le pseudo d'ici, touche «&nbsp;Mon&nbsp;code&nbsp;» et tape-le sur l'autre.</p>
+      <p id="mergeHelp" class="sub" hidden>Tape le code affiché sur ton autre appareil : tu gardes son pseudo. Pour garder celui d'ici, touche plutôt «&nbsp;Mon&nbsp;code&nbsp;» et tape-le sur l'autre.</p>
       <form id="mergeForm" class="rename" hidden>
         <label for="mergeInput" class="sr-only">Code de ton autre appareil</label>
         <input id="mergeInput" aria-describedby="mergeHelp mergeNote" name="code" maxlength="9" placeholder="Code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required>
