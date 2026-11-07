@@ -73,6 +73,7 @@ function render() {
   $("list").replaceChildren(...rows);
   if (!calm.matches) slide(rows, before);
   $("empty").hidden = rows.length > 0;
+  $("prizes").hidden = !board.event;
   $("players").textContent = board.count ? board.count + (board.count > 1 ? " joueurs" : " joueur") : "";
   tick();
 }

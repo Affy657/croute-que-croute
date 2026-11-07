@@ -258,6 +258,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 ## Écran géant
 
 - `/ecran`, en paysage : top 10 de la soirée (du général hors soirée), QR code, nombre de joueurs, fil des 6 derniers records et nouveaux pseudos des 15 dernières minutes.
+- Pendant une soirée, sous son nom : « Au bar : 3 consos au 1er, 2 au 2e, 1 au 3e » (`#prizes`, écrit dans `ecran.html`, le même pour toutes les soirées). Cachée dans la dernière minute et au « Bravo », comme le grand titre, pour que le top 10 tienne. Pas de badge sur les lignes : il coupait le pseudo du 1er.
 - Dernier quart d'heure : chiffres rouges qui tremblent. À zéro : « Soirée finie ! », sans confettis.
 - 27 s après la fin : l'écran relit le classement de lui-même, WebSocket ou pas, puis « Bravo X ! », confettis et rebond de la 1re ligne. Sans réseau, il reste sur « Soirée finie ! » et réessaie toutes les 2 s : pas de gagnant sans classement relu.
 - « Nouveau n°1 » pendant 6 s, seulement pour un record plus récent que le dernier connu (`at`, `last`), pas pour un 1er retiré ou réintégré. Comparer à l'heure de lecture ratait un record enregistré pendant la lecture.
@@ -482,7 +483,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 | 1.0 | 06/11 | sortie de bêta, adresse tartinesauvage.fr, comptes qui suivent seuls | 1 |
 | 1.1 | 06/11 | succès secret Le jeu de la tartine | 1 |
 | 1.2 | 06/11 | ancien joueur reconnu avec le nouveau QR, appareil sorti qui oublie ses skins, connexion Google prête | |
-| 1.3 | 07/11 | « Soirée finie ! » sur l'écran géant, départ et score qui tiennent sans réseau, police hébergée par le jeu, Paramètres plus clairs, admin qui retire de la soirée seulement | |
+| 1.3 | 07/11 | « Soirée finie ! » sur l'écran géant, départ et score qui tiennent sans réseau, police hébergée par le jeu, Paramètres plus clairs, admin qui retire de la soirée seulement, consos du bar sur l'écran géant | |
 
 ## Erreurs des joueurs
 

@@ -49,6 +49,12 @@ body.idle {
   color: var(--mustard);
 }
 
+.prizes {
+  margin: var(--screen-space-xs) 0 0;
+  font-size: var(--screen-text-md);
+  color: var(--ink);
+}
+
 .countdown {
   margin: var(--screen-space-xs) 0 0;
   font-size: var(--screen-text-sm);
@@ -59,7 +65,8 @@ body.idle {
   color: var(--ink);
 }
 
-body.hot .head h1 {
+body.hot .head h1,
+body.hot .prizes {
   display: none;
 }
 
