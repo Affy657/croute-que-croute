@@ -503,6 +503,19 @@ try {
       }
     });
   }
+  await step("Paramètres sur téléphone : « Doigt » propose Joystick ou Tenir, le choix est gardé", async () => {
+    const { context, p } = await freshPage(await joinApi("Doigt" + hex(4)), null, { hasTouch: true });
+    try {
+      await p.goto(BASE + "/");
+      await p.locator("#settingsBtn").click({ timeout: WAIT_MS });
+      await p.locator("#touchRow").waitFor({ timeout: WAIT_MS });
+      if ((await p.locator("#touchHint").textContent()) !== "Glisse n'importe où : la tartine suit ton mouvement.") throw new Error("Joystick pas choisi au départ");
+      await p.locator('#touchTabs [data-hold="1"]').click();
+      await p.waitForFunction(() => document.getElementById("touchHint").textContent === "La tartine va sous ton doigt." && localStorage.getItem("cv-doigt") === "1", null, { timeout: WAIT_MS });
+    } finally {
+      await context.close();
+    }
+  });
   await step("Autre appareil : « Déconnecter les autres » pendant la vérification d'un code, une seule confirmation ouverte", async () => {
     const code = await codeOf(await joinApi("Course" + hex(4)));
     const { context, p } = await freshPage(await joinApi("Coureur" + hex(4)));
