@@ -6,6 +6,9 @@ const { board, screen } = await import(new URL("../../src/routes/board.ts", impo
 const { finishRun } = await import(new URL("../../src/routes/runs.ts", import.meta.url).href);
 const { eventRanking, generalRanking, forgetCaches } = await import(new URL("../../src/db.ts", import.meta.url).href);
 const { sha256 } = await import(new URL("../../src/security.ts", import.meta.url).href);
+const { removeFromEvent, players } = await import(new URL("../../src/routes/admin.ts", import.meta.url).href);
+const { mergeInto } = await import(new URL("../../src/routes/link.ts", import.meta.url).href);
+const { card } = await import(new URL("../../src/routes/card.ts", import.meta.url).href);
 
 const NOW = 1_800_000_000_000, LOU = "c".repeat(48), MAX = "d".repeat(48);
 
@@ -264,4 +267,105 @@ test("renvoi d'un score : l'ordre des égalités en mémoire ne change pas", asy
   const b = await read(env);
   assert.deepEqual(ids(b.top), ["lou", "max"]);
   assert.deepEqual(ids(b.eventTop), ["lou", "max"]);
+});
+
+const outOfParty = (env, id, removed = true, event = 1) => removeFromEvent({
+  req: new Request("http://local/api/admin/players/" + id + "/soiree", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ event, removed }) }),
+  env,
+  params: [id],
+});
+
+const twoPlayers = (env) => {
+  add(env, "lou", 900, NOW - 5000);
+  enter(env, "lou", 800, NOW - 5000);
+  add(env, "max", 700, NOW - 4000);
+  enter(env, "max", 600, NOW - 4000);
+};
+
+test("retiré de la soirée : absent du classement, de l'écran et du fil de la soirée, présent au général", async (t) => {
+  const env = setup(t);
+  twoPlayers(env);
+  assert.equal((await outOfParty(env, "lou")).status, 200);
+  assert.deepEqual(ids(await eventRanking(env, 1, 0)), ["max"]);
+  assert.deepEqual(ids(await generalRanking(env)), ["lou", "max"]);
+  const shown = await showing(env);
+  assert.deepEqual(shown.top.map((r) => r.pseudo), ["max"]);
+  assert.equal(shown.count, 1);
+  assert.deepEqual(shown.feed.filter((i) => i.kind === "best").map((i) => i.pseudo), ["max"]);
+});
+
+test("retiré de la soirée : ses parties ne comptent pas pour elle, il se voit hors classement, réintégré il revient avec son ancien record", async (t) => {
+  const env = setup(t);
+  twoPlayers(env);
+  await sign(env, "lou", LOU);
+  await outOfParty(env, "lou");
+  run(env, "partie", "lou");
+  const body = await (await finish(env, "partie", LOU, 5000)).json();
+  assert.equal(body.eventRank, null);
+  assert.deepEqual(ids(await eventRanking(env, 1, 0)), ["max"]);
+  assert.equal((await read(env, LOU)).me.eventRank, null);
+  assert.equal((await outOfParty(env, "lou", false)).status, 200);
+  const back = await eventRanking(env, 1, 0);
+  assert.deepEqual(back.map((r) => [r.id, r.best]), [["lou", 800], ["max", 600]]);
+});
+
+test("retiré de la soirée avant d'y jouer : il n'y entre pas en jouant", async (t) => {
+  const env = setup(t);
+  add(env, "lou", 900, NOW - 5000);
+  await sign(env, "lou", LOU);
+  assert.equal((await outOfParty(env, "lou")).status, 200);
+  run(env, "partie", "lou");
+  await finish(env, "partie", LOU, 5000);
+  assert.deepEqual(await eventRanking(env, 1, 0), []);
+});
+
+test("retiré de la soirée : joueur ou soirée inconnus refusés, rien n'est écrit", async (t) => {
+  const env = setup(t);
+  twoPlayers(env);
+  assert.equal((await outOfParty(env, "personne")).status, 404);
+  assert.equal((await outOfParty(env, "lou", true, 9)).status, 404);
+  assert.equal((await outOfParty(env, "lou", true, "1")).status, 400);
+  assert.equal(env.DB.db.prepare("SELECT COUNT(*) AS n FROM entries WHERE removed = 1").get().n, 0);
+});
+
+test("admin, onglet soirée : le retiré est marqué, passe sous les nouveaux venus, ne compte ni pour l'écart suspect ni comme actif", async (t) => {
+  const env = setup(t);
+  for (const [id, best] of [["lou", 9000], ["max", 7000], ["zoe", 1000]]) {
+    add(env, id);
+    enter(env, id, best, NOW - 5000);
+  }
+  env.DB.db.prepare("INSERT INTO profiles (id, pseudo, pseudo_key, token, created_at) VALUES ('neo', 'neo', 'neo', 'jeton-neo', ?)").run(NOW);
+  env.DB.db.prepare("UPDATE profiles SET last_at = ? WHERE id = 'lou'").run(NOW);
+  await outOfParty(env, "lou");
+  const data = await (await players({ req: new Request("http://local/api/admin/players"), env })).json();
+  assert.equal(data.event.id, 1);
+  assert.deepEqual(data.players.map((p) => [p.pseudo, p.removed, p.active, p.suspect]), [["max", 0, false, "high"], ["zoe", 0, false, null], ["neo", 0, false, null], ["lou", 1, false, null]]);
+});
+
+test("retiré de la soirée puis comptes réunis : le compte gardé reste retiré", async (t) => {
+  const env = setup(t);
+  twoPlayers(env);
+  await outOfParty(env, "lou");
+  await mergeInto(env, "max", "lou");
+  assert.deepEqual(await eventRanking(env, 1, 0), []);
+});
+
+test("retiré de la soirée : sa fiche ne la compte pas dans sa meilleure soirée", async (t) => {
+  const env = setup(t);
+  twoPlayers(env);
+  await outOfParty(env, "lou");
+  const fiche = await (await card({ req: new Request("http://local/api/players/lou"), env, params: ["lou"] })).json();
+  assert.equal(fiche.eventBest, null);
+  assert.equal(fiche.events, 1);
+});
+
+test("admin, onglet soirée : un retiré n'est pas le 2e qui fait passer le 1er pour suspect", async (t) => {
+  const env = setup(t);
+  for (const [id, best] of [["max", 7000], ["lou", 1000]]) {
+    add(env, id);
+    enter(env, id, best, NOW - 5000);
+  }
+  await outOfParty(env, "lou");
+  const data = await (await players({ req: new Request("http://local/api/admin/players"), env })).json();
+  assert.deepEqual(data.players.map((p) => [p.pseudo, p.suspect]), [["max", null], ["lou", null]]);
 });

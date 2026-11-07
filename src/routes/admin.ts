@@ -32,6 +32,7 @@ interface PlayerAdminRow {
   pseudo: string;
   best: number;
   banned: number;
+  removed?: number;
   run_count: number;
   best_elapsed: number | null;
   last_at: number | null;
@@ -103,7 +104,7 @@ export async function logout({ env, auth }: Ctx) {
 }
 
 function farAhead(rows: PlayerAdminRow[]) {
-  const [first, second] = rows.filter((p) => !p.banned && p.best > 0);
+  const [first, second] = rows.filter((p) => !p.banned && !p.removed && p.best > 0);
   return first && second && first.best >= SUSPECT_MIN && first.best > second.best * SUSPECT_LEAD ? first.id : null;
 }
 
@@ -116,7 +117,7 @@ function suspect(p: PlayerAdminRow, ahead: string | null) {
 
 const statusOf = (e: EventRow, now: number) => (now < e.opens_at ? "upcoming" : now < e.closes_at ? "open" : "closed");
 
-const eventJson = (e: EventRow, now: number) => ({ name: e.name, opensAt: e.opens_at, closesAt: e.closes_at, status: statusOf(e, now) });
+const eventJson = (e: EventRow, now: number) => ({ id: e.id, name: e.name, opensAt: e.opens_at, closesAt: e.closes_at, status: statusOf(e, now) });
 
 const time = (raw: unknown) => (typeof raw === "number" && Number.isFinite(raw) ? Math.round(raw) : null);
 
@@ -143,9 +144,9 @@ export async function players({ req, env }: Ctx) {
   } else if (event) {
     const [entries, recent] = await env.DB.batch<PlayerAdminRow>([
       env.DB.prepare(
-        `SELECT p.id, p.pseudo, e.best, p.banned, e.run_count, e.best_elapsed, p.last_at FROM entries e JOIN profiles p ON p.id = e.player_id
+        `SELECT p.id, p.pseudo, e.best, p.banned, e.removed, e.run_count, e.best_elapsed, p.last_at FROM entries e JOIN profiles p ON p.id = e.player_id
          WHERE e.event_id = ?
-         ORDER BY p.banned ASC, e.best DESC, e.best_at ASC`,
+         ORDER BY p.banned ASC, e.removed ASC, e.best DESC, e.best_at ASC`,
       ).bind(event.id),
       joined,
     ]);
@@ -154,7 +155,7 @@ export async function players({ req, env }: Ctx) {
   }
   const listed = new Set(rows.map((p) => p.id));
   fresh = fresh.filter((p) => !listed.has(p.id));
-  const firstOut = rows.findIndex((p) => p.banned);
+  const firstOut = rows.findIndex((p) => p.banned || p.removed);
   const shown = firstOut < 0 ? [...rows, ...fresh] : [...rows.slice(0, firstOut), ...fresh, ...rows.slice(firstOut)];
   const ahead = farAhead(rows);
   return json({
@@ -165,9 +166,10 @@ export async function players({ req, env }: Ctx) {
       pseudo: p.pseudo,
       best: p.best,
       banned: p.banned,
+      removed: p.removed ?? 0,
       runs: p.run_count,
       suspect: suspect(p, ahead),
-      active: !p.banned && (p.last_at ?? 0) > now - ACTIVE_MS,
+      active: !p.banned && !p.removed && (p.last_at ?? 0) > now - ACTIVE_MS,
     })),
     stats: { players: rows.length, runs: rows.reduce((n, p) => n + p.run_count, 0) },
   });
@@ -215,6 +217,21 @@ export async function updateEvent({ req, env, exec }: Ctx) {
   await env.DB.prepare("UPDATE events SET name = ?, opens_at = ?, closes_at = ? WHERE id = ?")
     .bind(name, opensAt, Math.max(closesAt, Date.now()), event.id)
     .run();
+  forgetCaches();
+  tell(env, exec);
+  return json({ ok: true });
+}
+
+export async function removeFromEvent({ req, env, params, exec }: Ctx) {
+  const body = await readJson(req);
+  const eventId = body.event;
+  if (!Number.isInteger(eventId)) return fail(400, "Soirée manquante.");
+  const res = await env.DB.prepare(
+    `INSERT INTO entries (event_id, player_id, removed) SELECT ?1, ?2, ?3
+     WHERE EXISTS (SELECT 1 FROM events WHERE id = ?1) AND EXISTS (SELECT 1 FROM profiles WHERE id = ?2)
+     ON CONFLICT (event_id, player_id) DO UPDATE SET removed = excluded.removed`,
+  ).bind(eventId, params[0], body.removed === true ? 1 : 0).run();
+  if (!res.meta.changes) return fail(404, "Joueur ou soirée inconnus.");
   forgetCaches();
   tell(env, exec);
   return json({ ok: true });

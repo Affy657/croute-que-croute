@@ -778,6 +778,27 @@ try {
     await admin.waitForFunction(() => document.getElementById("eventName").textContent === "Soirée du navigateur", null, { timeout: WAIT_MS });
     if ((await status()) !== "Soirée en cours") throw new Error(await status());
   });
+  await step("admin, onglet Soirée : « Retirer » ne retire que de la soirée, le joueur reste au général", async () => {
+    const name = "Fete" + hex(4), tok = await joinApi(name);
+    const auth = { ...apiHeaders, authorization: "Bearer " + tok };
+    const { runId } = await (await fetch(BASE + "/api/runs", { method: "POST", headers: auth, body: "{}" })).json();
+    await fetch(BASE + "/api/runs/" + runId, { method: "POST", headers: auth, body: JSON.stringify({ score: 400 }) });
+    await admin.locator('.scope[data-scope="event"]').click();
+    const row = admin.locator("#players li", { hasText: name });
+    await row.waitFor({ timeout: WAIT_MS });
+    let asked = dialog(admin, true);
+    await row.locator("button").click();
+    const question = await asked;
+    if (!question.includes("de la soirée") || !question.includes("reste au classement général")) throw new Error(question);
+    await admin.waitForFunction((n) => [...document.querySelectorAll("#players li.out")].some((li) => li.textContent.includes(n) && li.textContent.includes("retiré de la soirée")), name, { timeout: WAIT_MS });
+    const me = await boardOf(tok);
+    if (me.eventRank !== null || !me.rank) throw new Error(`place en soirée ${me.eventRank}, au général ${me.rank}`);
+    asked = dialog(admin, true);
+    await row.locator("button", { hasText: "Réintégrer" }).click();
+    if (!(await asked).includes("au classement de la soirée")) throw new Error("mauvaise question");
+    await admin.waitForFunction((n) => [...document.querySelectorAll("#players li:not(.out)")].some((li) => li.textContent.includes(n)), name, { timeout: WAIT_MS });
+    if (!(await boardOf(tok)).eventRank) throw new Error("pas revenu dans la soirée");
+  });
   await step("écran géant pendant la soirée : en direct par WebSocket, un record s'affiche tout de suite", async () => {
     const other = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     watch(other);

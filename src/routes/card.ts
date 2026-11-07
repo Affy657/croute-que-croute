@@ -88,7 +88,7 @@ async function loadCard(env: Env, id: string) {
     p.pc_best > 0 ? generalRank(env, pc, p.id, p.pc_best, p.pc_best_at, "pc") : null,
     generalCount(env, pc, false, "pc"),
     env.DB.prepare(
-      "SELECT e.event_id AS id, ev.name, e.best, e.run_count AS runs, ev.closes_at FROM entries e JOIN events ev ON ev.id = e.event_id WHERE e.player_id = ? ORDER BY ev.opens_at DESC",
+      "SELECT e.event_id AS id, ev.name, CASE WHEN e.removed = 0 THEN e.best ELSE 0 END AS best, e.run_count AS runs, ev.closes_at FROM entries e JOIN events ev ON ev.id = e.event_id WHERE e.player_id = ? ORDER BY ev.opens_at DESC",
     )
       .bind(p.id)
       .all<EntryRow>(),

@@ -51,6 +51,14 @@ check("invitation inventée = refusée", r.status === 404, r);
 r = await call("GET", "/api/admin/players", { token: admin });
 check("admin voit le classement et les stats", r.status === 200 && r.data.stats && "runs" in r.data.stats, r);
 
+const party = (body, token) => call("POST", "/api/admin/players/joueur-inconnu/soiree", { body, token });
+r = await party({ event: 999999, removed: true }, admin);
+check("retirer de la soirée : soirée ou joueur inconnus = 404", r.status === 404, r);
+r = await party({ event: "1", removed: true }, admin);
+check("retirer de la soirée : soirée manquante = 400", r.status === 400, r);
+r = await party({ event: 1, removed: true }, "jeton-de-joueur-ou-invente");
+check("retirer de la soirée sans être admin = 401", r.status === 401, r);
+
 r = await call("GET", "/api/admin/team", { token: admin });
 check("admin ne voit pas l'équipe", r.status === 403, r);
 

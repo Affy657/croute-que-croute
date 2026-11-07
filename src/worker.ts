@@ -43,6 +43,7 @@ const routes: Route[] = [
   { method: "POST", path: "/api/admin/logout", access: "admin", run: admin.logout },
   { method: "GET", path: "/api/admin/players", access: "admin", run: admin.players },
   { method: "POST", path: new RegExp(`^/api/admin/players/${ID}/ban$`), access: "admin", run: admin.ban },
+  { method: "POST", path: new RegExp(`^/api/admin/players/${ID}/soiree$`), access: "admin", run: admin.removeFromEvent },
   { method: "POST", path: "/api/admin/events", access: "admin", run: admin.createEvent },
   { method: "PATCH", path: "/api/admin/events/current", access: "admin", run: admin.updateEvent },
   { method: "GET", path: "/api/admin/team", access: "owner", run: admin.team },
