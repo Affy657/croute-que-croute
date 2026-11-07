@@ -701,7 +701,6 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - Impossible de revenir de la 0.49.0 ou plus à la 0.48.0 ou avant : Cloudflare refuse quand une classe Durable Object (`Live`) a été ajoutée entre les deux. Plan B : corriger, puis `npm run deploy -- --pendant-soiree`. Entre deux versions avec `Live`, le retour reste possible.
 - La base ne revient pas en arrière : une migration doit laisser marcher la version d'avant (ajouter des colonnes, jamais en retirer ni en renommer dans la même mise en ligne). `migrations.test.mjs` le vérifie ; le retrait de `client_id` devra s'y déclarer dans `ALLOWED`. Après un retour avant le 02/11/2026 puis une remise en ligne : `UPDATE profiles SET steps = NULL`.
 - wrangler est connecté au compte Cloudflare sur le PC d'Adrien (`npx wrangler whoami`).
-- Branche `essais` : elle servait à tester des nouveautés avant `master`, une fusion par idée. Son rôle actuel n'est écrit nulle part : elle suit `master` en avance rapide, aucun script ni workflow ne s'en sert, et `npm run deploy` ne part que de `master`.
 ## Licence
 
 Code sous licence MIT (`LICENSE`). Ne sont pas couverts :
