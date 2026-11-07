@@ -205,6 +205,7 @@ try {
     for (let i = 0; i < 2; i++) {
       await click("outBtn");
       await shown("outAsk");
+      if ((await $("#outNote").textContent()).includes("Google")) throw new Error("la confirmation parle de Google sans compte Google lié");
       await $("#outYes").click({ timeout: WAIT_MS });
       await page.waitForFunction(() => document.getElementById("outAsk").hidden && document.getElementById("outNote").textContent.includes("appareil"), null, { timeout: WAIT_MS });
     }
@@ -214,11 +215,17 @@ try {
   await step("Paramètres, Autre appareil : un seul parcours ouvert à la fois, erreur du code en rouge", async () => {
     await click("settingsBtn");
     await shown("settings");
+    const open = () => page.evaluate(() => {
+      const b = document.getElementById("mergeBtn");
+      return [b.getAttribute("aria-expanded"), getComputedStyle(b).backgroundColor !== "rgba(0, 0, 0, 0)"];
+    });
     await click("mergeBtn");
     await shown("mergeHelp");
+    if (String(await open()) !== "true,true") throw new Error(`« J'ai un code » ouvert sans le montrer : ${await open()}`);
     await click("outBtn");
     await shown("outAsk");
     if (await $("#mergeForm").isVisible()) throw new Error("le code de fusion reste ouvert sous la confirmation");
+    if (String(await open()) !== "false,false") throw new Error(`« J'ai un code » fermé mais montré ouvert : ${await open()}`);
     await click("mergeBtn");
     await shown("mergeForm");
     if (await $("#outAsk").isVisible()) throw new Error("la confirmation reste ouverte sous le code de fusion");
@@ -228,6 +235,19 @@ try {
       const note = document.getElementById("mergeNote");
       return note.textContent && note.classList.contains("error");
     }, null, { timeout: WAIT_MS });
+    await click("closeBtn");
+    await shown("menu");
+  });
+  await step("Paramètres, Pseudo : « Changer » grisé tant que le pseudo ne change pas", async () => {
+    await click("settingsBtn");
+    await shown("renameCard");
+    const button = $("#renameForm button");
+    const pseudo = await $("#newPseudo").inputValue();
+    if (!(await button.isDisabled())) throw new Error("« Changer » actif sans nouveau pseudo");
+    await page.fill("#newPseudo", pseudo.slice(0, 14) + "Zq");
+    if (await button.isDisabled()) throw new Error("« Changer » grisé avec un nouveau pseudo");
+    await page.fill("#newPseudo", " " + pseudo + " ");
+    if (!(await button.isDisabled())) throw new Error("« Changer » actif avec le même pseudo");
     await click("closeBtn");
     await shown("menu");
   });
@@ -1316,7 +1336,10 @@ try {
       await p.goto(BASE + "/");
       await p.locator("#settingsBtn").click({ timeout: WAIT_MS });
       await p.waitForFunction(() => document.getElementById("googleLabel").textContent === "Délier mon compte Google", null, { timeout: WAIT_MS });
+      const widths = await p.evaluate(() => ["googleBtn", "outBtn"].map((id) => document.getElementById(id).getBoundingClientRect().width));
+      if (!widths[0] || Math.abs(widths[0] - widths[1]) > 1) throw new Error(`bouton Google large de ${widths[0]} px, « Déconnecter les autres » de ${widths[1]} px`);
       await p.locator("#outBtn").click();
+      await p.waitForFunction(() => document.getElementById("outNote").textContent.endsWith("Ton compte Google sera aussi délié."), null, { timeout: WAIT_MS });
       await p.locator("#outYes").click({ timeout: WAIT_MS });
       await p.waitForFunction(() => document.getElementById("googleLabel").textContent === "Lier mon compte Google", null, { timeout: WAIT_MS });
     } finally {

@@ -17,7 +17,7 @@ const HINTS = {
 };
 const NUMBER = VERSION.split("+")[0];
 const VERSION_LABEL = `Version ${NUMBER}${NUMBER.startsWith("0.") ? " bêta" : ""}`;
-let tab = "app";
+let tab = "app", renaming = false;
 
 export const testing = { invincible: LOCAL && session.get(KEYS.invincible) === "1" };
 
@@ -44,6 +44,7 @@ export function renderSettings() {
   if (me && document.activeElement !== ui.newPseudo) ui.newPseudo.value = me.pseudo;
   setText(ui.renameNote, "");
   markInvalid(ui.newPseudo, false);
+  syncRename();
   const mode = installMode();
   ui.installCard.hidden = mode === "installed";
   ui.installHint.textContent = HINTS[mode] || "";
@@ -111,13 +112,18 @@ function renameNote(text, error) {
   ui.renameNote.classList.toggle("error", error);
 }
 
+function syncRename() {
+  const me = net.board && net.board.me, pseudo = ui.newPseudo.value.trim();
+  ui.renameForm.querySelector("button").disabled = renaming || !me || !pseudo || pseudo === me.pseudo;
+}
+
 /** @param {Event} e */
 async function renamePlayer(e) {
   e.preventDefault();
   const me = net.board && net.board.me, pseudo = ui.newPseudo.value.trim();
-  if (!me || !pseudo || pseudo === me.pseudo) return;
-  const button = ui.renameForm.querySelector("button");
-  button.disabled = true;
+  if (renaming || !me || !pseudo || pseudo === me.pseudo) return;
+  renaming = true;
+  syncRename();
   renameNote("", false);
   markInvalid(ui.newPseudo, false);
   try {
@@ -129,7 +135,8 @@ async function renamePlayer(e) {
     renameNote(reason(err), true);
     markInvalid(ui.newPseudo, badInput(err));
   } finally {
-    button.disabled = false;
+    renaming = false;
+    syncRename();
   }
 }
 
@@ -215,6 +222,7 @@ for (const b of ui.godTabs.children) {
 ui.installBtn.addEventListener("click", promptInstall);
 ui.shareBtn.addEventListener("click", shareGame);
 ui.renameForm.addEventListener("submit", renamePlayer);
+ui.newPseudo.addEventListener("input", syncRename);
 ui.installYes.addEventListener("click", () => {
   closePop();
   promptInstall();

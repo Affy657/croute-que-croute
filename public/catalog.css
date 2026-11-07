@@ -47,7 +47,8 @@
   border-top: var(--border-thin) solid var(--line);
 }
 
-#outRow .ghost {
+#outRow .ghost,
+#googleBox .ghost {
   flex: 1;
   padding-inline: var(--inset-sm);
 }
