@@ -29,7 +29,6 @@ Prod : https://croute-que-croute.tartinesauvage.fr
 
 - Travailler sur une branche, pas directement sur `master`. Un nom de branche ne commence pas par `equilibrage/`.
 - `git checkout master`, `git merge --no-ff <branche>`, `git push origin master`.
-- Puis `git checkout essais`, `git merge --ff-only master`, `git push origin essais`, et retour sur `master`. Le rôle actuel de `essais` n'est écrit nulle part : voir Bon à savoir dans le README.
 
 ## Mise en ligne
 
