@@ -658,6 +658,7 @@ try {
       if (new URL(r.url()).pathname === "/api/ecran") asks++;
     });
     await other.goto(BASE + "/ecran", { waitUntil: "networkidle" });
+    if (await other.locator("#prizes").isVisible()) throw new Error("consos du bar affichées hors soirée");
     asks = 0;
     for (let i = 0; i < 12; i++) {
       await other.clock.runFor(10000);
@@ -819,6 +820,7 @@ try {
     await fetch(BASE + "/api/runs/" + runId, { method: "POST", headers: auth, body: JSON.stringify({ score: 300 }) });
     await other.locator("#list li", { hasText: name }).first().waitFor({ timeout: WAIT_MS });
     const took = Date.now() - since;
+    if (!(await other.locator("#prizes").isVisible()) || !(await other.locator("#prizes").textContent()).includes("3 consos au 1er, 2 au 2e, 1 au 3e")) throw new Error("consos du bar absentes pendant la soirée");
     await wait(1500);
     let asks = 0;
     other.on("request", (r) => {
