@@ -147,7 +147,7 @@ export async function finishRun({ req, env, params, exec }: Ctx) {
     );
     if (!me.banned) {
       statements.push(
-        env.DB.prepare(`UPDATE entries SET best = ?1, best_at = ?2, best_elapsed = ?3 WHERE event_id = ?4 AND player_id = ?5 AND best < ?1 AND ${unfinished("?6")}`)
+        env.DB.prepare(`UPDATE entries SET best = ?1, best_at = ?2, best_elapsed = ?3 WHERE event_id = ?4 AND player_id = ?5 AND best < ?1 AND removed = 0 AND ${unfinished("?6")}`)
           .bind(score, now, played, eventId, me.id, run.id),
       );
     }

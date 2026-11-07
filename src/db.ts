@@ -45,7 +45,7 @@ export const RECENT_MS = 12 * 3600 * 1000;
 const LIST_LIMIT = 1000;
 const CACHE_KEEP = 300;
 const EVENT_COLS = "id, name, opens_at, closes_at";
-const EVENT_ROWS = "FROM entries e JOIN profiles p ON p.id = e.player_id WHERE e.event_id = ? AND e.best > 0 AND p.banned = 0";
+const EVENT_ROWS = "FROM entries e JOIN profiles p ON p.id = e.player_id WHERE e.event_id = ? AND e.best > 0 AND p.banned = 0 AND e.removed = 0";
 const COLS: Record<Board, { best: string; at: string }> = { general: { best: "best", at: "best_at" }, pc: { best: "pc_best", at: "pc_best_at" } };
 const above = ({ best, at }: { best: string; at: string }) => `banned = 0 AND ${best} > 0 AND (${best} > ?1 OR (${best} = ?1 AND ${at} < ?2))`;
 
@@ -95,7 +95,7 @@ export async function findProfile(req: Request, env: Env) {
 }
 
 export async function entryMark(env: Env, eventId: number, playerId: string) {
-  const row = await env.DB.prepare("SELECT best, best_at AS at FROM entries WHERE event_id = ? AND player_id = ?")
+  const row = await env.DB.prepare("SELECT CASE WHEN removed = 0 THEN best ELSE 0 END AS best, best_at AS at FROM entries WHERE event_id = ? AND player_id = ?")
     .bind(eventId, playerId)
     .first<{ best: number; at: number | null }>();
   return row ?? { best: 0, at: null };

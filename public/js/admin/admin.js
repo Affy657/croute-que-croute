@@ -153,7 +153,7 @@ function renderEvent() {
   $("eventStatus").textContent = ev ? STATUS[ev.status] : "Soirée";
   $("eventName").textContent = ev ? ev.name : "Aucune soirée";
   $("editEndBtn").hidden = !ev || ev.status === "closed";
-  const best = data ? Math.max(0, ...data.players.filter((p) => !p.banned).map((p) => p.best)) : 0;
+  const best = data ? Math.max(0, ...data.players.filter((p) => !p.banned && !p.removed).map((p) => p.best)) : 0;
   $("statPlayers").textContent = data ? data.stats.players : 0;
   $("statRuns").textContent = data ? data.stats.runs : 0;
   $("statBest").textContent = best ? fmtCs(best) : "-";
@@ -174,16 +174,16 @@ function tick() {
 
 function renderPlayers() {
   const players = data ? data.players : [];
-  const doubt = players.filter((p) => p.suspect && !p.banned).length;
+  const doubt = players.filter((p) => p.suspect && !p.banned && !p.removed).length;
   say($("suspectAlert"), doubt ? (doubt > 1 ? doubt + " records à vérifier" : "1 record à vérifier") + " (trait rouge). Regarde le détail avant de retirer quelqu'un." : "", true);
   const active = players.filter((p) => p.active).length;
   say($("activeNote"), active ? (active > 1 ? active + " joueurs actifs" : "1 joueur actif") + " (point jaune) : une partie finie ces 10 dernières minutes." : "");
   let rank = 0;
   $("players").replaceChildren(...players.map((p) => {
     const li = document.createElement("li");
-    const ranked = !p.banned && p.best > 0;
+    const ranked = !p.banned && !p.removed && p.best > 0;
     if (ranked) rank++;
-    li.className = p.banned ? "out" : p.suspect ? "suspect" : "";
+    li.className = p.banned || p.removed ? "out" : p.suspect ? "suspect" : "";
     const main = document.createElement("div");
     main.className = "main";
     const name = cell("span", "name", p.pseudo);
@@ -196,15 +196,21 @@ function renderPlayers() {
     }
     main.append(
       name,
-      cell("span", "meta", (p.best ? fmtCs(p.best) + " s, " : "") + p.runs + (p.runs > 1 ? " parties" : " partie") + (p.banned ? ", retiré" : p.suspect ? ", " + SUSPECT_LABELS[p.suspect] : ""))
+      cell("span", "meta", (p.best ? fmtCs(p.best) + " s, " : "") + p.runs + (p.runs > 1 ? " parties" : " partie") + (p.banned ? ", retiré partout" : p.removed ? ", retiré de la soirée" : p.suspect ? ", " + SUSPECT_LABELS[p.suspect] : ""))
     );
-    const btn = cell("button", "btn ghost small", p.banned ? "Réintégrer" : "Retirer");
+    const party = scope === "event" && !p.banned && data && data.event;
+    const btn = cell("button", "btn ghost small", p.banned || p.removed ? "Réintégrer" : "Retirer");
     btn.type = "button";
     btn.addEventListener("click", async () => {
-      if (!confirm(p.banned ? "Réintégrer " + p.pseudo + " au classement ?" : "Retirer " + p.pseudo + " du classement ?")) return;
+      const ask = p.banned ? "Réintégrer " + p.pseudo + " dans tous les classements ?"
+        : !party ? "Retirer " + p.pseudo + " de tous les classements, soirées comprises ?"
+        : p.removed ? "Réintégrer " + p.pseudo + " au classement de la soirée ?"
+        : "Retirer " + p.pseudo + " du classement de la soirée ? Il reste au classement général.";
+      if (!confirm(ask)) return;
       btn.disabled = true;
       try {
-        await call("POST", "/api/admin/players/" + p.id + "/ban", { banned: !p.banned });
+        if (party) await call("POST", "/api/admin/players/" + p.id + "/soiree", { event: party.id, removed: !p.removed });
+        else await call("POST", "/api/admin/players/" + p.id + "/ban", { banned: !p.banned });
         await load();
       } catch (e) {
         say($("playersMsg"), /** @type {Error} */ (e).message, true);

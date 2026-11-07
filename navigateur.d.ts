@@ -719,6 +719,7 @@ interface Qr {
 }
 
 interface AdminEvent extends Omit<EventInfo, "finalAt"> {
+  id: number;
   status: "open" | "upcoming" | "closed";
 }
 
@@ -727,6 +728,7 @@ interface AdminPlayer {
   pseudo: string;
   best: number;
   banned: number;
+  removed: number;
   runs: number;
   suspect: "high" | "slow" | null;
   active: boolean;

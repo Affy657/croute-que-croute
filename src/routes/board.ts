@@ -81,7 +81,7 @@ async function feedItems(env: Env, open: EventRow | null, now: number) {
   const bests = open
     ? env.DB.prepare(
         `SELECT p.pseudo, e.best AS score, e.best_at AS at FROM entries e JOIN profiles p ON p.id = e.player_id
-         WHERE e.event_id = ?1 AND e.best > 0 AND e.best_at > ?2 AND p.banned = 0 ORDER BY e.best_at DESC LIMIT ?3`,
+         WHERE e.event_id = ?1 AND e.best > 0 AND e.best_at > ?2 AND p.banned = 0 AND e.removed = 0 ORDER BY e.best_at DESC LIMIT ?3`,
       ).bind(open.id, since, FEED_SIZE)
     : env.DB.prepare(
         `SELECT pseudo, best AS score, best_at AS at FROM profiles INDEXED BY profiles_best_at
@@ -113,7 +113,7 @@ async function screenTop(env: Env, shown: EventRow | null, during: boolean) {
   const [rows, ranking] = await Promise.all([
     env.DB.prepare(
       `SELECT p.id, p.pseudo, e.best, e.best_at AS at FROM entries e JOIN profiles p ON p.id = e.player_id
-       WHERE e.event_id = ?1 AND e.best > 0 AND p.banned = 0 ORDER BY e.best DESC, e.best_at ASC LIMIT ?2`,
+       WHERE e.event_id = ?1 AND e.best > 0 AND p.banned = 0 AND e.removed = 0 ORDER BY e.best DESC, e.best_at ASC LIMIT ?2`,
     )
       .bind(shown.id, SCREEN_TOP)
       .all<Ranked>(),

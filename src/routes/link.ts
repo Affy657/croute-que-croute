@@ -18,11 +18,11 @@ const MERGE_PROFILE = `UPDATE profiles AS a SET
   run_count = a.run_count + b.run_count, created_at = MIN(a.created_at, b.created_at), steps = NULL, progress = ?3,
   last_at = CASE WHEN a.last_at IS NULL OR b.last_at > a.last_at THEN b.last_at ELSE a.last_at END
   FROM profiles AS b WHERE a.id = ?1 AND b.id = ?2`;
-const MERGE_ENTRIES = `INSERT INTO entries (event_id, player_id, best, best_at, best_elapsed, run_count)
-  SELECT event_id, ?1, best, best_at, best_elapsed, run_count FROM entries WHERE player_id = ?2
+const MERGE_ENTRIES = `INSERT INTO entries (event_id, player_id, best, best_at, best_elapsed, run_count, removed)
+  SELECT event_id, ?1, best, best_at, best_elapsed, run_count, removed FROM entries WHERE player_id = ?2
   ON CONFLICT (event_id, player_id) DO UPDATE SET
   ${["best", "best_at", "best_elapsed"].map((c) => `${c} = CASE WHEN ${wins("excluded", "entries", "best", "best_at")} THEN excluded.${c} ELSE entries.${c} END`).join(", ")},
-  run_count = entries.run_count + excluded.run_count`;
+  run_count = entries.run_count + excluded.run_count, removed = MAX(entries.removed, excluded.removed)`;
 
 function qrOf(text: string) {
   const { size, data } = create(text, { errorCorrectionLevel: "M" }).modules;

@@ -247,6 +247,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Heure de fin déjà passée : confirmation, le classement se ferme tout de suite. Le serveur enregistre l'heure du clic, jamais une heure passée : le formulaire est à la minute, et 59 s d'écart annulaient la marge de 15 s. Une soirée fermée ne se modifie plus.
 - Début déplacé dans le futur sur une soirée ouverte : confirmation, elle quitte l'écran géant et ne compte plus de parties jusqu'à cette heure.
 - Retirer et Réintégrer demandent confirmation, avec le pseudo.
+- Onglet Soirée : « Retirer » sort le joueur de cette soirée seulement (`entries.removed`, `POST /api/admin/players/<id>/soiree`). Il reste au classement général, joue normalement, mais ses parties ne comptent pas pour la soirée : réintégré, il revient avec son record d'avant le retrait. Sert aux membres du collectif qui s'entraînent depuis des jours. Onglets Mobile et PC : « Retirer » le sort de tous les classements, soirées comprises. Un compte réuni reste retiré de la soirée si l'un des deux l'était.
 - Joueurs, Parties et Record sont sous les onglets Soirée, Mobile, PC : ils comptent l'onglet choisi.
 - Réunir deux comptes (propriétaire, définitif) : pseudo à garder, pseudo à réunir, confirmation avec les deux comptes. Même fusion que côté joueur (`mergeInto`), sans plafond de parties. Refusé si l'un est retiré. `POST /api/admin/merge` sans `confirm: true` renvoie seulement l'aperçu.
 - Joueurs actifs : point jaune pour une partie finie ces 10 dernières minutes (`ACTIVE_MS`), rien d'écrit en plus.
