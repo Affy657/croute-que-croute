@@ -245,14 +245,16 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Premier accès avec `cle-admin.txt` : crée un compte propriétaire et reste la clé de secours.
 - Le propriétaire invite : lien à usage unique valable 48 h. Dans l'appli installée, le coller dans « Lien d'invitation reçu ».
 - Rôles : propriétaire (soirées, joueurs, équipe, erreurs) et admin (soirées, joueurs). Chaque téléphone peut être retiré, sauf le dernier propriétaire, avec ses invitations pas utilisées. Connexion inutilisée 30 jours : expirée.
+- « Soirée en cours » en jaune, recalculé chaque seconde d'après les heures. « Nouvelle soirée » et « Modifier » restent jaunes tant que leur formulaire est ouvert, avec « Annuler ». Nouvelle soirée : numéro suivant (« #3 » donne « #4 ») et fin à la même durée que la dernière, recalée tant qu'on ne la touche pas.
 - Heure de fin déjà passée : confirmation, le classement se ferme tout de suite. Le serveur enregistre l'heure du clic, jamais une heure passée : le formulaire est à la minute, et 59 s d'écart annulaient la marge de 15 s. Une soirée fermée ne se modifie plus.
 - Début déplacé dans le futur sur une soirée ouverte : confirmation, elle quitte l'écran géant et ne compte plus de parties jusqu'à cette heure.
 - Retirer et Réintégrer demandent confirmation, avec le pseudo.
 - Onglet Soirée : « Retirer » sort le joueur de cette soirée seulement (`entries.removed`, `POST /api/admin/players/<id>/soiree`). Il reste au classement général, joue normalement, mais ses parties ne comptent pas pour la soirée : réintégré, il revient avec son record d'avant le retrait. Sert aux membres du collectif qui s'entraînent depuis des jours. Onglets Mobile et PC : « Retirer » le sort de tous les classements, soirées comprises. Un compte réuni reste retiré de la soirée si l'un des deux l'était.
 - Joueurs, Parties et Record sont sous les onglets Soirée, Mobile, PC : ils comptent l'onglet choisi.
+- Liste : les 20 premiers, puis « Voir les N autres » (`LIMIT` dans `admin/tools.js`). « Chercher un pseudo », sans accents ni majuscules, montre toutes les lignes trouvées avec leur vrai rang. Sur 164 joueurs, la page faisait 19 000 px et cachait les autres cartes.
 - Réunir deux comptes (propriétaire, définitif) : pseudo à garder, pseudo à réunir, confirmation avec les deux comptes. Même fusion que côté joueur (`mergeInto`), sans plafond de parties. Refusé si l'un est retiré. `POST /api/admin/merge` sans `confirm: true` renvoie seulement l'aperçu.
 - Joueurs actifs : point jaune pour une partie finie ces 10 dernières minutes (`ACTIVE_MS`), rien d'écrit en plus.
-- Nouveaux pseudos des 15 dernières minutes listés même sans partie et sans score, pour retirer un pseudo déplacé affiché sur l'écran géant.
+- Nouveaux pseudos des 15 dernières minutes listés même sans partie et sans score, pour retirer un pseudo déplacé affiché sur l'écran géant. Sans score, ils sont en fin de liste : les chercher par leur pseudo.
 - Relecture toutes les 30 s, jamais onglet caché : relire toute la soirée pèse sur le quota de lectures. Tout de suite après une action et au retour sur l'onglet. Démarrage raté : nouvel essai après 10 s.
 - Relecture ratée : message rouge au-dessus de la liste, avec l'heure des données affichées (« Données de 21h04 »), jusqu'à la prochaine réussie. « Aucune soirée » seulement si le serveur l'a dit.
 
@@ -612,6 +614,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 
 - `achievements` : succès au bon moment, rien de perdu entre onglets, annonce unique.
 - `admin` : fin déjà passée ramenée à maintenant, soirée fermée intouchable.
+- `outils-admin` : liste de l'admin limitée et recherche, état de la soirée, nom et fin d'une nouvelle soirée.
 - `api` : limite d'attente, reprise par cookie refaite.
 - `attacks` : mur mis de côté, chaque garniture sur un couteau.
 - `banner` : bandeau des soirées, « Bravo », « Nouveau n°1 », direct ouvert 1 min.
