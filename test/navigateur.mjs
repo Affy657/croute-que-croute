@@ -782,6 +782,7 @@ try {
   });
   await step("admin : retirer et réintégrer demandent confirmation avec le pseudo, « Annuler » ne change rien", async () => {
     const row = admin.locator("#players li", { hasText: pseudo });
+    await admin.fill("#playerSearch", pseudo);
     for (const scope of ["general", "pc"]) {
       await admin.locator(`.scope[data-scope="${scope}"]`).click();
       if (await row.waitFor({ timeout: 4000 }).then(() => true, () => false)) break;
@@ -846,7 +847,7 @@ try {
     await admin.fill("#eventNameInput", "Soirée du navigateur");
     await admin.fill("#eventStartInput", await at(Date.now() - 3600000));
     await admin.fill("#eventEndInput", await at(Date.now() + 3600000));
-    await admin.locator("#eventForm button").click();
+    await admin.locator("#eventForm button[type=submit]").click();
     await admin.waitForFunction(() => document.getElementById("eventName").textContent === "Soirée du navigateur", null, { timeout: WAIT_MS });
     if ((await status()) !== "Soirée en cours") throw new Error(await status());
   });
@@ -856,6 +857,7 @@ try {
     const { runId } = await (await fetch(BASE + "/api/runs", { method: "POST", headers: auth, body: "{}" })).json();
     await fetch(BASE + "/api/runs/" + runId, { method: "POST", headers: auth, body: JSON.stringify({ score: 400 }) });
     await admin.locator('.scope[data-scope="event"]').click();
+    await admin.fill("#playerSearch", name);
     const row = admin.locator("#players li", { hasText: name });
     await row.waitFor({ timeout: WAIT_MS });
     let asked = dialog(admin, true);
@@ -984,12 +986,12 @@ try {
     await admin.locator("#editEndBtn").click();
     await admin.fill("#endAt", await at(Date.now() - 120000));
     let asked = dialog(admin, false);
-    await admin.locator("#endForm button").click();
+    await admin.locator("#endForm button[type=submit]").click();
     if (!(await asked).includes("déjà passée")) throw new Error("mauvaise question");
     await wait(500);
     if (patched || (await admin.locator("#endForm").isHidden()) || (await status()) !== "Soirée en cours") throw new Error("soirée modifiée sans confirmation");
     asked = dialog(admin, true);
-    await admin.locator("#endForm button").click();
+    await admin.locator("#endForm button[type=submit]").click();
     await asked;
     await admin.waitForFunction(() => document.getElementById("eventStatus").textContent === "Dernière soirée", null, { timeout: WAIT_MS });
   });
@@ -1160,7 +1162,7 @@ try {
     later.setMinutes(later.getMinutes() - later.getTimezoneOffset());
     const state = () => other.locator("#eventStatus").textContent();
     const save = async () => {
-      await other.locator("#endForm button").click();
+      await other.locator("#endForm button[type=submit]").click();
       await other.locator("#endForm").waitFor({ state: "hidden", timeout: WAIT_MS });
     };
     try {
@@ -1172,12 +1174,12 @@ try {
       await other.locator("#editEndBtn").click();
       await other.fill("#startAt", later.toISOString().slice(0, 16));
       let asked = dialog(other, false);
-      await other.locator("#endForm button").click();
+      await other.locator("#endForm button[type=submit]").click();
       if (!(await asked).includes("futur")) throw new Error("mauvaise question");
       await wait(500);
       if (patched || (await state()) !== "Soirée en cours") throw new Error("soirée modifiée sans confirmation");
       asked = dialog(other, true);
-      await other.locator("#endForm button").click();
+      await other.locator("#endForm button[type=submit]").click();
       await asked;
       await other.waitForFunction(() => document.getElementById("eventStatus").textContent === "Prochaine soirée", null, { timeout: WAIT_MS });
       await other.locator("#editEndBtn").click();
@@ -1193,6 +1195,81 @@ try {
     try {
       await other.goto(BASE + "/admin");
       if (!(await other.locator("section:has(.scope) #statPlayers").count())) throw new Error("chiffres hors de la carte des onglets");
+    } finally {
+      await other.close();
+    }
+  });
+  const mockedAdmin = async (viewport) => {
+    const HOUR = 3600000, now = Date.now();
+    const fake = (i, extra = {}) => ({ id: "f" + i, pseudo: "Joueur" + String(i).padStart(2, "0"), best: 100000 - i * 100, banned: 0, removed: 0, runs: 3, suspect: null, active: false, ...extra });
+    const players = Array.from({ length: 24 }, (_, i) => fake(i + 1)).concat(fake(25, { pseudo: "Élodie", best: 50 }));
+    const event = { id: 7, name: "Space Tartinade #3", opensAt: now - HOUR, closesAt: now + 3.5 * HOUR, status: "open" };
+    const last = { version: "1.0.0", page: "/", platform: "iPhone", ua: "iPhone", standalone: false, device: "390x844", trail: "", stack: "" };
+    const group = (id, onCurrent) => ({ id, kind: "erreur", message: "TypeError " + id, source: "/js/app/main.js:1:1", count: 1, sessions: 1, platforms: { iPhone: 1 }, firstAt: now - HOUR, lastAt: now - 2 * HOUR, versions: 1, onCurrent, last });
+    const other = await browser.newPage({ serviceWorkers: "block", ...(viewport ? { viewport } : {}) });
+    watch(other);
+    await other.route(playersRead, (route) => route.fulfill({ json: { scope: "event", event, players, stats: { players: 25, runs: 75 } } }));
+    await other.route((url) => url.pathname === "/api/admin/errors", (route) => route.fulfill({ json: { groups: [group("a", true), group("b", false)] } }));
+    await signIn(other);
+    await other.locator("#players li").first().waitFor({ timeout: WAIT_MS });
+    return other;
+  };
+  await step("admin sur 320 px : 20 joueurs puis « Voir les 5 autres », recherche sans accents avec le vrai rang, onglets sur une ligne, soirée en cours en jaune", async () => {
+    const other = await mockedAdmin({ width: 320, height: 568 });
+    try {
+      const first = await other.evaluate(() => ({
+        rows: document.querySelectorAll("#players li").length,
+        more: document.getElementById("moreBtn").textContent,
+        tabs: [...document.querySelectorAll(".scope")].map((b) => Math.round(b.getBoundingClientRect().top)),
+        status: document.getElementById("eventStatus").textContent,
+        color: getComputedStyle(document.getElementById("eventStatus")).color
+      }));
+      if (first.rows !== 20 || first.more !== "Voir les 5 autres" || new Set(first.tabs).size !== 1 || first.status !== "Soirée en cours" || first.color !== "rgb(255, 207, 51)") throw new Error(JSON.stringify(first));
+      await other.fill("#playerSearch", "ELO");
+      const found = await other.evaluate(() => [...document.querySelectorAll("#players li")].map((li) => li.querySelector(".pos").textContent + " " + li.querySelector(".name").textContent));
+      if (found.join() !== "25 Élodie" || await other.locator("#moreBtn").isVisible()) throw new Error(JSON.stringify(found));
+      await other.fill("#playerSearch", "");
+      await other.locator("#moreBtn").click();
+      const all = await other.locator("#players li").count();
+      if (all !== 25 || await other.locator("#moreBtn").isVisible()) throw new Error(all + " lignes");
+    } finally {
+      await other.close();
+    }
+  });
+  await step("admin : « Nouvelle soirée » en jaune une fois ouvert, nom et fin pré-remplis, « Annuler » referme", async () => {
+    const other = await mockedAdmin();
+    const form = () => other.evaluate(() => {
+      const ms = (id) => new Date(document.getElementById(id).value).getTime();
+      const btn = document.getElementById("newEventBtn");
+      return { open: !document.getElementById("eventForm").hidden, expanded: btn.getAttribute("aria-expanded"), color: getComputedStyle(btn).backgroundColor, name: document.getElementById("eventNameInput").value, hours: (ms("eventEndInput") - ms("eventStartInput")) / 3600000 };
+    });
+    try {
+      await other.locator("#newEventBtn").click();
+      const opened = await form();
+      if (!opened.open || opened.expanded !== "true" || opened.color !== "rgb(255, 207, 51)" || opened.name !== "Space Tartinade #4" || opened.hours !== 4.5) throw new Error(JSON.stringify(opened));
+      await other.fill("#eventStartInput", "2026-12-05T19:00");
+      if ((await other.inputValue("#eventEndInput")) !== "2026-12-05T23:30") throw new Error("fin pas recalée : " + await other.inputValue("#eventEndInput"));
+      await other.fill("#eventEndInput", "2026-12-06T01:00");
+      await other.fill("#eventStartInput", "2026-12-05T20:00");
+      if ((await other.inputValue("#eventEndInput")) !== "2026-12-06T01:00") throw new Error("fin choisie écrasée");
+      await other.locator("#editEndBtn").click();
+      if (await other.locator("#eventForm").isVisible() || (await other.getAttribute("#newEventBtn", "aria-expanded")) !== "false" || (await other.getAttribute("#editEndBtn", "aria-expanded")) !== "true") throw new Error("deux formulaires ouverts");
+      await other.locator("#endForm [data-close]").click();
+      const closed = await other.evaluate(() => ({ edit: !document.getElementById("endForm").hidden, expanded: document.getElementById("editEndBtn").getAttribute("aria-expanded") }));
+      if (closed.edit || closed.expanded !== "false") throw new Error(JSON.stringify(closed));
+    } finally {
+      await other.close();
+    }
+  });
+  await step("admin : erreur « pas revue depuis la dernière mise en ligne » seulement quand c'est vrai, équipe sans lettre de rôle", async () => {
+    const other = await mockedAdmin();
+    try {
+      await other.locator("#errorsBtn").click();
+      await other.locator("#errors li").nth(1).waitFor({ timeout: WAIT_MS });
+      const metas = await other.evaluate(() => [...document.querySelectorAll("#errors summary")].map((s) => s.textContent));
+      if (metas[0].includes("version en ligne") || metas[0].includes("pas revue") || !metas[1].includes("pas revue depuis la dernière mise en ligne")) throw new Error(JSON.stringify(metas));
+      await other.locator("#team li").first().waitFor({ timeout: WAIT_MS });
+      if (await other.locator("#team .pos").count()) throw new Error("lettre de rôle encore là");
     } finally {
       await other.close();
     }

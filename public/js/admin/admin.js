@@ -2,6 +2,7 @@ import { store as storage, KEYS } from "../shared/store.js";
 import { fmtCs, clock } from "../shared/format.js";
 import { VERSION } from "../version.js";
 import { timeout } from "../shared/timeout.js";
+import { visiblePlayers, phase, nextName, endAfter } from "./tools.js";
 
 /** @param {string} id */
 const $ = (id) => document.getElementById(id);
@@ -24,12 +25,15 @@ let timer = null;
 /** @type {Timer} */
 let retry = null;
 let scope = "event";
+let showAll = false;
+let endTouched = false;
 let loads = 0;
 let loadedAt = 0;
 let invited = new URLSearchParams(location.hash.slice(1)).get("invite");
 /** @type {Set<string>} */
 const opened = new Set();
 const STATUS = { open: "Soirée en cours", upcoming: "Prochaine soirée", closed: "Dernière soirée" };
+const FORMS = [["editEndBtn", "endForm"], ["newEventBtn", "eventForm"]];
 
 /** @param {number} ms */
 const day = (ms) => new Date(ms).toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "2-digit" }) + " à " + hour(ms);
@@ -150,9 +154,7 @@ function cell(tag, cls, text) {
 
 function renderEvent() {
   const ev = data && data.event;
-  $("eventStatus").textContent = ev ? STATUS[ev.status] : "Soirée";
   $("eventName").textContent = ev ? ev.name : "Aucune soirée";
-  $("editEndBtn").hidden = !ev || ev.status === "closed";
   const best = data ? Math.max(0, ...data.players.filter((p) => !p.banned && !p.removed).map((p) => p.best)) : 0;
   $("statPlayers").textContent = data ? data.stats.players : 0;
   $("statRuns").textContent = data ? data.stats.runs : 0;
@@ -162,11 +164,14 @@ function renderEvent() {
 
 function tick() {
   const ev = data && data.event;
+  const now = Date.now(), state = ev ? phase(ev, now) : null;
+  $("eventStatus").textContent = state ? STATUS[state] : "Soirée";
+  $("eventStatus").classList.toggle("now", state === "open");
+  $("editEndBtn").hidden = !state || state === "closed";
   if (!ev) {
     $("eventEnd").textContent = data ? "Crée une soirée pour ouvrir son classement. En dehors, le classement général tourne tout le temps." : "";
     return;
   }
-  const now = Date.now();
   if (now < ev.opensAt) $("eventEnd").textContent = "Début " + day(ev.opensAt) + ", dans " + clock(ev.opensAt - now) + ". Fin à " + hour(ev.closesAt) + ".";
   else if (now < ev.closesAt) $("eventEnd").textContent = "Fin à " + hour(ev.closesAt) + ", dans " + clock(ev.closesAt - now);
   else $("eventEnd").textContent = "Classement fermé depuis " + day(ev.closesAt) + ".";
@@ -178,11 +183,10 @@ function renderPlayers() {
   say($("suspectAlert"), doubt ? (doubt > 1 ? doubt + " records à vérifier" : "1 record à vérifier") + " (trait rouge). Regarde le détail avant de retirer quelqu'un." : "", true);
   const active = players.filter((p) => p.active).length;
   say($("activeNote"), active ? (active > 1 ? active + " joueurs actifs" : "1 joueur actif") + " (point jaune) : une partie finie ces 10 dernières minutes." : "");
-  let rank = 0;
-  $("players").replaceChildren(...players.map((p) => {
+  const query = /** @type {HTMLInputElement} */ ($("playerSearch")).value;
+  const { rows, rest } = visiblePlayers(players, query, showAll);
+  $("players").replaceChildren(...rows.map(({ player: p, rank }) => {
     const li = document.createElement("li");
-    const ranked = !p.banned && !p.removed && p.best > 0;
-    if (ranked) rank++;
     li.className = p.banned || p.removed ? "out" : p.suspect ? "suspect" : "";
     const main = document.createElement("div");
     main.className = "main";
@@ -217,10 +221,13 @@ function renderPlayers() {
         btn.disabled = false;
       }
     });
-    li.append(cell("span", "pos", ranked ? String(rank) : ""), main, btn);
+    li.append(cell("span", "pos", rank ? String(rank) : ""), main, btn);
     return li;
   }));
-  $("playersEmpty").hidden = players.length > 0;
+  $("moreBtn").hidden = !rest;
+  $("moreBtn").textContent = rest > 1 ? "Voir les " + rest + " autres" : "Voir l'autre joueur";
+  $("playersEmpty").textContent = players.length ? "Aucun pseudo ne contient « " + query.trim() + " »." : "Aucun joueur pour l'instant.";
+  $("playersEmpty").hidden = rows.length > 0;
 }
 
 async function load() {
@@ -250,7 +257,8 @@ async function loadTeam() {
         cell("span", "name", a.name + (a.me ? " (toi)" : "")),
         cell("span", "meta", (a.role === "owner" ? "Propriétaire" : "Admin") + ", " + ago(a.last_seen))
       );
-      li.append(cell("span", "pos", a.role === "owner" ? "P" : "A"), main);
+      li.className = "mate";
+      li.append(main);
       if (!a.me) {
         const btn = cell("button", "btn ghost small", "Retirer");
         btn.type = "button";
@@ -359,7 +367,7 @@ function errorItem(g) {
     cell("span", "kind", KINDS[g.kind] + ", " + since(g.lastAt)),
     cell("span", "name", g.message),
     cell("span", "meta", spread(g)),
-    cell("span", "meta", (g.source || "fichier inconnu") + ", " + (g.onCurrent ? "encore là sur la version en ligne" : "pas revue depuis la dernière mise en ligne"))
+    cell("span", "meta", (g.source || "fichier inconnu") + (g.onCurrent ? "" : ", pas revue depuis la dernière mise en ligne"))
   );
   const l = g.last, facts = document.createElement("dl");
   for (const [label, value] of [
@@ -529,10 +537,23 @@ onSubmit("pasteForm", async () => {
   }
 });
 
+/** @param {string | null} id */
+function openForm(id) {
+  for (const [btn, form] of FORMS) {
+    $(form).hidden = form !== id;
+    $(btn).setAttribute("aria-expanded", String(form === id));
+  }
+}
+
+function fillEnd() {
+  const end = endAfter(fromInput($("eventStartInput").value), data && data.event);
+  if (Number.isFinite(end)) $("eventEndInput").value = toInput(end);
+}
+
 $("editEndBtn").addEventListener("click", () => {
-  $("eventForm").hidden = true;
-  $("endForm").hidden = !$("endForm").hidden;
-  if (data && data.event) {
+  const opening = $("endForm").hidden;
+  openForm(opening ? "endForm" : null);
+  if (opening && data && data.event) {
     $("editName").value = data.event.name;
     $("startAt").value = toInput(data.event.opensAt);
     $("endAt").value = toInput(data.event.closesAt);
@@ -540,17 +561,36 @@ $("editEndBtn").addEventListener("click", () => {
 });
 
 $("newEventBtn").addEventListener("click", () => {
-  $("endForm").hidden = true;
-  $("eventForm").hidden = !$("eventForm").hidden;
+  const opening = $("eventForm").hidden;
+  openForm(opening ? "eventForm" : null);
+  if (!opening) return;
+  if (!$("eventNameInput").value && data && data.event) $("eventNameInput").value = nextName(data.event.name);
   if (!$("eventStartInput").value) $("eventStartInput").value = toInput(Date.now());
+  if (!$("eventEndInput").value) fillEnd();
 });
+
+$("eventStartInput").addEventListener("input", () => {
+  if (!endTouched) fillEnd();
+});
+$("eventEndInput").addEventListener("input", () => {
+  endTouched = true;
+});
+
+for (const b of document.querySelectorAll("[data-close]")) b.addEventListener("click", () => openForm(null));
 
 for (const b of document.querySelectorAll(".scope")) {
   b.addEventListener("click", () => {
     scope = b.dataset.scope;
+    showAll = false;
     load();
   });
 }
+
+$("playerSearch").addEventListener("input", renderPlayers);
+$("moreBtn").addEventListener("click", () => {
+  showAll = true;
+  renderPlayers();
+});
 
 onSubmit("endForm", async () => {
   const opensAt = fromInput($("startAt").value), closesAt = fromInput($("endAt").value), now = Date.now(), ev = data && data.event;
@@ -562,7 +602,7 @@ onSubmit("endForm", async () => {
       opensAt,
       closesAt
     });
-    $("endForm").hidden = true;
+    openForm(null);
     say($("eventMsg"), "Soirée modifiée.");
     await load();
   } catch (err) {
@@ -577,10 +617,11 @@ onSubmit("eventForm", async () => {
       opensAt: fromInput($("eventStartInput").value),
       closesAt: fromInput($("eventEndInput").value)
     });
-    $("eventForm").hidden = true;
+    openForm(null);
     $("eventNameInput").value = "";
     $("eventStartInput").value = "";
     $("eventEndInput").value = "";
+    endTouched = false;
     say($("eventMsg"), "Soirée créée.");
     await load();
   } catch (err) {

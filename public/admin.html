@@ -60,8 +60,8 @@
         <h2 id="eventName">Chargement…</h2>
         <p id="eventEnd" class="sub"></p>
         <div class="row">
-          <button id="editEndBtn" class="btn ghost" type="button">Modifier</button>
-          <button id="newEventBtn" class="btn ghost" type="button">Nouvelle soirée</button>
+          <button id="editEndBtn" class="btn ghost" type="button" aria-expanded="false" aria-controls="endForm">Modifier</button>
+          <button id="newEventBtn" class="btn ghost" type="button" aria-expanded="false" aria-controls="eventForm">Nouvelle soirée</button>
           <a class="btn ghost" href="/ecran" target="_blank" rel="noopener">Écran géant</a>
         </div>
         <form id="endForm" class="form" hidden>
@@ -71,26 +71,32 @@
           <input id="startAt" type="datetime-local" required>
           <label for="endAt">Fin du classement</label>
           <input id="endAt" type="datetime-local" required>
-          <button class="btn" type="submit">Enregistrer</button>
+          <div class="row">
+            <button class="btn" type="submit">Enregistrer</button>
+            <button class="btn ghost" type="button" data-close>Annuler</button>
+          </div>
         </form>
         <form id="eventForm" class="form" hidden>
           <label for="eventNameInput">Nom de la soirée</label>
-          <input id="eventNameInput" maxlength="60" placeholder="Space Tartinade #3" required>
+          <input id="eventNameInput" maxlength="60" placeholder="Space Tartinade" required>
           <label for="eventStartInput">Début du classement</label>
           <input id="eventStartInput" type="datetime-local" required>
           <label for="eventEndInput">Fin du classement</label>
           <input id="eventEndInput" type="datetime-local" required>
-          <button class="btn" type="submit">Créer la soirée</button>
+          <div class="row">
+            <button class="btn" type="submit">Créer la soirée</button>
+            <button class="btn ghost" type="button" data-close>Annuler</button>
+          </div>
         </form>
         <p id="eventMsg" class="msg" hidden></p>
       </section>
 
       <section class="card">
         <h2>Classement</h2>
-        <div class="row" role="tablist">
-          <button class="btn ghost small scope" type="button" data-scope="event" aria-selected="true">Soirée</button>
-          <button class="btn ghost small scope" type="button" data-scope="general" aria-selected="false">Mobile</button>
-          <button class="btn ghost small scope" type="button" data-scope="pc" aria-selected="false">PC</button>
+        <div class="row tabs" role="tablist">
+          <button class="btn ghost small scope" type="button" role="tab" data-scope="event" aria-selected="true">Soirée</button>
+          <button class="btn ghost small scope" type="button" role="tab" data-scope="general" aria-selected="false">Mobile</button>
+          <button class="btn ghost small scope" type="button" role="tab" data-scope="pc" aria-selected="false">PC</button>
         </div>
         <p id="playersMsg" class="msg alert" hidden></p>
         <div class="stats">
@@ -100,8 +106,10 @@
         </div>
         <p id="suspectAlert" class="msg error alert" hidden></p>
         <p id="activeNote" class="note" hidden></p>
+        <input id="playerSearch" type="search" placeholder="Chercher un pseudo" aria-label="Chercher un pseudo" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
         <ol id="players" class="list"></ol>
         <p id="playersEmpty" class="note" hidden>Aucun joueur pour l'instant.</p>
+        <button id="moreBtn" class="btn ghost" type="button" hidden></button>
       </section>
 
       <section id="mergeCard" class="card" hidden>
