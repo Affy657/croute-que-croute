@@ -90,6 +90,36 @@ body {
   transition: width var(--dur-base) ease-out;
 }
 
+.too-old {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--z-top);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--inset-lg);
+  background: var(--void);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  line-height: var(--leading-normal);
+  text-align: center;
+}
+
+.too-old p {
+  margin: 0 0 var(--space-md);
+}
+
+.too-old-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  line-height: var(--leading-tight);
+  color: var(--mustard);
+}
+
 @keyframes loader-bob {
   0%, 100% { transform: translateY(-6px) rotate(-3deg); }
   50% { transform: translateY(6px) rotate(3deg); }
@@ -726,6 +756,7 @@ h2.page-title {
 .card-actions.pair .ghost {
   min-width: 0;
   padding-inline: var(--inset-xs);
+  font-size: min(1rem, 4.4vw);
   font-size: min(1rem, calc(6cqi - 1px));
   white-space: nowrap;
 }
@@ -986,6 +1017,7 @@ a.ghost {
   z-index: var(--z-toast);
   box-sizing: border-box;
   max-width: calc(100vw - 32px);
+  margin: clamp(0.5rem, 1.8vh, 0.9rem) 0 0;
   margin: clamp(0.5rem, 1.8svh, 0.9rem) 0 0;
   text-align: center;
   pointer-events: none;
