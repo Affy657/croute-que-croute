@@ -343,6 +343,12 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - « Ce pseudo est déjà pris » renvoie vers « J'ai déjà un compte », et l'écran du code dit où le trouver.
 - Plus d'accès à l'ancien compte : l'admin réunit les deux.
 
+### Vieux iPhones et autres navigateurs
+
+- Minimum : iOS 14.5 (`inset`, `gap` des boîtes flex). Avant, `boot.js` affiche « Ton téléphone est trop ancien » par-dessus tout et ne recharge jamais. Jamais essayé sur un vrai vieil iPhone.
+- Unité ou couleur arrivée après iOS 15 (`svh`, `cqi`, `color-mix`) : une valeur de secours juste avant, sinon iOS ignore toute la ligne. Vérifié par `compat.test.mjs`.
+- Chrome, Firefox, Edge et Brave utilisent sur iPhone le moteur de Safari : même code. Brave ajoute à chaque page le script de son portefeuille, qui plante (`window.ethereum`), et des `style` que la CSP bloque. Vu en prod.
+
 ### Changement d'adresse
 
 Le stockage d'un navigateur et le cookie `cv_cle` sont liés à l'adresse. Pour passer de `croute-que-croute.tartine-sauvage.workers.dev` à `croute-que-croute.tartinesauvage.fr`, le compte fait le trajet tout seul (`move.js`, `arrive.js`).
@@ -403,6 +409,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 - `sw.js` : renouvelé à chaque version, rempli fichier par fichier avec un 2e essai. Un seul fichier raté faisait tout perdre.
 - Fichier sans réponse en 3 s (`NET_MS`, wifi saturé) : pris dans le cache, remplacé dès que le réseau arrive.
 - Plantage au démarrage (fichiers de deux versions, par exemple l'ancienne page du cache avec du code neuf sur réseau lent) : `boot.js` recharge. Si ça replante dans la minute, il vide le cache, retire le service worker et redemande chaque fichier au serveur avant de recharger, en ligne seulement : sur iPhone, un simple rechargement garde le module déjà en mémoire. Troisième échec : il s'arrête. Une seule recharge laissait le joueur bloqué sur l'écran.
+- Seules comptent les erreurs des fichiers du jeu (`/js/`, ou sans fichier : WebKit n'en donne pas pour un import manquant). Le script de Brave faisait recharger deux fois, cache vidé, quand le jeu chargeait lentement.
 - Une erreur dans une image n'arrête pas l'animation : l'image suivante est demandée avant de dessiner.
 - L'écran géant installe lui-même le cache, pour un PC qui n'ouvre que `/ecran`. Une page autre que le jeu ne retombe jamais sur l'accueil du jeu.
 - L'admin passe toujours par le réseau : l'ancien script sur la nouvelle page la laissait vide.
@@ -492,6 +499,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 - `public/js/errors.js`, chargé en premier partout, script classique prudent : il attrape aussi les plantages des modules, que le jeu ne voit pas.
 - Remonte : erreurs, promesses rejetées, fichiers pas chargés, blocages CSP, jeu pas démarré au bout de 15 s.
 - Ni pseudo ni clé dans les rapports : un numéro au hasard par onglet.
+- Ignorés : une erreur dans la page elle-même et un `style-src-attr` sans fichier. La CSP interdit le code dans la page, ils viennent donc du navigateur (le portefeuille de Brave). Ils prenaient la limite de 10 par minute pendant une soirée.
 - Économe : même erreur une fois par page, 5 erreurs par envoi, 3 envois par page, 10 par onglet, 20 erreurs différentes par page.
 - Serveur (`routes/errors.ts`) : 64 Ko par envoi, 5 envois par minute et par IP (`ERROR_IP_LIMIT`), 10 par minute pour tout le monde (`ERROR_LIMIT`), 60 erreurs par heure (`HOUR_ROWS`), 10 par onglet (`SESSION_ROWS`). Table `client_errors`, 14 jours, 2 000 lignes.
 - Pourquoi : une erreur sur tous les téléphones d'une soirée mangerait le quota d'écritures de D1, et le classement avec. Chaque ligne compte pour 3 écritures, son effacement aussi. Moins de 2 000 écritures par soirée de 5 h, 85 000 sans plafond par heure.
@@ -611,6 +619,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `cache` : cache des classements, lecture unique, périmée écartée, abandon à 5 s, ligne déjà à ce score.
 - `card` : classement d'une soirée fermée gardé 10 min.
 - `chemin` : chemin du robot, gardé hors du code des téléphones.
+- `compat` : valeur de secours avant chaque unité ou couleur trop récente pour les vieux iPhone.
 - `depart` : `/depart`, 2 essais pour le code, compte gardé par cookie, échec signalé, sous le `meta refresh`.
 - `deploy` : refus de `npm run deploy`.
 - `envoi` : départ relancé 12 s, score gardé 12 h, un seul envoi à la fois, corps illisible, `waited`.

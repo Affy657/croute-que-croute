@@ -1,4 +1,17 @@
+const OWN = location.origin + "/js/";
+const tooOld = !(window.CSS && CSS.supports && CSS.supports("inset", "0"));
 let restarting = false;
+
+if (tooOld) {
+  const note = document.getElementById("tooOld");
+  if (note) note.hidden = false;
+}
+
+/** @param {Event} e */
+function ours(e) {
+  if (e.target instanceof HTMLScriptElement) return e.target.src.indexOf(OWN) === 0;
+  return e instanceof ErrorEvent && (!e.filename || e.filename.indexOf(OWN) === 0);
+}
 
 async function freshStart() {
   const files = [...document.querySelectorAll('link[rel="modulepreload"]')].map((link) => link.href);
@@ -11,8 +24,7 @@ async function freshStart() {
 }
 
 addEventListener("error", (e) => {
-  if (restarting || document.documentElement.dataset.ready) return;
-  if (!(e.target instanceof HTMLScriptElement) && !(e instanceof ErrorEvent)) return;
+  if (tooOld || restarting || document.documentElement.dataset.ready || !ours(e)) return;
   let tries = 0;
   try {
     const now = Date.now();

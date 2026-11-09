@@ -139,6 +139,7 @@
   const failed = (e) => {
     try {
       if (e instanceof ErrorEvent) {
+        if (e.filename && e.filename.split(/[?#]/)[0] === location.href.split(/[?#]/)[0]) return;
         const err = e.error;
         const source = e.filename ? e.filename + ":" + e.lineno + ":" + e.colno : "";
         capture("erreur", e.message || (err && String(err)), source, err && err.stack);
@@ -163,8 +164,10 @@
 
   addEventListener("securitypolicyviolation", (e) => {
     try {
+      const directive = e.effectiveDirective || e.violatedDirective;
+      if (!e.sourceFile && directive === "style-src-attr") return;
       const at = e.sourceFile ? e.sourceFile + ":" + (e.lineNumber || 0) + ":" + (e.columnNumber || 0) : "";
-      capture("csp", (e.effectiveDirective || e.violatedDirective) + " a bloqué " + (local(e.blockedURI) || "un contenu"), at, "");
+      capture("csp", directive + " a bloqué " + (local(e.blockedURI) || "un contenu"), at, "");
     } catch (err) {}
   });
 

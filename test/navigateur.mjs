@@ -335,6 +335,64 @@ try {
       await context.close();
     }
   });
+  const slowStart = async (prepare) => {
+    const context = await browser.newContext({ ...(SAFARI ? devices["iPhone 13"] : { viewport: { width: 390, height: 844 } }), serviceWorkers: "block" });
+    const reports = [];
+    await context.addInitScript(prepare);
+    await context.route("**/js/app/scene.js", async (route) => {
+      await wait(1500);
+      await route.continue();
+    });
+    await context.route("**/api/errors", (route) => {
+      reports.push(route.request().postData() || "");
+      return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+    });
+    return { context, reports, p: await context.newPage() };
+  };
+  const bootTries = (p) => p.evaluate(() => sessionStorage.getItem("cv-boot-tries"));
+  await step("script ajouté par le navigateur (portefeuille de Brave) qui plante pendant un chargement lent : pas de rechargement, rien dans les erreurs des joueurs", async () => {
+    const { context, reports, p } = await slowStart(() => {
+      localStorage.setItem("cv-install-asked", "1");
+      document.addEventListener("readystatechange", () => {
+        if (document.readyState !== "interactive") return;
+        dispatchEvent(new ErrorEvent("error", { message: "TypeError: undefined is not an object (evaluating 'window.ethereum.selectedAddress = undefined')", filename: location.href, lineno: 1, colno: 16 }));
+        dispatchEvent(new SecurityPolicyViolationEvent("securitypolicyviolation", { documentURI: location.href, blockedURI: "inline", violatedDirective: "style-src-attr", effectiveDirective: "style-src-attr", originalPolicy: "style-src 'self'", disposition: "enforce", statusCode: 200, sourceFile: "" }));
+        const beacon = document.createElement("script");
+        beacon.src = "https://static.cloudflareinsights.com/beacon.min.js";
+        document.head.append(beacon);
+      });
+    });
+    try {
+      await p.goto(BASE + "/");
+      await p.waitForFunction(() => document.documentElement.dataset.ready === "1", null, { timeout: WAIT_MS });
+      const tries = await bootTries(p);
+      await p.evaluate(() => dispatchEvent(new ErrorEvent("error", { message: "Témoin", filename: location.origin + "/js/app/main.js", lineno: 1, colno: 1 })));
+      await wait(4500);
+      const sent = reports.join(" ");
+      if (tries !== null || !sent.includes("Témoin") || sent.includes("ethereum") || sent.includes("style-src-attr")) throw new Error(JSON.stringify({ tries, sent: sent.slice(0, 400) }));
+    } finally {
+      await context.close();
+    }
+  });
+  await step("téléphone trop ancien (avant iOS 14.5) : un message par-dessus tout, pas de rechargement quand le code plante", async () => {
+    const { context, p } = await slowStart(() => {
+      localStorage.setItem("cv-install-asked", "1");
+      CSS.supports = () => false;
+      document.addEventListener("readystatechange", () => {
+        if (document.readyState === "interactive") dispatchEvent(new ErrorEvent("error", { message: "SyntaxError: Unexpected token '?'", filename: location.origin + "/js/app/state.js", lineno: 1, colno: 1 }));
+      });
+    });
+    try {
+      await p.goto(BASE + "/");
+      await p.locator("#tooOld").waitFor({ state: "visible", timeout: WAIT_MS });
+      await p.waitForFunction(() => document.documentElement.dataset.ready === "1", null, { timeout: WAIT_MS });
+      const state = await p.evaluate(() => ({ top: !!document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.closest("#tooOld"), text: document.getElementById("tooOld").textContent }));
+      const tries = await bootTries(p);
+      if (!state.top || !state.text.includes("Mise à jour logicielle") || tries !== null) throw new Error(JSON.stringify({ ...state, tries }));
+    } finally {
+      await context.close();
+    }
+  });
   await step("nouvelle adresse : le compte et les réglages suivent, l'ancienne clé reste valable", async () => {
     const name = "Part" + hex(4), token = await joinApi(name);
     const { context, p } = await movingPage(token);
