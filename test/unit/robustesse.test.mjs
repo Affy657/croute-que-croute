@@ -75,23 +75,37 @@ test("cache hors ligne : un fichier ou un bruitage raté pendant l'installation 
   const shell = JSON.parse(source.match(/const SHELL = (\[[\s\S]*?\]);/)[1]);
   const stored = new Set(), tries = new Map(), handlers = {};
   const fails = (url) => url === "/js/app/main.js" || url === "/sfx/near.mp3" || (url === "/style.css" && tries.get(url) === 1);
-  const cache = {
-    async add(url) {
-      tries.set(url, (tries.get(url) || 0) + 1);
-      if (fails(url)) throw new TypeError("Failed to fetch");
-      stored.add(url);
-    },
-    async addAll(urls) {
-      for (const url of urls) tries.set(url, (tries.get(url) || 0) + 1);
-      if (urls.some(fails)) throw new TypeError("Failed to fetch");
-      urls.forEach((url) => stored.add(url));
-    },
+  const cache = { async put(url) { stored.add(url); } };
+  const fetch = async (url) => {
+    tries.set(url, (tries.get(url) || 0) + 1);
+    if (fails(url)) throw new TypeError("Failed to fetch");
+    return new Response("ok");
   };
   const self = { location: { href: "https://jeu.test/sw.js?v=1.0.0" }, addEventListener: (type, fn) => { handlers[type] = fn; }, skipWaiting() {}, clients: { claim: async () => {} } };
-  new Function("self", "caches", source)(self, { open: async () => cache });
+  new Function("self", "caches", "fetch", source)(self, { open: async () => cache }, fetch);
   let done = null;
   handlers.install({ waitUntil: (p) => { done = p; } });
   await done;
   assert.deepEqual(shell.filter((url) => !stored.has(url)), ["/js/app/main.js"]);
   assert.deepEqual(["/sfx/start.mp3", "/sfx/near.mp3", "/sfx/death.mp3", "/sfx/record.mp3", "/sfx/first.mp3"].filter((url) => stored.has(url)), ["/sfx/start.mp3", "/sfx/death.mp3", "/sfx/record.mp3", "/sfx/first.mp3"]);
+});
+
+test("cache hors ligne : une réponse d'erreur pendant l'installation est lâchée aussitôt, sinon elle garde une connexion et l'installation ne finit plus", async () => {
+  const source = readFileSync(new URL("../../public/sw.js", import.meta.url), "utf8");
+  const stored = new Set(), dropped = [], handlers = {};
+  const cache = { async put(url) { stored.add(url); } };
+  const fetch = async (url) => {
+    if (!url.startsWith("/sfx/")) return new Response("ok");
+    return new Response(new ReadableStream({ pull() {}, cancel() { dropped.push(url); } }), { status: 404 });
+  };
+  const self = { location: { href: "https://jeu.test/sw.js?v=1.0.0" }, addEventListener: (type, fn) => { handlers[type] = fn; }, skipWaiting() {}, clients: { claim: async () => {} } };
+  new Function("self", "caches", "fetch", source)(self, { open: async () => cache }, fetch);
+  let done = null;
+  handlers.install({ waitUntil: (p) => { done = p; } });
+  await done;
+  const sfx = ["/sfx/start.mp3", "/sfx/near.mp3", "/sfx/death.mp3", "/sfx/record.mp3", "/sfx/first.mp3"];
+  assert.deepEqual(sfx.filter((url) => stored.has(url)), []);
+  assert.deepEqual([...new Set(dropped)].sort(), [...sfx].sort());
+  assert.equal(dropped.length, 2 * sfx.length);
+  assert.ok(stored.has("/") && stored.has("/js/ecran/ecran.js"));
 });
