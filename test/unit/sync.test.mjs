@@ -25,6 +25,20 @@ test("appareil neuf : prend la tenue du compte, même sans date", () => {
   assert.equal(adopted, 1);
 });
 
+test("appareil neuf qui change un emplacement avant de recevoir ses succès : la tenue datée garde le reste de la tenue du compte", () => {
+  const before = localStorage.getItem(KEYS.outfitAt);
+  try {
+    localStorage.setItem(KEYS.side, "boosters");
+    P.stampOutfit();
+    const { head, side, bread, aura, spread, at } = P.myLook();
+    assert.deepEqual({ head, side, bread, aura, spread }, { head: "crown", side: "boosters", bread: "toasted", aura: "ring", spread: "choco" });
+    assert.ok(at > ACCOUNT.at);
+  } finally {
+    localStorage.setItem(KEYS.side, ACCOUNT.side);
+    localStorage.setItem(KEYS.outfitAt, before);
+  }
+});
+
 test("objet pas encore gagné sur cet appareil : porté dès que les succès arrivent", () => {
   assert.equal(outfit().head, null);
   absorb({ got: { eventWin: 5, sixSeven: 5, toaster: 5, allSky: 5 } });

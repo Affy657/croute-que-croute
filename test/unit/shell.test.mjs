@@ -5,6 +5,7 @@ import { posix } from "node:path";
 
 const read = (path) => readFileSync("public" + path, "utf8");
 const SHELL = JSON.parse(read("/sw.js").match(/const SHELL = (\[[\s\S]*?\]);/)[1]);
+const SFX = JSON.parse(read("/sw.js").match(/const SFX = (\[[\s\S]*?\]);/)[1]);
 const IMPORT = /(?:import|export)\s[^;]*?from\s*"([^"]+)"|import\s*\(?\s*"([^"]+)"/g;
 
 function modules(entries) {
@@ -26,6 +27,20 @@ test("le jeu hors ligne : chaque fichier chargé par la page est dans le cache d
   const needed = [...modules(scripts), ...styles];
   assert.ok(needed.length > 30);
   assert.deepEqual(needed.filter((f) => !SHELL.includes(f)), []);
+});
+
+test("chaque image de la page est dans le cache de sw.js, sinon « img pas chargé » remonte hors ligne", () => {
+  const images = [...page.matchAll(/<img[^>]*\ssrc="(\/[^"]+)"/g)].map((m) => m[1]);
+  assert.ok(images.includes("/icons/google.svg"));
+  assert.deepEqual(images.filter((f) => !SHELL.includes(f)), []);
+});
+
+test("les bruitages du jeu sont mis en cache à l'installation, à part : absents du dépôt, ils ne bloquent rien", () => {
+  const sounds = [...new Set(read("/js/app/audio.js").match(/\/sfx\/[\w-]+\.mp3/g))];
+  assert.equal(sounds.length, 5);
+  assert.deepEqual([...SFX].sort(), sounds.sort());
+  assert.deepEqual(SFX.filter((f) => SHELL.includes(f)), []);
+  assert.match(read("/sw.js"), /\[\.\.\.SHELL, \.\.\.SFX\]\.map/);
 });
 
 test("chaque module du jeu est préchargé par la page, sans fichier en trop, pour ne pas attendre les imports un étage après l'autre", () => {

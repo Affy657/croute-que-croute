@@ -99,7 +99,7 @@ function load() {
   }
 }
 
-let data = load(), /** @type {Feat[]} */ fresh = [], /** @type {{ still: number, eventKey: string | null } | null} */ run = null;
+let data = load(), /** @type {Feat[]} */ fresh = [], /** @type {{ still: number, eventKey: string | null } | null} */ run = null, forgotten = false;
 /** @type {FeatListener[]} */
 const listeners = [];
 
@@ -123,6 +123,7 @@ function merge(mine, stored) {
 
 /** @param {FeatChange} fn */
 function change(fn) {
+  if (forgotten) return false;
   data = merge(data, load());
   const changed = fn(data);
   if (changed !== false) store.set(KEYS.achievements, JSON.stringify(data));
@@ -142,8 +143,18 @@ if (LOCAL && new URLSearchParams(location.search).get("succes") === "tous") {
   });
 }
 
+export function forgetFeats() {
+  data = blank();
+  fresh = [];
+  run = null;
+  forgotten = true;
+}
+
 window.addEventListener("storage", (e) => {
-  if (e.key === KEYS.achievements) data = merge(data, load());
+  if (e.key !== KEYS.achievements || forgotten) return;
+  if (e.newValue === null) return forgetFeats();
+  data = merge(data, load());
+  checkAttacks(true);
 });
 
 /** @param {string} id */
@@ -166,17 +177,25 @@ export function absorb(remote) {
   const attacks = remote && Array.isArray(remote.attacks) ? remote.attacks.filter((id) => typeof id === "string") : [];
   const news = Object.keys(got).filter((id) => BY_ID[id] && !data.got[id] && Number.isFinite(got[id]));
   if (!news.length && attacks.every((id) => data.attacks.includes(id))) return;
-  change((d) => {
+  const done = change((d) => {
     for (const id of news) d.got[id] = d.got[id] || got[id];
     d.attacks = union(d.attacks, attacks);
   });
+  if (!done) return;
   for (const id of news) for (const fn of listeners) fn(BY_ID[id], true);
   checkSky(true);
+  checkAttacks(true);
 }
 
 function checkSky(synced = false) {
   if (SKY_IDS.every((id) => data.got[id])) unlock("allSky", synced);
 }
+
+function checkAttacks(synced = false) {
+  if (LIVE.every((a) => data.attacks.includes(a.id))) unlock("allAttacks", synced);
+}
+
+checkAttacks(true);
 
 export const forSync = () => ({ got: { ...data.got }, attacks: data.attacks.slice() });
 /** @param {FeatListener} fn */
@@ -244,7 +263,7 @@ export function runTick(state, moved, dt) {
         if (d.attacks.includes(o.from)) return false;
         d.attacks.push(/** @type {string} */ (o.from));
       });
-      if (LIVE.every((a) => data.attacks.includes(a.id))) unlock("allAttacks");
+      checkAttacks();
     }
   }
 }

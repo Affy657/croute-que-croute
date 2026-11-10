@@ -4,6 +4,7 @@ import { guessDevice } from "./input.js";
 import { LOCAL } from "../shared/local.js";
 import { timeout } from "../shared/timeout.js";
 import { openOf, recentOf, upcomingOf, lateFor } from "../shared/banner.js";
+import { forgetFeats } from "./achievements.js";
 
 const RELOAD_GAP = 15000;
 const UPDATED = "Partie pas comptée : le jeu a été mis à jour, il se recharge quand tu rejoues.";
@@ -178,6 +179,7 @@ export async function refreshBoard() {
 
 function forgetAccount() {
   for (const key of ACCOUNT_KEYS) store.set(key, null);
+  forgetFeats();
   requestUpdate();
 }
 

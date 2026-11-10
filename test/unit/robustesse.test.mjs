@@ -39,11 +39,11 @@ function offlineWorker(cached) {
   };
 }
 
-test("cache hors ligne : l'écran géant ne retombe jamais sur la page du jeu", async () => {
+test("cache hors ligne : seul le jeu retombe sur sa page gardée, jamais l'écran géant, /confidentialite, /depart ni une autre page", async () => {
   const game = new Response("jeu"), screen = new Response("écran");
   assert.equal(await offlineWorker({ "/": game, "/ecran": screen })("/ecran"), screen);
-  assert.equal((await offlineWorker({ "/": game })("/ecran")).type, "error");
-  assert.equal(await offlineWorker({ "/": game })("/lien"), game);
+  for (const path of ["/ecran", "/confidentialite", "/depart", "/lien"]) assert.equal((await offlineWorker({ "/": game })(path)).type, "error", path);
+  assert.equal(await offlineWorker({ "/": game })("/?diag=son"), game);
 });
 
 test("cache hors ligne : l'admin et ses scripts passent toujours par le réseau, jamais par une vieille copie", () => {
@@ -53,11 +53,11 @@ test("cache hors ligne : l'admin et ses scripts passent toujours par le réseau,
   assert.notEqual(ask("/js/app/main.js", "same-origin"), null);
 });
 
-test("cache hors ligne : un fichier raté pendant l'installation n'empêche pas de garder les autres", async () => {
+test("cache hors ligne : un fichier ou un bruitage raté pendant l'installation n'empêche pas de garder les autres, bruitages compris", async () => {
   const source = readFileSync(new URL("../../public/sw.js", import.meta.url), "utf8");
   const shell = JSON.parse(source.match(/const SHELL = (\[[\s\S]*?\]);/)[1]);
   const stored = new Set(), tries = new Map(), handlers = {};
-  const fails = (url) => url === "/js/app/main.js" || (url === "/style.css" && tries.get(url) === 1);
+  const fails = (url) => url === "/js/app/main.js" || url === "/sfx/near.mp3" || (url === "/style.css" && tries.get(url) === 1);
   const cache = {
     async add(url) {
       tries.set(url, (tries.get(url) || 0) + 1);
@@ -76,4 +76,5 @@ test("cache hors ligne : un fichier raté pendant l'installation n'empêche pas 
   handlers.install({ waitUntil: (p) => { done = p; } });
   await done;
   assert.deepEqual(shell.filter((url) => !stored.has(url)), ["/js/app/main.js"]);
+  assert.deepEqual(["/sfx/start.mp3", "/sfx/near.mp3", "/sfx/death.mp3", "/sfx/record.mp3", "/sfx/first.mp3"].filter((url) => stored.has(url)), ["/sfx/start.mp3", "/sfx/death.mp3", "/sfx/record.mp3", "/sfx/first.mp3"]);
 });
