@@ -58,6 +58,7 @@ La musique et les bruitages ne sont pas dans le dépôt, le jeu marche sans.
 - Planètes à accessoire (grille-pain, citrouille, pirate, œuf, `key`) : un tour sur 5 (`SKIN_ODDS`), soit environ toutes les 13 min de ciel, une planète donnée toutes les 50 min. Les toucher sur l'accueil donne un succès secret.
 - Étoiles filantes (`PASSERS`, `COMET_*`) : première entre 30 s et 3 min, puis toutes les 2 à 4 min, menu compris, en 9 s, dans un ordre au hasard.
 - Canettes : photos de magasin délavées, vérifier les couleurs sur l'image seule. Sans contour et opaques, pour ne pas ressembler à une arme.
+- Fenêtre de 0 px de haut : le ciel s'arrête au lieu de se casser, et repart quand elle grandit. Sinon plus aucune planète, affichée ou touchable, jusqu'au rechargement.
 - Droits : pas de personnages ni de designs protégés (films, mangas, jeux vidéo). Idées originales, œuvres libres de droits ou objets réels.
 
 ### Skins
@@ -205,6 +206,8 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Écran Classement : les 30 premiers, puis ta place, ligne toujours visible. Onglet PC d'office depuis un PC.
 - Tartine d'or : 1er d'un classement d'au moins 10 joueurs (`WIN_MIN`), soirée, Mobile ou PC, à n'importe quel moment.
 - Fin stricte : seules comptent les parties finies avant la fin, plus 15 s de marge réseau (`LATE_MS` dans `src/db.ts`). Une partie encore en cours compte au général, et le téléphone le dit.
+- « En retard » se juge sur la soirée où la partie a commencé, pas sur la dernière du classement : avec deux soirées à moins de 12 h d'écart et un classement pas relu à l'ouverture de la 2e, ce serait la 1re, déjà finie, et le téléphone dirait « Soirée finie » en début de soirée.
+- Compte à rebours à l'heure du serveur : le décalage se prend au milieu de l'aller-retour du classement. Pris à la réception, il garderait toute la latence, et la fin reculerait après une réponse lente.
 - Gagnant : à zéro, « Soirée finie ! » partout. « Bravo » attend un classement relu au moins 12 s après les 15 s de marge (`SETTLE_MS`, plus que les 10 s en mémoire du serveur) : 27 s après la fin sur l'écran géant, 27 à 57 s sur les téléphones. Le dernier reçu, parfois vieux de 40 s, annonçait le mauvais gagnant, et un joueur peut encore passer 1er pendant la marge.
 - Relecture : toutes les 10 s, 30 s sur l'accueil, jamais écran éteint. Serveur : 10 s en mémoire, général 60 s pendant une soirée. Ta place après une partie est à jour tout de suite.
 - Place et rival se calculent sur une copie du classement où ton record frais est inséré, égalités comprises (`seated`). La liste en mémoire peut dater d'avant ton record, sur une autre copie du serveur ou pendant une relecture, et elle n'est pas modifiée.
@@ -398,17 +401,20 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 ### Mises à jour
 
 - Le jeu se recharge seul quand la version change, seulement à l'accueil, pas pendant qu'on tape. Jamais en partie ni sur l'écran de mort, où « Rejouer » ou « Accueil » le fait.
+- Rechargement demandé : plus aucune partie ne démarre dans la page. Un toucher déclenche `pointerdown` puis `click` : sur wifi lent, le 2e lancerait une partie que le rechargement couperait, jamais finie côté serveur.
 - Le serveur refuse les demandes d'une ancienne version, sauf le départ d'une partie lancée par la version juste d'avant (`APP_PREVIOUS`) : un rechargement en pleine partie passait pour un gel. Plus vieille encore : la partie continue sans compter, l'écran de mort le dit.
 - Page et code de deux versions sans plantage (élément attendu par `screens.js` absent) : rechargement une fois (`applyUpdate`, toutes les 15 s au plus).
 
 ### Parties et score
 
 - Une partie ne compte que si le réseau passe au départ, même si le classement n'est pas encore là (wifi saturé). Seul un joueur retiré joue sans envoyer.
-- Le départ est relancé sur erreur réseau, 5xx, 408 ou 429, jusqu'à 12 s après le début de la partie (`START_MS`), 3,5 s par essai au plus. Pas plus : le serveur tolère 15 s d'écart entre le score et son horloge. Pas de relance sur un refus définitif (401, 403, 426). Le score attend la fin de ces essais.
+- Le départ est relancé sur erreur réseau, 5xx, 408 ou 429, pendant les 12 premières secondes écran allumé (`START_MS`), 3,5 s par essai au plus. Pas plus : le serveur tolère 15 s d'écart entre le score et son horloge. Pas de relance sur un refus définitif (401, 403, 426). Le score attend la fin de ces essais.
+- Écran éteint ou autre appli pendant ces essais : aucun essai, et ce temps ne compte pas dans les 12 s. Le chrono du jeu est en pause lui aussi, donc le score reste sous l'horloge du serveur. Le départ repart au retour.
 - Toute autre demande abandonne après 10 s : « Pas de réseau, réessaie. »
 - Une réponse 200 au corps illisible (portail wifi, coupure) compte comme une erreur réseau.
 - Le score est gardé 12 h dans `cv-score-attente` (`KEEP_MS`), même si on ferme le jeu. « Envoi en attente… » après 3 essais. Après 2 min d'essais dans la page, la boucle s'arrête sans rien effacer (« Pas de réseau. Ton score partira dès qu'il revient. »), et repart à chaque classement reçu, au retour du réseau (`online`) et au retour à l'écran.
 - Un seul envoi à la fois pour une partie, et les scores gardés partent l'un après l'autre. Une réponse définitive du serveur efface le score. Le renvoi d'une partie enregistrée redonne la même réponse.
+- Une erreur dans l'affichage du résultat n'est pas une panne réseau : le score enregistré n'est pas renvoyé, l'erreur part dans les erreurs des joueurs.
 - `waited` dans `POST /api/runs/:id` : millisecondes depuis la fin de la partie, 0 pour un envoi immédiat. Le serveur s'en sert pour ne pas signaler « partie ralentie ».
 - Tout ou rien : la partie est marquée finie dans la même opération que le record et la soirée, en dernière écriture. Deux envois à la même milliseconde comptent une partie. Un renvoi après la fin de la soirée la garde.
 - Compte fusionné pendant l'envoi : la partie reste ouverte et le serveur répond 503. Le téléphone renvoie, le score compte sur le compte gardé.
@@ -416,6 +422,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 - Score envoyé tard : le téléphone dit depuis combien de temps la partie est finie (`waited`, entier en millisecondes, 12 h au plus, sinon 0). Le temps gardé pour l'alerte (`best_elapsed`) est le temps réel moins cette attente, jamais moins que la durée du score. Le score, lui, reste contrôlé sur le temps réel.
 - Hors ligne : les records sont gardés (`cv-records`, `keepBests`). Une partie dont le départ n'est pas passé n'est pas envoyée et ne compte que jusqu'au prochain classement.
 - L'écran de fin suit la réponse du serveur : « Nouveau record » s'enlève si le serveur ne le compte pas. Un classement demandé avant le score, arrivé après, ne l'efface pas.
+- Score parti après les 2 min d'essais : l'écran de fin se refait avec la réponse (record, place, rival) s'il montre encore cette partie.
 
 ### Cache et chargement
 
@@ -633,7 +640,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `outils-admin` : liste de l'admin limitée et recherche, état de la soirée, heure du serveur prise au milieu de la demande, nom et fin d'une nouvelle soirée.
 - `api` : limite d'attente, reprise par cookie refaite.
 - `attacks` : mur mis de côté, chaque garniture sur un couteau.
-- `banner` : bandeau des soirées, « Bravo », « Nouveau n°1 », direct ouvert 1 min.
+- `banner` : bandeau des soirées, « Bravo », « Nouveau n°1 », direct ouvert 1 min, retard jugé sur la soirée du départ.
 - `board` : `GET /api/board` et `/api/ecran` sur une base en mémoire, soirée de plus de 1 000 joueurs, nombre de joueurs en mémoire, record frais pas encore dans la liste, lecture en vol, égalités, renvoi d'un score, retiré de la soirée absent du fil.
 - `cache` : cache des classements, lecture unique, périmée écartée, abandon à 5 s, ligne déjà à ce score.
 - `card` : classement d'une soirée fermée gardé 10 min.
@@ -641,9 +648,10 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `compat` : valeur de secours avant chaque unité ou couleur trop récente pour les vieux iPhone, pas d'`await` en dehors d'une fonction.
 - `depart` : `/depart`, 2 essais pour le code, compte gardé par cookie, échec signalé, sous le `meta refresh`.
 - `deploy` : refus de `npm run deploy`.
-- `envoi` : départ relancé 12 s, score gardé 12 h, un seul envoi à la fois, corps illisible, `waited`.
+- `envoi` : départ relancé 12 s écran allumé, score gardé 12 h, un seul envoi à la fois, corps illisible, `waited`, erreur d'affichage sans renvoi.
 - `errors` : plafond de 60 erreurs par heure, limite par IP avant la limite commune. Côté téléphone (`errors.js`) : envoi raté renvoyé, hors ligne, script de Cloudflare ignoré.
 - `google` : empreinte sans e-mail, cookie, usage unique, 10 min, jeton refusé, Google injoignable, délier, limite du lieu, « Déconnecter les autres ».
+- `horloge` : décalage avec l'heure du serveur sans la latence.
 - `http` : IPv6 groupée par /64, plafond de 64 Ko à la lecture.
 - `inapp` : navigateurs des applis (vrais user agents).
 - `input` : glissé bloqué, sauf là où la page défile.
@@ -658,7 +666,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `record` : classement tardif sans effet sur le record.
 - `refus` : cause d'un refus du solveur.
 - `resume` : reprise ratée, pas de choix du pseudo.
-- `robustesse` : netteté 12 h, hauteur invalide, cache malgré un fichier ou un bruitage raté, seul le jeu retombe sur sa page gardée hors ligne.
+- `robustesse` : netteté 12 h, hauteur invalide, ciel d'une fenêtre de 0 px, cache malgré un fichier ou un bruitage raté, seul le jeu retombe sur sa page gardée hors ligne.
 - `routes` : route admin sans `access` refusée.
 - `runs` : même score à la même milliseconde, une partie. Limites du départ. Généraux gardés 60 s après une partie PC en soirée. Compte fusionné pendant l'envoi. Marge de fin de soirée. Score envoyé tard (`waited`). Renvoi d'un retiré de la soirée.
 - `shell` : `SHELL` de `sw.js` avec les images de la page, bruitages (`SFX`), `modulepreload`, pas d'`Object.hasOwn`, éléments de `screens.js`.

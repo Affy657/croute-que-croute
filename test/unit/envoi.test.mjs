@@ -106,6 +106,38 @@ test("dernier essai du départ coupé à 12 s pile, pour rester sous les 15 s to
   assert.equal(r.error, "Hors ligne : score non compté");
 });
 
+async function lockFor(ms, meanwhile = () => {}) {
+  document.hidden = true;
+  heard.visibilitychange();
+  await pass(ms);
+  meanwhile();
+  document.hidden = false;
+  heard.visibilitychange();
+}
+
+test("départ lent puis téléphone verrouillé 1 min : rien ne part écran éteint, le départ repart au retour et la partie compte", async () => {
+  fresh();
+  start = down;
+  const run = api.startRun({ look: null });
+  await pass(3000);
+  await lockFor(60000, () => { start = () => answer(201, { runId: "partie" }); });
+  await pass(100);
+  assert.deepEqual(starts, [0, 500, 1500, 63000]);
+  assert.deepEqual(await run, { runId: "partie" });
+});
+
+test("départ sans réseau et téléphone verrouillé : seules les 12 s écran allumé comptent, pas plus", async () => {
+  fresh();
+  start = down;
+  let r = null;
+  api.startRun({ look: null }).then((x) => { r = x; });
+  await pass(3000);
+  await lockFor(60000);
+  await pass(12000);
+  assert.deepEqual(starts, [0, 500, 1500, 63000, 66000, 69000]);
+  assert.equal(r && r.error, "Hors ligne : score non compté");
+});
+
 test("départ revenu après la fin de la partie : le score dit depuis combien de temps elle est finie", async () => {
   fresh();
   const replies = [down, down, start];
@@ -137,6 +169,21 @@ test("corps illisible à la fin de la partie (portail wifi, coupure) : compté c
   assert.deepEqual(stored(), []);
 });
 
+test("écouteur du résultat qui plante : l'erreur remonte, et le score déjà enregistré n'est pas renvoyé", async () => {
+  fresh();
+  let broken = true, outcome = null;
+  api.on("result", () => {
+    if (!broken) return;
+    broken = false;
+    throw new Error("affichage cassé");
+  });
+  api.submitScore(800, "mobile", 0, Promise.resolve({ runId: "partie" }), () => {}).then((r) => { outcome = r; }, (e) => { outcome = e; });
+  await pass(5000);
+  assert.equal(outcome && outcome.message, "affichage cassé");
+  assert.equal(finishes.length, 1);
+  assert.deepEqual(stored(), []);
+});
+
 test("corps illisible au départ : pas de plantage sur la note « Envoi… », le départ est relancé", async () => {
   fresh();
   const replies = [unreadable, start];
@@ -154,7 +201,7 @@ test("2 min sans réseau : la boucle s'arrête, le score reste et un message le 
   const sent = api.submitScore(800, "mobile", 0, Promise.resolve({ runId: "partie" }), () => { waited++; });
   await pass(125000);
   const r = await sent, tries = finishes.length;
-  assert.deepEqual(r, { error: api.WAITING });
+  assert.deepEqual(r, { error: api.WAITING, runId: "partie" });
   assert.equal(waited, 1);
   assert.equal(stored().length, 1);
   await pass(30000);

@@ -43,8 +43,11 @@ export function closing(b, now) {
   return !!e && !settled(b, e);
 }
 
-/** @param {Slate | null} b @param {number} now */
-export const lateFor = (b, now) => !!(b && b.event && now > b.event.finalAt);
+/** @param {Slate | null} b @param {number} startedAt @param {number} now */
+export function lateFor(b, startedAt, now) {
+  const e = openOf(b, startedAt);
+  return !!e && now > e.finalAt;
+}
 
 /** @param {ScreenBoard} b @param {number} now */
 export function liveScreen(b, now) {

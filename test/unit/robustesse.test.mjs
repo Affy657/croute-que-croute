@@ -1,11 +1,11 @@
-import "./env.mjs";
+import { fakeCtx } from "./env.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createSim } from "../../public/js/game/sim.js";
 import { STEP } from "../../public/js/game/field.js";
 
-const { savedQuality } = await import("../../public/js/app/scene.js");
+const { savedQuality, createScene } = await import("../../public/js/app/scene.js");
 
 test("netteté baissée (téléphone lent, ou iPhone en économie d'énergie à 30 images par seconde) : gardée 12 h, puis le jeu remesure", () => {
   const now = Date.UTC(2026, 10, 7, 21);
@@ -24,6 +24,23 @@ test("partie lancée avec une hauteur invalide (fenêtre de 0 px) : la tartine p
   assert.ok(Number.isFinite(sim.state.toast.y));
   for (let i = 0; i < 120 * 120 && !sim.state.dead; i++) sim.step(STEP, 0, 0);
   assert.ok(sim.state.dead);
+});
+
+test("fenêtre de 0 px de haut puis agrandie : les planètes reviennent, affichées et touchables", () => {
+  const listen = window.addEventListener;
+  let grow = null;
+  Object.assign(window, { innerWidth: 390, innerHeight: 0, devicePixelRatio: 1, matchMedia: () => ({ matches: false }) });
+  window.addEventListener = (type, fn) => (type === "resize" ? (grow = fn) : listen(type, fn));
+  const canvas = () => ({ width: 0, height: 0, getContext: () => fakeCtx().ctx });
+  const scene = createScene(canvas(), canvas());
+  window.addEventListener = listen;
+  for (let i = 0; i < 60; i++) scene.update(STEP, 1, false);
+  window.innerHeight = 844;
+  grow();
+  for (let i = 0; i < 60; i++) scene.update(STEP, 1, false);
+  const hits = [];
+  for (const x of [0.22 * 390, 0.8 * 390]) for (let y = 0; y < 844; y += 4) if (scene.bodyAt(x, y)) hits.push(y);
+  assert.ok(hits.length > 0);
 });
 
 function offlineWorker(cached) {
