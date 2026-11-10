@@ -9,7 +9,7 @@ export const pseudoKey = (pseudo: string) => stripAccents(pseudo).toLowerCase().
 
 export function cleanPseudo(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
-  const pseudo = raw.normalize("NFC").replace(/\s+/g, " ").trim();
+  const pseudo = raw.normalize("NFC").replace(/[\u2018\u2019\u02BC]/g, "'").replace(/\s+/g, " ").trim();
   if (pseudo.length < 2 || pseudo.length > 16) return null;
   if (/\p{M}/u.test(pseudo)) return null;
   if (!/^[A-Za-z0-9 _.'-]+$/.test(stripAccents(pseudo))) return null;

@@ -41,5 +41,7 @@ async function findCode() {
   return { code, retry: !!token && !code };
 }
 
-const { code, retry } = await findCode();
-location.replace(moveUrl(code, retry));
+(async () => {
+  const { code, retry } = await findCode();
+  location.replace(moveUrl(code, retry));
+})();

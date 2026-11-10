@@ -184,6 +184,30 @@ try {
     await click("infoBack");
     await shown("menu");
   });
+  await step("Infos ouvert, puis Paramètres ouverts par un code scanné : l'animation des attaques s'arrête", async () => {
+    await click("infoBtn");
+    await shown("info");
+    await page.locator('#infoTabs [data-tab="attacks"]').click();
+    await $("#infoBody details summary").click();
+    await page.waitForFunction(() => document.querySelector("#infoBody details[open] canvas"), null, { timeout: WAIT_MS });
+    await page.evaluate(() => { location.hash = "#lier=ABCD"; });
+    await shown("settings");
+    const draws = await page.evaluate(() => new Promise((done) => {
+      const ctx = document.querySelector("#infoBody details[open] canvas").getContext("2d"), fill = ctx.fillRect;
+      let n = 0;
+      ctx.fillRect = function (...args) {
+        n++;
+        return fill.apply(this, args);
+      };
+      setTimeout(() => {
+        delete ctx.fillRect;
+        done(n);
+      }, 500);
+    }));
+    if (draws) throw new Error(draws + " dessins des attaques sous les Paramètres");
+    await click("closeBtn");
+    await shown("menu");
+  });
   await step("Paramètres : QR code et code pour un autre appareil, puis retour", async () => {
     await click("settingsBtn");
     await shown("settings");
@@ -294,6 +318,71 @@ try {
     watch(p);
     return { context, p };
   };
+  const withGoogle = (p) => p.route((url) => url.pathname === "/api/board", async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, json: { ...(await res.json()), google: true } });
+  });
+  await step("Paramètres ouverts avant le classement : « Pseudo » et « Autre appareil » s'affichent à son arrivée, sans effacer un pseudo en cours de saisie", async () => {
+    const name = "Avant" + hex(4);
+    const { context, p } = await freshPage(await joinApi(name), null, { serviceWorkers: "block" });
+    try {
+      let open;
+      const gate = new Promise((ok) => { open = ok; });
+      await p.route("**/api/board", async (route) => {
+        await gate;
+        await route.continue();
+      });
+      await p.goto(BASE + "/");
+      await p.locator("#settingsBtn").click({ timeout: WAIT_MS });
+      await p.locator("#settings").waitFor({ state: "visible", timeout: WAIT_MS });
+      if (await p.locator("#renameCard").isVisible()) throw new Error("« Pseudo » affiché avant le classement");
+      open();
+      await p.locator("#renameCard").waitFor({ state: "visible", timeout: WAIT_MS });
+      await p.locator("#linkCard").waitFor({ state: "visible", timeout: WAIT_MS });
+      if ((await p.inputValue("#newPseudo")) !== name) throw new Error("pseudo pas rempli : " + (await p.inputValue("#newPseudo")));
+      await p.fill("#newPseudo", name + "z");
+      await p.locator("#newPseudo").blur();
+      const again = p.waitForResponse((r) => new URL(r.url()).pathname === "/api/board", { timeout: WAIT_MS });
+      await p.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+      await again;
+      await wait(300);
+      if ((await p.inputValue("#newPseudo")) !== name + "z") throw new Error("saisie effacée par le classement");
+    } finally {
+      await context.close();
+    }
+  });
+  await step("adresse « #google=constructor » : ni plantage ni texte bizarre, avec ou sans compte", async () => {
+    for (const token of [await joinApi("Goo" + hex(4)), null]) {
+      const { context, p } = await freshPage(token, null, { serviceWorkers: "block" });
+      const crashes = [];
+      p.on("pageerror", (e) => crashes.push(e.message));
+      await withGoogle(p);
+      try {
+        await p.goto(BASE + "/#google=constructor");
+        await p.locator(token ? "#play" : "#joinForm").waitFor({ state: "visible", timeout: WAIT_MS });
+        await wait(1000);
+        const state = await p.evaluate(() => ({ settings: !document.getElementById("settings").hidden, note: document.getElementById("googleNote").textContent, error: document.getElementById("linkError").textContent }));
+        if (crashes.length || state.settings || state.note || state.error) throw new Error(JSON.stringify({ crashes, ...state }));
+      } finally {
+        await context.close();
+      }
+    }
+  });
+  await step("retour depuis la page de Google par le bouton retour : « Continuer avec Google » remarche", async () => {
+    const { context, p } = await freshPage(null, null, { serviceWorkers: "block" });
+    await withGoogle(p);
+    await p.route("**/api/google/start", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ url: "/#chez-google" }) }));
+    try {
+      await p.goto(BASE + "/");
+      await p.locator("#haveAccount").click({ timeout: WAIT_MS });
+      await p.locator("#googleLogin").click({ timeout: WAIT_MS });
+      await p.waitForFunction(() => document.getElementById("googleLogin").disabled, null, { timeout: WAIT_MS });
+      await p.evaluate(() => dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true })));
+      if (await p.locator("#googleLogin").isDisabled()) throw new Error("« Continuer avec Google » reste grisé");
+    } finally {
+      await context.close();
+    }
+  });
   await step("appareil sorti du compte : il oublie les succès et les skins, un jeton inconnu non", async () => {
     const owner = await joinApi("Sort" + hex(4));
     const link = await (await fetch(BASE + "/api/link", { method: "POST", headers: apiHeaders, body: JSON.stringify({ code: await codeOf(owner), clientId: hex(32) }) })).json();
@@ -317,6 +406,53 @@ try {
     };
     const [out, unknown] = [await opened(link.token), await opened("a".repeat(48))];
     if (out !== null || unknown === null) throw new Error(JSON.stringify([out, unknown]));
+  });
+  await step("appareil sorti du compte en pleine partie : à sa mort puis au rechargement, plus rien de l'ancien compte", async () => {
+    const owner = await joinApi("Sort" + hex(4));
+    const link = await (await fetch(BASE + "/api/link", { method: "POST", headers: apiHeaders, body: JSON.stringify({ code: await codeOf(owner), clientId: hex(32) }) })).json();
+    const context = await browser.newContext({ ...(SAFARI ? devices["iPhone 13"] : { viewport: { width: 390, height: 844 } }), serviceWorkers: "block" });
+    await context.addInitScript((t) => {
+      if (sessionStorage.getItem("essai")) return;
+      sessionStorage.setItem("essai", "1");
+      sessionStorage.setItem("cv-invincible", "1");
+      localStorage.setItem("cv-install-asked", "1");
+      localStorage.setItem("cv-token", t);
+      localStorage.setItem("cv-succes", JSON.stringify({ got: { pumpkin: 1, t90: 1, runs10: 1 }, attacks: ["knife"], events: [], killers: [], runs: 12, best: 9000, seen: 1 }));
+      localStorage.setItem("cv-garnitures", '["jam","choco","sauce"]');
+      localStorage.setItem("cv-garniture", "choco");
+      localStorage.setItem("cv-accessoire", "witch");
+      localStorage.setItem("cv-cotes", "boosters");
+    }, link.token);
+    await context.route("**/js/app/run.js", async (route) => {
+      const res = await route.fetch();
+      await route.fulfill({ response: res, body: (await res.text()) + "\nwindow.__jeu = { S, die };\n" });
+    });
+    const p = await context.newPage();
+    watch(p);
+    const left = () => p.evaluate(() => {
+      const got = (JSON.parse(localStorage.getItem("cv-succes") || "{}") || {}).got || {}, spreads = localStorage.getItem("cv-garnitures") || "";
+      return [
+        ...["pumpkin", "t90", "runs10"].filter((id) => got[id]),
+        ...(["jam", "choco", "sauce"].every((s) => spreads.includes(s)) ? ["garnitures"] : []),
+        ...["cv-garniture", "cv-accessoire", "cv-cotes"].filter((k) => localStorage.getItem(k))
+      ];
+    });
+    try {
+      await p.goto(BASE + "/");
+      await p.locator("#play").waitFor({ state: "visible", timeout: WAIT_MS });
+      await fetch(BASE + "/api/me/devices", { method: "DELETE", headers: { ...apiHeaders, authorization: "Bearer " + owner } });
+      await p.locator("#play").click();
+      await p.waitForFunction(() => window.__jeu.S.mode === "play" && !localStorage.getItem("cv-token"), null, { timeout: WAIT_MS });
+      await p.evaluate(() => window.__jeu.die(null));
+      await p.locator("#over").waitFor({ state: "visible", timeout: WAIT_MS });
+      const dead = await left();
+      await p.locator("#again").click({ timeout: WAIT_MS });
+      await p.locator("#joinForm").waitFor({ state: "visible", timeout: WAIT_MS });
+      const reloaded = await left();
+      if (dead.length || reloaded.length) throw new Error(JSON.stringify({ dead, reloaded }));
+    } finally {
+      await context.close();
+    }
   });
   await step("démarrage qui plante deux fois de suite (fichiers de deux versions) : le jeu repart seul", async () => {
     const context = await browser.newContext({ ...(SAFARI ? devices["iPhone 13"] : { viewport: { width: 390, height: 844 } }), serviceWorkers: "block" });
@@ -350,7 +486,7 @@ try {
     return { context, reports, p: await context.newPage() };
   };
   const bootTries = (p) => p.evaluate(() => sessionStorage.getItem("cv-boot-tries"));
-  await step("script ajouté par le navigateur (portefeuille de Brave) qui plante pendant un chargement lent : pas de rechargement, rien dans les erreurs des joueurs", async () => {
+  await step("script ajouté par le navigateur (portefeuille de Brave) ou par Cloudflare (analyse) pendant un chargement lent : pas de rechargement, rien dans les erreurs des joueurs", async () => {
     const { context, reports, p } = await slowStart(() => {
       localStorage.setItem("cv-install-asked", "1");
       document.addEventListener("readystatechange", () => {
@@ -369,7 +505,7 @@ try {
       await p.evaluate(() => dispatchEvent(new ErrorEvent("error", { message: "Témoin", filename: location.origin + "/js/app/main.js", lineno: 1, colno: 1 })));
       await wait(4500);
       const sent = reports.join(" ");
-      if (tries !== null || !sent.includes("Témoin") || sent.includes("ethereum") || sent.includes("style-src-attr")) throw new Error(JSON.stringify({ tries, sent: sent.slice(0, 400) }));
+      if (tries !== null || !sent.includes("Témoin") || sent.includes("ethereum") || sent.includes("style-src-attr") || sent.includes("cloudflareinsights")) throw new Error(JSON.stringify({ tries, sent: sent.slice(0, 400) }));
     } finally {
       await context.close();
     }
@@ -533,6 +669,68 @@ try {
       await runFor(p, "#play", 1000);
       await sent(p);
       await p.waitForFunction(() => document.getElementById("newBest").hidden, null, { timeout: WAIT_MS });
+    } finally {
+      await context.close();
+    }
+  });
+  await step("score parti après les 2 min d'essais : l'écran de fin suit la réponse, record retiré et place affichée", async () => {
+    const { context, p } = await testPage(await joinApi("Tardif" + hex(4)));
+    try {
+      await p.route("**/js/app/api.js", async (route) => {
+        const res = await route.fetch();
+        await route.fulfill({ response: res, body: (await res.text()).replace("WAIT_MS = 120000", "WAIT_MS = 500") });
+      });
+      let down = true;
+      await p.route(/\/api\/runs\/[^/]+$/, async (route) => {
+        if (down) return route.abort();
+        const res = await route.fetch();
+        await route.fulfill({ response: res, json: { ...(await res.json()), improved: false, eventImproved: false, pcImproved: false } });
+      });
+      await p.goto(BASE + "/");
+      await runFor(p, "#play", 500);
+      await p.waitForFunction(() => document.getElementById("overNote").textContent.includes("partira"), null, { timeout: WAIT_MS });
+      if (await p.locator("#newBest").isHidden()) throw new Error("pas de « Nouveau record » en attendant le serveur");
+      down = false;
+      await p.evaluate(() => window.dispatchEvent(new Event("online")));
+      await p.waitForFunction(() => document.getElementById("newBest").hidden && document.getElementById("overNote").hidden && !document.getElementById("overRankBox").hidden, null, { timeout: WAIT_MS });
+    } finally {
+      await context.close();
+    }
+  });
+  await step("mise à jour en attente : « Rejouer » recharge le jeu sans lancer de partie, puis « Jouer » marche sans recharger encore", async () => {
+    const { context, p } = await testPage(await joinApi("Recharge" + hex(4)));
+    try {
+      let newer = false, starts = 0;
+      await p.route("**/api/board", async (route) => {
+        try {
+          const res = await route.fetch();
+          const body = await res.json();
+          await route.fulfill({ response: res, json: newer ? { ...body, version: "9.9.9" } : body });
+        } catch {}
+      });
+      const loaded = p.waitForResponse("**/api/board", { timeout: WAIT_MS });
+      await p.goto(BASE + "/");
+      await loaded;
+      newer = true;
+      const told = p.waitForResponse("**/api/board", { timeout: WAIT_MS });
+      await runFor(p, "#play", 300);
+      await sent(p);
+      await told;
+      await wait(300);
+      await p.route(BASE + "/", async (route) => {
+        await wait(1500);
+        await route.continue().catch(() => {});
+      });
+      p.on("request", (r) => {
+        if (r.method() === "POST" && new URL(r.url()).pathname === "/api/runs") starts++;
+      });
+      await p.waitForFunction(() => !document.getElementById("again").disabled, null, { timeout: WAIT_MS });
+      const reloaded = p.waitForEvent("load", { timeout: WAIT_MS });
+      await p.locator("#again").click();
+      await reloaded;
+      if (starts) throw new Error(starts + " partie(s) lancée(s) pendant le rechargement");
+      await p.locator("#play").click({ timeout: WAIT_MS });
+      await p.waitForFunction(() => window.__jeu.S.mode === "play", null, { timeout: WAIT_MS });
     } finally {
       await context.close();
     }
@@ -752,6 +950,30 @@ try {
       await context.close();
     }
   });
+  if (!SAFARI) await step("jeu ouvert dans un navigateur neuf : bruitages et logo Google en cache, et sans réseau une autre page ne retombe pas sur l'accueil du jeu", async () => {
+    const context = await browser.newContext();
+    const other = await context.newPage();
+    try {
+      await other.goto(BASE + "/", { waitUntil: "networkidle" });
+      const cached = await other.evaluate(() => Promise.race([navigator.serviceWorker.ready.then(() => true), new Promise((ok) => setTimeout(() => ok(false), 10000))]));
+      if (!cached) throw new Error("le jeu n'installe pas le cache hors ligne");
+      const served = [];
+      for (const name of ["start", "near", "death", "record", "first"]) {
+        const res = await fetch(`${BASE}/sfx/${name}.mp3`);
+        await res.arrayBuffer();
+        if (res.ok) served.push(`/sfx/${name}.mp3`);
+      }
+      const missing = await other.evaluate(async (files) => (await Promise.all(files.map(async (f) => ((await caches.match(f)) ? null : f)))).filter(Boolean), ["/icons/google.svg", ...served]);
+      if (missing.length) throw new Error("pas en cache : " + missing.join(", "));
+      await context.setOffline(true);
+      for (const path of ["/confidentialite", "/depart"]) {
+        await other.goto(BASE + path).catch(() => null);
+        if (await other.evaluate(() => !!document.getElementById("menu")).catch(() => false)) throw new Error(path + " sans réseau affiche l'accueil du jeu");
+      }
+    } finally {
+      await context.close();
+    }
+  });
   await step("écran géant : « Pas de réseau » quand le réseau tombe", async () => {
     const context = await browser.newContext();
     const other = await context.newPage();
@@ -763,6 +985,36 @@ try {
     }
     await other.locator("#offline").waitFor({ state: "visible", timeout: WAIT_MS });
     await context.close();
+  });
+  await step("écran géant : réponse lente, le compte à rebours ne recule pas, consos et grand titre cachés dans le dernier quart d'heure", async () => {
+    const other = await browser.newPage({ viewport: { width: 1280, height: 720 }, serviceWorkers: "block" });
+    watch(other);
+    await other.routeWebSocket(/\/api\/live$/, (ws) => ws.close());
+    const LAG = 3000, closesAt = Date.now() + 600000;
+    await other.route((url) => url.pathname === "/api/ecran", async (route) => {
+      await wait(LAG);
+      const now = Date.now();
+      await wait(LAG);
+      const event = { name: "Soirée lente", opensAt: closesAt - 3600000, closesAt, finalAt: closesAt + 15000, status: "open" };
+      await route.fulfill({ json: { now, version: "dev", stamp: "1", next: null, event, last: 1, count: 0, feed: [], top: [] } }).catch(() => {});
+    });
+    try {
+      await other.goto(BASE + "/ecran");
+      await other.waitForFunction(() => document.getElementById("countdown").textContent.startsWith("Fin dans"), null, { timeout: WAIT_MS });
+      const ahead = await other.evaluate((end) => new Promise((ok) => {
+        const el = document.getElementById("countdown");
+        new MutationObserver((_, seen) => {
+          seen.disconnect();
+          const [m, s] = el.querySelector(".digits").textContent.split(":").map(Number);
+          ok(m * 60 + s - (end - Date.now()) / 1000);
+        }).observe(el, { childList: true });
+      }), closesAt);
+      if (ahead < -0.5 || ahead > 2) throw new Error(`compte à rebours décalé de ${ahead.toFixed(1)} s`);
+      const shown = await other.evaluate(() => ["#prizes", ".head h1"].filter((css) => getComputedStyle(document.querySelector(css)).display !== "none"));
+      if (shown.length) throw new Error("affichés dans le dernier quart d'heure : " + shown.join(", "));
+    } finally {
+      await other.close();
+    }
   });
   let admin;
   const at = (ms) => admin.evaluate((t) => {
@@ -1072,6 +1324,37 @@ try {
       }
     });
   }
+  await step("écran géant sans WebSocket : « Bravo » attend une relecture complète du top, pas une demande légère qui dépasse la marge", async () => {
+    const other = await browser.newPage({ viewport: { width: 1280, height: 720 }, serviceWorkers: "block" });
+    watch(other);
+    await other.routeWebSocket(/\/api\/live$/, (ws) => ws.close());
+    const row = (rank, pseudo, best) => ({ rank, id: pseudo, pseudo, best, at: 1, me: false });
+    let closesAt = Date.now() + 3600000, sure = closesAt + 9000, gone = false, crossed = false;
+    await other.route((url) => url.pathname === "/api/ecran", (route) => {
+      const real = Date.now(), light = new URL(route.request().url()).searchParams.get("v") === "1";
+      if (light && real >= sure) crossed = true;
+      const now = crossed ? real : Math.min(real, sure - 5000);
+      const head = { now, version: "dev", stamp: "1", next: null, event: { name: "Soirée tranchée", opensAt: closesAt - 3600000, closesAt, finalAt: sure - SETTLE_MS, status: now < closesAt ? "open" : "closed" } };
+      if (light) return route.fulfill({ json: { ...head, same: true } });
+      return route.fulfill({ json: { ...head, last: 1, count: 2, feed: [], top: gone ? [row(1, "Max", 700)] : [row(1, "Lou", 800), row(2, "Max", 700)] } });
+    });
+    const banner = (text) => other.locator("#countdown", { hasText: text });
+    try {
+      await other.goto(BASE + "/ecran");
+      await other.waitForFunction(() => document.getElementById("title").textContent === "Soirée tranchée", null, { timeout: WAIT_MS });
+      await wait(500);
+      closesAt = Date.now() + 1500;
+      sure = closesAt + 9000;
+      await back(other);
+      await banner("Soirée finie !").waitFor({ timeout: WAIT_MS });
+      gone = true;
+      await banner("Bravo").waitFor({ timeout: WAIT_MS });
+      const text = await other.locator("#countdown").textContent();
+      if (text !== "Bravo Max !") throw new Error(text + " : le 1er retiré pendant la marge est fêté");
+    } finally {
+      await other.close();
+    }
+  });
   const playersRead = (url) => url.pathname === "/api/admin/players";
   const signIn = async (p) => {
     await p.goto(BASE + "/admin");
@@ -1148,6 +1431,26 @@ try {
       await other.close();
     }
   });
+  await step("admin : réponse 200 illisible (portail wifi), « Pas de réseau » au lieu de « Aucune soirée » ou d'une erreur de code", async () => {
+    const other = await browser.newPage({ serviceWorkers: "block" });
+    watch(other);
+    const portal = (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<html>Portail du wifi</html>" });
+    const unread = () => other.locator("#playersMsg", { hasText: "Pas de réseau, réessaie." }).waitFor({ timeout: WAIT_MS });
+    try {
+      await signIn(other);
+      const name = await other.locator("#eventName").textContent(), count = await other.locator("#statPlayers").textContent();
+      await other.route(playersRead, portal);
+      await back(other);
+      await unread();
+      const after = [await other.locator("#eventName").textContent(), await other.locator("#statPlayers").textContent()];
+      if (after[0] !== name || after[1] !== count) throw new Error("données effacées : " + after.join(" / "));
+      await other.route((url) => url.pathname === "/api/admin/me", portal);
+      await other.reload();
+      await unread();
+    } finally {
+      await other.close();
+    }
+  });
   await step("admin : début déplacé dans le futur sur une soirée ouverte, confirmation demandée, « Annuler » la laisse ouverte", async () => {
     const headers = { "content-type": "application/json", "x-app-version": "dev", "x-admin-key": KEY };
     const made = await fetch(BASE + "/api/admin/events", { method: "POST", headers, body: JSON.stringify({ name: "Soirée à déplacer", opensAt: Date.now() - 3600000, closesAt: Date.now() + 3600000 }) });
@@ -1189,6 +1492,36 @@ try {
       await fetch(BASE + "/api/admin/events/current", { method: "PATCH", headers, body: JSON.stringify({ opensAt: Date.now() - 3600000, closesAt: Date.now() - 60000 }) });
     }
   });
+  await step("admin : soirée à venir supprimée depuis « Modifier », avec confirmation, « Annuler » la garde", async () => {
+    const headers = { "content-type": "application/json", "x-app-version": "dev", "x-admin-key": KEY };
+    const opensAt = Date.now() + 2 * 3600000;
+    const made = await fetch(BASE + "/api/admin/events", { method: "POST", headers, body: JSON.stringify({ name: "Soirée à supprimer", opensAt, closesAt: opensAt + 3600000 }) });
+    if (!made.ok) throw new Error("soirée pas créée : " + made.status);
+    const current = async () => (await (await fetch(BASE + "/api/admin/players", { headers })).json()).event;
+    const other = await browser.newPage();
+    watch(other);
+    try {
+      await signIn(other);
+      await other.locator("#editEndBtn").click();
+      const remove = other.locator("#deleteEventBtn");
+      await remove.waitFor({ state: "visible", timeout: WAIT_MS });
+      let asked = dialog(other, false);
+      await remove.click();
+      if (!(await asked).includes("Soirée à supprimer")) throw new Error("mauvaise question");
+      await wait(500);
+      if ((await current()).name !== "Soirée à supprimer") throw new Error("supprimée sans confirmation");
+      asked = dialog(other, true);
+      await remove.click();
+      await asked;
+      await other.locator("#eventMsg", { hasText: "Soirée supprimée." }).waitFor({ timeout: WAIT_MS });
+      const left = await current();
+      if ((left && left.name === "Soirée à supprimer") || (await other.locator("#eventName").textContent()) === "Soirée à supprimer") throw new Error("soirée toujours là");
+      if (await other.locator("#endForm").isVisible()) throw new Error("formulaire resté ouvert");
+    } finally {
+      await other.close();
+      await fetch(BASE + "/api/admin/events/current", { method: "PATCH", headers, body: JSON.stringify({ opensAt: Date.now() - 3600000, closesAt: Date.now() - 60000 }) });
+    }
+  });
   await step("admin : Joueurs, Parties et Record sont sous les onglets du classement qu'ils comptent", async () => {
     const other = await browser.newPage();
     watch(other);
@@ -1199,16 +1532,16 @@ try {
       await other.close();
     }
   });
-  const mockedAdmin = async (viewport) => {
+  const mockedAdmin = async (viewport, { event: shown, shift, timezoneId } = {}) => {
     const HOUR = 3600000, now = Date.now();
     const fake = (i, extra = {}) => ({ id: "f" + i, pseudo: "Joueur" + String(i).padStart(2, "0"), best: 100000 - i * 100, banned: 0, removed: 0, runs: 3, suspect: null, active: false, ...extra });
     const players = Array.from({ length: 24 }, (_, i) => fake(i + 1)).concat(fake(25, { pseudo: "Élodie", best: 50 }));
-    const event = { id: 7, name: "Space Tartinade #3", opensAt: now - HOUR, closesAt: now + 3.5 * HOUR, status: "open" };
+    const event = shown || { id: 7, name: "Space Tartinade #3", opensAt: now - HOUR, closesAt: now + 3.5 * HOUR, status: "open" };
     const last = { version: "1.0.0", page: "/", platform: "iPhone", ua: "iPhone", standalone: false, device: "390x844", trail: "", stack: "" };
     const group = (id, onCurrent) => ({ id, kind: "erreur", message: "TypeError " + id, source: "/js/app/main.js:1:1", count: 1, sessions: 1, platforms: { iPhone: 1 }, firstAt: now - HOUR, lastAt: now - 2 * HOUR, versions: 1, onCurrent, last });
-    const other = await browser.newPage({ serviceWorkers: "block", ...(viewport ? { viewport } : {}) });
+    const other = await browser.newPage({ serviceWorkers: "block", ...(viewport ? { viewport } : {}), ...(timezoneId ? { timezoneId } : {}) });
     watch(other);
-    await other.route(playersRead, (route) => route.fulfill({ json: { scope: "event", event, players, stats: { players: 25, runs: 75 } } }));
+    await other.route(playersRead, (route) => route.fulfill({ json: { ...(shift === undefined ? {} : { now: Date.now() + shift }), scope: "event", event, players, stats: { players: 25, runs: 75 } } }));
     await other.route((url) => url.pathname === "/api/admin/errors", (route) => route.fulfill({ json: { groups: [group("a", true), group("b", false)] } }));
     await signIn(other);
     await other.locator("#players li").first().waitFor({ timeout: WAIT_MS });
@@ -1257,6 +1590,67 @@ try {
       await other.locator("#endForm [data-close]").click();
       const closed = await other.evaluate(() => ({ edit: !document.getElementById("endForm").hidden, expanded: document.getElementById("editEndBtn").getAttribute("aria-expanded") }));
       if (closed.edit || closed.expanded !== "false") throw new Error(JSON.stringify(closed));
+    } finally {
+      await other.close();
+    }
+  });
+  const edited = async (p) => {
+    const sent = [];
+    await p.route((url) => url.pathname === "/api/admin/events/current", (route) => {
+      sent.push(route.request().postDataJSON());
+      return route.fulfill({ json: { ok: true } });
+    });
+    return sent;
+  };
+  await step("admin : onglet qui ne charge pas, « Retirer » suit le classement affiché, pas l'onglet demandé", async () => {
+    const other = await mockedAdmin();
+    try {
+      await other.route((url) => playersRead(url) && url.searchParams.has("scope"), (route) => route.abort());
+      await other.locator('.scope[data-scope="general"]').click();
+      await other.locator("#playersMsg").waitFor({ state: "visible", timeout: WAIT_MS });
+      await other.fill("#playerSearch", "Joueur01");
+      const asked = dialog(other, false);
+      await other.locator("#players li", { hasText: "Joueur01" }).locator("button").click();
+      const question = await asked;
+      if (!question.includes("du classement de la soirée")) throw new Error(question);
+      if ((await other.getAttribute('.scope[data-scope="event"]', "aria-selected")) !== "true") throw new Error("onglet Soirée plus marqué");
+    } finally {
+      await other.close();
+    }
+  });
+  await step("admin : état de la soirée et confirmations à l'heure du serveur, pas à celle de l'appareil", async () => {
+    const HOUR = 3600000, now = Date.now();
+    const other = await mockedAdmin(undefined, { shift: -2 * HOUR, event: { id: 7, name: "Space Tartinade #3", opensAt: now - 3 * HOUR, closesAt: now - HOUR, status: "open" } });
+    const asked = [];
+    other.on("dialog", (d) => {
+      asked.push(d.message());
+      d.dismiss();
+    });
+    try {
+      const sent = await edited(other);
+      const state = await other.evaluate(() => [document.getElementById("eventStatus").textContent, !document.getElementById("editEndBtn").hidden]);
+      if (state[0] !== "Soirée en cours" || !state[1]) throw new Error(JSON.stringify(state));
+      await other.locator("#editEndBtn").click();
+      if (await other.locator("#deleteEventBtn").isVisible()) throw new Error("« Supprimer » proposé pour une soirée ouverte");
+      await other.locator("#endForm button[type=submit]").click();
+      await other.locator("#endForm").waitFor({ state: "hidden", timeout: WAIT_MS });
+      if (asked.length || sent.length !== 1) throw new Error("confirmation demandée : " + asked.join(" / "));
+    } finally {
+      await other.close();
+    }
+  });
+  await step("admin : « Modifier » pour renommer garde l'heure exacte, même dans l'heure répétée du passage à l'heure d'hiver", async () => {
+    const opensAt = Date.UTC(2027, 9, 30, 18), closesAt = Date.UTC(2027, 9, 31, 1, 30);
+    const other = await mockedAdmin(undefined, { timezoneId: "Europe/Paris", event: { id: 7, name: "Space Tartinade #3", opensAt, closesAt, status: "upcoming" } });
+    try {
+      const sent = await edited(other);
+      await other.locator("#editEndBtn").click();
+      if ((await other.inputValue("#endAt")) !== "2027-10-31T02:30") throw new Error("fin affichée : " + await other.inputValue("#endAt"));
+      await other.fill("#editName", "Space Tartinade #4");
+      await other.locator("#endForm button[type=submit]").click();
+      await other.locator("#endForm").waitFor({ state: "hidden", timeout: WAIT_MS });
+      const [body] = sent;
+      if (!body || body.name !== "Space Tartinade #4" || (body.opensAt !== undefined && body.opensAt !== opensAt) || (body.closesAt !== undefined && body.closesAt !== closesAt)) throw new Error(JSON.stringify(body));
     } finally {
       await other.close();
     }

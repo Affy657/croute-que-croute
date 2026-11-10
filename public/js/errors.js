@@ -5,6 +5,7 @@
   const NOISE = /^(Script error\.?|ResizeObserver loop)/i;
   const FOREIGN = /(chrome|moz|safari|safari-web)-extension:|webkit-masked-url:/;
   const ELSEWHERE = /^[a-z-]+:/i;
+  const BEACON = /^https:\/\/static\.cloudflareinsights\.com\//;
   const SCREENS = ".screen, #hud";
   const CLICKABLE = "button, a, input, select, summary, label, [role=tab]";
   const ua = navigator.userAgent, origin = location.origin, t0 = Date.now(), root = document.documentElement;
@@ -112,11 +113,12 @@
     for (const [key, e] of errors) {
       if (e.kind === "blocage" && !e.sent && root.dataset.ready) errors.delete(key);
     }
+    /** @type {ClientError[]} */
     const due = [];
     for (const e of errors.values()) {
       if (due.length < BATCH && e.count > e.sent && (!e.sent || leaving)) due.push(e);
     }
-    if (!due.length || !allowed()) return;
+    if (!due.length || !navigator.onLine || !allowed()) return;
     const head = {
       version: root.dataset.version || fileVersion, page: location.pathname, platform, ua, session: sessionId(),
       standalone: !!(navigator.standalone || (/** @type {unknown} */ (window.matchMedia) && matchMedia("(display-mode: standalone)").matches))
@@ -126,9 +128,12 @@
       due.pop();
       body = JSON.stringify(Object.assign({ errors: due.map(item) }, head));
     }
-    for (const e of due) e.sent = e.count;
+    const before = due.map((e) => e.sent), marked = due.map((e) => (e.sent = e.count));
     if (!(leaving && navigator.sendBeacon && navigator.sendBeacon(API, body))) {
-      fetch(API, { method: "POST", headers: { "content-type": "application/json" }, body, keepalive: true }).catch(() => {});
+      fetch(API, { method: "POST", headers: { "content-type": "application/json" }, body, keepalive: true }).catch(() => {
+        due.forEach((e, i) => { if (e.sent === marked[i]) e.sent = before[i]; });
+        if (!timer) timer = setTimeout(() => flush(false), LATER_MS);
+      });
     }
     for (const e of errors.values()) {
       if (!e.sent && !timer) timer = setTimeout(() => flush(false), LATER_MS);
@@ -166,6 +171,7 @@
     try {
       const directive = e.effectiveDirective || e.violatedDirective;
       if (!e.sourceFile && directive === "style-src-attr") return;
+      if (BEACON.test(e.blockedURI)) return;
       const at = e.sourceFile ? e.sourceFile + ":" + (e.lineNumber || 0) + ":" + (e.columnNumber || 0) : "";
       capture("csp", directive + " a bloqué " + (local(e.blockedURI) || "un contenu"), at, "");
     } catch (err) {}
@@ -183,7 +189,10 @@
     if (document.hidden) flush(true);
   });
   addEventListener("pagehide", () => flush(true));
-  addEventListener("online", () => note("réseau revenu"));
+  addEventListener("online", () => {
+    note("réseau revenu");
+    flush(false);
+  });
   addEventListener("offline", () => note("réseau perdu"));
 
   document.addEventListener("DOMContentLoaded", () => {

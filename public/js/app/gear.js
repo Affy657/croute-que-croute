@@ -33,6 +33,14 @@ export function chosenGear(slot) {
 
 export const outfit = () => Object.fromEntries(Object.keys(SLOTS).map((slot) => [slot, chosenGear(slot)]));
 
+/** @param {string} slot */
+function keptGear(slot) {
+  const kind = store.get(KEY[slot]);
+  return own(GEAR, kind)?.slot === slot ? kind : null;
+}
+
+export const keptOutfit = () => Object.fromEntries(Object.keys(SLOTS).map((slot) => [slot, keptGear(slot)]));
+
 /** @param {string} slot @param {string | null} kind */
 export function chooseGear(slot, kind) {
   if (kind && (!gearUnlocked(kind) || GEAR[kind].slot !== slot)) return;

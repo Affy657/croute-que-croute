@@ -33,7 +33,7 @@ export const prefs = {
   musicLevel: level(KEYS.musicVolume), sfxLevel: level(KEYS.sfxVolume)
 };
 /** @type {Fn[]} */
-const listeners = [], /** @type {Record<string, AudioBuffer>} */ buffers = {}, /** @type {Record<string, number>} */ lastPlayed = {};
+const listeners = [], /** @type {Record<string, AudioBuffer>} */ buffers = {}, /** @type {Record<string, number>} */ lastPlayed = {}, /** @type {Set<string>} */ fetching = new Set();
 /** @type {AudioContext} */
 let ctx = /** @type {never} */ (null), /** @type {GainNode} */ master = /** @type {never} */ (null), /** @type {GainNode} */ music = /** @type {never} */ (null), /** @type {Song} */ song = /** @type {never} */ (null), /** @type {Promise<void> | null} */ songLoad = null, songFailed = false, /** @type {Playing | null} */ play = null, stale = false;
 let running = false, hidden = false, runTime = 0, synced = -Infinity, /** @type {Timer} */ previewTimer = null, /** @type {Timer} */ watch = null, /** @type {((text: string) => void) | null} */ tracer = null, tailUntil = 0;
@@ -82,16 +82,24 @@ function build() {
   return true;
 }
 
-function ensureContext() {
-  if (ctx) return;
-  if (!build()) return;
+function loadSounds() {
+  if (!ctx) return;
   for (const { url } of Object.values(SOUNDS).flat()) {
+    if (buffers[url] || fetching.has(url)) continue;
+    fetching.add(url);
     fetch(url)
       .then((res) => { if (!res.ok) throw new Error(url); return res.arrayBuffer(); })
       .then(decode)
       .then((buffer) => { buffers[url] = buffer; })
-      .catch(() => {});
+      .catch(() => {})
+      .then(() => fetching.delete(url));
   }
+}
+
+function ensureContext() {
+  if (ctx) return;
+  if (!build()) return;
+  loadSounds();
   clearInterval(watch);
   watch = setInterval(watchContext, WATCH_MS);
 }
@@ -102,6 +110,7 @@ function rebuild() {
   play = null;
   build();
   old.close().catch(() => {});
+  loadSounds();
 }
 
 /** @param {ArrayBuffer} data */
@@ -270,6 +279,7 @@ export function musicRunStart() {
   clearTimeout(previewTimer);
   previewTimer = null;
   halt();
+  loadSounds();
   if (prefs.music) loadSong();
   reconcile();
 }

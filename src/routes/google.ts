@@ -73,19 +73,25 @@ function readClaims(idToken: unknown): Claims | null {
 }
 
 async function googleId(req: Request, env: Env, code: string) {
-  const res = await fetch(TOKEN_URL, {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      code,
-      client_id: env.GOOGLE_CLIENT_ID!,
-      client_secret: env.GOOGLE_CLIENT_SECRET!,
-      redirect_uri: returnUrl(req),
-      grant_type: "authorization_code",
-    }),
-  });
-  if (!res.ok) return null;
-  const claims = readClaims(((await res.json()) as { id_token?: unknown }).id_token);
+  let token: unknown;
+  try {
+    const res = await fetch(TOKEN_URL, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: env.GOOGLE_CLIENT_ID!,
+        client_secret: env.GOOGLE_CLIENT_SECRET!,
+        redirect_uri: returnUrl(req),
+        grant_type: "authorization_code",
+      }),
+    });
+    if (!res.ok) return null;
+    token = ((await res.json()) as { id_token?: unknown } | null)?.id_token;
+  } catch {
+    return null;
+  }
+  const claims = readClaims(token);
   if (!claims || !claims.sub || claims.aud !== env.GOOGLE_CLIENT_ID || !ISSUERS.includes(claims.iss ?? "")) return null;
   return (claims.exp ?? 0) * 1000 > Date.now() ? claims.sub : null;
 }

@@ -2,7 +2,7 @@ import { store as storage, KEYS } from "../shared/store.js";
 import { fmtCs, clock } from "../shared/format.js";
 import { VERSION } from "../version.js";
 import { timeout } from "../shared/timeout.js";
-import { visiblePlayers, phase, nextName, endAfter } from "./tools.js";
+import { visiblePlayers, phase, nextName, endAfter, skewOf } from "./tools.js";
 
 /** @param {string} id */
 const $ = (id) => document.getElementById(id);
@@ -29,6 +29,9 @@ let showAll = false;
 let endTouched = false;
 let loads = 0;
 let loadedAt = 0;
+let skew = 0;
+let shownStart = "";
+let shownEnd = "";
 let invited = new URLSearchParams(location.hash.slice(1)).get("invite");
 /** @type {Set<string>} */
 const opened = new Set();
@@ -43,10 +46,11 @@ const hour = (ms) => new Date(ms).toLocaleTimeString("fr-FR", { hour: "2-digit",
 const toInput = (ms) => new Date(ms - new Date(ms).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 /** @param {string} value */
 const fromInput = (value) => (value ? new Date(value).getTime() : NaN);
+const serverNow = () => Date.now() + skew;
 
 /** @param {number} ms */
 function since(ms) {
-  const min = Math.floor((Date.now() - ms) / 60000);
+  const min = Math.floor((serverNow() - ms) / 60000);
   if (min < 1) return "à l'instant";
   if (min < 60) return "il y a " + min + " min";
   if (min < 1440) return "il y a " + Math.floor(min / 60) + " h";
@@ -54,7 +58,7 @@ function since(ms) {
 }
 
 /** @param {number} ms */
-const ago = (ms) => (Date.now() - ms < 5 * 60000 ? "actif à l'instant" : "vu " + since(ms));
+const ago = (ms) => (serverNow() - ms < 5 * 60000 ? "actif à l'instant" : "vu " + since(ms));
 
 /** @type {Record<string, string>} */
 const KINDS = {
@@ -100,6 +104,7 @@ async function call(method, path, body) {
   const json = await res.json().catch(() => null);
   if (res.status === 401 && token) signOut();
   if (!res.ok) throw Object.assign(new Error((json && json.error) || "Pas de réseau, réessaie."), { status: res.status });
+  if (json === null) throw new Error("Pas de réseau, réessaie.");
   return json;
 }
 
@@ -164,10 +169,11 @@ function renderEvent() {
 
 function tick() {
   const ev = data && data.event;
-  const now = Date.now(), state = ev ? phase(ev, now) : null;
+  const now = serverNow(), state = ev ? phase(ev, now) : null;
   $("eventStatus").textContent = state ? STATUS[state] : "Soirée";
   $("eventStatus").classList.toggle("now", state === "open");
   $("editEndBtn").hidden = !state || state === "closed";
+  $("deleteEventBtn").hidden = state !== "upcoming";
   if (!ev) {
     $("eventEnd").textContent = data ? "Crée une soirée pour ouvrir son classement. En dehors, le classement général tourne tout le temps." : "";
     return;
@@ -202,7 +208,7 @@ function renderPlayers() {
       name,
       cell("span", "meta", (p.best ? fmtCs(p.best) + " s, " : "") + p.runs + (p.runs > 1 ? " parties" : " partie") + (p.banned ? ", retiré partout" : p.removed ? ", retiré de la soirée" : p.suspect ? ", " + SUSPECT_LABELS[p.suspect] : ""))
     );
-    const party = scope === "event" && !p.banned && data && data.event;
+    const party = data && data.scope === "event" && !p.banned && data.event;
     const btn = cell("button", "btn ghost small", p.banned || p.removed ? "Réintégrer" : "Retirer");
     btn.type = "button";
     btn.addEventListener("click", async () => {
@@ -231,13 +237,14 @@ function renderPlayers() {
 }
 
 async function load() {
-  const asked = scope, mine = ++loads;
+  const asked = scope, mine = ++loads, sent = Date.now();
   try {
     const next = await call("GET", "/api/admin/players" + (asked === "event" ? "" : "?scope=" + asked));
+    if (typeof next.now === "number") skew = skewOf(next.now, sent, Date.now());
     if (asked !== scope || mine !== loads) return;
     data = next;
     loadedAt = Date.now();
-    for (const b of document.querySelectorAll(".scope")) b.setAttribute("aria-selected", String(b.dataset.scope === scope));
+    for (const b of document.querySelectorAll(".scope")) b.setAttribute("aria-selected", String(b.dataset.scope === next.scope));
     say($("playersMsg"), "");
     renderEvent();
     renderPlayers();
@@ -355,7 +362,7 @@ function copyText(text) {
 /** @param {ErrorGroup} g */
 function errorItem(g) {
   const li = document.createElement("li");
-  li.className = Date.now() - g.lastAt < FRESH_MS ? "fresh" : "";
+  li.className = serverNow() - g.lastAt < FRESH_MS ? "fresh" : "";
   const box = document.createElement("details");
   box.open = opened.has(g.id);
   box.addEventListener("toggle", () => {
@@ -555,8 +562,24 @@ $("editEndBtn").addEventListener("click", () => {
   openForm(opening ? "endForm" : null);
   if (opening && data && data.event) {
     $("editName").value = data.event.name;
-    $("startAt").value = toInput(data.event.opensAt);
-    $("endAt").value = toInput(data.event.closesAt);
+    $("startAt").value = shownStart = toInput(data.event.opensAt);
+    $("endAt").value = shownEnd = toInput(data.event.closesAt);
+  }
+});
+
+$("deleteEventBtn").addEventListener("click", async () => {
+  const ev = data && data.event, btn = $("deleteEventBtn");
+  if (!ev || !confirm("Supprimer « " + ev.name + " » ? Elle n'a pas encore commencé : elle disparaît, et l'écran géant ne l'annonce plus.")) return;
+  btn.disabled = true;
+  try {
+    await call("DELETE", "/api/admin/events/" + ev.id);
+    openForm(null);
+    say($("eventMsg"), "Soirée supprimée.");
+    await load();
+  } catch (err) {
+    say($("eventMsg"), /** @type {Error} */ (err).message, true);
+  } finally {
+    btn.disabled = false;
   }
 });
 
@@ -565,7 +588,7 @@ $("newEventBtn").addEventListener("click", () => {
   openForm(opening ? "eventForm" : null);
   if (!opening) return;
   if (!$("eventNameInput").value && data && data.event) $("eventNameInput").value = nextName(data.event.name);
-  if (!$("eventStartInput").value) $("eventStartInput").value = toInput(Date.now());
+  if (!$("eventStartInput").value) $("eventStartInput").value = toInput(serverNow());
   if (!$("eventEndInput").value) fillEnd();
 });
 
@@ -593,15 +616,17 @@ $("moreBtn").addEventListener("click", () => {
 });
 
 onSubmit("endForm", async () => {
-  const opensAt = fromInput($("startAt").value), closesAt = fromInput($("endAt").value), now = Date.now(), ev = data && data.event;
+  const now = serverNow(), ev = data && data.event;
+  /** @type {{ name: string, opensAt?: number, closesAt?: number }} */
+  const change = { name: $("editName").value };
+  if ($("startAt").value !== shownStart) change.opensAt = fromInput($("startAt").value);
+  if ($("endAt").value !== shownEnd) change.closesAt = fromInput($("endAt").value);
+  const opensAt = change.opensAt !== undefined ? change.opensAt : ev ? ev.opensAt : NaN;
+  const closesAt = change.closesAt !== undefined ? change.closesAt : ev ? ev.closesAt : NaN;
   if (closesAt <= now && !confirm("Cette fin est déjà passée : le classement de la soirée se ferme tout de suite et ne pourra plus être rouvert. Continuer ?")) return;
   if (ev && ev.opensAt <= now && now < ev.closesAt && opensAt > now && !confirm("Ce début est dans le futur : la soirée quitte l'écran géant et ne compte plus de parties jusqu'à cette heure. Continuer ?")) return;
   try {
-    await call("PATCH", "/api/admin/events/current", {
-      name: $("editName").value,
-      opensAt,
-      closesAt
-    });
+    await call("PATCH", "/api/admin/events/current", change);
     openForm(null);
     say($("eventMsg"), "Soirée modifiée.");
     await load();

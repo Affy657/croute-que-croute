@@ -5,7 +5,8 @@ import { database } from "./d1.mjs";
 const { finishRun, startRun } = await import(new URL("../../src/routes/runs.ts", import.meta.url).href);
 const { mergeInto } = await import(new URL("../../src/routes/link.ts", import.meta.url).href);
 const { sha256 } = await import(new URL("../../src/security.ts", import.meta.url).href);
-const { forgetCaches } = await import(new URL("../../src/db.ts", import.meta.url).href);
+const { forgetCaches, eventRanking, promoteEvent } = await import(new URL("../../src/db.ts", import.meta.url).href);
+const { removeFromEvent } = await import(new URL("../../src/routes/admin.ts", import.meta.url).href);
 
 const NOW = 1_800_000_000_000, TOKEN = "c".repeat(48), RUN = "partie", IP = "203.0.113.7";
 const clock = { now: NOW };
@@ -61,6 +62,29 @@ test("départ de partie : freiné par IP", async (t) => {
   const env = await setup(t);
   Object.assign(env, { START_LIMIT: limiter(), START_IP_LIMIT: limiter(false) });
   assert.equal((await start(env)).status, 429);
+});
+
+test("score renvoyé par un joueur retiré de la soirée entre-temps : pas de record annoncé, pas de ligne à 0 dans le classement de la soirée", async (t) => {
+  const env = await setup(t);
+  assert.equal((await send(env, 800)).status, 200);
+  const out = await removeFromEvent({ req: new Request("http://local/x", { method: "POST", body: JSON.stringify({ event: 1, removed: true }) }), env, params: ["lou"], exec: { waitUntil() {} } });
+  assert.equal(out.status, 200);
+  assert.deepEqual(await eventRanking(env, 1), []);
+  clock.now += 1000;
+  const body = await (await send(env, 800)).json();
+  assert.equal(body.eventImproved, false);
+  assert.equal(body.eventRank, null);
+  assert.equal(body.eventCount, 0);
+  assert.deepEqual(await eventRanking(env, 1), []);
+});
+
+test("classement en mémoire : une ligne sans record n'y entre jamais", async (t) => {
+  await setup(t);
+  assert.deepEqual(await eventRanking({ DB: { prepare: () => ({ bind: () => ({ all: async () => ({ results: [] }) }) }) } }, 7), []);
+  promoteEvent(7, { id: "lou", pseudo: "Lou", best: 0, at: NOW });
+  assert.deepEqual(await eventRanking(null, 7), []);
+  promoteEvent(7, { id: "lou", pseudo: "Lou", best: 500, at: NOW });
+  assert.deepEqual((await eventRanking(null, 7)).map((r) => r.best), [500]);
 });
 
 test("score : envoyé deux fois à la même milliseconde, la partie compte une seule fois", async (t) => {

@@ -87,9 +87,10 @@ async function feedItems(env: Env, open: EventRow | null, now: number) {
         `SELECT pseudo, best AS score, best_at AS at FROM profiles INDEXED BY profiles_best_at
          WHERE best > 0 AND best_at > ?1 AND banned = 0 ORDER BY best_at DESC LIMIT ?2`,
       ).bind(since, FEED_SIZE);
+  const kept = open ? " AND NOT EXISTS (SELECT 1 FROM entries WHERE event_id = ?3 AND player_id = profiles.id AND removed = 1)" : "";
   const joins = env.DB.prepare(
-    `SELECT pseudo, created_at AS at FROM profiles INDEXED BY profiles_joined WHERE created_at > ?1 AND banned = 0 ORDER BY created_at DESC LIMIT ?2`,
-  ).bind(since, FEED_SIZE);
+    `SELECT pseudo, created_at AS at FROM profiles INDEXED BY profiles_joined WHERE created_at > ?1 AND banned = 0${kept} ORDER BY created_at DESC LIMIT ?2`,
+  ).bind(since, FEED_SIZE, ...(open ? [open.id] : []));
   const [b, j] = await Promise.all([bests.all<FeedRow>(), joins.all<FeedRow>()]);
   return [
     ...b.results.map((r) => ({ kind: "best", pseudo: r.pseudo, score: r.score, at: r.at })),

@@ -4,6 +4,7 @@ import { guessDevice } from "./input.js";
 import { LOCAL } from "../shared/local.js";
 import { timeout } from "../shared/timeout.js";
 import { openOf, recentOf, upcomingOf, lateFor } from "../shared/banner.js";
+import { forgetFeats } from "./achievements.js";
 
 const RELOAD_GAP = 15000;
 const UPDATED = "Partie pas comptée : le jeu a été mis à jour, il se recharge quand tu rejoues.";
@@ -34,6 +35,7 @@ let localBest = parseInt(store.get(KEYS.localBest) || "0", 10) || 0, saved = rea
 let boardAsked = 0, boardShown = 0, /** @type {string | null} */ lastDevice = null, resumed = false, /** @type {Promise<void> | null} */ resuming = null, /** @type {Timer} */ retryTimer = null, /** @type {Record<string, number>} */ runBests = {}, bestsAsked = 0, draining = false;
 /** @type {Map<string, Promise<RunAnswer>>} */
 const sending = new Map();
+let reloadAsked = false, hiddenFor = 0, hiddenAt = document.hidden ? Date.now() : 0, /** @type {((value?: unknown) => void)[]} */ wakers = [];
 /** @type {Record<string, Listener[]>} */
 const listeners = { board: [], update: [], result: [] };
 
@@ -58,12 +60,13 @@ function keepBests(me) {
 
 /** @param {string} name @param {Listener} fn */
 export const on = (name, fn) => listeners[name].push(fn);
-/** @param {string} name @param {RunAnswer} [value] */
-const emit = (name, value) => listeners[name].forEach((fn) => fn(value));
+/** @param {string} name @param {RunAnswer} [value] @param {string} [runId] */
+const emit = (name, value, runId) => listeners[name].forEach((fn) => fn(value, runId));
 /** @param {number | undefined} status */
 const settled = (status) => status && status < 500 && status !== 408 && status !== 429;
 /** @param {number} ms */
 const pause = (ms) => new Promise((ok) => setTimeout(ok, ms));
+const awake = () => Date.now() - hiddenFor - (hiddenAt ? Date.now() - hiddenAt : 0);
 
 /** @param {string} method @param {string} path @param {unknown} [body] @param {number} [timeoutMs] */
 export async function call(method, path, body, timeoutMs) {
@@ -88,7 +91,8 @@ export const registered = () => !!(net.board && net.board.me);
 
 export const openEvent = () => openOf(net.board, serverNow());
 export const isOpen = () => !!openEvent();
-export const pastEvent = () => lateFor(net.board, serverNow());
+/** @param {number} startedAt */
+export const pastEvent = (startedAt) => lateFor(net.board, startedAt, serverNow());
 export const recentEvent = () => recentOf(net.board, serverNow());
 export const upcomingEvent = () => upcomingOf(net.board, serverNow());
 
@@ -148,12 +152,12 @@ export const joinReady = () => resumed && !net.token;
 
 export async function refreshBoard() {
   if (!net.token && !resumed) await resumeOnce();
-  const asked = ++boardAsked, token = net.token;
+  const asked = ++boardAsked, token = net.token, sent = Date.now();
   try {
     const b = await call("GET", "/api/board");
     if (asked < boardShown || token !== net.token) return;
     boardShown = asked;
-    net.offset = b.now - Date.now();
+    net.offset = b.now - (sent + Date.now()) / 2;
     net.online = true;
     if (net.token && !b.me) {
       setToken(null);
@@ -178,6 +182,7 @@ export async function refreshBoard() {
 
 function forgetAccount() {
   for (const key of ACCOUNT_KEYS) store.set(key, null);
+  forgetFeats();
   requestUpdate();
 }
 
@@ -232,13 +237,14 @@ export async function rename(pseudo) {
 
 /** @param {unknown} body @returns {Promise<RunTicket | RunFail>} */
 async function launch(body) {
-  const until = Date.now() + START_MS;
+  const until = awake() + START_MS;
   for (let gap = START_GAP_MS; ; gap = Math.min(gap * 2, START_GAP_MAX_MS)) {
+    if (document.hidden) await new Promise((ok) => wakers.push(ok));
     try {
-      return await call("POST", "/api/runs", body, Math.max(1, Math.min(START_TRY_MS, until - Date.now())));
+      return await call("POST", "/api/runs", body, Math.max(1, Math.min(START_TRY_MS, until - awake())));
     } catch (e) {
       const err = /** @type {Err} */ (e);
-      if (settled(err.status) || Date.now() + gap >= until) {
+      if (settled(err.status) || awake() + gap >= until) {
         if (err.status === 401) refreshBoard();
         return { error: err.status === 426 ? UPDATED : reason(err, "Hors ligne : score non compté"), status: err.status };
       }
@@ -299,22 +305,25 @@ async function deliver(pending, onWait) {
   const { runId, score, device, combo, at } = pending, since = Date.now();
   markPending(pending);
   for (let i = 0; ; i++) {
+    /** @type {RunResult} */
+    let r;
     try {
-      const r = await call("POST", "/api/runs/" + runId, { score, device, combo, waited: Math.max(0, Date.now() - at) }, SEND_TIMEOUT_MS);
-      clearPending(runId);
-      bestsAsked = boardAsked;
-      applyResult(r);
-      emit("result", r);
-      return r;
+      r = await call("POST", "/api/runs/" + runId, { score, device, combo, waited: Math.max(0, Date.now() - at) }, SEND_TIMEOUT_MS);
     } catch (e) {
       if (settled(/** @type {Err} */ (e).status)) {
         clearPending(runId);
         return { error: /** @type {Err} */ (e).message };
       }
       if (i === SEND_TRIES - 1 && onWait) onWait();
-      if (i >= SEND_TRIES - 1 && Date.now() - since > WAIT_MS) return { error: WAITING };
+      if (i >= SEND_TRIES - 1 && Date.now() - since > WAIT_MS) return { error: WAITING, runId };
       await pause(i < SEND_TRIES - 1 ? SEND_GAP_MS : WAIT_GAP_MS);
+      continue;
     }
+    clearPending(runId);
+    bestsAsked = boardAsked;
+    applyResult(r);
+    emit("result", r, runId);
+    return r;
   }
 }
 
@@ -351,7 +360,14 @@ export async function resumePending() {
 
 window.addEventListener("online", resumePending);
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) resumePending();
+  if (document.hidden) {
+    if (!hiddenAt) hiddenAt = Date.now();
+    return;
+  }
+  if (hiddenAt) hiddenFor += Date.now() - hiddenAt;
+  hiddenAt = 0;
+  for (const wake of wakers.splice(0)) wake();
+  resumePending();
 });
 
 export function requestUpdate() {
@@ -359,10 +375,13 @@ export function requestUpdate() {
   emit("update");
 }
 
+export const reloading = () => reloadAsked;
+
 export function applyUpdate() {
   const last = Number(session.get(KEYS.lastReload)) || 0;
   if (Date.now() - last < RELOAD_GAP) return false;
   session.set(KEYS.lastReload, Date.now());
+  reloadAsked = true;
   location.reload();
   return true;
 }

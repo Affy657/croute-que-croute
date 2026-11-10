@@ -1,11 +1,11 @@
-import "./env.mjs";
+import { fakeCtx } from "./env.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createSim } from "../../public/js/game/sim.js";
 import { STEP } from "../../public/js/game/field.js";
 
-const { savedQuality } = await import("../../public/js/app/scene.js");
+const { savedQuality, createScene } = await import("../../public/js/app/scene.js");
 
 test("netteté baissée (téléphone lent, ou iPhone en économie d'énergie à 30 images par seconde) : gardée 12 h, puis le jeu remesure", () => {
   const now = Date.UTC(2026, 10, 7, 21);
@@ -26,6 +26,23 @@ test("partie lancée avec une hauteur invalide (fenêtre de 0 px) : la tartine p
   assert.ok(sim.state.dead);
 });
 
+test("fenêtre de 0 px de haut puis agrandie : les planètes reviennent, affichées et touchables", () => {
+  const listen = window.addEventListener;
+  let grow = null;
+  Object.assign(window, { innerWidth: 390, innerHeight: 0, devicePixelRatio: 1, matchMedia: () => ({ matches: false }) });
+  window.addEventListener = (type, fn) => (type === "resize" ? (grow = fn) : listen(type, fn));
+  const canvas = () => ({ width: 0, height: 0, getContext: () => fakeCtx().ctx });
+  const scene = createScene(canvas(), canvas());
+  window.addEventListener = listen;
+  for (let i = 0; i < 60; i++) scene.update(STEP, 1, false);
+  window.innerHeight = 844;
+  grow();
+  for (let i = 0; i < 60; i++) scene.update(STEP, 1, false);
+  const hits = [];
+  for (const x of [0.22 * 390, 0.8 * 390]) for (let y = 0; y < 844; y += 4) if (scene.bodyAt(x, y)) hits.push(y);
+  assert.ok(hits.length > 0);
+});
+
 function offlineWorker(cached) {
   const source = readFileSync(new URL("../../public/sw.js", import.meta.url), "utf8");
   const handlers = {};
@@ -39,11 +56,11 @@ function offlineWorker(cached) {
   };
 }
 
-test("cache hors ligne : l'écran géant ne retombe jamais sur la page du jeu", async () => {
+test("cache hors ligne : seul le jeu retombe sur sa page gardée, jamais l'écran géant, /confidentialite, /depart ni une autre page", async () => {
   const game = new Response("jeu"), screen = new Response("écran");
   assert.equal(await offlineWorker({ "/": game, "/ecran": screen })("/ecran"), screen);
-  assert.equal((await offlineWorker({ "/": game })("/ecran")).type, "error");
-  assert.equal(await offlineWorker({ "/": game })("/lien"), game);
+  for (const path of ["/ecran", "/confidentialite", "/depart", "/lien"]) assert.equal((await offlineWorker({ "/": game })(path)).type, "error", path);
+  assert.equal(await offlineWorker({ "/": game })("/?diag=son"), game);
 });
 
 test("cache hors ligne : l'admin et ses scripts passent toujours par le réseau, jamais par une vieille copie", () => {
@@ -53,11 +70,11 @@ test("cache hors ligne : l'admin et ses scripts passent toujours par le réseau,
   assert.notEqual(ask("/js/app/main.js", "same-origin"), null);
 });
 
-test("cache hors ligne : un fichier raté pendant l'installation n'empêche pas de garder les autres", async () => {
+test("cache hors ligne : un fichier ou un bruitage raté pendant l'installation n'empêche pas de garder les autres, bruitages compris", async () => {
   const source = readFileSync(new URL("../../public/sw.js", import.meta.url), "utf8");
   const shell = JSON.parse(source.match(/const SHELL = (\[[\s\S]*?\]);/)[1]);
   const stored = new Set(), tries = new Map(), handlers = {};
-  const fails = (url) => url === "/js/app/main.js" || (url === "/style.css" && tries.get(url) === 1);
+  const fails = (url) => url === "/js/app/main.js" || url === "/sfx/near.mp3" || (url === "/style.css" && tries.get(url) === 1);
   const cache = {
     async add(url) {
       tries.set(url, (tries.get(url) || 0) + 1);
@@ -76,4 +93,5 @@ test("cache hors ligne : un fichier raté pendant l'installation n'empêche pas 
   handlers.install({ waitUntil: (p) => { done = p; } });
   await done;
   assert.deepEqual(shell.filter((url) => !stored.has(url)), ["/js/app/main.js"]);
+  assert.deepEqual(["/sfx/start.mp3", "/sfx/near.mp3", "/sfx/death.mp3", "/sfx/record.mp3", "/sfx/first.mp3"].filter((url) => stored.has(url)), ["/sfx/start.mp3", "/sfx/death.mp3", "/sfx/record.mp3", "/sfx/first.mp3"]);
 });

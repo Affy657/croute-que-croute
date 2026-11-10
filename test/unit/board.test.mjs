@@ -294,6 +294,13 @@ test("retiré de la soirée : absent du classement, de l'écran et du fil de la 
   assert.deepEqual(shown.feed.filter((i) => i.kind === "best").map((i) => i.pseudo), ["max"]);
 });
 
+test("retiré de la soirée : son nouveau pseudo n'est plus accueilli sur l'écran géant pendant la soirée", async (t) => {
+  const env = setup(t);
+  for (const id of ["neo", "zed"]) env.DB.db.prepare("INSERT INTO profiles (id, pseudo, pseudo_key, token, created_at) VALUES (?, ?, ?, ?, ?)").run(id, id, id, "jeton-" + id, NOW - 1000);
+  assert.equal((await outOfParty(env, "neo")).status, 200);
+  assert.deepEqual((await showing(env)).feed.filter((i) => i.kind === "join").map((i) => i.pseudo), ["zed"]);
+});
+
 test("retiré de la soirée : ses parties ne comptent pas pour elle, il se voit hors classement, réintégré il revient avec son ancien record", async (t) => {
   const env = setup(t);
   twoPlayers(env);

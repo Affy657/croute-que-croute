@@ -18,8 +18,11 @@ export function visiblePlayers(players, query, all, limit = LIMIT) {
   return { rows, rest: found.length - rows.length };
 }
 
+/** @param {number} server @param {number} sent @param {number} got */
+export const skewOf = (server, sent, got) => server - (sent + got) / 2;
+
 /** @param {{ opensAt: number, closesAt: number }} ev @param {number} now */
-export const phase = (ev, now) => (now < ev.opensAt ? "upcoming" : now < ev.closesAt ? "open" : "closed");
+export const phase =(ev, now) => (now < ev.opensAt ? "upcoming" : now < ev.closesAt ? "open" : "closed");
 
 /** @param {string} name */
 export function nextName(name) {

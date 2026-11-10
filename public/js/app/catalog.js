@@ -369,6 +369,10 @@ export function animateAttacks(on) {
   /** @param {number} now */
   const frame = (now) => {
     if (!running) return;
+    if (!previews.some((p) => p.card.getClientRects().length)) {
+      running = false;
+      return;
+    }
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     clock += dt;

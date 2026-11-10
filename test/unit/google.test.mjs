@@ -122,6 +122,22 @@ test("Google : abandon sur la page de Google", async (t) => {
   assert.equal(calls.length, 0);
 });
 
+for (const [name, answer] of [
+  ["injoignable", async () => { throw new TypeError("fetch failed"); }],
+  ["qui répond autre chose que du JSON", async () => new Response("<html>panne</html>", { status: 200 })],
+  ["qui répond null", async () => Response.json(null)],
+]) {
+  test(`Google : échange ${name}, retour au jeu avec « erreur » et cookie effacé`, async (t) => {
+    const env = await setup(t), landing = await begin(env, true);
+    t.mock.method(globalThis, "fetch", answer);
+    const res = await land(env, landing);
+    assert.equal(res.status, 302);
+    assert.equal(result(res), "erreur");
+    assert.match(res.headers.get("set-cookie"), /Max-Age=0/i);
+    assert.deepEqual(linkedTo(env), []);
+  });
+}
+
 for (const [name, claims] of [
   ["pour une autre appli", { aud: "autre.apps" }],
   ["venu d'ailleurs", { iss: "https://pirate.test" }],
