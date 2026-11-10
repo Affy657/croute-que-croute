@@ -21,6 +21,13 @@ test("pseudo : espaces remis d'aplomb, longueur de 2 à 16", () => {
   assert.equal(cleanPseudo("a".repeat(17)), null);
 });
 
+test("pseudo : l'apostrophe courbe du clavier de l'iPhone devient une apostrophe droite", () => {
+  assert.equal(cleanPseudo("L’ami"), "L'ami");
+  assert.equal(cleanPseudo("L‘ami"), "L'ami");
+  assert.equal(cleanPseudo("Lʼami"), "L'ami");
+  assert.equal(pseudoKey(cleanPseudo("L’ami")), pseudoKey("L'ami"));
+});
+
 test("pseudo : lettres d'autres alphabets, emoji et signes seuls refusés", () => {
   assert.equal(cleanPseudo("Lоu"), null);
   assert.equal(cleanPseudo("Lou🍞"), null);

@@ -95,7 +95,7 @@ export async function findProfile(req: Request, env: Env) {
 }
 
 export async function entryMark(env: Env, eventId: number, playerId: string) {
-  const row = await env.DB.prepare("SELECT CASE WHEN removed = 0 THEN best ELSE 0 END AS best, best_at AS at FROM entries WHERE event_id = ? AND player_id = ?")
+  const row = await env.DB.prepare("SELECT CASE WHEN removed = 0 THEN best ELSE 0 END AS best, CASE WHEN removed = 0 THEN best_at END AS at FROM entries WHERE event_id = ? AND player_id = ?")
     .bind(eventId, playerId)
     .first<{ best: number; at: number | null }>();
   return row ?? { best: 0, at: null };
@@ -178,7 +178,7 @@ export const seated = (list: Ranked[], me: Profile | null, best: number, at: num
 
 function promote(key: string, row: Ranked) {
   const hit = rankingCache.get(key);
-  if (!hit) return;
+  if (!hit || row.best <= 0) return;
   const list = hit.value as Ranked[];
   if (list.find((r) => r.id === row.id)?.best !== row.best) hit.value = withRow(list, row);
 }

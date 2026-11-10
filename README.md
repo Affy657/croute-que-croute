@@ -198,7 +198,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 ## Soirées et classements
 
 - Pas de compte à créer : le téléphone garde un jeton pour toujours. Le même téléphone qui retape son pseudo retrouve son compte.
-- Pseudo unique, 2 à 16 caractères : lettres latines, chiffres, espaces, tirets et `_ . '`. Majuscules et accents ne comptent pas pour l'unicité.
+- Pseudo unique, 2 à 16 caractères : lettres latines, chiffres, espaces, tirets et `_ . '`. L'apostrophe courbe du clavier de l'iPhone devient `'`. Majuscules et accents ne comptent pas pour l'unicité.
 - Trois classements : la soirée (pour le lot), général Mobile, général PC. À égalité, le premier à avoir fait le temps passe devant.
 - Une seule soirée à la fois, créée à l'avance dans l'admin pour être annoncée.
 - Mobile ou PC : les joueurs sur PC faisaient bien mieux. L'appareil vient de ce qui a bougé la tartine (souris ou doigt), sinon de l'écran. Une partie sur PC ne compte qu'au général PC. Adrien pense tout remettre à zéro avant la soirée. Limite : un tricheur décidé peut faire passer son PC pour un téléphone.
@@ -235,7 +235,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Admin : 30 échecs par minute et par IP. Une bonne clé ou invitation passe toujours : un invité malveillant ne peut pas bloquer les admins.
 - Une IPv6 compte par réseau /64, le `::` déplié : un même appareil ou une même box en change à volonté à l'intérieur. L'IPv4 ne change pas.
 - Corps JSON : 64 Ko au plus, comptés à la lecture et pas seulement d'après `content-length`. Au-delà, il vaut un JSON invalide. La progression la plus lourde tient en moins d'un quart de ce plafond.
-- Un joueur retiré ne monte plus. Renvoyer son ancien record ne le remet pas dans les classements en mémoire : il pouvait être « Bravo » à la fin de la soirée.
+- Un joueur retiré, partout ou de la soirée seulement, ne monte plus. Renvoyer son ancien record ne le remet pas dans les classements en mémoire : il pouvait être « Bravo » à la fin de la soirée. Une ligne sans record n'y entre jamais.
 - En-têtes (`public/_headers`) : pas de script externe, pas d'affichage dans le cadre d'un autre site.
 - Lectures publiques (`/api/board`, `/api/feed`, `/api/ecran`, `/api/players/…`) : pas de limite dans le Worker, la requête y compte déjà. À freiner par une règle Cloudflare sur tartinesauvage.fr : le domaine existe, la règle reste à poser (voir À faire).
 
@@ -377,7 +377,7 @@ Active en prod, clés posées. Sans les clés, les 3 routes répondent 404, les 
 
 Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Paramètres, Autre appareil. Se connecter : « J'ai déjà un compte », « Continuer avec Google ». Elle ne crée pas de compte : sans compte lié, le joueur reçoit un message. Un compte Google ne se lie qu'à un joueur.
 
-- Le serveur parle à Google lui-même (`src/routes/google.ts`) : `POST /api/google/start` note la demande dans `google_states` (10 min, un seul usage) et pose le cookie `cv_google`, puis Google renvoie sur `GET /api/google/retour`, qui compare le cookie, échange le code et revient sur `/#google=<résultat>`. Aucun script Google dans la page, la politique de sécurité ne change pas. `start` est limité comme un lieu qui partage une IP (`JOIN_IP_LIMIT`, clé `google:`).
+- Le serveur parle à Google lui-même (`src/routes/google.ts`) : `POST /api/google/start` note la demande dans `google_states` (10 min, un seul usage) et pose le cookie `cv_google`, puis Google renvoie sur `GET /api/google/retour`, qui compare le cookie, échange le code et revient sur `/#google=<résultat>`. Google injoignable ou réponse illisible : retour sur `/#google=erreur`, jamais une page d'erreur brute. Aucun script Google dans la page, la politique de sécurité ne change pas. `start` est limité comme un lieu qui partage une IP (`JOIN_IP_LIMIT`, clé `google:`).
 - On demande `openid email`, parce que la documentation de Google l'exige, mais on ne garde que `sha256("google:" + sub)` dans `profiles.google_hash`. L'adresse e-mail n'est jamais enregistrée.
 - Bouton caché sans clés, sur l'ancienne adresse (elle n'est pas déclarée chez Google), dans les navigateurs d'applis (Google y refuse la connexion) et dans l'appli iPhone de l'écran d'accueil (la page de Google s'y ouvre dans un autre stockage : à vérifier sur un vrai iPhone avant de l'ouvrir).
 - En place : projet Google Cloud `croute-que-croute-tts` sur le compte d'Adrien, appli « En production », identifiant OAuth « Application Web », URI de redirection `https://croute-que-croute.tartinesauvage.fr/api/google/retour`, clés posées avec `npx wrangler secret put GOOGLE_CLIENT_ID` et `npx wrangler secret put GOOGLE_CLIENT_SECRET`. Une autre adresse de jeu demande d'ajouter son URI chez Google. Il faut les deux clés : avec l'ID seul, le bouton s'affiche mais la connexion échoue.
@@ -628,7 +628,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `deploy` : refus de `npm run deploy`.
 - `envoi` : départ relancé 12 s, score gardé 12 h, un seul envoi à la fois, corps illisible, `waited`.
 - `errors` : plafond de 60 erreurs par heure, limite par IP avant la limite commune.
-- `google` : empreinte sans e-mail, cookie, usage unique, 10 min, jeton refusé, délier, limite du lieu, « Déconnecter les autres ».
+- `google` : empreinte sans e-mail, cookie, usage unique, 10 min, jeton refusé, Google injoignable, délier, limite du lieu, « Déconnecter les autres ».
 - `http` : IPv6 groupée par /64, plafond de 64 Ko à la lecture.
 - `inapp` : navigateurs des applis (vrais user agents).
 - `input` : glissé bloqué, sauf là où la page défile.
@@ -645,14 +645,14 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `resume` : reprise ratée, pas de choix du pseudo.
 - `robustesse` : netteté 12 h, hauteur invalide, cache malgré un fichier raté.
 - `routes` : route admin sans `access` refusée.
-- `runs` : même score à la même milliseconde, une partie. Limites du départ. Généraux gardés 60 s après une partie PC en soirée. Compte fusionné pendant l'envoi. Marge de fin de soirée. Score envoyé tard (`waited`).
+- `runs` : même score à la même milliseconde, une partie. Limites du départ. Généraux gardés 60 s après une partie PC en soirée. Compte fusionné pendant l'envoi. Marge de fin de soirée. Score envoyé tard (`waited`). Renvoi d'un retiré de la soirée.
 - `shell` : `SHELL` de `sw.js`, `modulepreload`, pas d'`Object.hasOwn`, éléments de `screens.js`.
 - `slots` : écran qui répond jamais chassé.
 - `son` : musique au premier appui sur Jouer, aperçu, nouvel essai.
 - `sprites` : chaque objet et planète se dessine, nom inventé sans effet.
 - `sync` : tenue entre appareils.
 - `textes` : le guide dit les vraies règles.
-- `validate` : pseudos, tenue, progression, fusion.
+- `validate` : pseudos (apostrophe courbe comprise), tenue, progression, fusion.
 - `variante` : la copie d'`equilibrage:variante` démarre.
 - `verif` : sondes de `npm run verif` (`scripts/sondes.mjs`), pong et délai du direct, faux envoi, avertissement `.fr`, rien d'écrit en ligne.
 
