@@ -155,6 +155,64 @@ test("Tout vu : chaque attaque vue une fois, un objet déjà vu ne compte pas de
   ended++;
 });
 
+test("Tout vu : liste complétée par la synchronisation, par un autre onglet, ou déjà complète au chargement : débloqué, sans être porté", async () => {
+  const saved = localStorage.getItem(KEYS.achievements), live = ATTACKS.filter((a) => !a.lab).map((a) => a.id);
+  const seenAll = (attacks) => localStorage.setItem(KEYS.achievements, JSON.stringify({ got: {}, attacks, seen: 1 }));
+  try {
+    seenAll(live.slice(1));
+    const synced = await import("../../public/js/app/achievements.js?synchro");
+    const got = [];
+    synced.onUnlock((a, s) => got.push({ id: a.id, synced: s }));
+    assert.ok(!synced.has("allAttacks"));
+    synced.absorb({ got: {}, attacks: [live[0]] });
+    assert.deepEqual(got.filter((h) => h.id === "allAttacks"), [{ id: "allAttacks", synced: true }]);
+    seenAll(live.slice(1));
+    const tab = await import("../../public/js/app/achievements.js?onglet");
+    seenAll(live);
+    storageListeners.at(-1)({ key: KEYS.achievements, newValue: localStorage.getItem(KEYS.achievements) });
+    assert.ok(tab.has("allAttacks"));
+    seenAll(live);
+    const stuck = await import("../../public/js/app/achievements.js?coince");
+    assert.ok(stuck.has("allAttacks"));
+  } finally {
+    localStorage.setItem(KEYS.achievements, saved);
+  }
+});
+
+test("appareil sorti du compte en pleine partie : succès oubliés, et plus rien d'écrit jusqu'au rechargement, même à la mort", async () => {
+  const saved = localStorage.getItem(KEYS.achievements);
+  const old = JSON.stringify({ got: { pumpkin: 5, t90: 5, runs10: 5 }, attacks: ["knife"], events: [], killers: [], runs: 12, best: 9000, seen: 1 });
+  try {
+    localStorage.setItem(KEYS.achievements, old);
+    const out = await import("../../public/js/app/achievements.js?sorti");
+    assert.ok(out.has("pumpkin"));
+    out.runStart(null);
+    localStorage.removeItem(KEYS.achievements);
+    out.forgetFeats();
+    assert.ok(!out.has("pumpkin") && !out.has("t90"));
+    assert.deepEqual(out.forSync(), { got: {}, attacks: [] });
+    out.runTick({ t: 200, near: 30, obs: [{ from: "rain" }] }, false, 5);
+    out.runEnd(20000, { kind: "knife", spread: "dog" }, "mobile");
+    out.touchSky("pumpkin");
+    out.absorb({ got: { hoho: 5 }, attacks: ["rain"] });
+    out.checkOutfit({ head: "witch", side: "bat", bread: "brioche" });
+    out.onBoard({ me: { best: 9000, pcBest: 0, runs: 50 }, count: 1, eventCount: 0, pcCount: 0 });
+    assert.equal(localStorage.getItem(KEYS.achievements), null);
+    assert.equal(out.progress().got, 0);
+
+    localStorage.setItem(KEYS.achievements, old);
+    const other = await import("../../public/js/app/achievements.js?autre-onglet");
+    localStorage.removeItem(KEYS.achievements);
+    storageListeners.at(-1)({ key: KEYS.achievements, newValue: null });
+    assert.ok(!other.has("pumpkin"));
+    other.runStart(null);
+    other.runEnd(5000, null, "mobile");
+    assert.equal(localStorage.getItem(KEYS.achievements), null);
+  } finally {
+    localStorage.setItem(KEYS.achievements, saved);
+  }
+});
+
 test("Tartine d'or : 1er d'au moins 10 joueurs, jamais si retiré", () => {
   const board = (me, eventCount) => ({ me: { best: 0, pcBest: 0, runs: 0, ...me }, count: 3, eventCount, pcCount: 0 });
   A.onBoard(board({ eventRank: 1, banned: true }, 50));

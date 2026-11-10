@@ -217,6 +217,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Tenue, nombre de succès et objets sont sur le téléphone, envoyés dans `look` au début de chaque partie et 1,5 s après un changement.
 - Tenue non vérifiée, sans effet sur les classements. Le serveur n'accepte que des objets qui existent (`cleanLook`), et le dessin ignore tout nom inconnu (`own` dans `art/kit.js`) : une aura `constructor` figeait le jeu de ceux qui ouvraient la fiche.
 - La tenue suit le compte : chaque changement est daté à l'heure du serveur, le plus récent gagne (`lookUpdate`, en une requête SQL). Un appareil neuf prend la tenue du compte (`adoptLook`).
+- La tenue envoyée est celle rangée sur le téléphone, emplacement par emplacement, même un objet dont il n'a pas encore reçu le succès (`keptOutfit`). Le dessin, lui, attend le succès. Sinon un appareil neuf qui changeait un emplacement avant l'arrivée de ses succès datait une tenue presque vide, qui remplaçait celle du compte partout.
 - Un objet gagné en jouant est mis et part partout. Un objet reçu ou rattrapé ne l'est pas : un appareil neuf mettait le premier reçu.
 
 ### Base
@@ -281,6 +282,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Pas de son sur les annonces : ça avantagerait ceux qui jouent avec le son.
 - En local (`LOCAL`), son coupé à chaque chargement.
 - Bruitages Mixkit : `public/sfx/`, hors git car leur licence interdit de les redistribuer avec le code source. À remettre avant de déployer depuis un autre PC. `SOUNDS` dans `audio.js`.
+- Bruitages téléchargés au chargement, et ceux qui manquent encore redemandés au début de chaque partie (`loadSounds`). Gardés hors ligne par `sw.js` (`SFX`).
 - Musique : `public/music/theme.m4a` ou `.mp3`, hors git : à remettre avant de déployer depuis un autre PC. Crédit dans `MUSIC_CREDIT`.
 - Changer : remplacer le fichier, `MUSIC_CREDIT` et `MUSIC_PARTS` (`[[0, durée]]` pour tout jouer), puis `npm run deploy`.
 - Elle ne joue qu'en partie et repart du début, pour suivre la difficulté. Hors partie, 2 s d'aperçu quand on lâche le curseur.
@@ -314,6 +316,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Première soirée : seulement au doigt, comptée à la fin de la partie, car la soirée ne compte que les téléphones.
 - Retirés, à ne pas refaire : Joyeux Noël et Fidèle du Space (personne ne les avait), Chiffre rond et Ça change du beurre (doublons).
 - Gardés dans `cv-succes`, sans effet sur le classement, copiés sur le serveur (`progress`). Le serveur réunit ceux des appareils (date la plus ancienne), et le téléphone ajoute le total sans fête.
+- Tout vu : vérifié aussi après chaque fusion des attaques vues (serveur, autre onglet) et au chargement. Deux appareils qui avaient chacun vu une attaque manquante à l'autre gardaient la jauge pleine et le succès fermé.
 - Rattrapage de ce que le serveur sait : temps de cuisson d'après le meilleur record à chaque classement ; à l'ouverture, première soirée, top 10, Tartine d'or, Tartinée express et Six Seven (`feats`, `onHistory`). Le reste vit sur le téléphone.
 - Objet rattrapé : jamais mis (`synced`), même sur un emplacement vide. Seul un objet gagné en jouant l'est : un appareil neuf mettait la brioche, datait sa tenue et effaçait celle du compte partout.
 
@@ -331,6 +334,8 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - On garde le compte qui a affiché le code : meilleurs records avec leur date (à égalité, le plus ancien), parties additionnées, soirées, succès, garnitures, appareils. L'autre pseudo redevient libre. Refusée si un compte est retiré.
 - Le compte qui disparaît a plus de 2 000 parties : fusion refusée, le code reste valable, un admin la fait. Déplacer autant de lignes coûte trop d'écritures pour un joueur seul.
 - « Déconnecter les autres » : sort les autres appareils, annule le code (5 par minute et par compte) et retire le lien Google avec les liaisons en cours, sinon un intrus qui a lié son Google reviendrait. La confirmation le dit quand un compte Google est lié. Le classement est relu tout de suite pour que les Paramètres le montrent, et le joueur relie son Google ensuite. Quelqu'un qui a utilisé ton code revient au choix du pseudo, sans tes succès ni tes skins : le serveur garde la trace des clés sorties (`signed_out`) et dit `out` à l'appareil. Une clé simplement inconnue n'efface rien : si des comptes disparaissaient un jour, les joueurs garderaient leurs skins.
+- Appareil sorti : succès, garnitures et tenue effacés du stockage, succès oubliés en mémoire, dans les autres onglets aussi (`forgetFeats`). Aucun succès ne s'écrit plus jusqu'au rechargement, même à la fin d'une partie en cours : la mémoire réécrivait tout à la mort, et un nouveau pseudo recopiait le compte.
+- Paramètres ouverts avant le classement : « Pseudo » et « Autre appareil » s'affichent à son arrivée, sans effacer un pseudo en cours de saisie.
 
 ### Compte gardé par cookie
 
@@ -349,6 +354,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 
 - Minimum : iOS 14.5 (`inset`, `gap` des boîtes flex). Avant, `boot.js` affiche « Ton téléphone est trop ancien » par-dessus tout et ne recharge jamais. Jamais essayé sur un vrai vieil iPhone.
 - Unité ou couleur arrivée après iOS 15 (`svh`, `cqi`, `color-mix`) : une valeur de secours juste avant, sinon iOS ignore toute la ligne. Vérifié par `compat.test.mjs`.
+- Pas d'`await` en dehors d'une fonction, inconnu avant Safari 15 : tout le fichier serait refusé, `/depart` restait vide. Vérifié par `compat.test.mjs`.
 - Chrome, Firefox, Edge et Brave utilisent sur iPhone le moteur de Safari : même code. Brave ajoute à chaque page le script de son portefeuille, qui plante (`window.ethereum`), et des `style` que la CSP bloque. Vu en prod.
 
 ### Changement d'adresse
@@ -381,6 +387,8 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 - On demande `openid email`, parce que la documentation de Google l'exige, mais on ne garde que `sha256("google:" + sub)` dans `profiles.google_hash`. L'adresse e-mail n'est jamais enregistrée.
 - Bouton caché sans clés, sur l'ancienne adresse (elle n'est pas déclarée chez Google), dans les navigateurs d'applis (Google y refuse la connexion) et dans l'appli iPhone de l'écran d'accueil (la page de Google s'y ouvre dans un autre stockage : à vérifier sur un vrai iPhone avant de l'ouvrir).
 - En place : projet Google Cloud `croute-que-croute-tts` sur le compte d'Adrien, appli « En production », identifiant OAuth « Application Web », URI de redirection `https://croute-que-croute.tartinesauvage.fr/api/google/retour`, clés posées avec `npx wrangler secret put GOOGLE_CLIENT_ID` et `npx wrangler secret put GOOGLE_CLIENT_SECRET`. Une autre adresse de jeu demande d'ajouter son URI chez Google. Il faut les deux clés : avec l'ID seul, le bouton s'affiche mais la connexion échoue.
+- Retour depuis la page de Google par le bouton retour : les boutons Google redeviennent actifs (`pageshow`), la page revenait grisée du cache du navigateur.
+- Un résultat inconnu dans `#google=` est ignoré, même un nom comme `constructor` (`own`).
 - Les tests automatiques remplacent la réponse de Google : après un changement de ce parcours, refaire la liaison et la connexion avec un vrai compte.
 
 ### Mises à jour
@@ -409,11 +417,12 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 
 - Bungee est hébergée dans le jeu (`public/fonts/`, `@font-face` en tête de `tokens.css`, `font-display: swap`) : la feuille de Google bloquait tout l'affichage, sans délai maximum. Rien n'est demandé à un autre site au chargement. Police latine dans `SHELL`, latine étendue chargée seulement si un pseudo en a besoin.
 - `sw.js` : renouvelé à chaque version, rempli fichier par fichier avec un 2e essai. Un seul fichier raté faisait tout perdre.
+- Dans le cache : chaque fichier et chaque image de la page (`SHELL`, sinon « img pas chargé » remonte hors ligne), et les bruitages dans une liste à part (`SFX`). Hors git, un bruitage absent est sauté sans bloquer l'installation.
 - Fichier sans réponse en 3 s (`NET_MS`, wifi saturé) : pris dans le cache, remplacé dès que le réseau arrive.
 - Plantage au démarrage (fichiers de deux versions, par exemple l'ancienne page du cache avec du code neuf sur réseau lent) : `boot.js` recharge. Si ça replante dans la minute, il vide le cache, retire le service worker et redemande chaque fichier au serveur avant de recharger, en ligne seulement : sur iPhone, un simple rechargement garde le module déjà en mémoire. Troisième échec : il s'arrête. Une seule recharge laissait le joueur bloqué sur l'écran.
 - Seules comptent les erreurs des fichiers du jeu (`/js/`, ou sans fichier : WebKit n'en donne pas pour un import manquant). Le script de Brave faisait recharger deux fois, cache vidé, quand le jeu chargeait lentement.
 - Une erreur dans une image n'arrête pas l'animation : l'image suivante est demandée avant de dessiner.
-- L'écran géant installe lui-même le cache, pour un PC qui n'ouvre que `/ecran`. Une page autre que le jeu ne retombe jamais sur l'accueil du jeu.
+- L'écran géant installe lui-même le cache, pour un PC qui n'ouvre que `/ecran`. Une page autre que le jeu ne retombe jamais sur l'accueil du jeu : sans réseau ni cache, seule `/` (avec ou sans paramètres) prend l'accueil gardé, `/confidentialite` ou `/depart` échouent.
 - L'admin passe toujours par le réseau : l'ancien script sur la nouvelle page la laissait vide.
 - Écran de chargement : attend le classement et la police 2,5 s au plus (`finishLoading`), pour jouer hors ligne, et disparaît à 10 s quoi qu'il arrive (`boot.js`). Le texte s'affiche tout de suite dans la police de secours, et rien ne l'attend : ni Google, ni la musique, ni la sonde de l'ancienne adresse, qui passent à côté.
 
@@ -424,6 +433,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 - Hauteur des planètes non arrondie : au pixel près, elles restaient immobiles puis sautaient.
 - Chrono réécrit au plus toutes les 30 ms (`DIGITS_MS` dans `run.js`) : chaque réécriture recalcule la page. Mesuré : de 99 à 50 ms par tranche de 5 s sur PC.
 - Calques vides masqués (`fx`, `party`) : sinon deux calques plein écran à assembler à chaque image.
+- Aperçus des attaques d'Infos animés seulement quand Infos est affiché : des Paramètres ouverts par-dessus (code scanné) les laissaient tourner pendant la partie.
 - `modulepreload` des 59 modules dans `index.html` : prêt en 3,9 s au lieu de 4,6 s avec 300 ms de latence.
 - iPhone d'avant iOS 15.4 : `Object.hasOwn`, appelé à chaque image, empêchait tout dessin. Remplacé, interdit par `shell.test.mjs`.
 - Essayés et pas gardés : tartine ou couverts en image, étoiles par paquets, chrono en `contain`, Rust (WebAssembly) : le dessin se fait dans le navigateur, et une vérification d'attaque prend 0,05 ms.
@@ -502,8 +512,9 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 - `public/js/errors.js`, chargé en premier partout, script classique prudent : il attrape aussi les plantages des modules, que le jeu ne voit pas.
 - Remonte : erreurs, promesses rejetées, fichiers pas chargés, blocages CSP, jeu pas démarré au bout de 15 s.
 - Ni pseudo ni clé dans les rapports : un numéro au hasard par onglet.
-- Ignorés : une erreur dans la page elle-même et un `style-src-attr` sans fichier. La CSP interdit le code dans la page, ils viennent donc du navigateur (le portefeuille de Brave). Ils prenaient la limite de 10 par minute pendant une soirée.
+- Ignorés : une erreur dans la page elle-même et un `style-src-attr` sans fichier. La CSP interdit le code dans la page, ils viennent donc du navigateur (le portefeuille de Brave). Ignoré aussi : le blocage du script d'analyse que Cloudflare ajoute (`static.cloudflareinsights.com`), voulu. Ils prenaient la limite de 10 par minute pendant une soirée.
 - Économe : même erreur une fois par page, 5 erreurs par envoi, 3 envois par page, 10 par onglet, 20 erreurs différentes par page.
+- Envoi raté (coupure) : les erreurs repartent 10 s plus tard ou au retour du réseau, dans les mêmes plafonds. Hors ligne, rien n'est tenté.
 - Serveur (`routes/errors.ts`) : 64 Ko par envoi, 5 envois par minute et par IP (`ERROR_IP_LIMIT`), 10 par minute pour tout le monde (`ERROR_LIMIT`), 60 erreurs par heure (`HOUR_ROWS`), 10 par onglet (`SESSION_ROWS`). Table `client_errors`, 14 jours, 2 000 lignes.
 - Pourquoi : une erreur sur tous les téléphones d'une soirée mangerait le quota d'écritures de D1, et le classement avec. Chaque ligne compte pour 3 écritures, son effacement aussi. Moins de 2 000 écritures par soirée de 5 h, 85 000 sans plafond par heure.
 - Lire : Admin, « Erreurs des joueurs » (propriétaire). « Marquer corrigé » : revient si elle se reproduit. Le même bug sous Safari et Chrome fait deux erreurs.
@@ -613,7 +624,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 
 `test/unit/*.test.mjs`, `node --test`, sans dépendance. `env.mjs` remplace le navigateur, `d1.mjs` donne une base SQLite en mémoire avec toutes les migrations.
 
-- `achievements` : succès au bon moment, rien de perdu entre onglets, annonce unique.
+- `achievements` : succès au bon moment, rien de perdu entre onglets, annonce unique, Tout vu après une fusion, appareil sorti du compte.
 - `admin` : fin déjà passée ramenée à maintenant, soirée fermée intouchable.
 - `outils-admin` : liste de l'admin limitée et recherche, état de la soirée, nom et fin d'une nouvelle soirée.
 - `api` : limite d'attente, reprise par cookie refaite.
@@ -623,11 +634,11 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `cache` : cache des classements, lecture unique, périmée écartée, abandon à 5 s, ligne déjà à ce score.
 - `card` : classement d'une soirée fermée gardé 10 min.
 - `chemin` : chemin du robot, gardé hors du code des téléphones.
-- `compat` : valeur de secours avant chaque unité ou couleur trop récente pour les vieux iPhone.
+- `compat` : valeur de secours avant chaque unité ou couleur trop récente pour les vieux iPhone, pas d'`await` en dehors d'une fonction.
 - `depart` : `/depart`, 2 essais pour le code, compte gardé par cookie, échec signalé, sous le `meta refresh`.
 - `deploy` : refus de `npm run deploy`.
 - `envoi` : départ relancé 12 s, score gardé 12 h, un seul envoi à la fois, corps illisible, `waited`.
-- `errors` : plafond de 60 erreurs par heure, limite par IP avant la limite commune.
+- `errors` : plafond de 60 erreurs par heure, limite par IP avant la limite commune. Côté téléphone (`errors.js`) : envoi raté renvoyé, hors ligne, script de Cloudflare ignoré.
 - `google` : empreinte sans e-mail, cookie, usage unique, 10 min, jeton refusé, délier, limite du lieu, « Déconnecter les autres ».
 - `http` : IPv6 groupée par /64, plafond de 64 Ko à la lecture.
 - `inapp` : navigateurs des applis (vrais user agents).
@@ -643,14 +654,14 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `record` : classement tardif sans effet sur le record.
 - `refus` : cause d'un refus du solveur.
 - `resume` : reprise ratée, pas de choix du pseudo.
-- `robustesse` : netteté 12 h, hauteur invalide, cache malgré un fichier raté.
+- `robustesse` : netteté 12 h, hauteur invalide, cache malgré un fichier ou un bruitage raté, seul le jeu retombe sur sa page gardée hors ligne.
 - `routes` : route admin sans `access` refusée.
 - `runs` : même score à la même milliseconde, une partie. Limites du départ. Généraux gardés 60 s après une partie PC en soirée. Compte fusionné pendant l'envoi. Marge de fin de soirée. Score envoyé tard (`waited`).
-- `shell` : `SHELL` de `sw.js`, `modulepreload`, pas d'`Object.hasOwn`, éléments de `screens.js`.
+- `shell` : `SHELL` de `sw.js` avec les images de la page, bruitages (`SFX`), `modulepreload`, pas d'`Object.hasOwn`, éléments de `screens.js`.
 - `slots` : écran qui répond jamais chassé.
-- `son` : musique au premier appui sur Jouer, aperçu, nouvel essai.
+- `son` : musique au premier appui sur Jouer, aperçu, nouvel essai, bruitage manquant redemandé.
 - `sprites` : chaque objet et planète se dessine, nom inventé sans effet.
-- `sync` : tenue entre appareils.
+- `sync` : tenue entre appareils, emplacements gardés par un appareil neuf.
 - `textes` : le guide dit les vraies règles.
 - `validate` : pseudos, tenue, progression, fusion.
 - `variante` : la copie d'`equilibrage:variante` démarre.

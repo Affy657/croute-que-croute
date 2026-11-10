@@ -4,7 +4,7 @@ import { VERSION } from "../version.js";
 import { installMode, promptInstall, shouldSuggest, markSuggested, onInstallChange } from "./install.js";
 import { prefs, setLevel, previewMusic, previewSfx } from "./audio.js";
 import { ui, setText, markInvalid } from "./screens.js";
-import { net, rename, reason, badInput } from "./api.js";
+import { net, on, rename, reason, badInput } from "./api.js";
 import { controls, setSens, setAim, setHold, hasMouse, hasTouch } from "./input.js";
 
 const FLASH_MS = 2000;
@@ -38,13 +38,9 @@ export function renderSettings() {
   ui.settings.classList.toggle("admin-mode", tab === "admin");
   if (tab === "admin") mountAdmin();
   else leaveSettings();
-  const me = net.board && net.board.me;
-  ui.renameCard.hidden = !me;
-  ui.linkCard.hidden = !me;
-  if (me && document.activeElement !== ui.newPseudo) ui.newPseudo.value = me.pseudo;
+  renderAccountCards(true);
   setText(ui.renameNote, "");
   markInvalid(ui.newPseudo, false);
-  syncRename();
   const mode = installMode();
   ui.installCard.hidden = mode === "installed";
   ui.installHint.textContent = HINTS[mode] || "";
@@ -53,6 +49,14 @@ export function renderSettings() {
   ui.sfxVol.value = Math.round(prefs.sfxLevel * 100);
   renderControlsCard();
   renderTestCard();
+}
+
+function renderAccountCards(refill = false) {
+  const me = net.board && net.board.me, appearing = ui.renameCard.hidden;
+  ui.renameCard.hidden = !me;
+  ui.linkCard.hidden = !me;
+  if (me && (refill || appearing) && document.activeElement !== ui.newPseudo) ui.newPseudo.value = me.pseudo;
+  syncRename();
 }
 
 function renderTestCard() {
@@ -248,3 +252,4 @@ onInstallChange(() => {
 window.addEventListener("storage", (e) => {
   if (e.key === KEYS.adminToken && !ui.settings.hidden) renderSettings();
 });
+on("board", () => renderAccountCards());

@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { createContext, runInContext } from "node:vm";
 import { database } from "./d1.mjs";
 
 const { collect } = await import(new URL("../../src/routes/errors.ts", import.meta.url).href);
@@ -78,4 +80,85 @@ test("rapport trop gros sans content-length : refusé pendant la lecture, rien d
   const res = await collect({ req, env, params: [] });
   assert.equal(res.status, 413);
   assert.equal(rows(env), 0);
+});
+
+const CLIENT = readFileSync("public/js/errors.js", "utf8");
+
+function phone(failures = 0) {
+  const on = {}, timers = [], posts = [], tab = new Map();
+  class ErrorEvent {
+    constructor(type, init) { Object.assign(this, init); }
+  }
+  const win = {
+    navigator: { userAgent: "Test", platform: "", maxTouchPoints: 0, onLine: true },
+    location: { origin: "https://jeu.test", href: "https://jeu.test/", pathname: "/" },
+    document: { documentElement: { dataset: { version: "test" } }, hidden: false, addEventListener() {} },
+    sessionStorage: { getItem: (k) => tab.get(k) ?? null, setItem: (k, v) => tab.set(k, String(v)) },
+    addEventListener: (type, fn) => (on[type] ||= []).push(fn),
+    setTimeout: (fn) => timers.push({ fn }),
+    clearTimeout: (id) => { if (timers[id - 1]) timers[id - 1].fn = null; },
+    fetch: (url, opts) => {
+      posts.push(JSON.parse(opts.body));
+      return failures-- > 0 ? Promise.reject(new TypeError("Failed to fetch")) : Promise.resolve({ ok: true, status: 200 });
+    },
+    matchMedia: () => ({ matches: false }), innerWidth: 390, innerHeight: 844, devicePixelRatio: 3, ErrorEvent
+  };
+  win.window = win;
+  createContext(win);
+  runInContext(CLIENT, win);
+  const fire = (type, event) => { for (const fn of on[type] || []) fn(event); };
+  return {
+    posts, win, fire,
+    crash: (message) => fire("error", new ErrorEvent("error", { message, filename: "https://jeu.test/js/app/main.js", lineno: 3, colno: 7, error: null })),
+    async wait() {
+      const t = timers.find((t) => t.fn);
+      if (!t) return false;
+      const fn = t.fn;
+      t.fn = null;
+      fn();
+      for (let i = 0; i < 5; i++) await new Promise(setImmediate);
+      return true;
+    }
+  };
+}
+
+test("rapport du téléphone : un envoi raté pendant une coupure repart au suivant, en entier", async () => {
+  const p = phone(1);
+  p.crash("TypeError: boum");
+  while (p.posts.length < 2 && await p.wait());
+  assert.equal(p.posts.length, 2);
+  const [again] = p.posts[1].errors;
+  assert.equal(again.message, "TypeError: boum");
+  assert.equal(again.count, 1);
+  assert.ok(again.trail && again.device);
+});
+
+test("rapport du téléphone : envois toujours ratés, pas plus de 3 par page", async () => {
+  const p = phone(Infinity);
+  p.crash("TypeError: boum");
+  for (let i = 0; i < 20 && await p.wait(); i++);
+  assert.equal(p.posts.length, 3);
+});
+
+test("rapport du téléphone : hors ligne, rien n'est tenté ; au retour du réseau, il part", async () => {
+  const p = phone();
+  p.win.navigator.onLine = false;
+  p.crash("TypeError: boum");
+  while (await p.wait());
+  assert.equal(p.posts.length, 0);
+  p.win.navigator.onLine = true;
+  p.fire("online", {});
+  await new Promise(setImmediate);
+  assert.equal(p.posts.length, 1);
+});
+
+test("rapport du téléphone : le script d'analyse que Cloudflare ajoute, bloqué par la politique de sécurité, est ignoré ; un autre blocage remonte", async () => {
+  const p = phone();
+  const blocked = (blockedURI) => p.fire("securitypolicyviolation", { effectiveDirective: "script-src-elem", blockedURI, sourceFile: "" });
+  blocked("https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015");
+  while (await p.wait());
+  assert.equal(p.posts.length, 0);
+  blocked("https://static.cloudflareinsights.com.evil.test/beacon.min.js");
+  while (await p.wait());
+  assert.deepEqual(p.posts.flatMap((r) => r.errors.map((e) => e.message)), ["script-src-elem a bloqué https://static.cloudflareinsights.com.evil.test/beacon.min.js"]);
 });

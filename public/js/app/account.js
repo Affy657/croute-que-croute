@@ -7,6 +7,7 @@ import { resync } from "./profile.js";
 import { inAppNote } from "./inapp.js";
 import { googleBlocked, installMode } from "./install.js";
 import { moved, moveUrl, reachable } from "./move.js";
+import { own } from "./art/kit.js";
 
 const TICK_MS = 1000, RETRY_MS = 20000, QUIET = 4;
 /** @type {Record<string, string>} */
@@ -242,7 +243,7 @@ function showGoogleResult() {
     googleResult = null;
     return;
   }
-  const note = GOOGLE_NOTES[googleResult];
+  const note = own(GOOGLE_NOTES, googleResult);
   if (registered()) {
     googleResult = null;
     if (!note) return;
@@ -392,6 +393,9 @@ on("board", renderGoogle);
 on("board", showGoogleResult);
 ui.googleLogin.addEventListener("click", () => goGoogle(ui.googleLogin, false));
 ui.googleBtn.addEventListener("click", toggleGoogle);
+window.addEventListener("pageshow", (e) => {
+  if (e.persisted) ui.googleLogin.disabled = ui.googleBtn.disabled = false;
+});
 ui.linkBack.addEventListener("click", closeLink);
 ui.haveAccount.addEventListener("click", () => {
   setText(ui.linkError, "");

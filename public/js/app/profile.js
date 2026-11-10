@@ -4,8 +4,8 @@ import { store, KEYS } from "../shared/store.js";
 import { call, canCompete, net, on, serverNow } from "./api.js";
 import { drawToast } from "./sprites.js";
 import { own } from "./art/kit.js";
-import { outfit, gearOwned, gearTotal, setOutfit } from "./gear.js";
-import { chosen, owned, toppingList, addToppings, setTopping } from "./toppings.js";
+import { keptOutfit, gearOwned, gearTotal, setOutfit } from "./gear.js";
+import { owned, toppingList, addToppings, setTopping } from "./toppings.js";
 import { progress, forSync, absorb } from "./achievements.js";
 
 const SEND_MS = 1500, TOAST_SCALE = 1.8, TOAST_Y = 0.53, BAR_MIN = 6, PODIUM = 3, BLANK = " ", NONE = "-";
@@ -44,8 +44,8 @@ export function adoptLook(look) {
 
 /** @returns {Look} */
 export function myLook() {
-  const own = Object.fromEntries(Object.keys(SLOTS).map((slot) => [slot, gearOwned(slot).length]));
-  return { ...outfit(), spread: chosen(), ach: progress().got, own: { ...own, spread: owned().length }, at: Math.max(0, outfitAt()) };
+  const counts = Object.fromEntries(Object.keys(SLOTS).map((slot) => [slot, gearOwned(slot).length])), spread = store.get(KEYS.topping);
+  return { ...keptOutfit(), spread: spread && own(SPREADS, spread) ? spread : "butter", ach: progress().got, own: { ...counts, spread: owned().length }, at: Math.max(0, outfitAt()) };
 }
 
 export function shareLook() {

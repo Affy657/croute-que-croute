@@ -1,6 +1,6 @@
 const CACHE = "croute-" + (new URL(self.location.href).searchParams.get("v") || "v19");
 const SHELL = [
-  "/", "/tokens.css", "/fonts/bungee-latin-400-normal.woff2", "/style.css", "/catalog.css", "/manifest.webmanifest", "/icons/icon-192.png", "/qr.svg",
+  "/", "/tokens.css", "/fonts/bungee-latin-400-normal.woff2", "/style.css", "/catalog.css", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/google.svg", "/qr.svg",
   "/ecran", "/ecran.css", "/js/ecran/ecran.js",
   "/js/version.js", "/js/errors.js", "/js/arrive.js", "/js/boot.js", "/js/shared/store.js", "/js/shared/format.js", "/js/shared/palette.js", "/js/shared/local.js", "/js/shared/timeout.js", "/js/shared/banner.js",
   "/js/game/field.js", "/js/game/projectiles.js", "/js/game/attacks.js", "/js/game/solver.js", "/js/game/sim.js",
@@ -8,11 +8,12 @@ const SHELL = [
   "/js/app/art/auras.js", "/js/app/art/breads.js", "/js/app/art/cutlery.js", "/js/app/art/hats.js", "/js/app/art/kit.js", "/js/app/art/sides.js", "/js/app/art/spreads.js",
   "/js/app/sky/cans.js", "/js/app/sky/cheese.js", "/js/app/sky/classic.js", "/js/app/sky/egg.js", "/js/app/sky/kit.js", "/js/app/sky/melies.js", "/js/app/sky/music.js", "/js/app/sky/pancake.js", "/js/app/sky/pirate.js", "/js/app/sky/pumpkin.js", "/js/app/sky/santa.js", "/js/app/sky/toaster.js", "/js/app/sky/tung.js", "/js/app/sky/vehicles.js"
 ];
+const SFX = ["/sfx/start.mp3", "/sfx/near.mp3", "/sfx/death.mp3", "/sfx/record.mp3", "/sfx/first.mp3"];
 const NET_MS = 3000;
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE).then((cache) => Promise.all(SHELL.map((url) => cache.add(url).catch(() => cache.add(url)).catch(() => {})))).catch(() => {}));
+  event.waitUntil(caches.open(CACHE).then((cache) => Promise.all([...SHELL, ...SFX].map((url) => cache.add(url).catch(() => cache.add(url)).catch(() => {})))).catch(() => {}));
 });
 
 self.addEventListener("activate", (event) => {
@@ -43,5 +44,5 @@ self.addEventListener("fetch", (event) => {
   const saved = () => caches.match(req, { ignoreSearch: true });
   const slow = new Promise((resolve) => setTimeout(resolve, NET_MS)).then(() => (settled ? net : saved().then((hit) => hit || net)));
   event.waitUntil(net.catch(() => {}));
-  event.respondWith(Promise.race([net, slow]).catch(() => saved().then((hit) => hit || (req.mode === "navigate" && !url.pathname.startsWith("/ecran") ? caches.match("/") : Response.error()))));
+  event.respondWith(Promise.race([net, slow]).catch(() => saved().then((hit) => hit || (req.mode === "navigate" && url.pathname === "/" ? caches.match("/") : Response.error()))));
 });
