@@ -1,7 +1,7 @@
 import { json, fail, readJson, bearer, clientIp, tooFast, allowed } from "../http";
 import { randomToken, sha256, safeEqual } from "../security";
 import { cleanName, cleanRole, pseudoKey } from "../validate";
-import { pendingEvent, lastEvent, forgetCaches, type EventRow } from "../db";
+import { pendingEvent, lastEvent, eventById, forgetCaches, type EventRow } from "../db";
 import type { Ctx } from "../router";
 import { tell } from "../live";
 import { mergeInto } from "./link";
@@ -121,37 +121,52 @@ const eventJson = (e: EventRow, now: number) => ({ id: e.id, name: e.name, opens
 
 const time = (raw: unknown) => (typeof raw === "number" && Number.isFinite(raw) ? Math.round(raw) : null);
 
+interface Stats {
+  players: number;
+  runs: number;
+}
+
+const PC_RUNS = "SELECT COUNT(*) FROM runs WHERE device = 'pc' AND finished_at IS NOT NULL AND player_id IN (SELECT id FROM profiles WHERE pc_best > 0)";
+const STATS = {
+  general: `SELECT (SELECT COUNT(*) FROM profiles WHERE best > 0) AS players, (SELECT COALESCE(SUM(run_count), 0) FROM profiles) - (${PC_RUNS}) AS runs`,
+  pc: `SELECT (SELECT COUNT(*) FROM profiles WHERE pc_best > 0) AS players, (${PC_RUNS}) AS runs`,
+  event: "SELECT COUNT(*) AS players, COALESCE(SUM(run_count), 0) AS runs FROM entries WHERE event_id = ? AND run_count > 0",
+};
+
 export async function players({ req, env }: Ctx) {
   const now = Date.now();
   const asked = new URL(req.url).searchParams.get("scope");
   const board = asked === "general" || asked === "pc" ? asked : null;
-  const general = !!board;
   const event = (await pendingEvent(env, now)) ?? (await lastEvent(env));
   const [best, at, elapsed] = board === "pc" ? ["pc_best", "pc_best_at", "pc_best_elapsed"] : ["best", "best_at", "best_elapsed"];
   const cols = `id, pseudo, ${best} AS best, banned, run_count, ${elapsed} AS best_elapsed, last_at FROM profiles`;
   const joined = env.DB.prepare(
     `SELECT ${cols} INDEXED BY profiles_joined WHERE created_at > ? AND banned = 0 ORDER BY created_at DESC LIMIT 50`,
   ).bind(now - JOINED_MS);
-  let rows: PlayerAdminRow[] = [], fresh: PlayerAdminRow[] = [];
-  if (general) {
-    const [ranked, out, recent] = await env.DB.batch<PlayerAdminRow>([
-      env.DB.prepare(`SELECT ${cols} WHERE banned = 0 AND ${best} > 0 ORDER BY ${best} DESC, ${at} ASC LIMIT 300`),
-      env.DB.prepare(`SELECT ${cols} WHERE banned = 1 ORDER BY ${best} DESC, ${at} ASC LIMIT 300`),
+  let rows: PlayerAdminRow[] = [], fresh: PlayerAdminRow[] = [], stats: Stats = { players: 0, runs: 0 };
+  if (board) {
+    const [ranked, out, recent, counted] = await env.DB.batch<PlayerAdminRow>([
+      env.DB.prepare(`SELECT ${cols} WHERE banned = 0 AND ${best} > 0 ORDER BY ${best} DESC, ${at} ASC`),
+      env.DB.prepare(`SELECT ${cols} WHERE banned = 1 ORDER BY ${best} DESC, ${at} ASC`),
       joined,
+      env.DB.prepare(STATS[board]),
     ]);
     rows = [...ranked.results, ...out.results];
     fresh = recent.results;
+    stats = counted.results[0] as unknown as Stats;
   } else if (event) {
-    const [entries, recent] = await env.DB.batch<PlayerAdminRow>([
+    const [entries, recent, counted] = await env.DB.batch<PlayerAdminRow>([
       env.DB.prepare(
         `SELECT p.id, p.pseudo, e.best, p.banned, e.removed, e.run_count, e.best_elapsed, p.last_at FROM entries e JOIN profiles p ON p.id = e.player_id
          WHERE e.event_id = ?
          ORDER BY p.banned ASC, e.removed ASC, e.best DESC, e.best_at ASC`,
       ).bind(event.id),
       joined,
+      env.DB.prepare(STATS.event).bind(event.id),
     ]);
     rows = entries.results;
     fresh = recent.results.map((p) => ({ ...p, best: 0 }));
+    stats = counted.results[0] as unknown as Stats;
   }
   const listed = new Set(rows.map((p) => p.id));
   fresh = fresh.filter((p) => !listed.has(p.id));
@@ -159,6 +174,7 @@ export async function players({ req, env }: Ctx) {
   const shown = firstOut < 0 ? [...rows, ...fresh] : [...rows.slice(0, firstOut), ...fresh, ...rows.slice(firstOut)];
   const ahead = farAhead(rows);
   return json({
+    now,
     scope: board ?? "event",
     event: event ? eventJson(event, now) : null,
     players: shown.map((p) => ({
@@ -171,7 +187,7 @@ export async function players({ req, env }: Ctx) {
       suspect: suspect(p, ahead),
       active: !p.banned && !p.removed && (p.last_at ?? 0) > now - ACTIVE_MS,
     })),
-    stats: { players: rows.length, runs: rows.reduce((n, p) => n + p.run_count, 0) },
+    stats,
   });
 }
 
@@ -198,11 +214,38 @@ export async function createEvent({ req, env, exec }: Ctx) {
     .bind(name, opensAt, closesAt, now)
     .run();
   if (!created.meta.changes) {
-    return fail(409, "Une soirée est déjà en cours ou prévue. Modifie-la, ou avance sa fin à maintenant.");
+    const current = await pendingEvent(env, now);
+    return fail(
+      409,
+      current && current.opens_at > now
+        ? "Une soirée est déjà prévue. Modifie-la, ou supprime-la dans « Modifier »."
+        : "Une soirée est déjà en cours. Modifie-la, ou ferme-la en avançant sa fin à maintenant.",
+    );
   }
   forgetCaches();
   tell(env, exec);
   return json({ ok: true }, 201);
+}
+
+export async function deleteEvent({ env, params, exec }: Ctx) {
+  if (!/^\d{1,15}$/.test(params[0])) return fail(404, "Soirée inconnue.");
+  const id = Number(params[0]), now = Date.now();
+  const res = await env.DB.prepare(
+    `DELETE FROM events WHERE id = ?1 AND opens_at > ?2
+     AND NOT EXISTS (SELECT 1 FROM entries WHERE event_id = ?1) AND NOT EXISTS (SELECT 1 FROM runs WHERE event_id = ?1)`,
+  )
+    .bind(id, now)
+    .run();
+  if (res.meta.changes) {
+    forgetCaches();
+    tell(env, exec);
+    return json({ ok: true });
+  }
+  const event = await eventById(env, id);
+  if (!event) return fail(404, "Soirée inconnue.");
+  if (event.closes_at <= now) return fail(409, "Cette soirée est finie, elle ne se supprime plus.");
+  if (event.opens_at <= now) return fail(409, "Cette soirée a déjà commencé : ferme-la en avançant sa fin à maintenant.");
+  return fail(409, "Cette soirée a déjà des parties ou des joueurs, elle ne se supprime plus.");
 }
 
 export async function updateEvent({ req, env, exec }: Ctx) {
@@ -226,11 +269,12 @@ export async function removeFromEvent({ req, env, params, exec }: Ctx) {
   const body = await readJson(req);
   const eventId = body.event;
   if (!Number.isInteger(eventId)) return fail(400, "Soirée manquante.");
+  if (typeof body.removed !== "boolean") return fail(400, "Retirer ou réintégrer : choix manquant.");
   const res = await env.DB.prepare(
     `INSERT INTO entries (event_id, player_id, removed) SELECT ?1, ?2, ?3
      WHERE EXISTS (SELECT 1 FROM events WHERE id = ?1) AND EXISTS (SELECT 1 FROM profiles WHERE id = ?2)
      ON CONFLICT (event_id, player_id) DO UPDATE SET removed = excluded.removed`,
-  ).bind(eventId, params[0], body.removed === true ? 1 : 0).run();
+  ).bind(eventId, params[0], body.removed ? 1 : 0).run();
   if (!res.meta.changes) return fail(404, "Joueur ou soirée inconnus.");
   forgetCaches();
   tell(env, exec);
@@ -238,8 +282,9 @@ export async function removeFromEvent({ req, env, params, exec }: Ctx) {
 }
 
 export async function ban({ req, env, params, exec }: Ctx) {
-  const banned = (await readJson(req)).banned === true ? 1 : 0;
-  const res = await env.DB.prepare("UPDATE profiles SET banned = ? WHERE id = ?").bind(banned, params[0]).run();
+  const banned = (await readJson(req)).banned;
+  if (typeof banned !== "boolean") return fail(400, "Retirer ou réintégrer : choix manquant.");
+  const res = await env.DB.prepare("UPDATE profiles SET banned = ? WHERE id = ?").bind(banned ? 1 : 0, params[0]).run();
   if (!res.meta.changes) return fail(404, "Joueur inconnu.");
   forgetCaches();
   tell(env, exec);

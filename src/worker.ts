@@ -46,6 +46,7 @@ const routes: Route[] = [
   { method: "POST", path: new RegExp(`^/api/admin/players/${ID}/soiree$`), access: "admin", run: admin.removeFromEvent },
   { method: "POST", path: "/api/admin/events", access: "admin", run: admin.createEvent },
   { method: "PATCH", path: "/api/admin/events/current", access: "admin", run: admin.updateEvent },
+  { method: "DELETE", path: new RegExp(`^/api/admin/events/${ID}$`), access: "admin", run: admin.deleteEvent },
   { method: "GET", path: "/api/admin/team", access: "owner", run: admin.team },
   { method: "POST", path: "/api/admin/merge", access: "owner", run: admin.merge },
   { method: "GET", path: "/api/admin/errors", access: "owner", run: errors.list },
