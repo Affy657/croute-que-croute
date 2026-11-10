@@ -736,6 +736,8 @@ interface AdminPlayer {
 }
 
 interface AdminData {
+  now?: number;
+  scope: "event" | "general" | "pc";
   event: AdminEvent | null;
   players: AdminPlayer[];
   stats: { players: number; runs: number };

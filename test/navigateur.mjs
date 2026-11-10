@@ -764,6 +764,36 @@ try {
     await other.locator("#offline").waitFor({ state: "visible", timeout: WAIT_MS });
     await context.close();
   });
+  await step("écran géant : réponse lente, le compte à rebours ne recule pas, consos et grand titre cachés dans le dernier quart d'heure", async () => {
+    const other = await browser.newPage({ viewport: { width: 1280, height: 720 }, serviceWorkers: "block" });
+    watch(other);
+    await other.routeWebSocket(/\/api\/live$/, (ws) => ws.close());
+    const LAG = 3000, closesAt = Date.now() + 600000;
+    await other.route((url) => url.pathname === "/api/ecran", async (route) => {
+      await wait(LAG);
+      const now = Date.now();
+      await wait(LAG);
+      const event = { name: "Soirée lente", opensAt: closesAt - 3600000, closesAt, finalAt: closesAt + 15000, status: "open" };
+      await route.fulfill({ json: { now, version: "dev", stamp: "1", next: null, event, last: 1, count: 0, feed: [], top: [] } }).catch(() => {});
+    });
+    try {
+      await other.goto(BASE + "/ecran");
+      await other.waitForFunction(() => document.getElementById("countdown").textContent.startsWith("Fin dans"), null, { timeout: WAIT_MS });
+      const ahead = await other.evaluate((end) => new Promise((ok) => {
+        const el = document.getElementById("countdown");
+        new MutationObserver((_, seen) => {
+          seen.disconnect();
+          const [m, s] = el.querySelector(".digits").textContent.split(":").map(Number);
+          ok(m * 60 + s - (end - Date.now()) / 1000);
+        }).observe(el, { childList: true });
+      }), closesAt);
+      if (ahead < -0.5 || ahead > 2) throw new Error(`compte à rebours décalé de ${ahead.toFixed(1)} s`);
+      const shown = await other.evaluate(() => ["#prizes", ".head h1"].filter((css) => getComputedStyle(document.querySelector(css)).display !== "none"));
+      if (shown.length) throw new Error("affichés dans le dernier quart d'heure : " + shown.join(", "));
+    } finally {
+      await other.close();
+    }
+  });
   let admin;
   const at = (ms) => admin.evaluate((t) => {
     const d = new Date(t);
@@ -1072,6 +1102,37 @@ try {
       }
     });
   }
+  await step("écran géant sans WebSocket : « Bravo » attend une relecture complète du top, pas une demande légère qui dépasse la marge", async () => {
+    const other = await browser.newPage({ viewport: { width: 1280, height: 720 }, serviceWorkers: "block" });
+    watch(other);
+    await other.routeWebSocket(/\/api\/live$/, (ws) => ws.close());
+    const row = (rank, pseudo, best) => ({ rank, id: pseudo, pseudo, best, at: 1, me: false });
+    let closesAt = Date.now() + 3600000, sure = closesAt + 9000, gone = false, crossed = false;
+    await other.route((url) => url.pathname === "/api/ecran", (route) => {
+      const real = Date.now(), light = new URL(route.request().url()).searchParams.get("v") === "1";
+      if (light && real >= sure) crossed = true;
+      const now = crossed ? real : Math.min(real, sure - 5000);
+      const head = { now, version: "dev", stamp: "1", next: null, event: { name: "Soirée tranchée", opensAt: closesAt - 3600000, closesAt, finalAt: sure - SETTLE_MS, status: now < closesAt ? "open" : "closed" } };
+      if (light) return route.fulfill({ json: { ...head, same: true } });
+      return route.fulfill({ json: { ...head, last: 1, count: 2, feed: [], top: gone ? [row(1, "Max", 700)] : [row(1, "Lou", 800), row(2, "Max", 700)] } });
+    });
+    const banner = (text) => other.locator("#countdown", { hasText: text });
+    try {
+      await other.goto(BASE + "/ecran");
+      await other.waitForFunction(() => document.getElementById("title").textContent === "Soirée tranchée", null, { timeout: WAIT_MS });
+      await wait(500);
+      closesAt = Date.now() + 1500;
+      sure = closesAt + 9000;
+      await back(other);
+      await banner("Soirée finie !").waitFor({ timeout: WAIT_MS });
+      gone = true;
+      await banner("Bravo").waitFor({ timeout: WAIT_MS });
+      const text = await other.locator("#countdown").textContent();
+      if (text !== "Bravo Max !") throw new Error(text + " : le 1er retiré pendant la marge est fêté");
+    } finally {
+      await other.close();
+    }
+  });
   const playersRead = (url) => url.pathname === "/api/admin/players";
   const signIn = async (p) => {
     await p.goto(BASE + "/admin");
@@ -1148,6 +1209,26 @@ try {
       await other.close();
     }
   });
+  await step("admin : réponse 200 illisible (portail wifi), « Pas de réseau » au lieu de « Aucune soirée » ou d'une erreur de code", async () => {
+    const other = await browser.newPage({ serviceWorkers: "block" });
+    watch(other);
+    const portal = (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<html>Portail du wifi</html>" });
+    const unread = () => other.locator("#playersMsg", { hasText: "Pas de réseau, réessaie." }).waitFor({ timeout: WAIT_MS });
+    try {
+      await signIn(other);
+      const name = await other.locator("#eventName").textContent(), count = await other.locator("#statPlayers").textContent();
+      await other.route(playersRead, portal);
+      await back(other);
+      await unread();
+      const after = [await other.locator("#eventName").textContent(), await other.locator("#statPlayers").textContent()];
+      if (after[0] !== name || after[1] !== count) throw new Error("données effacées : " + after.join(" / "));
+      await other.route((url) => url.pathname === "/api/admin/me", portal);
+      await other.reload();
+      await unread();
+    } finally {
+      await other.close();
+    }
+  });
   await step("admin : début déplacé dans le futur sur une soirée ouverte, confirmation demandée, « Annuler » la laisse ouverte", async () => {
     const headers = { "content-type": "application/json", "x-app-version": "dev", "x-admin-key": KEY };
     const made = await fetch(BASE + "/api/admin/events", { method: "POST", headers, body: JSON.stringify({ name: "Soirée à déplacer", opensAt: Date.now() - 3600000, closesAt: Date.now() + 3600000 }) });
@@ -1189,6 +1270,36 @@ try {
       await fetch(BASE + "/api/admin/events/current", { method: "PATCH", headers, body: JSON.stringify({ opensAt: Date.now() - 3600000, closesAt: Date.now() - 60000 }) });
     }
   });
+  await step("admin : soirée à venir supprimée depuis « Modifier », avec confirmation, « Annuler » la garde", async () => {
+    const headers = { "content-type": "application/json", "x-app-version": "dev", "x-admin-key": KEY };
+    const opensAt = Date.now() + 2 * 3600000;
+    const made = await fetch(BASE + "/api/admin/events", { method: "POST", headers, body: JSON.stringify({ name: "Soirée à supprimer", opensAt, closesAt: opensAt + 3600000 }) });
+    if (!made.ok) throw new Error("soirée pas créée : " + made.status);
+    const current = async () => (await (await fetch(BASE + "/api/admin/players", { headers })).json()).event;
+    const other = await browser.newPage();
+    watch(other);
+    try {
+      await signIn(other);
+      await other.locator("#editEndBtn").click();
+      const remove = other.locator("#deleteEventBtn");
+      await remove.waitFor({ state: "visible", timeout: WAIT_MS });
+      let asked = dialog(other, false);
+      await remove.click();
+      if (!(await asked).includes("Soirée à supprimer")) throw new Error("mauvaise question");
+      await wait(500);
+      if ((await current()).name !== "Soirée à supprimer") throw new Error("supprimée sans confirmation");
+      asked = dialog(other, true);
+      await remove.click();
+      await asked;
+      await other.locator("#eventMsg", { hasText: "Soirée supprimée." }).waitFor({ timeout: WAIT_MS });
+      const left = await current();
+      if ((left && left.name === "Soirée à supprimer") || (await other.locator("#eventName").textContent()) === "Soirée à supprimer") throw new Error("soirée toujours là");
+      if (await other.locator("#endForm").isVisible()) throw new Error("formulaire resté ouvert");
+    } finally {
+      await other.close();
+      await fetch(BASE + "/api/admin/events/current", { method: "PATCH", headers, body: JSON.stringify({ opensAt: Date.now() - 3600000, closesAt: Date.now() - 60000 }) });
+    }
+  });
   await step("admin : Joueurs, Parties et Record sont sous les onglets du classement qu'ils comptent", async () => {
     const other = await browser.newPage();
     watch(other);
@@ -1199,16 +1310,16 @@ try {
       await other.close();
     }
   });
-  const mockedAdmin = async (viewport) => {
+  const mockedAdmin = async (viewport, { event: shown, shift, timezoneId } = {}) => {
     const HOUR = 3600000, now = Date.now();
     const fake = (i, extra = {}) => ({ id: "f" + i, pseudo: "Joueur" + String(i).padStart(2, "0"), best: 100000 - i * 100, banned: 0, removed: 0, runs: 3, suspect: null, active: false, ...extra });
     const players = Array.from({ length: 24 }, (_, i) => fake(i + 1)).concat(fake(25, { pseudo: "Élodie", best: 50 }));
-    const event = { id: 7, name: "Space Tartinade #3", opensAt: now - HOUR, closesAt: now + 3.5 * HOUR, status: "open" };
+    const event = shown || { id: 7, name: "Space Tartinade #3", opensAt: now - HOUR, closesAt: now + 3.5 * HOUR, status: "open" };
     const last = { version: "1.0.0", page: "/", platform: "iPhone", ua: "iPhone", standalone: false, device: "390x844", trail: "", stack: "" };
     const group = (id, onCurrent) => ({ id, kind: "erreur", message: "TypeError " + id, source: "/js/app/main.js:1:1", count: 1, sessions: 1, platforms: { iPhone: 1 }, firstAt: now - HOUR, lastAt: now - 2 * HOUR, versions: 1, onCurrent, last });
-    const other = await browser.newPage({ serviceWorkers: "block", ...(viewport ? { viewport } : {}) });
+    const other = await browser.newPage({ serviceWorkers: "block", ...(viewport ? { viewport } : {}), ...(timezoneId ? { timezoneId } : {}) });
     watch(other);
-    await other.route(playersRead, (route) => route.fulfill({ json: { scope: "event", event, players, stats: { players: 25, runs: 75 } } }));
+    await other.route(playersRead, (route) => route.fulfill({ json: { ...(shift === undefined ? {} : { now: Date.now() + shift }), scope: "event", event, players, stats: { players: 25, runs: 75 } } }));
     await other.route((url) => url.pathname === "/api/admin/errors", (route) => route.fulfill({ json: { groups: [group("a", true), group("b", false)] } }));
     await signIn(other);
     await other.locator("#players li").first().waitFor({ timeout: WAIT_MS });
@@ -1257,6 +1368,67 @@ try {
       await other.locator("#endForm [data-close]").click();
       const closed = await other.evaluate(() => ({ edit: !document.getElementById("endForm").hidden, expanded: document.getElementById("editEndBtn").getAttribute("aria-expanded") }));
       if (closed.edit || closed.expanded !== "false") throw new Error(JSON.stringify(closed));
+    } finally {
+      await other.close();
+    }
+  });
+  const edited = async (p) => {
+    const sent = [];
+    await p.route((url) => url.pathname === "/api/admin/events/current", (route) => {
+      sent.push(route.request().postDataJSON());
+      return route.fulfill({ json: { ok: true } });
+    });
+    return sent;
+  };
+  await step("admin : onglet qui ne charge pas, « Retirer » suit le classement affiché, pas l'onglet demandé", async () => {
+    const other = await mockedAdmin();
+    try {
+      await other.route((url) => playersRead(url) && url.searchParams.has("scope"), (route) => route.abort());
+      await other.locator('.scope[data-scope="general"]').click();
+      await other.locator("#playersMsg").waitFor({ state: "visible", timeout: WAIT_MS });
+      await other.fill("#playerSearch", "Joueur01");
+      const asked = dialog(other, false);
+      await other.locator("#players li", { hasText: "Joueur01" }).locator("button").click();
+      const question = await asked;
+      if (!question.includes("du classement de la soirée")) throw new Error(question);
+      if ((await other.getAttribute('.scope[data-scope="event"]', "aria-selected")) !== "true") throw new Error("onglet Soirée plus marqué");
+    } finally {
+      await other.close();
+    }
+  });
+  await step("admin : état de la soirée et confirmations à l'heure du serveur, pas à celle de l'appareil", async () => {
+    const HOUR = 3600000, now = Date.now();
+    const other = await mockedAdmin(undefined, { shift: -2 * HOUR, event: { id: 7, name: "Space Tartinade #3", opensAt: now - 3 * HOUR, closesAt: now - HOUR, status: "open" } });
+    const asked = [];
+    other.on("dialog", (d) => {
+      asked.push(d.message());
+      d.dismiss();
+    });
+    try {
+      const sent = await edited(other);
+      const state = await other.evaluate(() => [document.getElementById("eventStatus").textContent, !document.getElementById("editEndBtn").hidden]);
+      if (state[0] !== "Soirée en cours" || !state[1]) throw new Error(JSON.stringify(state));
+      await other.locator("#editEndBtn").click();
+      if (await other.locator("#deleteEventBtn").isVisible()) throw new Error("« Supprimer » proposé pour une soirée ouverte");
+      await other.locator("#endForm button[type=submit]").click();
+      await other.locator("#endForm").waitFor({ state: "hidden", timeout: WAIT_MS });
+      if (asked.length || sent.length !== 1) throw new Error("confirmation demandée : " + asked.join(" / "));
+    } finally {
+      await other.close();
+    }
+  });
+  await step("admin : « Modifier » pour renommer garde l'heure exacte, même dans l'heure répétée du passage à l'heure d'hiver", async () => {
+    const opensAt = Date.UTC(2027, 9, 30, 18), closesAt = Date.UTC(2027, 9, 31, 1, 30);
+    const other = await mockedAdmin(undefined, { timezoneId: "Europe/Paris", event: { id: 7, name: "Space Tartinade #3", opensAt, closesAt, status: "upcoming" } });
+    try {
+      const sent = await edited(other);
+      await other.locator("#editEndBtn").click();
+      if ((await other.inputValue("#endAt")) !== "2027-10-31T02:30") throw new Error("fin affichée : " + await other.inputValue("#endAt"));
+      await other.fill("#editName", "Space Tartinade #4");
+      await other.locator("#endForm button[type=submit]").click();
+      await other.locator("#endForm").waitFor({ state: "hidden", timeout: WAIT_MS });
+      const [body] = sent;
+      if (!body || body.name !== "Space Tartinade #4" || (body.opensAt !== undefined && body.opensAt !== opensAt) || (body.closesAt !== undefined && body.closesAt !== closesAt)) throw new Error(JSON.stringify(body));
     } finally {
       await other.close();
     }

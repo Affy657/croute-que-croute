@@ -246,24 +246,27 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Le propriétaire invite : lien à usage unique valable 48 h. Dans l'appli installée, le coller dans « Lien d'invitation reçu ».
 - Rôles : propriétaire (soirées, joueurs, équipe, erreurs) et admin (soirées, joueurs). Chaque téléphone peut être retiré, sauf le dernier propriétaire, avec ses invitations pas utilisées. Connexion inutilisée 30 jours : expirée.
 - « Soirée en cours » en jaune, recalculé chaque seconde d'après les heures. « Nouvelle soirée » et « Modifier » restent jaunes tant que leur formulaire est ouvert, avec « Annuler ». Nouvelle soirée : numéro suivant (« #3 » donne « #4 ») et fin à la même durée que la dernière, recalée tant qu'on ne la touche pas.
+- Heure du serveur : chaque relecture renvoie `now`, l'admin s'y cale avec le décalage pris au milieu de la demande, pour ne pas compter la latence. L'état de la soirée, « Modifier » et les confirmations la suivent : un PC en avance cachait « Modifier » avant la fin.
 - Heure de fin déjà passée : confirmation, le classement se ferme tout de suite. Le serveur enregistre l'heure du clic, jamais une heure passée : le formulaire est à la minute, et 59 s d'écart annulaient la marge de 15 s. Une soirée fermée ne se modifie plus.
+- « Modifier » n'envoie le début et la fin que si on les a changés, sinon le serveur garde les siens : la nuit du passage à l'heure d'hiver, une heure de la plage répétée se relisait une heure plus tôt.
 - Début déplacé dans le futur sur une soirée ouverte : confirmation, elle quitte l'écran géant et ne compte plus de parties jusqu'à cette heure.
-- Retirer et Réintégrer demandent confirmation, avec le pseudo.
+- Soirée à venir : « Supprimer la soirée » dans « Modifier », avec confirmation (`DELETE /api/admin/events/<id>`, admins compris). Refusé dès qu'elle a commencé, ou si elle a déjà des parties ou des joueurs (début repoussé) : la fermer avec une fin à maintenant. « Nouvelle soirée » refusée dit laquelle des deux faire.
+- Retirer et Réintégrer demandent confirmation, avec le pseudo. Le bouton suit le classement affiché (`scope` de la réponse), pas l'onglet touché : un onglet qui ne charge pas garde l'ancienne liste. Sans `banned` ou `removed` booléen, `ban` et `soiree` répondent 400.
 - Onglet Soirée : « Retirer » sort le joueur de cette soirée seulement (`entries.removed`, `POST /api/admin/players/<id>/soiree`). Il reste au classement général, joue normalement, mais ses parties ne comptent pas pour la soirée : réintégré, il revient avec son record d'avant le retrait. Sert aux membres du collectif qui s'entraînent depuis des jours. Onglets Mobile et PC : « Retirer » le sort de tous les classements, soirées comprises. Un compte réuni reste retiré de la soirée si l'un des deux l'était.
-- Joueurs, Parties et Record sont sous les onglets Soirée, Mobile, PC : ils comptent l'onglet choisi.
-- Liste : les 20 premiers, puis « Voir les N autres » (`LIMIT` dans `admin/tools.js`). « Chercher un pseudo », sans accents ni majuscules, montre toutes les lignes trouvées avec leur vrai rang. Sur 164 joueurs, la page faisait 19 000 px et cachait les autres cartes.
+- Joueurs, Parties et Record sont sous les onglets Soirée, Mobile, PC : ils comptent l'onglet choisi, en base et en entier. Joueurs et Parties comptent les retirés, Record non. Soirée : joueurs qui y ont joué et leurs parties. Mobile et PC : joueurs qui y ont un record, parties finies sur cet appareil. Les parties PC se comptent chez les seuls joueurs qui ont un record PC, Mobile c'est le total moins le PC : aucune relecture ne parcourt toutes les parties.
+- Liste : les 20 premiers, puis « Voir les N autres » (`LIMIT` dans `admin/tools.js`). « Chercher un pseudo », sans accents ni majuscules, montre toutes les lignes trouvées avec leur vrai rang. Sur 164 joueurs, la page faisait 19 000 px et cachait les autres cartes. Chaque onglet reçoit tout son classement, sans plafond, pour que la recherche trouve tout le monde : une ligne lue par joueur à chaque relecture.
 - Réunir deux comptes (propriétaire, définitif) : pseudo à garder, pseudo à réunir, confirmation avec les deux comptes. Même fusion que côté joueur (`mergeInto`), sans plafond de parties. Refusé si l'un est retiré. `POST /api/admin/merge` sans `confirm: true` renvoie seulement l'aperçu.
 - Joueurs actifs : point jaune pour une partie finie ces 10 dernières minutes (`ACTIVE_MS`), rien d'écrit en plus.
 - Nouveaux pseudos des 15 dernières minutes listés même sans partie et sans score, pour retirer un pseudo déplacé affiché sur l'écran géant. Sans score, ils sont en fin de liste : les chercher par leur pseudo.
 - Relecture toutes les 30 s, jamais onglet caché : relire toute la soirée pèse sur le quota de lectures. Tout de suite après une action et au retour sur l'onglet. Démarrage raté : nouvel essai après 10 s.
-- Relecture ratée : message rouge au-dessus de la liste, avec l'heure des données affichées (« Données de 21h04 »), jusqu'à la prochaine réussie. « Aucune soirée » seulement si le serveur l'a dit.
+- Relecture ratée : message rouge au-dessus de la liste, avec l'heure des données affichées (« Données de 21h04 »), jusqu'à la prochaine réussie. « Aucune soirée » seulement si le serveur l'a dit. Une réponse 200 au corps illisible (portail wifi, coupure) compte comme une erreur réseau : « Pas de réseau, réessaie. », partout dans l'admin.
 
 ## Écran géant
 
-- `/ecran`, en paysage : top 10 de la soirée (du général hors soirée), QR code, nombre de joueurs, fil des 6 derniers records et nouveaux pseudos des 15 dernières minutes.
-- Pendant une soirée, sous son nom : « Au bar : 3 consos au 1er, 2 au 2e, 1 au 3e » (`#prizes`, écrit dans `ecran.html`, le même pour toutes les soirées). Cachée dans la dernière minute et au « Bravo », comme le grand titre, pour que le top 10 tienne. Pas de badge sur les lignes : il coupait le pseudo du 1er.
+- `/ecran`, en paysage : top 10 de la soirée (du général hors soirée), QR code, nombre de joueurs, fil des 6 derniers records et nouveaux pseudos des 15 dernières minutes. Pendant une soirée, un joueur retiré de la soirée n'est pas accueilli dans le fil, comme un joueur retiré partout.
+- Pendant une soirée, sous son nom : « Au bar : 3 consos au 1er, 2 au 2e, 1 au 3e » (`#prizes`, écrit dans `ecran.html`, le même pour toutes les soirées). Cachée avec le grand titre pendant le dernier quart d'heure (`FINAL_MS`), à « Soirée finie ! » et au « Bravo » (`body.hot`), pour que le top 10 tienne. Pas de badge sur les lignes : il coupait le pseudo du 1er.
 - Dernier quart d'heure : chiffres rouges qui tremblent. À zéro : « Soirée finie ! », sans confettis.
-- 27 s après la fin : l'écran relit le classement de lui-même, WebSocket ou pas, puis « Bravo X ! », confettis et rebond de la 1re ligne. Sans réseau, il reste sur « Soirée finie ! » et réessaie toutes les 2 s : pas de gagnant sans classement relu.
+- 27 s après la fin : l'écran relit le classement de lui-même, WebSocket ou pas, puis « Bravo X ! », confettis et rebond de la 1re ligne. Sans réseau, il reste sur « Soirée finie ! » et réessaie toutes les 2 s : pas de gagnant sans classement relu. Une demande légère (`?v=`) qui passe les 27 s ne tranche jamais : elle lance une relecture complète du top, car le repère ne bouge pas pour un 1er retiré ou renommé.
 - « Nouveau n°1 » pendant 6 s, seulement pour un record plus récent que le dernier connu (`at`, `last`), pas pour un 1er retiré ou réintégré. Comparer à l'heure de lecture ratait un record enregistré pendant la lecture.
 - « Plein écran » empêche la veille. Après une mise en ligne, la page se recharge seule, sauf en plein écran : elle attend qu'on en sorte.
 - Direct : pendant une soirée, 1 min après ses derniers scores et dans les 24 h avant, WebSocket (`/api/live`) vers un Durable Object (`Live`, hibernation). À chaque record, joueur, pseudo, retrait, fusion ou soirée modifiée, il dit « change » et les écrans relisent `GET /api/ecran` (une fois par seconde au plus). Un record s'affiche en moins de 1,5 s.
@@ -274,6 +277,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Connexion refusée (403) si l'en-tête `Origin` donne un autre hôte que la requête : une page d'un autre site ne prend pas une place d'écran. Sans `Origin` (scripts), elle passe.
 - Places : 20 écrans, 4 par IP, 20 connexions par minute (`LIVE_LIMIT`). Un écran muet depuis 1 min laisse sa place (`STALE_MS`). Si les 4 répondent, le nouveau reste sans direct : fermer le plus ancien créait une boucle dès 5 écrans sur le même wifi.
 - Hors ligne : « Pas de réseau : classement de 21h04 » après 2 demandes ratées. Le compte à rebours suit l'heure.
+- Heure du serveur : `now` de chaque réponse, décalage pris au milieu de la demande (entre l'envoi et la réception), pour que la latence ne fasse pas reculer le compte à rebours. Le direct n'envoie pas d'heure (« change » et « pong » seulement) : seules les réponses aux demandes recalent l'horloge.
 - Onglet caché : aucune demande. Sans soirée proche : une par minute. Toutes les 10 s, un onglet oublié faisait 17 000 requêtes par jour.
 
 ## Son
@@ -614,12 +618,12 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 `test/unit/*.test.mjs`, `node --test`, sans dépendance. `env.mjs` remplace le navigateur, `d1.mjs` donne une base SQLite en mémoire avec toutes les migrations.
 
 - `achievements` : succès au bon moment, rien de perdu entre onglets, annonce unique.
-- `admin` : fin déjà passée ramenée à maintenant, soirée fermée intouchable.
-- `outils-admin` : liste de l'admin limitée et recherche, état de la soirée, nom et fin d'une nouvelle soirée.
+- `admin` : fin déjà passée ramenée à maintenant, soirée fermée intouchable, suppression d'une soirée à venir seulement, compteurs et classement entier de chaque onglet, retrait sans booléen refusé.
+- `outils-admin` : liste de l'admin limitée et recherche, état de la soirée, heure du serveur prise au milieu de la demande, nom et fin d'une nouvelle soirée.
 - `api` : limite d'attente, reprise par cookie refaite.
 - `attacks` : mur mis de côté, chaque garniture sur un couteau.
 - `banner` : bandeau des soirées, « Bravo », « Nouveau n°1 », direct ouvert 1 min.
-- `board` : `GET /api/board` et `/api/ecran` sur une base en mémoire, soirée de plus de 1 000 joueurs, nombre de joueurs en mémoire, record frais pas encore dans la liste, lecture en vol, égalités, renvoi d'un score.
+- `board` : `GET /api/board` et `/api/ecran` sur une base en mémoire, soirée de plus de 1 000 joueurs, nombre de joueurs en mémoire, record frais pas encore dans la liste, lecture en vol, égalités, renvoi d'un score, retiré de la soirée absent du fil.
 - `cache` : cache des classements, lecture unique, périmée écartée, abandon à 5 s, ligne déjà à ce score.
 - `card` : classement d'une soirée fermée gardé 10 min.
 - `chemin` : chemin du robot, gardé hors du code des téléphones.

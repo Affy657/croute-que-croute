@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { visiblePlayers, phase, nextName, endAfter, LIMIT } from "../../public/js/admin/tools.js";
+import { visiblePlayers, phase, nextName, endAfter, skewOf, LIMIT } from "../../public/js/admin/tools.js";
 
 const player = (pseudo, extra = {}) => ({ id: pseudo, pseudo, best: 1000, banned: 0, removed: 0, runs: 1, suspect: null, active: false, ...extra });
 const many = (n) => Array.from({ length: n }, (_, i) => player("Joueur" + i, { best: 10000 - i }));
@@ -38,6 +38,12 @@ test("admin, état de la soirée : suit l'heure, pas la dernière relecture", ()
   assert.equal(phase(ev, 1000), "open");
   assert.equal(phase(ev, 1999), "open");
   assert.equal(phase(ev, 2000), "closed");
+});
+
+test("admin, heure du serveur : décalage pris au milieu de la demande, la latence n'y entre pas", () => {
+  assert.equal(skewOf(5000, 4000, 6000), 0);
+  assert.equal(skewOf(125000, 4000, 6000), 120000);
+  assert.equal(skewOf(-115000, 4000, 6000), -120000);
 });
 
 test("admin, nouvelle soirée : nom avec le numéro suivant, rien d'inventé sans numéro", () => {

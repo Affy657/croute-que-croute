@@ -169,19 +169,24 @@ async function refresh(full) {
     return;
   }
   busy = true;
-  lastAsk = Date.now();
-  if (full || !board) lastFull = lastAsk;
+  const sent = Date.now();
+  lastAsk = sent;
+  if (full || !board) lastFull = sent;
   const next = await grab("/api/ecran" + (!full && board ? "?v=" + encodeURIComponent(board.stamp) : "")).catch(() => null);
+  const got = Date.now();
   busy = false;
   if (next) {
-    lastOk = Date.now();
+    lastOk = got;
     misses = 0;
   } else misses++;
   if (next && (!board || next.now >= board.now)) {
     if (board && next.version !== board.version) reloadSoon();
-    offset = next.now - Date.now();
-    if (next.same) board = { ...board, now: next.now, event: next.event, next: next.next };
-    else {
+    offset = next.now - (sent + got) / 2;
+    if (next.same) {
+      const due = settleDue({ ...board, event: next.event }, next.now);
+      board = { ...board, now: due ? board.now : next.now, event: next.event, next: next.next };
+      if (due) again = true;
+    } else {
       board = next;
       render();
       renderFeed(next.feed);
