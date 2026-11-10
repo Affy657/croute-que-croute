@@ -498,6 +498,7 @@ interface Pending {
 interface RunFail {
   error: string;
   status?: number;
+  runId?: string;
 }
 
 interface RunTicket {
@@ -524,7 +525,7 @@ interface RunResult {
 }
 
 type RunAnswer = Partial<RunResult> & Partial<RunFail>;
-type Listener = (value?: RunAnswer) => void;
+type Listener = (value?: RunAnswer, runId?: string) => void;
 
 interface Net {
   token: string | null;

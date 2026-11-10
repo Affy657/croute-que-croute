@@ -111,7 +111,7 @@ export function createScene(canvas, overlay) {
       s.y += (18 + 150 * s.z) * warp * dt;
       if (s.y > view.H + 2) { s.y = -2; s.x = Math.random() * view.W; }
     }
-    sky = (sky + (SKY_SPEED * warp * dt) / view.H) % SKY_LOOP;
+    if (view.H) sky = (sky + (SKY_SPEED * warp * dt) / view.H) % SKY_LOOP;
     TOUR.forEach((_, i) => {
       if (skyY(i) < slotY[i]) slots[i] = pick(i);
       slotY[i] = skyY(i);

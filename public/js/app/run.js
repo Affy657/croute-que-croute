@@ -18,7 +18,7 @@ const CHAIN_S = 1.5, CHAIN_STEPS = 6, DIGITS_MS = 30;
 const SCARS_MAX = 12, SCAR_JITTER = 0.3;
 const HUD_WIDEST = "000,00", HUD_PAD = 6;
 
-let lastShown = "", shownAt = 0;
+let lastShown = "", shownAt = 0, startedAt = 0;
 
 /** @param {Pt} e */
 function scar(e) {
@@ -69,7 +69,7 @@ function die(killer) {
   api.setDevice(device);
   if (device === "pc") S.scope = "pc";
   else if (S.scope === "pc" || S.guess) S.scope = api.isOpen() ? "event" : "general";
-  S.late = S.scope === "event" && api.pastEvent();
+  S.late = S.scope === "event" && api.pastEvent(startedAt);
   if (S.late) S.scope = "general";
   input.reset();
   S.score = Math.floor(elapsed() * 100);
@@ -99,7 +99,7 @@ export function start(train = null) {
   if ((page && !(train && page === "info")) || (!train && (!ui.joinForm.hidden || !ui.linkForm.hidden)) || !ui.installPop.hidden) return false;
   if (S.mode !== "menu" && S.mode !== "over") return false;
   if (S.mode === "over" && ui.again.disabled) return false;
-  if (api.net.updatePending && api.applyUpdate()) return false;
+  if (api.reloading() || (api.net.updatePending && api.applyUpdate())) return false;
   const t0 = train ? train.from : 0, y = S.mode === "menu" ? S.toast.y : S.menuY;
   const immortal = () => testing.invincible;
   game.sim = createSim(Math.random, train ? { only: train.id, t0, y, immortal } : { y, immortal });
@@ -108,6 +108,7 @@ export function start(train = null) {
   scene.clear();
   ui.menuToast.hidden = true;
   S.run = train ? null : api.startRun({ look: myLook() });
+  startedAt = api.serverNow();
   const open = api.openEvent();
   if (!train) ach.runStart(open ? String(open.opensAt) : null);
   const lead = api.leader(S.scope);

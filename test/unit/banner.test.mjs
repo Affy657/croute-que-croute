@@ -51,10 +51,19 @@ test("téléphone : « Soirée finie ! » dès zéro, « Bravo » seulement avec
 
 test("téléphone : partie finie après les 15 s de marge, hors soirée", () => {
   const b = board({ ev: event(START, END, "open"), now: END - 5e3 });
-  assert.equal(lateFor(b, FINAL), false);
-  assert.equal(lateFor(b, FINAL + 1), true);
-  assert.equal(lateFor(board({ ev: null }), FINAL + 1), false);
-  assert.equal(lateFor(null, FINAL + 1), false);
+  assert.equal(lateFor(b, START + HOUR, FINAL), false);
+  assert.equal(lateFor(b, START + HOUR, FINAL + 1), true);
+  assert.equal(lateFor(board({ ev: null }), START + HOUR, FINAL + 1), false);
+  assert.equal(lateFor(null, START + HOUR, FINAL + 1), false);
+});
+
+test("téléphone : deux soirées à moins de 12 h et classement pas relu à l'ouverture, la partie de la nouvelle soirée n'est pas en retard", () => {
+  const next = event(END + 6 * HOUR, END + 10 * HOUR, "upcoming");
+  const stale = board({ next, now: END + HOUR });
+  assert.equal(lateFor(stale, next.opensAt + MIN, next.opensAt + 5 * MIN), false);
+  assert.equal(lateFor(stale, next.opensAt + MIN, next.finalAt + 1), true);
+  assert.equal(lateFor(stale, END - MIN, FINAL + 1), true);
+  assert.equal(lateFor(stale, END + 2 * HOUR, END + 3 * HOUR), false);
 });
 
 test("téléphone : pas de « Bravo » sans personne au classement", () => {

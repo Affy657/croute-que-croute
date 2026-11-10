@@ -8,8 +8,14 @@ import { S } from "./state.js";
 
 const ACH_TOAST_MS = 2600, AGAIN_LOCK_MS = 450, CHEER_WAIT_MS = 1200, LAP_CS = 1000;
 
-api.on("result", () => {
-  if (S.mode === "over" && ui.overNote.textContent === api.WAITING) setText(ui.overNote, "");
+/** @type {{ submit: Promise<RunAnswer>, runId: string } | null} */
+let waiting = null;
+
+api.on("result", (r, runId) => {
+  if (!r || !waiting || waiting.runId !== runId) return;
+  const mine = waiting.submit;
+  waiting = null;
+  if (S.submit === mine && S.mode === "over") settle(r);
 });
 
 function cheer() {
@@ -80,27 +86,33 @@ export function showOver() {
     setText(ui.overNote, "Envoi…");
     mine.then((r) => {
       if (S.submit !== mine || S.mode !== "over") return;
-      if (!r.error && S.scope === "event" && r.eventBest === null) {
-        S.scope = "general";
-        S.late = true;
-      }
-      setText(ui.overNote, r.error || (S.late ? "Soirée finie : partie comptée au général" : ""));
-      const now = api.standing(S.scope);
-      if (r.error) return;
-      const won = !!(S.scope === "event" ? r.eventImproved : S.scope === "pc" ? r.pcImproved : r.improved);
-      if (won !== S.newBest) {
-        S.newBest = won;
-        ui.newBest.hidden = !won;
-        if (won) celebrate();
-      }
-      renderOverStats(S.newBest ? 0 : now.best, now.rank, now.count);
-      renderRival(S.score, now.rival);
+      settle(r);
+      if (r.error === api.WAITING && r.runId) waiting = { submit: mine, runId: r.runId };
     });
   } else {
     setText(ui.overNote, S.train ? "Entraînement : " + S.train.name : api.registered() ? "" : "Entraînement");
   }
   ui.again.disabled = true;
   setTimeout(() => { ui.again.disabled = false; }, AGAIN_LOCK_MS);
+}
+
+/** @param {RunAnswer} r */
+function settle(r) {
+  if (!r.error && S.scope === "event" && r.eventBest === null) {
+    S.scope = "general";
+    S.late = true;
+  }
+  setText(ui.overNote, r.error || (S.late ? "Soirée finie : partie comptée au général" : ""));
+  const now = api.standing(S.scope);
+  if (r.error) return;
+  const won = !!(S.scope === "event" ? r.eventImproved : S.scope === "pc" ? r.pcImproved : r.improved);
+  if (won !== S.newBest) {
+    S.newBest = won;
+    ui.newBest.hidden = !won;
+    if (won) celebrate();
+  }
+  renderOverStats(S.newBest ? 0 : now.best, now.rank, now.count);
+  renderRival(S.score, now.rival);
 }
 
 export function renderOverAch() {

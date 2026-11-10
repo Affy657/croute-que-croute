@@ -537,6 +537,68 @@ try {
       await context.close();
     }
   });
+  await step("score parti après les 2 min d'essais : l'écran de fin suit la réponse, record retiré et place affichée", async () => {
+    const { context, p } = await testPage(await joinApi("Tardif" + hex(4)));
+    try {
+      await p.route("**/js/app/api.js", async (route) => {
+        const res = await route.fetch();
+        await route.fulfill({ response: res, body: (await res.text()).replace("WAIT_MS = 120000", "WAIT_MS = 500") });
+      });
+      let down = true;
+      await p.route(/\/api\/runs\/[^/]+$/, async (route) => {
+        if (down) return route.abort();
+        const res = await route.fetch();
+        await route.fulfill({ response: res, json: { ...(await res.json()), improved: false, eventImproved: false, pcImproved: false } });
+      });
+      await p.goto(BASE + "/");
+      await runFor(p, "#play", 500);
+      await p.waitForFunction(() => document.getElementById("overNote").textContent.includes("partira"), null, { timeout: WAIT_MS });
+      if (await p.locator("#newBest").isHidden()) throw new Error("pas de « Nouveau record » en attendant le serveur");
+      down = false;
+      await p.evaluate(() => window.dispatchEvent(new Event("online")));
+      await p.waitForFunction(() => document.getElementById("newBest").hidden && document.getElementById("overNote").hidden && !document.getElementById("overRankBox").hidden, null, { timeout: WAIT_MS });
+    } finally {
+      await context.close();
+    }
+  });
+  await step("mise à jour en attente : « Rejouer » recharge le jeu sans lancer de partie, puis « Jouer » marche sans recharger encore", async () => {
+    const { context, p } = await testPage(await joinApi("Recharge" + hex(4)));
+    try {
+      let newer = false, starts = 0;
+      await p.route("**/api/board", async (route) => {
+        try {
+          const res = await route.fetch();
+          const body = await res.json();
+          await route.fulfill({ response: res, json: newer ? { ...body, version: "9.9.9" } : body });
+        } catch {}
+      });
+      const loaded = p.waitForResponse("**/api/board", { timeout: WAIT_MS });
+      await p.goto(BASE + "/");
+      await loaded;
+      newer = true;
+      const told = p.waitForResponse("**/api/board", { timeout: WAIT_MS });
+      await runFor(p, "#play", 300);
+      await sent(p);
+      await told;
+      await wait(300);
+      await p.route(BASE + "/", async (route) => {
+        await wait(1500);
+        await route.continue().catch(() => {});
+      });
+      p.on("request", (r) => {
+        if (r.method() === "POST" && new URL(r.url()).pathname === "/api/runs") starts++;
+      });
+      await p.waitForFunction(() => !document.getElementById("again").disabled, null, { timeout: WAIT_MS });
+      const reloaded = p.waitForEvent("load", { timeout: WAIT_MS });
+      await p.locator("#again").click();
+      await reloaded;
+      if (starts) throw new Error(starts + " partie(s) lancée(s) pendant le rechargement");
+      await p.locator("#play").click({ timeout: WAIT_MS });
+      await p.waitForFunction(() => window.__jeu.S.mode === "play", null, { timeout: WAIT_MS });
+    } finally {
+      await context.close();
+    }
+  });
   if (!SAFARI) {
     await step("souris en mode « Glisser » : sortir de la fenêtre et revenir ailleurs ne fait pas sauter la tartine", async () => {
       const { context, p } = await testPage(await joinApi("Souris" + hex(4)), { width: 1280, height: 720 });
