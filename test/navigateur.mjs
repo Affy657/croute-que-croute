@@ -1510,6 +1510,10 @@ try {
       if (!(await asked).includes("Soirée à supprimer")) throw new Error("mauvaise question");
       await wait(500);
       if ((await current()).name !== "Soirée à supprimer") throw new Error("supprimée sans confirmation");
+      await other.route("**/api/admin/players**", async (route) => {
+        await wait(800);
+        await route.continue().catch(() => {});
+      });
       asked = dialog(other, true);
       await remove.click();
       await asked;

@@ -11,9 +11,18 @@ const SHELL = [
 const SFX = ["/sfx/start.mp3", "/sfx/near.mp3", "/sfx/death.mp3", "/sfx/record.mp3", "/sfx/first.mp3"];
 const NET_MS = 3000;
 
+/** @param {Cache} cache @param {string} url */
+function keep(cache, url) {
+  return fetch(url).then((res) => {
+    if (res.ok) return cache.put(url, res);
+    if (res.body) res.body.cancel().catch(() => {});
+    throw new Error(url);
+  });
+}
+
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE).then((cache) => Promise.all([...SHELL, ...SFX].map((url) => cache.add(url).catch(() => cache.add(url)).catch(() => {})))).catch(() => {}));
+  event.waitUntil(caches.open(CACHE).then((cache) => Promise.all([...SHELL, ...SFX].map((url) => keep(cache, url).catch(() => keep(cache, url)).catch(() => {})))).catch(() => {}));
 });
 
 self.addEventListener("activate", (event) => {

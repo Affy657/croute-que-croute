@@ -574,8 +574,8 @@ $("deleteEventBtn").addEventListener("click", async () => {
   try {
     await call("DELETE", "/api/admin/events/" + ev.id);
     openForm(null);
-    say($("eventMsg"), "Soirée supprimée.");
     await load();
+    say($("eventMsg"), "Soirée supprimée.");
   } catch (err) {
     say($("eventMsg"), /** @type {Error} */ (err).message, true);
   } finally {

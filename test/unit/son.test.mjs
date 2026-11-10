@@ -25,10 +25,11 @@ class Ctx {
 window.AudioContext = Ctx;
 globalThis.setInterval = () => 0;
 
-let asked = [], cases = 0, broken = false, /** @type {string[]} */ lost = [];
+let asked = [], cases = 0, broken = false, /** @type {string[]} */ lost = [], /** @type {string[]} */ missing = [], /** @type {string[]} */ dropped = [];
 globalThis.fetch = async (url) => {
   asked.push(url);
   if ((broken && url.startsWith("/music/")) || lost.includes(url)) throw new TypeError("Failed to fetch");
+  if (missing.includes(url)) return { ok: false, status: 404, body: { cancel: async () => { dropped.push(url); } } };
   return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) };
 };
 
@@ -70,6 +71,24 @@ test("bruitage raté au chargement : seul celui-là est retéléchargé au débu
   audio.musicRunStart();
   await settle();
   assert.equal(sounds().length, 6);
+});
+
+test("bruitage ou musique introuvable : la réponse est lâchée aussitôt, sinon elle garde une des 6 connexions du navigateur", async () => {
+  localStorage.clear();
+  asked = [];
+  lost = [];
+  dropped = [];
+  missing = ["/sfx/near.mp3", "/music/theme.m4a"];
+  const audio = await import("../../public/js/app/audio.js?cas=" + ++cases);
+  audio.initAudio();
+  await settle();
+  assert.deepEqual(dropped, ["/sfx/near.mp3"]);
+  audio.musicRunStart();
+  await settle();
+  assert.ok(dropped.includes("/music/theme.m4a"));
+  assert.equal(dropped.filter((url) => url === "/sfx/near.mp3").length, 2);
+  missing = [];
+  audio.musicRunEnd();
 });
 
 test("chargement sans musique téléchargée : le bouton de musique s'affiche quand même", async () => {

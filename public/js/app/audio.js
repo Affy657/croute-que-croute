@@ -82,13 +82,22 @@ function build() {
   return true;
 }
 
+/** @param {Response} res */
+function drop(res) {
+  if (res.body) res.body.cancel().catch(() => {});
+}
+
 function loadSounds() {
   if (!ctx) return;
   for (const { url } of Object.values(SOUNDS).flat()) {
     if (buffers[url] || fetching.has(url)) continue;
     fetching.add(url);
     fetch(url)
-      .then((res) => { if (!res.ok) throw new Error(url); return res.arrayBuffer(); })
+      .then((res) => {
+        if (res.ok) return res.arrayBuffer();
+        drop(res);
+        throw new Error(url);
+      })
       .then(decode)
       .then((buffer) => { buffers[url] = buffer; })
       .catch(() => {})
@@ -144,7 +153,10 @@ async function fetchSong() {
   for (const url of MUSIC_FILES) {
     try {
       const res = await fetch(url);
-      if (!res.ok) continue;
+      if (!res.ok) {
+        drop(res);
+        continue;
+      }
       song = stitch(await decode(await res.arrayBuffer()));
       note("musique prête", url, song.loopEnd.toFixed(1) + " s");
       break;
