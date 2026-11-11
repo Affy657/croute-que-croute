@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sous la croûte, Croûte que Croûte</title>
-<meta name="description" content="Comment est fait Croûte que Croûte, le jeu des soirées Space Tartinade : attaques prouvées faisables, difficulté dosée par des robots, hébergement à 0 €.">
+<meta name="description" content="Comment est fait Croûte que Croûte, le jeu des soirées Space Tartinade : attaques prouvées faisables, difficulté dosée par des robots, hébergement à 0 €.">
 <link rel="icon" href="/icons/icon-192.png">
 <link rel="stylesheet" href="/tokens.css">
 <link rel="stylesheet" href="/tech.css">
@@ -14,7 +14,7 @@
   <p class="eyebrow">Croûte que Croûte</p>
   <h1>Sous la croûte</h1>
   <p class="lead">Un jeu d'esquive pour les soirées Space Tartinade : tu guides une tartine entre des couverts qui volent. Voici comment il tient une soirée entière.</p>
-  <ul class="stats hero-stats">
+  <ul class="stats trio">
     <li><span class="stat">0 €</span><span class="stat-label">d'hébergement par mois</span></li>
     <li><span class="stat">150</span><span class="stat-label">joueurs à la même soirée</span></li>
     <li><span class="stat" id="commits">690</span><span class="stat-label">commits depuis le 28 octobre 2026</span></li>
@@ -31,12 +31,12 @@
   <nav class="toc" aria-label="Sommaire">
     <ol>
       <li><a href="#equite"><span class="toc-n">01</span>Chaque attaque est prouvée faisable</a></li>
-      <li class="soon"><span class="toc-n">02</span>Doser la difficulté avec des robots</li>
-      <li class="soon"><span class="toc-n">03</span>Une fin de soirée juste</li>
-      <li class="soon"><span class="toc-n">04</span>Architecture à 0 €</li>
-      <li class="soon"><span class="toc-n">05</span>Sans build, mais typé</li>
-      <li class="soon"><span class="toc-n">06</span>Tests et mise en ligne</li>
-      <li class="soon"><span class="toc-n">07</span>Méthode</li>
+      <li><a href="#equilibrage"><span class="toc-n">02</span>Doser la difficulté avec des robots</a></li>
+      <li><a href="#fin"><span class="toc-n">03</span>Une fin de soirée juste</a></li>
+      <li><a href="#architecture"><span class="toc-n">04</span>Architecture à 0 €</a></li>
+      <li><a href="#build"><span class="toc-n">05</span>Sans build, mais typé</a></li>
+      <li><a href="#tests"><span class="toc-n">06</span>Tests et mise en ligne</a></li>
+      <li><a href="#methode"><span class="toc-n">07</span>Méthode</a></li>
     </ol>
   </nav>
 
@@ -130,16 +130,228 @@
 
     <ul class="figures">
       <li><span class="stat">0,22 ms</span><span class="stat-label">par vérification, en médiane</span></li>
-      <li><span class="stat">× 6</span><span class="stat-label">plus rapide avec une grille en entiers de 32 bits</span></li>
-      <li><span class="stat">0 mort</span><span class="stat-label">sur 100 parties de 150 s du robot parfait</span></li>
+      <li><span class="stat">× 6</span><span class="stat-label">plus rapide avec une grille en entiers de 32 bits</span></li>
+      <li><span class="stat">0 mort</span><span class="stat-label">sur 100 parties de 150 s du robot parfait</span></li>
     </ul>
 
     <h3>Dans le détail</h3>
     <ul class="facts">
-      <li><strong>Un modèle prudent.</strong> Cases de 12 px, doigt à 360 px/s, 11 px de marge autour de chaque couvert. Si le robot passe, un humain aussi.</li>
-      <li><strong>Une ligne, un entier.</strong> Chaque ligne de la grille tient dans un entier de 32 bits, et la zone balayée par un couvert se calcule d'un coup sur 1/30 s. Mêmes décisions qu'avant sur 8 853 vérifications rejouées.</li>
+      <li><strong>Un modèle prudent.</strong> Cases de 12 px, doigt à 360 px/s, 11 px de marge autour de chaque couvert. Si le robot passe, un humain aussi.</li>
+      <li><strong>Une ligne, un entier.</strong> Chaque ligne de la grille tient dans un entier de 32 bits, et la zone balayée par un couvert se calcule d'un coup sur 1/30 s. Mêmes décisions qu'avant sur 8 853 vérifications rejouées.</li>
       <li><strong>Un filet, pas une béquille.</strong> Sur 38 132 vérifications mesurées, aucun refus ne venait d'une attaque impossible en soi : tous venaient d'une tartine déjà serrée contre un couvert. Les règles des attaques suffisent, le solveur rattrape le reste.</li>
-      <li><strong>Vérifié à chaque changement.</strong> GitHub fait jouer 100 parties de 150 s au robot parfait, 0 mort attendu. Son code reste hors de celui envoyé aux téléphones.</li>
+      <li><strong>Vérifié à chaque changement.</strong> GitHub fait jouer 100 parties de 150 s au robot parfait, 0 mort attendu. Son code reste hors de celui envoyé aux téléphones.</li>
+    </ul>
+  </section>
+
+  <section id="equilibrage" aria-labelledby="equilibrage-titre">
+    <p class="eyebrow">02</p>
+    <h2 id="equilibrage-titre">Doser la difficulté avec des robots</h2>
+    <p class="lead">Le robot parfait dit si le jeu est faisable, pas s'il est bien dosé. Pour le dosage, un robot « humain » joue des centaines de parties, du débutant au joueur fort.</p>
+
+    <div class="levels-ends" aria-hidden="true"><span>Débutant</span><span>Fort</span></div>
+    <ul class="levels">
+      <li><span class="level-name">Temps de réaction</span><span class="level-bar"></span><span class="level-from">0,33 s</span><span class="level-to">0,18 s</span></li>
+      <li><span class="level-name">Vitesse du doigt</span><span class="level-bar"></span><span class="level-from">240 px/s</span><span class="level-to">480 px/s</span></li>
+      <li><span class="level-name">Une inattention de 0,4 s</span><span class="level-bar"></span><span class="level-from">toutes les 6 s</span><span class="level-to">toutes les 20 s</span></li>
+    </ul>
+
+    <ul class="figures">
+      <li><span class="stat">47 %</span><span class="stat-label">des écarts de temps viennent du niveau du joueur, contre 41 % avant le réglage de la courbe</span></li>
+      <li><span class="stat">3,4 %</span><span class="stat-label">de duels gagnés par un joueur nettement plus faible, contre 5,4 %</span></li>
+      <li><span class="stat">1 083</span><span class="stat-label">vraies parties de joueurs rodés pour confronter le robot</span></li>
+    </ul>
+
+    <h3>Dans le détail</h3>
+    <ul class="facts">
+      <li><strong>Un robot qui se trompe.</strong> Il voit les attaques après son temps de réaction, se déplace à vitesse limitée, décroche de temps en temps, et choisit son chemin avec le solveur.</li>
+      <li><strong>Des mesures, pas des impressions.</strong> 80 joueurs de 5 parties, deux tirages. La part du niveau se calcule par corrélation intra-classe sur le logarithme des temps, et le risque de mourir par tranche de 20 s montre où se trouvent les murs.</li>
+      <li><strong>Le bruit d'abord.</strong> Une version identique bouge déjà de 4 points d'un tirage à l'autre : un écart plus petit ne prouve rien. Les réglages fins se jugent attaque par attaque, sur le joueur moyen.</li>
+      <li><strong>La prod a le dernier mot.</strong> Sur 1 083 parties de joueurs rodés, le risque passe de 21 % entre 30 et 40 s à 44 % entre 40 et 50 s : un vrai mur, que le robot ne montrait pas.</li>
+    </ul>
+  </section>
+
+  <section id="fin" aria-labelledby="fin-titre">
+    <p class="eyebrow">03</p>
+    <h2 id="fin-titre">Une fin de soirée juste</h2>
+    <p class="lead">À la fin du compte à rebours, le lot se joue à la seconde. Tous les téléphones et l'écran géant doivent être d'accord sur l'heure, puis sur le gagnant.</p>
+
+    <ol class="timeline">
+      <li><span class="time">−15 min</span><p>Dernier quart d'heure : le compte à rebours passe en rouge et tremble.</p></li>
+      <li><span class="time">0 s</span><p>Fin : « Soirée finie ! » partout.</p></li>
+      <li><span class="time">+15 s</span><p>Les dernières parties arrivent. Comptent celles finies avant la fin, avec 15 s de marge pour le réseau.</p></li>
+      <li><span class="time">+27 s</span><p>L'écran géant relit le classement, puis « Bravo » et confettis pour le gagnant.</p></li>
+    </ol>
+
+    <figure class="board">
+      <svg viewBox="0 0 360 170" role="img" aria-labelledby="horloge-titre">
+        <title id="horloge-titre">Le téléphone compare l'heure du serveur au milieu de son aller-retour, entre l'envoi et la réception.</title>
+        <defs>
+          <marker id="pointe-horloge" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path class="s-head" d="M0 0L8 4L0 8z"/></marker>
+        </defs>
+        <text class="s-title" x="90" y="18" text-anchor="middle" font-size="14">Téléphone</text>
+        <text class="s-title" x="250" y="18" text-anchor="middle" font-size="14">Serveur</text>
+        <path class="s-axis" d="M90 30V162M250 30V162"/>
+        <path class="s-same" d="M90 88H250"/>
+        <path class="s-msg" d="M90 46L244 87" marker-end="url(#pointe-horloge)"/>
+        <path class="s-msg" d="M250 89L96 129" marker-end="url(#pointe-horloge)"/>
+        <circle class="s-dot" cx="90" cy="46" r="4"/>
+        <circle class="s-dot" cx="90" cy="130" r="4"/>
+        <circle class="s-key" cx="90" cy="88" r="6"/>
+        <circle class="s-key" cx="250" cy="88" r="6"/>
+        <text class="s-label" x="80" y="50" text-anchor="end" font-size="12">envoi</text>
+        <text class="s-label" x="80" y="92" text-anchor="end" font-size="12">milieu</text>
+        <text class="s-label" x="80" y="134" text-anchor="end" font-size="12">réception</text>
+        <text class="s-label" x="260" y="92" font-size="12">son heure</text>
+      </svg>
+      <figcaption class="formula">décalage = serveur − (envoi + réception) / 2</figcaption>
+    </figure>
+
+    <h3>Dans le détail</h3>
+    <ul class="facts">
+      <li><strong>L'heure du serveur, sans la latence.</strong> Chaque réponse donne l'heure du serveur. Le téléphone la compare au milieu de son aller-retour, pas à la réception : sinon une réponse lente ferait reculer la fin.</li>
+      <li><strong>Pas de gagnant sur un vieux classement.</strong> Le dernier reçu pouvait dater de 40 s et annoncer le mauvais gagnant. « Bravo » attend une relecture faite au moins 12 s après la marge.</li>
+      <li><strong>Une partie compte pour la soirée où elle a commencé.</strong> Avec deux soirées proches, un vieux classement aurait affiché « Soirée finie ! » en début de soirée.</li>
+    </ul>
+  </section>
+
+  <section id="architecture" aria-labelledby="architecture-titre">
+    <p class="eyebrow">04</p>
+    <h2 id="architecture-titre">Architecture à 0 €</h2>
+    <p class="lead">Tout tient dans l'offre gratuite de Cloudflare. La difficulté n'est pas la puissance, c'est le quota du jour.</p>
+
+    <figure class="board">
+      <svg viewBox="0 0 360 312" role="img" aria-labelledby="archi-titre">
+        <title id="archi-titre">Les téléphones parlent au Worker, qui lit et écrit dans la base D1 et prévient le Durable Object, qui pousse les nouveautés à l'écran géant.</title>
+        <defs>
+          <marker id="pointe-archi" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path class="s-head" d="M0 0L8 4L0 8z"/></marker>
+        </defs>
+        <rect class="s-zone" x="6" y="100" width="348" height="206" rx="16"/>
+        <text class="s-label" x="104" y="122" font-size="12">Cloudflare, offre gratuite</text>
+        <rect class="s-box" x="12" y="8" width="160" height="64" rx="12"/>
+        <text class="s-title" x="92" y="35" text-anchor="middle" font-size="14">Téléphones</text>
+        <text class="s-label" x="92" y="55" text-anchor="middle" font-size="12">jeu hors ligne</text>
+        <rect class="s-box" x="188" y="8" width="160" height="64" rx="12"/>
+        <text class="s-title" x="268" y="35" text-anchor="middle" font-size="14">Écran géant</text>
+        <text class="s-label" x="268" y="55" text-anchor="middle" font-size="12">top 10 en direct</text>
+        <rect class="s-box" x="20" y="136" width="180" height="60" rx="12"/>
+        <text class="s-title" x="110" y="162" text-anchor="middle" font-size="14">Worker</text>
+        <text class="s-label" x="110" y="181" text-anchor="middle" font-size="12">API en TypeScript</text>
+        <rect class="s-box" x="20" y="232" width="150" height="62" rx="12"/>
+        <text class="s-title" x="95" y="259" text-anchor="middle" font-size="14">D1</text>
+        <text class="s-label" x="95" y="279" text-anchor="middle" font-size="12">base SQLite</text>
+        <rect class="s-box" x="190" y="232" width="150" height="62" rx="12"/>
+        <text class="s-title" x="265" y="259" text-anchor="middle" font-size="14">Durable Object</text>
+        <text class="s-label" x="265" y="279" text-anchor="middle" font-size="12">le direct</text>
+        <path class="s-msg" d="M92 72V130" marker-end="url(#pointe-archi)"/>
+        <path class="s-msg" d="M95 196V226" marker-end="url(#pointe-archi)"/>
+        <path class="s-msg" d="M200 178L250 228" marker-end="url(#pointe-archi)"/>
+        <path class="s-msg" d="M310 232V78" marker-end="url(#pointe-archi)"/>
+        <text class="s-label" x="302" y="160" text-anchor="end" font-size="12">WebSocket</text>
+      </svg>
+    </figure>
+
+    <ul class="figures">
+      <li><span class="stat">100 000</span><span class="stat-label">requêtes par jour, la limite gratuite</span></li>
+      <li><span class="stat">3,5</span><span class="stat-label">requêtes par partie, hors fichiers</span></li>
+      <li><span class="stat">1/4</span><span class="stat-label">de la limite pour 150 joueurs qui font 30 parties chacun</span></li>
+    </ul>
+
+    <h3>Dans le détail</h3>
+    <ul class="facts">
+      <li><strong>Le classement vit en mémoire.</strong> Les 1 000 premiers sont gardés et mis à jour sur place, des demandes simultanées partagent la même lecture, et rien n'est demandé écran éteint.</li>
+      <li><strong>Une fiche joueur, une ligne.</strong> Totaux et records sont gardés sur le profil : 1 ligne lue au lieu de 734.</li>
+      <li><strong>Le wifi d'un bar.</strong> Si le réseau tombe, le score attend 12 h sur le téléphone. Les limites sont pensées pour un lieu où tout le monde partage la même adresse IP.</li>
+      <li><strong>L'écran géant en direct.</strong> Une WebSocket vers un Durable Object en hibernation : un record s'affiche en moins de 1,5 s. Si le quota tombe, l'écran relit le classement de lui-même.</li>
+      <li><strong>Sans mot de passe.</strong> Le téléphone garde une clé, un code relie un autre appareil, Google est facultatif. Clés et identifiants sont hachés en SHA-256 : une copie de la base ne permet d'usurper personne.</li>
+    </ul>
+  </section>
+
+  <section id="build" aria-labelledby="build-titre">
+    <p class="eyebrow">05</p>
+    <h2 id="build-titre">Sans build, mais typé</h2>
+    <p class="lead">Le JavaScript part tel quel sur les téléphones : pas de framework, pas de bundler, rien à compiler. Le typage passe par des annotations que TypeScript vérifie sans rien produire.</p>
+
+    <pre class="code"><code><span class="code-doc">/** @param {Cache} cache
+    @param {string} url */</span>
+function keep(cache, url) {
+  return fetch(url).then((res) => {
+    if (res.ok) return cache.put(url, res);</code></pre>
+
+    <ul class="figures">
+      <li><span class="stat">0</span><span class="stat-label">dépendance dans le code envoyé aux téléphones</span></li>
+      <li><span class="stat">0</span><span class="stat-label">étape de compilation : le fichier écrit est le fichier servi</span></li>
+      <li><span class="stat">150 Ko</span><span class="stat-label">au plus pour tout le JavaScript du site, une fois compressé</span></li>
+    </ul>
+
+    <h3>Dans le détail</h3>
+    <ul class="facts">
+      <li><strong>Typé quand même.</strong> TypeScript vérifie le serveur et le code des téléphones en mode strict, sur GitHub et avant chaque mise en ligne.</li>
+      <li><strong>De vieux iPhone.</strong> Chaque unité CSS récente a sa valeur de secours, et aucun <code>await</code> n'est écrit en dehors d'une fonction : un test les cherche dans tout le code.</li>
+      <li><strong>Les navigateurs des applis.</strong> Dans Instagram ou Snapchat, le stockage est à part : l'accueil propose d'ouvrir le jeu dans Safari plutôt que de recréer un compte.</li>
+      <li><strong>Une seule source pour le style.</strong> Couleurs, tailles, espacements, ombres et durées vivent dans un fichier de jetons. Un test refuse toute valeur en dur, cette page comprise.</li>
+    </ul>
+  </section>
+
+  <section id="tests" aria-labelledby="tests-titre">
+    <p class="eyebrow">06</p>
+    <h2 id="tests-titre">Tests et mise en ligne</h2>
+    <p class="lead">Un bug le soir même, c'est un lot mal attribué. Tout est testé avant de partir, et rien ne part pendant une soirée.</p>
+
+    <ul class="stats trio">
+      <li><span class="stat">570</span><span class="stat-label">tests unitaires, sans serveur, en 4 s</span></li>
+      <li><span class="stat">172</span><span class="stat-label">vérifications de l'API, chaque route et ses refus</span></li>
+      <li><span class="stat">105</span><span class="stat-label">étapes d'un parcours complet dans un vrai navigateur</span></li>
+    </ul>
+    <p class="note">Chiffres du 11 novembre 2026.</p>
+
+    <h3>Avant chaque mise en ligne</h3>
+    <ul class="chips">
+      <li>Git à jour sur master</li>
+      <li>Types stricts</li>
+      <li>Tests unitaires</li>
+      <li>GitHub : API et navigateur</li>
+      <li>Safari : WebKit en iPhone 13</li>
+      <li>Robot d'équité</li>
+      <li>Migrations appliquées</li>
+      <li>Version montée</li>
+      <li>Sons présents</li>
+      <li>Aucune soirée dans les 2 h</li>
+    </ul>
+
+    <h3>Dans le détail</h3>
+    <ul class="facts">
+      <li><strong>Un vrai parcours.</strong> Playwright joue tout : inscription, partie, classement, écran géant, admin, sans erreur de console ni fichier manquant. Sous Edge, puis sous WebKit avec un profil iPhone 13.</li>
+      <li><strong>Une vraie base, en mémoire.</strong> Les tests unitaires montent une base SQLite avec toutes les migrations, sans lancer de serveur.</li>
+      <li><strong>Un garde-fou qui dit non.</strong> La mise en ligne refuse si un seul point manque, puis vérifie la prod : versions, pages, sons, direct, et un faux score qui doit être refusé.</li>
+      <li><strong>Ce qui reste à la main.</strong> Le son, la vibration et la fluidité se vérifient sur un vrai téléphone.</li>
+    </ul>
+  </section>
+
+  <section id="methode" aria-labelledby="methode-titre">
+    <p class="eyebrow">07</p>
+    <h2 id="methode-titre">Méthode</h2>
+    <p class="lead">Le jeu est développé avec Claude Code. Adrien fixe le cap, tranche les choix de jeu et valide chaque mise en ligne. Claude écrit le code, les tests et la documentation en suivant des règles écrites.</p>
+
+    <ul class="stats">
+      <li><span class="stat" id="mises-en-ligne">100</span><span class="stat-label">mises en ligne, chacune avec son tag</span></li>
+      <li><span class="stat">1</span><span class="stat-label">seule source de vérité : le README</span></li>
+    </ul>
+
+    <h3>Un bug, du signalement à la prod</h3>
+    <ol class="steps">
+      <li><span class="step-n">1</span><p>Lire la section du README qui en parle.</p></li>
+      <li><span class="step-n">2</span><p>Écrire le test qui reproduit le bug.</p></li>
+      <li><span class="step-n">3</span><p>Corriger.</p></li>
+      <li><span class="step-n">4</span><p>Remettre le bug : le test doit échouer. C'est la vérification par mutation.</p></li>
+      <li><span class="step-n">5</span><p>Mettre le README à jour dans le même commit.</p></li>
+      <li><span class="step-n">6</span><p>Mettre en ligne, seulement sur accord d'Adrien.</p></li>
+    </ol>
+
+    <h3>Dans le détail</h3>
+    <ul class="facts">
+      <li><strong>Le README d'abord.</strong> Jeu, équité, soirées, technique, versions : tout y est, avec les essais écartés et ce qui n'a pas été vérifié sur un vrai appareil.</li>
+      <li><strong>Des règles écrites.</strong> Fichiers sensibles jamais ouverts, clés de prod posées par Adrien seul, aucune mise en ligne sans accord explicite.</li>
+      <li><strong>Plusieurs agents en parallèle.</strong> Pour une chasse aux bugs sur tout le projet, des agents travaillent chacun dans sa copie du dépôt, puis tout est fusionné et retesté : plus de 30 correctifs dans la 1.6.</li>
     </ul>
   </section>
 </main>
