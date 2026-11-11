@@ -79,7 +79,7 @@ test("police hébergée dans le jeu : de vrais woff2, déclarés dans tokens.css
 });
 
 test("aucune page ne dépend de Google Fonts : ni dans les pages, ni dans le service worker, ni dans la politique de sécurité", () => {
-  const files = ["/index.html", "/admin.html", "/ecran.html", "/depart.html", "/confidentialite.html", "/sw.js", "/_headers", "/tokens.css"];
+  const files = ["/index.html", "/admin.html", "/ecran.html", "/depart.html", "/confidentialite.html", "/tech.html", "/sw.js", "/_headers", "/tokens.css"];
   assert.deepEqual(files.filter((f) => /fonts\.(googleapis|gstatic)\.com|Google Fonts/.test(read(f))), []);
   const policy = read("/_headers").match(/Content-Security-Policy: (.+)/)[1];
   assert.match(policy, /style-src 'self';/);

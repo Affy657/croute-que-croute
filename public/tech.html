@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sous la croûte, Croûte que Croûte</title>
+<meta name="description" content="Comment est fait Croûte que Croûte, le jeu des soirées Space Tartinade : attaques prouvées faisables, difficulté dosée par des robots, hébergement à 0 €.">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/tech.css">
+</head>
+<body>
+<header class="hero">
+  <p class="eyebrow">Croûte que Croûte</p>
+  <h1>Sous la croûte</h1>
+  <p class="lead">Un jeu d'esquive pour les soirées Space Tartinade : tu guides une tartine entre des couverts qui volent. Voici comment il tient une soirée entière.</p>
+  <ul class="stats hero-stats">
+    <li><span class="stat">0 €</span><span class="stat-label">d'hébergement par mois</span></li>
+    <li><span class="stat">150</span><span class="stat-label">joueurs à la même soirée</span></li>
+    <li><span class="stat" id="commits">690</span><span class="stat-label">commits depuis le 28 octobre 2026</span></li>
+  </ul>
+  <ul class="chips">
+    <li>Un lot pour le 1er</li>
+    <li>Le wifi d'un bar</li>
+    <li>De vieux iPhone</li>
+    <li>Une heure de fin stricte</li>
+  </ul>
+</header>
+
+<main>
+  <nav class="toc" aria-label="Sommaire">
+    <ol>
+      <li><a href="#equite"><span class="toc-n">01</span>Chaque attaque est prouvée faisable</a></li>
+      <li class="soon"><span class="toc-n">02</span>Doser la difficulté avec des robots</li>
+      <li class="soon"><span class="toc-n">03</span>Une fin de soirée juste</li>
+      <li class="soon"><span class="toc-n">04</span>Architecture à 0 €</li>
+      <li class="soon"><span class="toc-n">05</span>Sans build, mais typé</li>
+      <li class="soon"><span class="toc-n">06</span>Tests et mise en ligne</li>
+      <li class="soon"><span class="toc-n">07</span>Méthode</li>
+    </ol>
+  </nav>
+
+  <section id="equite" aria-labelledby="equite-titre">
+    <p class="eyebrow">01</p>
+    <h2 id="equite-titre">Chaque attaque est prouvée faisable</h2>
+    <p class="lead">Il y a un lot à gagner : personne ne doit mourir sur une attaque impossible. Avant de lancer une attaque, le jeu vérifie qu'il reste un chemin pour la tartine.</p>
+
+    <figure class="board">
+      <svg viewBox="0 0 360 240" role="img" aria-labelledby="grille-titre">
+        <title id="grille-titre">La tartine contourne les cases balayées par les couverts pour rejoindre une case sûre.</title>
+        <rect class="g-field" x="0" y="0" width="360" height="240" rx="16"/>
+        <path class="g-grid" d="M20 0V240M40 0V240M60 0V240M80 0V240M100 0V240M120 0V240M140 0V240M160 0V240M180 0V240M200 0V240M220 0V240M240 0V240M260 0V240M280 0V240M300 0V240M320 0V240M340 0V240M0 20H360M0 40H360M0 60H360M0 80H360M0 100H360M0 120H360M0 140H360M0 160H360M0 180H360M0 200H360M0 220H360"/>
+        <g class="g-swept">
+        <rect x="122" y="2" width="16" height="16" rx="4"/>
+        <rect x="142" y="2" width="16" height="16" rx="4"/>
+        <rect x="122" y="22" width="16" height="16" rx="4"/>
+        <rect x="142" y="22" width="16" height="16" rx="4"/>
+        <rect x="122" y="42" width="16" height="16" rx="4"/>
+        <rect x="142" y="42" width="16" height="16" rx="4"/>
+        <rect x="122" y="62" width="16" height="16" rx="4"/>
+        <rect x="142" y="62" width="16" height="16" rx="4"/>
+        <rect x="122" y="82" width="16" height="16" rx="4"/>
+        <rect x="142" y="82" width="16" height="16" rx="4"/>
+        <rect x="122" y="102" width="16" height="16" rx="4"/>
+        <rect x="142" y="102" width="16" height="16" rx="4"/>
+        <rect x="122" y="122" width="16" height="16" rx="4"/>
+        <rect x="142" y="122" width="16" height="16" rx="4"/>
+        <rect x="122" y="142" width="16" height="16" rx="4"/>
+        <rect x="142" y="142" width="16" height="16" rx="4"/>
+        <rect x="122" y="162" width="16" height="16" rx="4"/>
+        <rect x="142" y="162" width="16" height="16" rx="4"/>
+        <rect x="202" y="62" width="16" height="16" rx="4"/>
+        <rect x="202" y="82" width="16" height="16" rx="4"/>
+        <rect x="222" y="62" width="16" height="16" rx="4"/>
+        <rect x="222" y="82" width="16" height="16" rx="4"/>
+        <rect x="242" y="62" width="16" height="16" rx="4"/>
+        <rect x="242" y="82" width="16" height="16" rx="4"/>
+        <rect x="262" y="62" width="16" height="16" rx="4"/>
+        <rect x="262" y="82" width="16" height="16" rx="4"/>
+        <rect x="282" y="62" width="16" height="16" rx="4"/>
+        <rect x="282" y="82" width="16" height="16" rx="4"/>
+        <rect x="302" y="62" width="16" height="16" rx="4"/>
+        <rect x="302" y="82" width="16" height="16" rx="4"/>
+        <rect x="322" y="62" width="16" height="16" rx="4"/>
+        <rect x="322" y="82" width="16" height="16" rx="4"/>
+        <rect x="342" y="62" width="16" height="16" rx="4"/>
+        <rect x="342" y="82" width="16" height="16" rx="4"/>
+        <rect x="2" y="182" width="16" height="16" rx="4"/>
+        <rect x="2" y="202" width="16" height="16" rx="4"/>
+        <rect x="22" y="182" width="16" height="16" rx="4"/>
+        <rect x="22" y="202" width="16" height="16" rx="4"/>
+        <rect x="42" y="182" width="16" height="16" rx="4"/>
+        <rect x="42" y="202" width="16" height="16" rx="4"/>
+        <rect x="62" y="182" width="16" height="16" rx="4"/>
+        <rect x="62" y="202" width="16" height="16" rx="4"/>
+        <rect x="82" y="182" width="16" height="16" rx="4"/>
+        <rect x="82" y="202" width="16" height="16" rx="4"/>
+        <rect x="242" y="142" width="16" height="16" rx="4"/>
+        <rect x="262" y="142" width="16" height="16" rx="4"/>
+        <rect x="262" y="162" width="16" height="16" rx="4"/>
+        <rect x="282" y="162" width="16" height="16" rx="4"/>
+        <rect x="282" y="182" width="16" height="16" rx="4"/>
+        <rect x="302" y="182" width="16" height="16" rx="4"/>
+        <rect x="302" y="202" width="16" height="16" rx="4"/>
+        <rect x="322" y="202" width="16" height="16" rx="4"/>
+        <rect x="322" y="222" width="16" height="16" rx="4"/>
+        <rect x="342" y="222" width="16" height="16" rx="4"/>
+        </g>
+        <polyline class="g-path" points="50,110 110,110 110,210 170,210 170,170 210,170"/>
+        <circle class="g-goal" cx="210" cy="170" r="9"/>
+        <g class="g-steel"><rect x="134" y="20" width="12" height="30" rx="6"/><rect x="292" y="74" width="32" height="12" rx="6"/><rect x="246" y="138" width="10" height="24" rx="5" transform="rotate(-45 251 150)"/></g>
+        <g class="g-wood"><rect x="136" y="4" width="8" height="18" rx="3"/><rect x="322" y="76" width="22" height="8" rx="3"/><rect x="5" y="182" width="16" height="36" rx="6"/></g>
+        <rect class="g-toast" x="37" y="97" width="26" height="26" rx="7"/>
+      </svg>
+      <figcaption>
+        <ul class="legend">
+          <li><span class="swatch toast"></span>La tartine</li>
+          <li><span class="swatch swept"></span>Cases balayées en 3,5 s</li>
+          <li><span class="swatch path"></span>Chemin trouvé</li>
+        </ul>
+      </figcaption>
+    </figure>
+
+    <ol class="steps">
+      <li><span class="step-n">1</span><p>Le jeu tire une attaque.</p></li>
+      <li><span class="step-n">2</span><p>Il simule les 3,5 s suivantes avec tout ce qui vole déjà, 4,5 s pour une attaque longue.</p></li>
+      <li><span class="step-n">3</span><p>Il cherche un chemin pour la tartine, en lui laissant 0,1 s pour réagir.</p></li>
+      <li><span class="step-n">4</span><p>Chemin trouvé : l'attaque part. Sinon il en tire une autre, 5 essais au plus.</p></li>
+    </ol>
+
+    <ul class="figures">
+      <li><span class="stat">0,22 ms</span><span class="stat-label">par vérification, en médiane</span></li>
+      <li><span class="stat">× 6</span><span class="stat-label">plus rapide avec une grille en entiers de 32 bits</span></li>
+      <li><span class="stat">0 mort</span><span class="stat-label">sur 100 parties de 150 s du robot parfait</span></li>
+    </ul>
+
+    <h3>Dans le détail</h3>
+    <ul class="facts">
+      <li><strong>Un modèle prudent.</strong> Cases de 12 px, doigt à 360 px/s, 11 px de marge autour de chaque couvert. Si le robot passe, un humain aussi.</li>
+      <li><strong>Une ligne, un entier.</strong> Chaque ligne de la grille tient dans un entier de 32 bits, et la zone balayée par un couvert se calcule d'un coup sur 1/30 s. Mêmes décisions qu'avant sur 8 853 vérifications rejouées.</li>
+      <li><strong>Un filet, pas une béquille.</strong> Sur 38 132 vérifications mesurées, aucun refus ne venait d'une attaque impossible en soi : tous venaient d'une tartine déjà serrée contre un couvert. Les règles des attaques suffisent, le solveur rattrape le reste.</li>
+      <li><strong>Vérifié à chaque changement.</strong> GitHub fait jouer 100 parties de 150 s au robot parfait, 0 mort attendu. Son code reste hors de celui envoyé aux téléphones.</li>
+    </ul>
+  </section>
+</main>
+
+<footer class="signature">
+  <p>Fait par Adrien Morand pour le collectif Tartine Sauvage.</p>
+  <p class="links">
+    <a class="button" href="https://www.linkedin.com/in/adrien-morand/">LinkedIn</a>
+    <a class="button" href="https://github.com/Affy657/croute-que-croute">Le code sur GitHub</a>
+    <a class="button ghost" href="/">Retour au jeu</a>
+  </p>
+</footer>
+</body>
+</html>

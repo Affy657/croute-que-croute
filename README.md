@@ -15,6 +15,7 @@ Source unique de connaissance du projet. Si le README et le code se contredisent
 - Admin : `/admin`
 - Écran géant : `/ecran`, sur l'ordinateur branché à l'écran
 - Code : https://github.com/Affy657/croute-que-croute
+- Page technique : `/tech` (`public/tech.html`), pour les curieux et les recruteurs. Rien qui aide un tricheur : ni seuils de contrôle, ni limites, ni faille connue, ni accès admin. Ses chiffres sont vérifiés par le test `tech`.
 - QR codes : `qr/` (`.png` pour imprimer, `.svg` pour une affiche, version `-simple` en secours). Régénérer : `npm run qr`, ou `npm run qr -- <adresse>`. À scanner sur plusieurs téléphones avant d'imprimer.
 
 ## Lancer le jeu en local
@@ -675,6 +676,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `son` : musique au premier appui sur Jouer, aperçu, nouvel essai, bruitage manquant redemandé.
 - `sprites` : chaque objet et planète se dessine, nom inventé sans effet.
 - `sync` : tenue entre appareils, emplacements gardés par un appareil neuf.
+- `tech` : chiffres de la page technique tirés du code (solveur, robot, commits), rien que la politique de sécurité refuse.
 - `textes` : le guide dit les vraies règles.
 - `validate` : pseudos (apostrophe courbe comprise), tenue, progression, fusion.
 - `variante` : la copie d'`equilibrage:variante` démarre.
