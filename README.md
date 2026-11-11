@@ -517,6 +517,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 | 1.3 | 07/11 | « Soirée finie ! » sur l'écran géant, départ et score qui tiennent sans réseau, police hébergée par le jeu, Paramètres plus clairs, admin qui retire de la soirée seulement, consos du bar sur l'écran géant | |
 | 1.4 | 07/11 | doigt : « Joystick » ou « Tenir » la tartine | 1 |
 | 1.5 | 09/11 | admin : recherche d'un pseudo, liste raccourcie, soirée en cours en jaune, formulaires pré-remplis | |
+| 1.6 | 11/11 | admin : soirée à venir supprimable, onglets Mobile et PC sans plafond ; apostrophe de l'iPhone dans un pseudo, bruitages gardés hors ligne | |
 
 ## Erreurs des joueurs
 
