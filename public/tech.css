@@ -6,9 +6,22 @@ body {
   line-height: var(--leading-normal);
 }
 
-a:focus-visible {
+a:focus-visible,
+.code:focus-visible {
   outline: var(--focus);
   outline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .hero {
@@ -156,6 +169,14 @@ section .lead {
   font-size: var(--text-lg);
 }
 
+.chips-title {
+  margin: var(--space-xl) 0 0;
+}
+
+.chips-title + .chips {
+  margin-top: var(--space-sm);
+}
+
 main {
   max-width: 720px;
   margin: 0 auto;
@@ -181,9 +202,6 @@ main {
   min-height: var(--tap);
   padding: 0 var(--space-md);
   border-radius: var(--radius-md);
-}
-
-.toc a {
   background: var(--card);
   color: var(--ink);
   text-decoration: none;
@@ -568,8 +586,18 @@ code,
   text-align: center;
 }
 
-.code {
+.snippet {
   margin: var(--space-xl) 0 0;
+}
+
+.snippet figcaption {
+  margin: 0 0 var(--space-xs);
+  font-size: var(--text-md);
+  color: var(--ink-dim);
+}
+
+.code {
+  margin: 0;
   padding: var(--space-md);
   border-radius: var(--radius-md);
   background: var(--card);

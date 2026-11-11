@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d0b24">
 <title>Sous la croûte, Croûte que Croûte</title>
 <meta name="description" content="Comment est fait Croûte que Croûte, le jeu des soirées Space Tartinade : attaques prouvées faisables, difficulté dosée par des robots, hébergement à 0 €.">
 <link rel="icon" href="/icons/icon-192.png">
@@ -16,10 +17,11 @@
   <p class="lead">Un jeu d'esquive pour les soirées Space Tartinade : tu guides une tartine entre des couverts qui volent. Voici comment il tient une soirée entière.</p>
   <ul class="stats trio">
     <li><span class="stat">0 €</span><span class="stat-label">d'hébergement par mois</span></li>
-    <li><span class="stat">150</span><span class="stat-label">joueurs à la même soirée</span></li>
+    <li><span class="stat">150</span><span class="stat-label">joueurs prévus à la même soirée</span></li>
     <li><span class="stat" id="commits">690</span><span class="stat-label">commits depuis le 28 octobre 2026</span></li>
   </ul>
-  <ul class="chips">
+  <p class="eyebrow chips-title" id="contraintes">Les contraintes</p>
+  <ul class="chips" aria-labelledby="contraintes">
     <li>Un lot pour le 1er</li>
     <li>Le wifi d'un bar</li>
     <li>De vieux iPhone</li>
@@ -47,7 +49,7 @@
 
     <figure class="board">
       <svg viewBox="0 0 360 240" role="img" aria-labelledby="grille-titre">
-        <title id="grille-titre">La tartine contourne les cases balayées par les couverts pour rejoindre une case sûre.</title>
+        <title id="grille-titre">La tartine contourne les cases balayées par les couverts et reste en vie jusqu'au bout de la simulation.</title>
         <rect class="g-field" x="0" y="0" width="360" height="240" rx="16"/>
         <path class="g-grid" d="M20 0V240M40 0V240M60 0V240M80 0V240M100 0V240M120 0V240M140 0V240M160 0V240M180 0V240M200 0V240M220 0V240M240 0V240M260 0V240M280 0V240M300 0V240M320 0V240M340 0V240M0 20H360M0 40H360M0 60H360M0 80H360M0 100H360M0 120H360M0 140H360M0 160H360M0 180H360M0 200H360M0 220H360"/>
         <g class="g-swept">
@@ -125,21 +127,21 @@
       <li><span class="step-n">1</span><p>Le jeu tire une attaque.</p></li>
       <li><span class="step-n">2</span><p>Il simule les 3,5 s suivantes avec tout ce qui vole déjà, 4,5 s pour une attaque longue.</p></li>
       <li><span class="step-n">3</span><p>Il cherche un chemin pour la tartine, en lui laissant 0,1 s pour réagir.</p></li>
-      <li><span class="step-n">4</span><p>Chemin trouvé : l'attaque part. Sinon il en tire une autre, 5 essais au plus.</p></li>
+      <li><span class="step-n">4</span><p>Chemin trouvé : l'attaque part. Sinon il en tire une autre.</p></li>
     </ol>
 
     <ul class="figures">
       <li><span class="stat">0,22 ms</span><span class="stat-label">par vérification, en médiane</span></li>
-      <li><span class="stat">× 6</span><span class="stat-label">plus rapide avec une grille en entiers de 32 bits</span></li>
+      <li><span class="stat">× 6</span><span class="stat-label">plus rapide en calculant d'un coup la zone balayée sur 1/30 s</span></li>
       <li><span class="stat">0 mort</span><span class="stat-label">sur 100 parties de 150 s du robot parfait</span></li>
     </ul>
 
     <h3>Dans le détail</h3>
     <ul class="facts">
-      <li><strong>Un modèle prudent.</strong> Cases de 12 px, doigt à 360 px/s, 11 px de marge autour de chaque couvert. Si le robot passe, un humain aussi.</li>
+      <li><strong>Un modèle prudent.</strong> Cases de 12 px, doigt à 360 px/s, 11 px de marge autour de chaque couvert. Si le robot passe, un humain peut passer.</li>
       <li><strong>Une ligne, un entier.</strong> Chaque ligne de la grille tient dans un entier de 32 bits, et la zone balayée par un couvert se calcule d'un coup sur 1/30 s. Mêmes décisions qu'avant sur 8 853 vérifications rejouées.</li>
-      <li><strong>Un filet, pas une béquille.</strong> Sur 38 132 vérifications mesurées, aucun refus ne venait d'une attaque impossible en soi : tous venaient d'une tartine déjà serrée contre un couvert. Les règles des attaques suffisent, le solveur rattrape le reste.</li>
-      <li><strong>Vérifié à chaque changement.</strong> GitHub fait jouer 100 parties de 150 s au robot parfait, 0 mort attendu. Son code reste hors de celui envoyé aux téléphones.</li>
+      <li><strong>Un filet, pas une béquille.</strong> Sur 38 132 vérifications mesurées, aucun refus ne venait d'une attaque impossible en soi, seulement de ce qui était déjà en jeu. Les règles des attaques suffisent, le solveur rattrape le reste.</li>
+      <li><strong>Vérifié à chaque changement du jeu.</strong> GitHub fait jouer 100 parties de 150 s au robot parfait, 0 mort attendu. Son code reste hors de celui envoyé aux téléphones.</li>
     </ul>
   </section>
 
@@ -150,9 +152,9 @@
 
     <div class="levels-ends" aria-hidden="true"><span>Débutant</span><span>Fort</span></div>
     <ul class="levels">
-      <li><span class="level-name">Temps de réaction</span><span class="level-bar"></span><span class="level-from">0,33 s</span><span class="level-to">0,18 s</span></li>
-      <li><span class="level-name">Vitesse du doigt</span><span class="level-bar"></span><span class="level-from">240 px/s</span><span class="level-to">480 px/s</span></li>
-      <li><span class="level-name">Une inattention de 0,4 s</span><span class="level-bar"></span><span class="level-from">toutes les 6 s</span><span class="level-to">toutes les 20 s</span></li>
+      <li><span class="level-name">Temps de réaction</span><span class="level-bar"></span><span class="level-from"><span class="sr-only">Débutant : </span>0,33 s</span><span class="level-to"><span class="sr-only">fort : </span>0,18 s</span></li>
+      <li><span class="level-name">Vitesse du doigt</span><span class="level-bar"></span><span class="level-from"><span class="sr-only">Débutant : </span>240 px/s</span><span class="level-to"><span class="sr-only">fort : </span>480 px/s</span></li>
+      <li><span class="level-name">Une inattention de 0,4 s</span><span class="level-bar"></span><span class="level-from"><span class="sr-only">Débutant : </span>toutes les 6 s</span><span class="level-to"><span class="sr-only">fort : </span>toutes les 20 s</span></li>
     </ul>
 
     <ul class="figures">
@@ -176,7 +178,7 @@
     <p class="lead">À la fin du compte à rebours, le lot se joue à la seconde. Tous les téléphones et l'écran géant doivent être d'accord sur l'heure, puis sur le gagnant.</p>
 
     <ol class="timeline">
-      <li><span class="time">−15 min</span><p>Dernier quart d'heure : le compte à rebours passe en rouge et tremble.</p></li>
+      <li><span class="time">−15 min</span><p>Dernier quart d'heure : sur l'écran géant, le compte à rebours passe en rouge et tremble.</p></li>
       <li><span class="time">0 s</span><p>Fin : « Soirée finie ! » partout.</p></li>
       <li><span class="time">+15 s</span><p>Les dernières parties arrivent. Comptent celles finies avant la fin, avec 15 s de marge pour le réseau.</p></li>
       <li><span class="time">+27 s</span><p>L'écran géant relit le classement, puis « Bravo » et confettis pour le gagnant.</p></li>
@@ -208,25 +210,25 @@
 
     <h3>Dans le détail</h3>
     <ul class="facts">
-      <li><strong>L'heure du serveur, sans la latence.</strong> Chaque réponse donne l'heure du serveur. Le téléphone la compare au milieu de son aller-retour, pas à la réception : sinon une réponse lente ferait reculer la fin.</li>
+      <li><strong>L'heure du serveur, sans la latence.</strong> Chaque relecture du classement donne l'heure du serveur. Le téléphone la compare au milieu de son aller-retour, pas à la réception : sinon une réponse lente ferait reculer la fin.</li>
       <li><strong>Pas de gagnant sur un vieux classement.</strong> Le dernier reçu pouvait dater de 40 s et annoncer le mauvais gagnant. « Bravo » attend une relecture faite au moins 12 s après la marge.</li>
-      <li><strong>Une partie compte pour la soirée où elle a commencé.</strong> Avec deux soirées proches, un vieux classement aurait affiché « Soirée finie ! » en début de soirée.</li>
+      <li><strong>Une partie compte pour la soirée où elle a commencé.</strong> Avec deux soirées proches, un classement pas encore relu aurait fait dire « Soirée finie » au téléphone en début de soirée.</li>
     </ul>
   </section>
 
   <section id="architecture" aria-labelledby="architecture-titre">
     <p class="eyebrow">04</p>
     <h2 id="architecture-titre">Architecture à 0 €</h2>
-    <p class="lead">Tout tient dans l'offre gratuite de Cloudflare. La difficulté n'est pas la puissance, c'est le quota du jour.</p>
+    <p class="lead">Tout tient dans l'offre gratuite de Cloudflare, donc chaque requête compte.</p>
 
     <figure class="board">
-      <svg viewBox="0 0 360 312" role="img" aria-labelledby="archi-titre">
-        <title id="archi-titre">Les téléphones parlent au Worker, qui lit et écrit dans la base D1 et prévient le Durable Object, qui pousse les nouveautés à l'écran géant.</title>
+      <svg viewBox="0 0 360 334" role="img" aria-labelledby="archi-titre">
+        <title id="archi-titre">Les téléphones parlent au Worker, qui lit et écrit dans la base D1 et prévient le Durable Object. Celui-ci signale chaque changement à l'écran géant, qui relit alors le classement auprès du Worker.</title>
         <defs>
           <marker id="pointe-archi" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path class="s-head" d="M0 0L8 4L0 8z"/></marker>
         </defs>
-        <rect class="s-zone" x="6" y="100" width="348" height="206" rx="16"/>
-        <text class="s-label" x="104" y="122" font-size="12">Cloudflare, offre gratuite</text>
+        <rect class="s-zone" x="6" y="100" width="348" height="228" rx="16"/>
+        <text class="s-label" x="180" y="318" text-anchor="middle" font-size="12">Cloudflare, offre gratuite</text>
         <rect class="s-box" x="12" y="8" width="160" height="64" rx="12"/>
         <text class="s-title" x="92" y="35" text-anchor="middle" font-size="14">Téléphones</text>
         <text class="s-label" x="92" y="55" text-anchor="middle" font-size="12">jeu hors ligne</text>
@@ -246,22 +248,21 @@
         <path class="s-msg" d="M95 196V226" marker-end="url(#pointe-archi)"/>
         <path class="s-msg" d="M200 178L250 228" marker-end="url(#pointe-archi)"/>
         <path class="s-msg" d="M310 232V78" marker-end="url(#pointe-archi)"/>
+        <path class="s-msg" d="M214 72L184 130" marker-end="url(#pointe-archi)"/>
         <text class="s-label" x="302" y="160" text-anchor="end" font-size="12">WebSocket</text>
       </svg>
     </figure>
 
     <ul class="figures">
-      <li><span class="stat">100 000</span><span class="stat-label">requêtes par jour, la limite gratuite</span></li>
       <li><span class="stat">3,5</span><span class="stat-label">requêtes par partie, hors fichiers</span></li>
-      <li><span class="stat">1/4</span><span class="stat-label">de la limite pour 150 joueurs qui font 30 parties chacun</span></li>
+      <li><span class="stat">1</span><span class="stat-label">ligne lue pour les totaux et records d'un joueur, au lieu de 734</span></li>
     </ul>
 
     <h3>Dans le détail</h3>
     <ul class="facts">
       <li><strong>Le classement vit en mémoire.</strong> Les 1 000 premiers sont gardés et mis à jour sur place, des demandes simultanées partagent la même lecture, et rien n'est demandé écran éteint.</li>
-      <li><strong>Une fiche joueur, une ligne.</strong> Totaux et records sont gardés sur le profil : 1 ligne lue au lieu de 734.</li>
-      <li><strong>Le wifi d'un bar.</strong> Si le réseau tombe, le score attend 12 h sur le téléphone. Les limites sont pensées pour un lieu où tout le monde partage la même adresse IP.</li>
-      <li><strong>L'écran géant en direct.</strong> Une WebSocket vers un Durable Object en hibernation : un record s'affiche en moins de 1,5 s. Si le quota tombe, l'écran relit le classement de lui-même.</li>
+      <li><strong>Le wifi d'un bar.</strong> Si le réseau tombe, le score attend 12 h sur le téléphone.</li>
+      <li><strong>L'écran géant en direct.</strong> Une WebSocket vers un Durable Object en hibernation : il signale chaque changement, l'écran relit le classement et le record s'affiche en une ou deux secondes. Si le direct coupe, l'écran relit le classement de lui-même.</li>
       <li><strong>Sans mot de passe.</strong> Le téléphone garde une clé, un code relie un autre appareil, Google est facultatif. Clés et identifiants sont hachés en SHA-256 : une copie de la base ne permet d'usurper personne.</li>
     </ul>
   </section>
@@ -271,15 +272,21 @@
     <h2 id="build-titre">Sans build, mais typé</h2>
     <p class="lead">Le JavaScript part tel quel sur les téléphones : pas de framework, pas de bundler, rien à compiler. Le typage passe par des annotations que TypeScript vérifie sans rien produire.</p>
 
-    <pre class="code"><code><span class="code-doc">/** @param {Cache} cache
-    @param {string} url */</span>
+    <figure class="snippet">
+      <figcaption><code>public/sw.js</code></figcaption>
+      <pre class="code" tabindex="0"><code><span class="code-doc">/** @param {Cache} cache @param {string} url */</span>
 function keep(cache, url) {
   return fetch(url).then((res) => {
-    if (res.ok) return cache.put(url, res);</code></pre>
+    if (res.ok) return cache.put(url, res);
+    if (res.body) res.body.cancel().catch(() => {});
+    throw new Error(url);
+  });
+}</code></pre>
+    </figure>
 
     <ul class="figures">
       <li><span class="stat">0</span><span class="stat-label">dépendance dans le code envoyé aux téléphones</span></li>
-      <li><span class="stat">0</span><span class="stat-label">étape de compilation : le fichier écrit est le fichier servi</span></li>
+      <li><span class="stat">0</span><span class="stat-label">étape de compilation : le fichier écrit est le fichier servi, au numéro de version près</span></li>
       <li><span class="stat">150 Ko</span><span class="stat-label">au plus pour tout le JavaScript du site, une fois compressé</span></li>
     </ul>
 
@@ -288,17 +295,17 @@ function keep(cache, url) {
       <li><strong>Typé quand même.</strong> TypeScript vérifie le serveur et le code des téléphones en mode strict, sur GitHub et avant chaque mise en ligne.</li>
       <li><strong>De vieux iPhone.</strong> Chaque unité CSS récente a sa valeur de secours, et aucun <code>await</code> n'est écrit en dehors d'une fonction : un test les cherche dans tout le code.</li>
       <li><strong>Les navigateurs des applis.</strong> Dans Instagram ou Snapchat, le stockage est à part : l'accueil propose d'ouvrir le jeu dans Safari plutôt que de recréer un compte.</li>
-      <li><strong>Une seule source pour le style.</strong> Couleurs, tailles, espacements, ombres et durées vivent dans un fichier de jetons. Un test refuse toute valeur en dur, cette page comprise.</li>
+      <li><strong>Une seule source pour le style.</strong> Couleurs, tailles, espacements, ombres et durées vivent dans un fichier de jetons. Un test refuse couleurs, espacements, ombres et durées écrits en dur dans les feuilles de style, celle de cette page comprise.</li>
     </ul>
   </section>
 
   <section id="tests" aria-labelledby="tests-titre">
     <p class="eyebrow">06</p>
     <h2 id="tests-titre">Tests et mise en ligne</h2>
-    <p class="lead">Un bug le soir même, c'est un lot mal attribué. Tout est testé avant de partir, et rien ne part pendant une soirée.</p>
+    <p class="lead">Un bug le soir même, c'est un lot mal attribué. Tout est testé avant de partir, et rien ne part pendant une soirée, sauf urgence.</p>
 
     <ul class="stats trio">
-      <li><span class="stat">570</span><span class="stat-label">tests unitaires, sans serveur, en 4 s</span></li>
+      <li><span class="stat">571</span><span class="stat-label">tests unitaires, sans serveur, en quelques secondes</span></li>
       <li><span class="stat">172</span><span class="stat-label">vérifications de l'API, chaque route et ses refus</span></li>
       <li><span class="stat">105</span><span class="stat-label">étapes d'un parcours complet dans un vrai navigateur</span></li>
     </ul>
@@ -320,7 +327,7 @@ function keep(cache, url) {
 
     <h3>Dans le détail</h3>
     <ul class="facts">
-      <li><strong>Un vrai parcours.</strong> Playwright joue tout : inscription, partie, classement, écran géant, admin, sans erreur de console ni fichier manquant. Sous Edge, puis sous WebKit avec un profil iPhone 13.</li>
+      <li><strong>Un vrai parcours.</strong> Playwright joue tout : inscription, partie, classement, écran géant, admin, sans erreur de console ni fichier manquant. Sous Chromium, puis sous WebKit avec un profil iPhone 13.</li>
       <li><strong>Une vraie base, en mémoire.</strong> Les tests unitaires montent une base SQLite avec toutes les migrations, sans lancer de serveur.</li>
       <li><strong>Un garde-fou qui dit non.</strong> La mise en ligne refuse si un seul point manque, puis vérifie la prod : versions, pages, sons, direct, et un faux score qui doit être refusé.</li>
       <li><strong>Ce qui reste à la main.</strong> Le son, la vibration et la fluidité se vérifient sur un vrai téléphone.</li>
@@ -334,7 +341,7 @@ function keep(cache, url) {
 
     <ul class="stats">
       <li><span class="stat" id="mises-en-ligne">100</span><span class="stat-label">mises en ligne, chacune avec son tag</span></li>
-      <li><span class="stat">1</span><span class="stat-label">seule source de vérité : le README</span></li>
+      <li><span class="stat">1</span><span class="stat-label">seule source de connaissance : le README</span></li>
     </ul>
 
     <h3>Un bug, du signalement à la prod</h3>
@@ -343,7 +350,7 @@ function keep(cache, url) {
       <li><span class="step-n">2</span><p>Écrire le test qui reproduit le bug.</p></li>
       <li><span class="step-n">3</span><p>Corriger.</p></li>
       <li><span class="step-n">4</span><p>Remettre le bug : le test doit échouer. C'est la vérification par mutation.</p></li>
-      <li><span class="step-n">5</span><p>Mettre le README à jour dans le même commit.</p></li>
+      <li><span class="step-n">5</span><p>Mettre le README à jour dans le même changement.</p></li>
       <li><span class="step-n">6</span><p>Mettre en ligne, seulement sur accord d'Adrien.</p></li>
     </ol>
 
