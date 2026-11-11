@@ -15,7 +15,7 @@ Source unique de connaissance du projet. Si le README et le code se contredisent
 - Admin : `/admin`
 - Écran géant : `/ecran`, sur l'ordinateur branché à l'écran
 - Code : https://github.com/Affy657/croute-que-croute
-- Page technique : `/tech` (`public/tech.html`), pour les curieux et les recruteurs, ouverte depuis la carte « Sous la croûte » des crédits. Rien qui aide un tricheur : ni seuils de contrôle, ni limites, ni faille connue, ni accès admin. Ses chiffres sont vérifiés par le test `tech`, sauf ceux des tests (unitaires, navigateur), datés sur la page : les mettre à jour de temps en temps.
+- Page technique : `/tech` (`public/tech.html`), pour les curieux et les recruteurs, ouverte depuis la carte « Sous la croûte » des crédits. Rien qui aide un tricheur : ni seuils de contrôle, ni limites ou quotas, ni faille connue (comme le revers du solveur), ni accès admin. Le test `tech` refuse les mots qui y mènent. Ses chiffres sont vérifiés par ce test, sauf ceux des tests (unitaires, navigateur), datés sur la page : les mettre à jour de temps en temps. Chaque phrase dit ce que fait le code, pas plus : la relire contre le code quand il change.
 - QR codes : `qr/` (`.png` pour imprimer, `.svg` pour une affiche, version `-simple` en secours). Régénérer : `npm run qr`, ou `npm run qr -- <adresse>`. À scanner sur plusieurs téléphones avant d'imprimer.
 
 ## Lancer le jeu en local

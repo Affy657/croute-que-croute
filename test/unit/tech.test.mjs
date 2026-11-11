@@ -24,8 +24,12 @@ test("page technique : les chiffres du solveur sont ceux du code", () => {
     `${constant(solver, "MARGIN")} px de marge`,
     `sur 1/${steps} s`,
     `en lui laissant ${fr(constant(sim, "REACT"))} s pour réagir`,
-    `${constant(sim, "TRIES")} essais au plus`,
   ]), []);
+});
+
+test("page technique : rien qui aide un tricheur ni ne désigne un point faible", () => {
+  const said = [...page.matchAll(/\d+ essais|essais au plus|serrée contre|adresse IP|quota|limite|seuil|requêtes par jour|par minute/gi)].map((m) => m[0]);
+  assert.deepEqual(said, []);
 });
 
 test("page technique : le robot parfait joue les parties annoncées", () => {
@@ -36,13 +40,21 @@ test("page technique : le robot parfait joue les parties annoncées", () => {
 test("page technique : le robot humain et sa population sont ceux de l'équilibrage", () => {
   const jeu = "test/equilibrage/jeu.mjs", comparer = "test/equilibrage/comparer.mjs";
   const [rt, rtGain, speed, speedGain, lapse, lapseGain] = code(jeu).match(/rt: ([\d.]+) - ([\d.]+) \* skill, spd: (\d+) \+ (\d+) \* skill, lapse: (\d+) \+ (\d+) \* skill/).slice(1).map(Number);
-  assert.deepEqual(missing([
+  const seen = page.replace(/<span class="sr-only">[^<]*<\/span>/g, "");
+  assert.deepEqual([
     `<span class="level-from">${fr(rt)} s</span><span class="level-to">${fr(rt - rtGain)} s</span>`,
     `<span class="level-from">${speed} px/s</span><span class="level-to">${speed + speedGain} px/s</span>`,
     `<span class="level-from">toutes les ${lapse} s</span><span class="level-to">toutes les ${lapse + lapseGain} s</span>`,
     `Une inattention de ${fr(constant(jeu, "LAPSE_S"))} s`,
     `${constant(comparer, "PLAYERS")} joueurs de ${constant(comparer, "GAMES")} parties`,
-  ]), []);
+  ].filter((s) => !seen.includes(s)), []);
+});
+
+test("page technique : un lecteur d'écran entend « débutant » et « fort » devant chaque valeur des niveaux", () => {
+  const said = [...page.matchAll(/<span class="level-(from|to)">(?:<span class="sr-only">([^<]*)<\/span>)?/g)].map((m) => `${m[1]} ${m[2] ?? ""}`);
+  assert.deepEqual(said, Array(3).fill(["from Débutant : ", "to fort : "]).flat());
+  assert.match(page, /<div class="levels-ends" aria-hidden="true">/);
+  assert.match(code("public/tech.css"), /\.sr-only \{[^}]*position: absolute;[^}]*clip: rect\(0, 0, 0, 0\);/);
 });
 
 test("page technique : la frise de fin de soirée suit les marges du serveur et de l'écran géant", () => {
@@ -75,11 +87,14 @@ test("page technique : aucune dépendance dans le JavaScript du site, et pas plu
   assert.ok(size <= ko * 1000, `${size} octets compressés pour ${ko} Ko annoncés`);
 });
 
-test("page technique : le code montré est le vrai", () => {
-  const flat = (s) => s.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
-  const shown = flat(page.match(/<pre class="code"><code>([\s\S]*?)<\/code><\/pre>/)[1]);
-  assert.ok(shown.length > 80);
-  assert.ok(flat(code("public/sw.js")).includes(shown), shown);
+test("page technique : le code montré est une fonction entière, copiée ligne pour ligne du fichier annoncé", () => {
+  const lines = (s) => s.replaceAll("\r\n", "\n");
+  const [, file, body] = page.match(/<figcaption><code>([^<]+)<\/code><\/figcaption>\s*<pre class="code" tabindex="0"><code>([\s\S]*?)<\/code><\/pre>/);
+  const shown = lines(body.replace(/<[^>]+>/g, "").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&"));
+  assert.ok(shown.split("\n").length >= 5, shown);
+  assert.match(shown, /^\/\*\*[^\n]*\*\/\nfunction \w+\([^\n]*\{\n[\s\S]*\n\}$/);
+  assert.equal(shown.split("{").length, shown.split("}").length);
+  assert.ok(lines(code(file)).includes(shown), shown);
 });
 
 test("page technique : tests et garde-fous annoncés comme ils sont", () => {
