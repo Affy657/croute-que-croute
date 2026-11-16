@@ -3,7 +3,7 @@ import { sha256 } from "../security";
 import { events, findProfile, entryMark, generalRanking, generalCount, generalRank, eventRanking, eventCount, rankIn, rivalIn, seated, LATE_MS, type EventRow, type Profile, type Ranked } from "../db";
 import type { Ctx } from "../router";
 
-const TOP = 50;
+const TOP = 100;
 const FEED_MS = 15 * 60 * 1000, FEED_SIZE = 6, SCREEN_TOP = 10;
 
 const eventInfo = (e: EventRow | null, status: string) =>
