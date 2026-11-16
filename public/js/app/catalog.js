@@ -354,6 +354,7 @@ export function renderCredits(root) {
   root.replaceChildren(
     credit("Collectif", "Tartine Sauvage, l'équipe derrière les soirées Space Tartinade", CREW_URL, "Suivre sur Instagram"),
     credit("Développeur", DEV.name, DEV.url, "Voir sur LinkedIn"),
+    credit("Sous la croûte", "Comment le jeu est fait : attaques vérifiées, robots, architecture, tests.", "/tech", "Lire"),
     credit("Musique", `${MUSIC_CREDIT.title}, de ${MUSIC_CREDIT.artist}`, MUSIC_CREDIT.url, "Écouter sur Spotify"),
     sounds(),
     credit("Confidentialité", "Ce que le jeu garde sur toi, et comment le faire effacer.", "/confidentialite", "Lire")

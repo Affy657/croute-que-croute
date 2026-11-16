@@ -59,7 +59,7 @@ function offlineWorker(cached) {
 test("cache hors ligne : seul le jeu retombe sur sa page gardée, jamais l'écran géant, /confidentialite, /depart ni une autre page", async () => {
   const game = new Response("jeu"), screen = new Response("écran");
   assert.equal(await offlineWorker({ "/": game, "/ecran": screen })("/ecran"), screen);
-  for (const path of ["/ecran", "/confidentialite", "/depart", "/lien"]) assert.equal((await offlineWorker({ "/": game })(path)).type, "error", path);
+  for (const path of ["/ecran", "/confidentialite", "/depart", "/tech", "/lien"]) assert.equal((await offlineWorker({ "/": game })(path)).type, "error", path);
   assert.equal(await offlineWorker({ "/": game })("/?diag=son"), game);
 });
 

@@ -15,6 +15,7 @@ Source unique de connaissance du projet. Si le README et le code se contredisent
 - Admin : `/admin`
 - Écran géant : `/ecran`, sur l'ordinateur branché à l'écran
 - Code : https://github.com/Affy657/croute-que-croute
+- Page technique : `/tech` (`public/tech.html`), pour les curieux et les recruteurs, ouverte depuis la carte « Sous la croûte » des crédits. Rien qui aide un tricheur : ni seuils de contrôle, ni limites ou quotas, ni faille connue (comme le revers du solveur), ni accès admin. Le test `tech` refuse les mots qui y mènent. Ses chiffres sont vérifiés par ce test, sauf ceux des tests (unitaires, navigateur), datés sur la page : les mettre à jour de temps en temps. Chaque phrase dit ce que fait le code, pas plus : la relire contre le code quand il change.
 - QR codes : `qr/` (`.png` pour imprimer, `.svg` pour une affiche, version `-simple` en secours). Régénérer : `npm run qr`, ou `npm run qr -- <adresse>`. À scanner sur plusieurs téléphones avant d'imprimer.
 
 ## Lancer le jeu en local
@@ -675,6 +676,7 @@ Seulement en local (`shared/local.js`), téléphone sur le wifi compris.
 - `son` : musique au premier appui sur Jouer, aperçu, nouvel essai, bruitage manquant redemandé.
 - `sprites` : chaque objet et planète se dessine, nom inventé sans effet.
 - `sync` : tenue entre appareils, emplacements gardés par un appareil neuf.
+- `tech` : chiffres de la page technique tirés du code (solveur, robots, fin de soirée, mémoire, poids du JavaScript, garde-fou, commits, tags), code montré identique au vrai, rien que la politique de sécurité refuse, sommaire et lien des crédits.
 - `textes` : le guide dit les vraies règles.
 - `validate` : pseudos (apostrophe courbe comprise), tenue, progression, fusion.
 - `variante` : la copie d'`equilibrage:variante` démarre.
