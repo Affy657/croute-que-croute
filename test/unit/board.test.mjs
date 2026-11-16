@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { database } from "./d1.mjs";
 
 const { board, screen } = await import(new URL("../../src/routes/board.ts", import.meta.url).href);
@@ -54,7 +55,7 @@ test("soirée de plus de 1 000 joueurs : liste coupée à 1 000, nombre de joueu
   assert.equal((await eventRanking(env, 1)).length, 1000);
   const before = await read(env);
   assert.equal(before.eventCount, 1001);
-  assert.equal(before.eventTop.length, 50);
+  assert.equal(before.eventTop.length, 100);
   const body = await (await finish(env, "partie", LOU, 5000)).json();
   assert.equal(body.eventRank, 1);
   assert.equal(body.eventCount >= 1001, true);
@@ -72,6 +73,12 @@ function counting(env) {
   };
   return seen;
 }
+
+test("écran Classement : le téléphone affiche les 100 premiers, autant que l'API en envoie", () => {
+  const api = Number(readFileSync("src/routes/board.ts", "utf8").match(/const TOP = (\d+);/)[1]);
+  const shown = Number(readFileSync("public/js/app/screens.js", "utf8").match(/const BOARD_TOP = (\d+),/)[1]);
+  assert.deepEqual([api, shown], [100, 100]);
+});
 
 test("écran géant : le nombre de joueurs vient de la liste en mémoire, le top 10 est relu à chaque fois", async (t) => {
   const env = setup(t);

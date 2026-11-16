@@ -203,7 +203,7 @@ Le robot d'équité dit si le jeu est faisable, pas s'il est bien dosé. Pour le
 - Trois classements : la soirée (pour le lot), général Mobile, général PC. À égalité, le premier à avoir fait le temps passe devant.
 - Une seule soirée à la fois, créée à l'avance dans l'admin pour être annoncée.
 - Mobile ou PC : les joueurs sur PC faisaient bien mieux. L'appareil vient de ce qui a bougé la tartine (souris ou doigt), sinon de l'écran. Une partie sur PC ne compte qu'au général PC. Adrien pense tout remettre à zéro avant la soirée. Limite : un tricheur décidé peut faire passer son PC pour un téléphone.
-- Écran Classement : les 30 premiers, puis ta place, ligne toujours visible. Onglet PC d'office depuis un PC.
+- Écran Classement : les 100 premiers (`TOP` dans `src/routes/board.ts`, `BOARD_TOP` dans `screens.js`), puis ta place, ligne toujours visible. Onglet PC d'office depuis un PC.
 - Tartine d'or : 1er d'un classement d'au moins 10 joueurs (`WIN_MIN`), soirée, Mobile ou PC, à n'importe quel moment.
 - Fin stricte : seules comptent les parties finies avant la fin, plus 15 s de marge réseau (`LATE_MS` dans `src/db.ts`). Une partie encore en cours compte au général, et le téléphone le dit.
 - « En retard » se juge sur la soirée où la partie a commencé, pas sur la dernière du classement : avec deux soirées à moins de 12 h d'écart et un classement pas relu à l'ouverture de la 2e, ce serait la 1re, déjà finie, et le téléphone dirait « Soirée finie » en début de soirée.
@@ -518,6 +518,7 @@ Pour retrouver son compte sur un nouvel appareil sans code. Lier ou délier : Pa
 | 1.4 | 07/11 | doigt : « Joystick » ou « Tenir » la tartine | 1 |
 | 1.5 | 09/11 | admin : recherche d'un pseudo, liste raccourcie, soirée en cours en jaune, formulaires pré-remplis | |
 | 1.6 | 11/11 | admin : soirée à venir supprimable, onglets Mobile et PC sans plafond ; apostrophe de l'iPhone dans un pseudo, bruitages gardés hors ligne | |
+| 1.7 | 16/11 | classement : les 100 premiers au lieu de 30 | |
 
 ## Erreurs des joueurs
 

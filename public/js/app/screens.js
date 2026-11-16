@@ -11,7 +11,7 @@ import { gearOwned, gearTotal, chosenGear } from "./gear.js";
 
 /** @param {string} id */
 const $ = (id) => document.getElementById(id);
-const BOARD_TOP = 30, PODIUM = 3;
+const BOARD_TOP = 100, PODIUM = 3;
 
 export const ui = {
   menu: $("menu"), over: $("over"), board: $("board"), hud: $("hud"), time: $("time"), hudBest: $("hudBest"),
