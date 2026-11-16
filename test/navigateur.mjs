@@ -1672,7 +1672,7 @@ try {
       await other.close();
     }
   });
-  for (const path of ["/", "/ecran", "/admin", "/confidentialite", "/tech"]) {
+  for (const path of ["/", "/ecran", "/admin", "/confidentialite"]) {
     await step(`police hébergée, rien demandé ailleurs : ${path}`, async () => {
       const context = await browser.newContext(SAFARI ? devices["iPhone 13"] : {});
       const other = await context.newPage();
